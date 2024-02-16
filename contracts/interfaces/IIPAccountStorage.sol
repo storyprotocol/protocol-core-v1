@@ -99,16 +99,18 @@ interface IIPAccountStorage {
     /// @dev Sets a boolean value under a given key within the default namespace, determined by `msg.sender`.
     /// @param key The key under which to store the value.
     /// @param value The boolean value to be stored.
-    function getBool(bytes32 key) external view returns (bool);
-
+    function setBool(bytes32 key, bool value) external;
+    
     /// @dev Retrieves a boolean value by a given key from the default namespace.
     /// @param key The key whose value is to be retrieved.
     /// @return The boolean value stored under the specified key.
-    function getBool(bytes32 namespace, bytes32 key) external view returns (bool);
+    function getBool(bytes32 key) external view returns (bool);
 
     /// @dev Retrieves a boolean value by a given key from a specified namespace.
     /// @param namespace The namespace from which to retrieve the value.
     /// @param key The key whose value is to be retrieved.
     /// @return The boolean value stored under the specified key in the given namespace.
-    function setBool(bytes32 key, bool value) external;
+    function getBool(bytes32 namespace, bytes32 key) external view returns (bool);
+
+
 }

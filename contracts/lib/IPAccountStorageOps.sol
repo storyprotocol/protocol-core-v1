@@ -5,19 +5,40 @@ pragma solidity ^0.8.23;
 import { IIPAccountStorage } from "../interfaces/IIPAccountStorage.sol";
 import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-
+/// @title IPAccount Storage Operations Library
+/// @notice Provides utility functions that extend the basic functionalities of IPAccountStorage,
+/// facilitating enhanced module interaction with IPAccount Namespaced Storage.
+/// @dev This library enables modules to access and manipulate IPAccount Namespaced Storage
+/// with additional features such as using `address` type namespaces and `ShortString` keys.
+/// It serves as an addon to the fundamental IPAccountStorage functions, allowing for more complex and
+/// flexible interactions with the namespaced storage.
 library IPAccountStorageOps {
     using ShortStrings for *;
     using Strings for *;
 
+    /// @notice Sets a string value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the value.
+    /// @param value The string value to be stored.
     function setString(IIPAccountStorage ipStorage, ShortString key, string memory value) internal {
         ipStorage.setString(toBytes32(key), value);
     }
 
+    /// @notice Retrieves a string value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose value is to be retrieved.
+    /// @return The string value stored under the specified key.
     function getString(IIPAccountStorage ipStorage, ShortString key) internal view returns (string memory) {
         return ipStorage.getString(toBytes32(key));
     }
 
+    /// @notice Retrieves a string value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the string value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose value is to be retrieved.
     function getString(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -26,6 +47,11 @@ library IPAccountStorageOps {
         return ipStorage.getString(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves a string value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the string value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose value is to be retrieved.
     function getString(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -34,18 +60,42 @@ library IPAccountStorageOps {
         return ipStorage.getString(toBytes32(namespace), toBytes32(key));
     }
 
+    /// @notice Sets an address value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value,
+    /// facilitating address storage in a compact format.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the address value.
+    /// @param value The address value to be stored.
     function setAddress(IIPAccountStorage ipStorage, ShortString key, address value) internal {
         ipStorage.setAddress(toBytes32(key), value);
     }
 
+    /// @notice Retrieves an address value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value,
+    /// ensuring the integrity of the address data.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose address value is to be retrieved.
+    /// @return The address value stored under the specified key.
     function getAddress(IIPAccountStorage ipStorage, ShortString key) internal view returns (address) {
         return ipStorage.getAddress(toBytes32(key));
     }
 
+    /// @notice Retrieves an address value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the address value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose address value is to be retrieved.
+    /// @return The address value stored under the specified key in the given namespace.
     function getAddress(IIPAccountStorage ipStorage, address namespace, bytes32 key) internal view returns (address) {
         return ipStorage.getAddress(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves an address value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the address value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose address value is to be retrieved.
+    /// @return The address value stored under the specified key in the given namespace.
     function getAddress(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -54,18 +104,42 @@ library IPAccountStorageOps {
         return ipStorage.getAddress(toBytes32(namespace), toBytes32(key));
     }
 
+    /// @notice Sets a uint256 value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value,
+    /// facilitating uint256 storage in a compact format.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the uint256 value.
+    /// @param value The uint256 value to be stored.
     function setUint256(IIPAccountStorage ipStorage, ShortString key, uint256 value) internal {
         ipStorage.setUint256(toBytes32(key), value);
     }
 
+    /// @notice Retrieves a uint256 value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value,
+    /// ensuring the integrity of the uint256 data.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose uint256 value is to be retrieved.
+    /// @return The uint256 value stored under the specified key.
     function getUint256(IIPAccountStorage ipStorage, ShortString key) internal view returns (uint256) {
         return ipStorage.getUint256(toBytes32(key));
     }
 
+    /// @notice Retrieves a uint256 value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the uint256 value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose uint256 value is to be retrieved.
+    /// @return The uint256 value stored under the specified key in the given namespace.
     function getUint256(IIPAccountStorage ipStorage, address namespace, bytes32 key) internal view returns (uint256) {
         return ipStorage.getUint256(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves a uint256 value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the uint256 value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose uint256 value is to be retrieved.
+    /// @return The uint256 value stored under the specified key in the given namespace.
     function getUint256(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -74,34 +148,78 @@ library IPAccountStorageOps {
         return ipStorage.getUint256(toBytes32(namespace), toBytes32(key));
     }
 
+    /// @notice Sets a bool value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value,
+    /// facilitating bool storage in a compact format.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the bool value.
+    /// @param value The bool value to be stored.
     function setBool(IIPAccountStorage ipStorage, ShortString key, bool value) internal {
         ipStorage.setBool(toBytes32(key), value);
     }
 
+    /// @notice Retrieves a bool value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value,
+    /// ensuring the integrity of the bool data.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose bool value is to be retrieved.
+    /// @return The bool value stored under the specified key.
     function getBool(IIPAccountStorage ipStorage, ShortString key) internal view returns (bool) {
         return ipStorage.getBool(toBytes32(key));
     }
 
+    /// @notice Retrieves a bool value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the bool value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose bool value is to be retrieved.
+    /// @return The bool value stored under the specified key in the given namespace.
     function getBool(IIPAccountStorage ipStorage, address namespace, bytes32 key) internal view returns (bool) {
         return ipStorage.getBool(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves a bool value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the bool value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose bool value is to be retrieved.
+    /// @return The bool value stored under the specified key in the given namespace.
     function getBool(IIPAccountStorage ipStorage, address namespace, ShortString key) internal view returns (bool) {
         return ipStorage.getBool(toBytes32(namespace), toBytes32(key));
     }
 
+    /// @notice Sets a bytes value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value,
+    /// facilitating bytes storage in a compact format.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the bytes value.
+    /// @param value The bytes value to be stored.
     function setBytes(IIPAccountStorage ipStorage, ShortString key, bytes memory value) internal {
         ipStorage.setBytes(toBytes32(key), value);
     }
 
+    /// @notice Sets a bytes value in the storage using two `ShortString` keys.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
     function setBytes(IIPAccountStorage ipStorage, ShortString key1, ShortString key2, bytes memory value) internal {
         ipStorage.setBytes(toBytes32(string(abi.encodePacked(key1.toString(), key2.toString()))), value);
     }
 
+    /// @notice Retrieves a bytes value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value,
+    /// ensuring the integrity of the bytes data.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose bytes value is to be retrieved.
+    /// @return The bytes value stored under the specified key.
     function getBytes(IIPAccountStorage ipStorage, ShortString key) internal view returns (bytes memory) {
         return ipStorage.getBytes(toBytes32(key));
     }
 
+    /// @notice Retrieves a bytes value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the bytes value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose bytes value is to be retrieved.
+    /// @return The bytes value stored under the specified key in the given namespace.
     function getBytes(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -110,6 +228,12 @@ library IPAccountStorageOps {
         return ipStorage.getBytes(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves a bytes value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the bytes value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose bytes value is to be retrieved.
+    /// @return The bytes value stored under the specified key in the given namespace.
     function getBytes(
         IIPAccountStorage ipStorage,
         address namespace,
@@ -118,6 +242,9 @@ library IPAccountStorageOps {
         return ipStorage.getBytes(toBytes32(namespace), toBytes32(key));
     }
 
+    /// @notice Retrieves a bytes value from the storage using two `ShortString` keys.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @return The bytes value stored under the combination of two keys.
     function getBytes(
         IIPAccountStorage ipStorage,
         ShortString key1,
@@ -126,31 +253,59 @@ library IPAccountStorageOps {
         return ipStorage.getBytes(toBytes32(string(abi.encodePacked(key1.toString(), key2.toString()))));
     }
 
+    /// @notice Retrieves a bytes value from the storage under a specified namespace using two `ShortString` keys.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @return The bytes value stored under the combination of two keys.
     function getBytes(
         IIPAccountStorage ipStorage,
         address namespace,
-        ShortString key,
+        ShortString key1,
         ShortString key2
     ) internal view returns (bytes memory) {
         return
             ipStorage.getBytes(
                 toBytes32(namespace),
-                toBytes32(string(abi.encodePacked(key.toString(), key2.toString())))
+                toBytes32(string(abi.encodePacked(key1.toString(), key2.toString())))
             );
     }
 
+    /// @notice Sets a bytes32 value in the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before storing the value,
+    /// facilitating bytes32 storage in a compact format.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key under which to store the bytes32 value.
+    /// @param value The bytes32 value to be stored.
     function setBytes32(IIPAccountStorage ipStorage, ShortString key, bytes32 value) internal {
         ipStorage.setBytes32(toBytes32(key), value);
     }
 
+    /// @notice Retrieves a bytes32 value from the storage using a `ShortString` key.
+    /// @dev Converts the `ShortString` key to a `bytes32` representation before retrieving the value,
+    /// ensuring the integrity of the bytes32 data.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param key The `ShortString` key whose bytes32 value is to be retrieved.
+    /// @return The bytes32 value stored under the specified key.
     function getBytes32(IIPAccountStorage ipStorage, ShortString key) internal view returns (bytes32) {
         return ipStorage.getBytes32(toBytes32(key));
     }
 
+    /// @notice Retrieves a bytes32 value from the storage under a specified namespace using a bytes32 key.
+    /// @dev Retrieves the bytes32 value from the specified namespace using the provided key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The bytes32 key whose bytes32 value is to be retrieved.
+    /// @return The bytes32 value stored under the specified key in the given namespace.
     function getBytes32(IIPAccountStorage ipStorage, address namespace, bytes32 key) internal view returns (bytes32) {
         return ipStorage.getBytes32(toBytes32(namespace), key);
     }
 
+    /// @notice Retrieves a bytes32 value from the storage under a specified namespace using a `ShortString` key.
+    /// @dev Retrieves the bytes32 value from the specified namespace using the provided `ShortString` key.
+    /// @param ipStorage The instance of the IPAccountStorage contract.
+    /// @param namespace The namespace under which to retrieve the value.
+    /// @param key The `ShortString` key whose bytes32 value is to be retrieved.
+    /// @return The bytes32 value stored under the specified key in the given namespace.
     function getBytes32(
         IIPAccountStorage ipStorage,
         address namespace,

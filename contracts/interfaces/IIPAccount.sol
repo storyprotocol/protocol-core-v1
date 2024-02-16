@@ -4,6 +4,7 @@ pragma solidity 0.8.23;
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+import { IIPAccountStorage } from "./IIPAccountStorage.sol";
 
 /// @title IIPAccount
 /// @dev IPAccount is a token-bound account that adopts the EIP-6551 standard.
@@ -13,7 +14,7 @@ import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 /// IPAccount can interact with modules by making calls as a normal transaction sender.
 /// This allows for seamless operations on the state and data of IP.
 /// IPAccount is core identity for all actions.
-interface IIPAccount is IERC6551Account, IERC721Receiver, IERC1155Receiver {
+interface IIPAccount is IERC6551Account, IERC721Receiver, IERC1155Receiver, IIPAccountStorage {
     /// @notice Emitted when a transaction is executed.
     /// @param to The recipient of the transaction.
     /// @param value The amount of Ether sent.

@@ -5,7 +5,7 @@ import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 
-import { MockAccessControlledModule } from "../mocks/MockAccessControlledModule.sol";
+import { MockAccessControlledModule } from "../mocks/module/MockAccessControlledModule.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 contract AccessControlledTest is BaseTest {

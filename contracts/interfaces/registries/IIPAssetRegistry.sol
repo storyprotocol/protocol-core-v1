@@ -37,6 +37,16 @@ interface IIPAssetRegistry is IIPAccountRegistry {
         bytes metadata
     );
 
+    event IPRegisteredV2(
+        address ipId,
+        uint256 indexed chainId,
+        address indexed tokenContract,
+        uint256 indexed tokenId,
+        string name,
+        string uri,
+        uint256 registrationDate
+    );
+
     /// @notice Emits when an IP resolver is bound to an IP.
     /// @param ipId The canonical identifier of the specified IP.
     /// @param resolver The address of the new resolver bound to the IP.

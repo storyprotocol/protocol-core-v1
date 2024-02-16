@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
-import { IIPAccountRegistry } from "contracts/interfaces/registries/IIPAccountRegistry.sol";
-import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol";
-import { IModuleRegistry } from "contracts/interfaces/registries/IModuleRegistry.sol";
-import { AccessControlled } from "contracts/access/AccessControlled.sol";
+import { IModule } from "../../../../contracts/interfaces/modules/base/IModule.sol";
+import { IIPAccountRegistry } from "../../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
+import { IPAccountChecker } from "../../../../contracts/lib/registries/IPAccountChecker.sol";
+import { IModuleRegistry } from "../../../../contracts/interfaces/registries/IModuleRegistry.sol";
+import { AccessControlled } from "../../../../contracts/access/AccessControlled.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { BaseModule } from "../../../contracts/modules/BaseModule.sol";
+import { BaseModule } from "../../../../contracts/modules/BaseModule.sol";
 
 /// @title MockAccessControlledModule
 /// @dev This contract is a mock implementation of an access-controlled module, used for testing purposes.

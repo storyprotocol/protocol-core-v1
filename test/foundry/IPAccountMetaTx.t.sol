@@ -11,9 +11,11 @@ import { Errors } from "../../contracts/lib/Errors.sol";
 import { MockModule } from "./mocks/module/MockModule.sol";
 import { MockMetaTxModule } from "./mocks/module/MockMetaTxModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";
+import { MockAccessControlledModule } from "test/foundry/mocks/module/MockAccessControlledModule.sol";
 
 contract IPAccountMetaTxTest is BaseTest {
     MockModule public module;
+    MockAccessControlledModule public accessControlledModule;
     MockMetaTxModule public metaTxModule;
 
     uint256 public ownerPrivateKey;
@@ -34,6 +36,12 @@ contract IPAccountMetaTxTest is BaseTest {
         caller = vm.addr(callerPrivateKey);
 
         module = new MockModule(address(ipAccountRegistry), address(moduleRegistry), "Module1WithPermission");
+        accessControlledModule = new MockAccessControlledModule(
+            address(accessController),
+            address(registry),
+            address(moduleRegistry),
+            "AccessControlledModule"
+        );
         metaTxModule = new MockMetaTxModule(
             address(ipAccountRegistry),
             address(moduleRegistry),
@@ -43,6 +51,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.startPrank(u.admin);
         moduleRegistry.registerModule("Module1WithPermission", address(module));
         moduleRegistry.registerModule("MockMetaTxModule", address(metaTxModule));
+        moduleRegistry.registerModule("AccessControlledModule", address(accessControlledModule));
         vm.stopPrank();
     }
 
@@ -140,6 +149,52 @@ contract IPAccountMetaTxTest is BaseTest {
         assertEq("test", abi.decode(result, (string)));
 
         assertEq(ipAccount.state(), 2);
+    }
+
+    function test_IPAccount_setPermissionWithSignatureThenCallAccessControlledModule() public {
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        address account = registry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        IIPAccount ipAccount = IIPAccount(payable(account));
+
+        uint deadline = block.timestamp + 1000;
+
+        bytes32 digest = MessageHashUtils.toTypedDataHash(
+            MetaTx.calculateDomainSeparator(address(ipAccount)),
+            MetaTx.getExecuteStructHash(
+                MetaTx.Execute({
+                    to: address(accessController),
+                    value: 0,
+                    data: abi.encodeWithSignature(
+                        "setPermission(address,address,address,bytes4,uint8)",
+                        address(ipAccount),
+                        address(metaTxModule),
+                        address(accessControlledModule),
+                        bytes4(0),
+                        AccessPermission.ALLOW
+                    ),
+                    nonce: ipAccount.state() + 1,
+                    deadline: deadline
+                })
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        bytes memory signature = abi.encodePacked(r, s, v);
+        vm.prank(caller);
+        string memory result = metaTxModule.setPermissionThenCallOtherAccessControlledModule(
+            payable(address(ipAccount)),
+            owner,
+            deadline,
+            signature
+        );
+        assertEq("test", result);
+
+        assertEq(ipAccount.state(), 1);
     }
 
     function test_IPAccount_revert_SignatureExpired() public {

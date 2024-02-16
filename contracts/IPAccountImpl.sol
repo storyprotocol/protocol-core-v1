@@ -13,10 +13,11 @@ import { IAccessController } from "./interfaces/IAccessController.sol";
 import { IIPAccount } from "./interfaces/IIPAccount.sol";
 import { MetaTx } from "./lib/MetaTx.sol";
 import { Errors } from "./lib/Errors.sol";
+import { IPAccountStorage } from "./IPAccountStorage.sol";
 
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
-contract IPAccountImpl is IERC165, IIPAccount {
+contract IPAccountImpl is IERC165, IPAccountStorage, IIPAccount {
     address public immutable accessController;
 
     /// @notice Returns the IPAccount's internal nonce for transaction ordering.

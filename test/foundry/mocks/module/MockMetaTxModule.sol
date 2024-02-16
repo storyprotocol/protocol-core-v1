@@ -11,6 +11,7 @@ import { IModuleRegistry } from "../../../../contracts/interfaces/registries/IMo
 import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
 import { IPAccountChecker } from "../../../../contracts/lib/registries/IPAccountChecker.sol";
 import { BaseModule } from "../../../../contracts/modules/BaseModule.sol";
+import { MockAccessControlledModule } from "./MockAccessControlledModule.sol";
 
 contract MockMetaTxModule is BaseModule {
     using ERC165Checker for address;
@@ -62,6 +63,36 @@ contract MockMetaTxModule is BaseModule {
             abi.encodeWithSignature("executeSuccessfully(string)", "test")
         );
         return module1Output;
+    }
+
+    function setPermissionThenCallOtherAccessControlledModule(
+        address payable ipAccount,
+        address signer,
+        uint256 deadline,
+        bytes calldata signature
+    ) external returns (string memory) {
+        // check if ipAccount is valid
+        require(ipAccountRegistry.isIpAccount(ipAccount), "MockMetaTxModule: ipAccount is not valid");
+        address accessControlledModule = moduleRegistry.getModule("AccessControlledModule");
+        // set permission
+        IIPAccount(ipAccount).executeWithSig(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setPermission(address,address,address,bytes4,uint8)",
+                ipAccount,
+                address(this),
+                accessControlledModule,
+                bytes4(0),
+                AccessPermission.ALLOW
+            ),
+            signer,
+            deadline,
+            signature
+        );
+        // execute accessControlledModule
+        return
+            MockAccessControlledModule(accessControlledModule).ipAccountOrPermissionFunction(ipAccount, "test", true);
     }
 
     function callAnotherModuleWithSignature(

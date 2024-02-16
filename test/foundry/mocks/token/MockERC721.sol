@@ -28,4 +28,8 @@ contract MockERC721 is ERC721 {
     function transferFrom(address from, address to, uint256 tokenId) public override {
         _transfer(from, to, tokenId);
     }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return "https://storyprotocol.xyz/erc721/";
+    }
 }

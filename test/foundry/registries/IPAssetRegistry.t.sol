@@ -76,14 +76,24 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
 
         vm.expectEmit(true, true, true, true);
-        emit IIPAssetRegistry.IPRegisteredV2(
+        emit IIPAssetRegistry.IPRegistered(
             ipId,
             block.chainid,
             tokenAddress,
             tokenId,
-            "Ape #99",
-            "https://storyprotocol.xyz/erc721/99",
-            block.timestamp
+            address(0),
+            address(registry.metadataProvider()),
+            abi.encode(
+                IP.MetadataV1({
+                    name: "Ape #99",
+                    hash: keccak256(
+                        abi.encodePacked("Ape #99", "https://storyprotocol.xyz/erc721/99", block.timestamp)
+                    ),
+                    registrationDate: uint64(block.timestamp),
+                    registrant: alice,
+                    uri: "https://storyprotocol.xyz/erc721/99"
+                })
+            )
         );
         vm.prank(alice);
         registry.register(block.chainid, tokenAddress, tokenId);

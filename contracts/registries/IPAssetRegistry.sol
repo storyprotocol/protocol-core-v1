@@ -12,6 +12,7 @@ import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { IMetadataProviderMigratable } from "../interfaces/registries/metadata/IMetadataProviderMigratable.sol";
 import { MetadataProviderV1 } from "../registries/metadata/MetadataProviderV1.sol";
 import { Errors } from "../lib/Errors.sol";
+import { IP } from "../lib/IP.sol";
 import { IResolver } from "../interfaces/resolvers/IResolver.sol";
 import { LICENSING_MODULE_KEY } from "../lib/modules/Module.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
@@ -86,7 +87,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         _metadataProvider = IMetadataProviderMigratable(newMetadataProvider);
     }
 
-    /// @notice Registers an NFT as IP, creating a corresponding IP record.
+    /// @notice Permissionlessly Registers an NFT as IP, creating a corresponding IP record.
     /// @notice Registers an NFT as an IP asset.
     /// @param chainId The chain identifier of where the NFT resides.
     /// @param tokenContract The address of the NFT.
@@ -108,7 +109,25 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
 
         totalSupply++;
 
-        emit IPRegisteredV2(id, chainId, tokenContract, tokenId, name, uri, registrationDate);
+        // TODO: this for compatible with existing resolver and metadata provider design,
+        /// refactor with namespaced metadata later
+        emit IPRegistered(
+            id,
+            chainId,
+            tokenContract,
+            tokenId,
+            address(0),
+            address(_metadataProvider),
+            abi.encode(
+                IP.MetadataV1({
+                    name: name,
+                    hash: keccak256(abi.encodePacked(name, uri, registrationDate)),
+                    registrationDate: uint64(registrationDate),
+                    registrant: msg.sender,
+                    uri: uri
+                })
+            )
+        );
     }
 
     /// @notice Registers an NFT as an IP asset.

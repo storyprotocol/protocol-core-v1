@@ -21,19 +21,6 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     mapping(bytes32 => mapping(bytes32 => bool)) public boolData;
 
     /// @inheritdoc IIPAccountStorage
-    function setString(bytes32 key, string calldata value) external {
-        stringData[_toBytes32(msg.sender)][key] = value;
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getString(bytes32 key) external view returns (string memory) {
-        return stringData[_toBytes32(msg.sender)][key];
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getString(bytes32 namespace, bytes32 key) external view returns (string memory) {
-        return stringData[namespace][key];
-    }
-
-    /// @inheritdoc IIPAccountStorage
     function setBytes(bytes32 key, bytes calldata value) external {
         bytesData[_toBytes32(msg.sender)][key] = value;
     }
@@ -59,45 +46,7 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         return bytes32Data[namespace][key];
     }
 
-    /// @inheritdoc IIPAccountStorage
-    function setUint256(bytes32 key, uint256 value) external {
-        uint256Data[_toBytes32(msg.sender)][key] = value;
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getUint256(bytes32 key) external view returns (uint256) {
-        return uint256Data[_toBytes32(msg.sender)][key];
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getUint256(bytes32 namespace, bytes32 key) external view returns (uint256) {
-        return uint256Data[namespace][key];
-    }
-
-    /// @inheritdoc IIPAccountStorage
-    function setAddress(bytes32 key, address value) external {
-        addressData[_toBytes32(msg.sender)][key] = value;
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getAddress(bytes32 key) external view returns (address) {
-        return addressData[_toBytes32(msg.sender)][key];
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getAddress(bytes32 namespace, bytes32 key) external view returns (address) {
-        return addressData[namespace][key];
-    }
-
-    /// @inheritdoc IIPAccountStorage
-    function getBool(bytes32 key) external view returns (bool) {
-        return boolData[_toBytes32(msg.sender)][key];
-    }
-    /// @inheritdoc IIPAccountStorage
-    function getBool(bytes32 namespace, bytes32 key) external view returns (bool) {
-        return boolData[namespace][key];
-    }
-    /// @inheritdoc IIPAccountStorage
-    function setBool(bytes32 key, bool value) external {
-        boolData[_toBytes32(msg.sender)][key] = value;
-    }
-
+    /// @notice ERC165 interface identifier for IIPAccountStorage
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
         return interfaceId == type(IIPAccountStorage).interfaceId || super.supportsInterface(interfaceId);
     }

@@ -39,7 +39,7 @@ contract IPAccountStorageOpsTest is BaseTest {
 
     function test_IPAccountStorageOps_setString_bytes32() public {
         vm.prank(vm.addr(1));
-        ipAccount.setString(bytes32("test"), "test");
+        IPAccountStorageOps.setString(ipAccount, bytes32("test"), "test");
         vm.prank(vm.addr(1));
         assertEq(IPAccountStorageOps.getString(ipAccount, "test".toShortString()), "test");
         vm.prank(vm.addr(2));
@@ -59,7 +59,7 @@ contract IPAccountStorageOpsTest is BaseTest {
 
     function test_IPAccountStorageOps_setAddress_bytes32() public {
         vm.prank(vm.addr(1));
-        ipAccount.setAddress(bytes32("test"), vm.addr(2));
+        IPAccountStorageOps.setAddress(ipAccount, bytes32("test"), vm.addr(2));
         vm.prank(vm.addr(1));
         assertEq(IPAccountStorageOps.getAddress(ipAccount, "test".toShortString()), vm.addr(2));
         vm.prank(vm.addr(2));
@@ -79,7 +79,7 @@ contract IPAccountStorageOpsTest is BaseTest {
 
     function test_IPAccountStorageOps_setUint256_bytes32() public {
         vm.prank(vm.addr(1));
-        ipAccount.setUint256(bytes32("test"), 1);
+        IPAccountStorageOps.setUint256(ipAccount, bytes32("test"), 1);
         vm.prank(vm.addr(1));
         assertEq(IPAccountStorageOps.getUint256(ipAccount, "test".toShortString()), 1);
         vm.prank(vm.addr(2));
@@ -99,7 +99,7 @@ contract IPAccountStorageOpsTest is BaseTest {
 
     function test_IPAccountStorageOps_setBool_bytes32() public {
         vm.prank(vm.addr(1));
-        ipAccount.setBool(bytes32("test"), true);
+        IPAccountStorageOps.setBool(ipAccount, bytes32("test"), true);
         vm.prank(vm.addr(1));
         assertTrue(IPAccountStorageOps.getBool(ipAccount, "test".toShortString()));
         vm.prank(vm.addr(2));
@@ -146,5 +146,57 @@ contract IPAccountStorageOpsTest is BaseTest {
             IPAccountStorageOps.getBytes(ipAccount, vm.addr(1), "key1".toShortString(), "key2".toShortString()),
             abi.encodePacked("test")
         );
+    }
+
+    function test_IPAccountStorage_storeUint256() public {
+        IPAccountStorageOps.setUint256(ipAccount, "test", 1);
+        assertEq(IPAccountStorageOps.getUint256(ipAccount, "test"), 1);
+    }
+
+    function test_IPAccountStorage_readUint256_differentNameSpace() public {
+        vm.prank(vm.addr(1));
+        IPAccountStorageOps.setUint256(ipAccount, "test", 1);
+        vm.prank(vm.addr(2));
+        assertEq(IPAccountStorageOps.getUint256(ipAccount, _toBytes32(vm.addr(1)), "test"), 1);
+    }
+
+    function test_IPAccountStorage_storeBool() public {
+        IPAccountStorageOps.setBool(ipAccount, "test", true);
+        assertTrue(IPAccountStorageOps.getBool(ipAccount, "test"));
+    }
+
+    function test_IPAccountStorage_readBool_differentNameSpace() public {
+        vm.prank(vm.addr(1));
+        IPAccountStorageOps.setBool(ipAccount, "test", true);
+        vm.prank(vm.addr(2));
+        assertTrue(IPAccountStorageOps.getBool(ipAccount, _toBytes32(vm.addr(1)), "test"));
+    }
+
+    function test_IPAccountStorage_storeString() public {
+        IPAccountStorageOps.setString(ipAccount, "test", "test");
+        assertEq(IPAccountStorageOps.getString(ipAccount, "test"), "test");
+    }
+
+    function test_IPAccountStorage_readString_differentNameSpace() public {
+        vm.prank(vm.addr(1));
+        IPAccountStorageOps.setString(ipAccount, "test", "test");
+        vm.prank(vm.addr(2));
+        assertEq(IPAccountStorageOps.getString(ipAccount, _toBytes32(vm.addr(1)), "test"), "test");
+    }
+
+    function test_IPAccountStorage_storeAddress() public {
+        IPAccountStorageOps.setAddress(ipAccount, "test", vm.addr(1));
+        assertEq(IPAccountStorageOps.getAddress(ipAccount, "test"), vm.addr(1));
+    }
+
+    function test_IPAccountStorage_readAddress_differentNameSpace() public {
+        vm.prank(vm.addr(1));
+        IPAccountStorageOps.setAddress(ipAccount, "test", vm.addr(1));
+        vm.prank(vm.addr(2));
+        assertEq(IPAccountStorageOps.getAddress(ipAccount, _toBytes32(vm.addr(1)), "test"), vm.addr(1));
+    }
+
+    function _toBytes32(address a) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(a)));
     }
 }

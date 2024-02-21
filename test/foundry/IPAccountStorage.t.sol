@@ -101,54 +101,6 @@ contract IPAccountStorageTest is BaseTest {
         assertEq(result[1], "test2");
     }
 
-    function test_IPAccountStorage_storeUint256() public {
-        ipAccount.setUint256("test", 1);
-        assertEq(ipAccount.getUint256("test"), 1);
-    }
-
-    function test_IPAccountStorage_readUint256_differentNameSpace() public {
-        vm.prank(vm.addr(1));
-        ipAccount.setUint256("test", 1);
-        vm.prank(vm.addr(2));
-        assertEq(ipAccount.getUint256(_toBytes32(vm.addr(1)), "test"), 1);
-    }
-
-    function test_IPAccountStorage_storeBool() public {
-        ipAccount.setBool("test", true);
-        assertTrue(ipAccount.getBool("test"));
-    }
-
-    function test_IPAccountStorage_readBool_differentNameSpace() public {
-        vm.prank(vm.addr(1));
-        ipAccount.setBool("test", true);
-        vm.prank(vm.addr(2));
-        assertTrue(ipAccount.getBool(_toBytes32(vm.addr(1)), "test"));
-    }
-
-    function test_IPAccountStorage_storeString() public {
-        ipAccount.setString("test", "test");
-        assertEq(ipAccount.getString("test"), "test");
-    }
-
-    function test_IPAccountStorage_readString_differentNameSpace() public {
-        vm.prank(vm.addr(1));
-        ipAccount.setString("test", "test");
-        vm.prank(vm.addr(2));
-        assertEq(ipAccount.getString(_toBytes32(vm.addr(1)), "test"), "test");
-    }
-
-    function test_IPAccountStorage_storeAddress() public {
-        ipAccount.setAddress("test", vm.addr(1));
-        assertEq(ipAccount.getAddress("test"), vm.addr(1));
-    }
-
-    function test_IPAccountStorage_readAddress_differentNameSpace() public {
-        vm.prank(vm.addr(1));
-        ipAccount.setAddress("test", vm.addr(1));
-        vm.prank(vm.addr(2));
-        assertEq(ipAccount.getAddress(_toBytes32(vm.addr(1)), "test"), vm.addr(1));
-    }
-
     function test_IPAccountStorage_storeBytes32() public {
         ipAccount.setBytes32("test", bytes32(uint256(111)));
         assertEq(ipAccount.getBytes32("test"), bytes32(uint256(111)));

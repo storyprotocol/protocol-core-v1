@@ -5,6 +5,7 @@ import { IModule } from "../../../../contracts/interfaces/modules/base/IModule.s
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { IIPAccountRegistry } from "../../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
 import { IPAccountChecker } from "../../../../contracts/lib/registries/IPAccountChecker.sol";
+import { IPAccountStorageOps } from "../../../../contracts/lib/IPAccountStorageOps.sol";
 import { AccessControlled } from "../../../../contracts/access/AccessControlled.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { BaseModule } from "../../../../contracts/modules/BaseModule.sol";
@@ -15,6 +16,7 @@ import { BaseModule } from "../../../../contracts/modules/BaseModule.sol";
 contract MockMetadataModule is BaseModule, AccessControlled {
     using ERC165Checker for address;
     using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountStorageOps for IIPAccount;
 
     string public name = "MockMetadataModule";
     mapping(string => bool) public ipTypesSupported;

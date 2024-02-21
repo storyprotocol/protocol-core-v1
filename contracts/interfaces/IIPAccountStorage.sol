@@ -16,22 +16,6 @@ pragma solidity ^0.8.23;
 /// - Only the owning Module (i.e., the Module whose address is used as the namespace) can write data into
 ///   its respective namespace.
 interface IIPAccountStorage {
-    /// @dev Sets a string value under a given key within the default namespace, determined by `msg.sender`.
-    /// @param key The key under which to store the value.
-    /// @param value The string value to be stored.
-    function setString(bytes32 key, string calldata value) external;
-
-    /// @dev Retrieves a string value by a given key from the default namespace.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The string value stored under the specified key.
-    function getString(bytes32 key) external view returns (string memory);
-
-    /// @dev Retrieves a string value by a given key from a specified namespace.
-    /// @param namespace The namespace from which to retrieve the value.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The string value stored under the specified key in the given namespace.
-    function getString(bytes32 namespace, bytes32 key) external view returns (string memory);
-
     /// @dev Sets a bytes value under a given key within the default namespace, determined by `msg.sender`.
     /// @param key The key under which to store the value.
     /// @param value The bytes value to be stored.
@@ -63,52 +47,4 @@ interface IIPAccountStorage {
     /// @param key The key whose value is to be retrieved.
     /// @return The bytes32 value stored under the specified key in the given namespace.
     function getBytes32(bytes32 namespace, bytes32 key) external view returns (bytes32);
-
-    /// @dev Sets a uint256 value under a given key within the default namespace, determined by `msg.sender`.
-    /// @param key The key under which to store the value.
-    /// @param value The uint256 value to be stored.
-    function setUint256(bytes32 key, uint256 value) external;
-
-    /// @dev Retrieves a uint256 value by a given key from the default namespace.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The uint256 value stored under the specified key.
-    function getUint256(bytes32 key) external view returns (uint256);
-
-    /// @dev Retrieves a uint256 value by a given key from a specified namespace.
-    /// @param namespace The namespace from which to retrieve the value.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The uint256 value stored under the specified key in the given namespace.
-    function getUint256(bytes32 namespace, bytes32 key) external view returns (uint256);
-
-    /// @dev Sets an address value under a given key within the default namespace, determined by `msg.sender`.
-    /// @param key The key under which to store the value.
-    /// @param value The address value to be stored.
-    function setAddress(bytes32 key, address value) external;
-
-    /// @dev Retrieves an address value by a given key from the default namespace.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The address value stored under the specified key.
-    function getAddress(bytes32 key) external view returns (address);
-
-    /// @dev Retrieves an address value by a given key from a specified namespace.
-    /// @param namespace The namespace from which to retrieve the value.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The address value stored under the specified key in the given namespace.
-    function getAddress(bytes32 namespace, bytes32 key) external view returns (address);
-
-    /// @dev Sets a boolean value under a given key within the default namespace, determined by `msg.sender`.
-    /// @param key The key under which to store the value.
-    /// @param value The boolean value to be stored.
-    function setBool(bytes32 key, bool value) external;
-
-    /// @dev Retrieves a boolean value by a given key from the default namespace.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The boolean value stored under the specified key.
-    function getBool(bytes32 key) external view returns (bool);
-
-    /// @dev Retrieves a boolean value by a given key from a specified namespace.
-    /// @param namespace The namespace from which to retrieve the value.
-    /// @param key The key whose value is to be retrieved.
-    /// @return The boolean value stored under the specified key in the given namespace.
-    function getBool(bytes32 namespace, bytes32 key) external view returns (bool);
 }

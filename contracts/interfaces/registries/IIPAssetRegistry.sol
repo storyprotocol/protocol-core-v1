@@ -74,13 +74,6 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     /// @param approved Whether or not to approve that operator for registration.
     function setApprovalForAll(address operator, bool approved) external;
 
-    /// @notice Permissionlessly registers an NFT as an IP asset and creating IP Account.
-    /// metadata (e.g. name and tokenUri) is retrieved from the NFT contract.
-    /// @param chainId The chain identifier of where the NFT resides.
-    /// @param tokenContract The address of the NFT.
-    /// @param tokenId The token identifier of the NFT.
-    function register(uint256 chainId, address tokenContract, uint256 tokenId) external returns (address id);
-
     /// @notice Registers an NFT as IP, creating a corresponding IP record.
     /// @param chainId The chain identifier of where the NFT resides.
     /// @param tokenContract The address of the NFT.

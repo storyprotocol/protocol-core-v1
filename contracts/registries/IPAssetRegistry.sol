@@ -2,9 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
@@ -12,7 +10,6 @@ import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { IMetadataProviderMigratable } from "../interfaces/registries/metadata/IMetadataProviderMigratable.sol";
 import { MetadataProviderV1 } from "../registries/metadata/MetadataProviderV1.sol";
 import { Errors } from "../lib/Errors.sol";
-import { IP } from "../lib/IP.sol";
 import { IResolver } from "../interfaces/resolvers/IResolver.sol";
 import { LICENSING_MODULE_KEY } from "../lib/modules/Module.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
@@ -20,7 +17,6 @@ import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModu
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { IRegistrationModule } from "../interfaces/modules/IRegistrationModule.sol";
 import { Governable } from "../governance/Governable.sol";
-import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
 /// @title IP Asset Registry
 /// @notice This contract acts as the source of truth for all IP registered in
@@ -32,9 +28,6 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
 contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
-    using Strings for *;
-    using IPAccountStorageOps for IIPAccount;
-
     /// @notice The canonical module registry used by the protocol.
     IModuleRegistry public immutable MODULE_REGISTRY;
 
@@ -87,50 +80,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         _metadataProvider = IMetadataProviderMigratable(newMetadataProvider);
     }
 
-    /// @notice Permissionlessly Registers an NFT as IP, creating a corresponding IP record.
-    /// @notice Registers an NFT as an IP asset.
-    /// @param chainId The chain identifier of where the NFT resides.
-    /// @param tokenContract The address of the NFT.
-    /// @param tokenId The token identifier of the NFT.
-    function register(uint256 chainId, address tokenContract, uint256 tokenId) external returns (address id) {
-        id = registerIpAccount(chainId, tokenContract, tokenId);
-        IIPAccount ipAccount = IIPAccount(payable(id));
-
-        if (bytes(ipAccount.getString("NAME")).length != 0) {
-            revert Errors.IPAssetRegistry__AlreadyRegistered();
-        }
-
-        string memory name = string.concat(IERC721Metadata(tokenContract).name(), " #", tokenId.toString());
-        string memory uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
-        uint256 registrationDate = block.timestamp;
-        ipAccount.setString("NAME", name);
-        ipAccount.setString("URI", uri);
-        ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
-
-        totalSupply++;
-
-        // TODO: this for compatible with existing resolver and metadata provider design,
-        /// refactor with namespaced metadata later
-        emit IPRegistered(
-            id,
-            chainId,
-            tokenContract,
-            tokenId,
-            address(0),
-            address(_metadataProvider),
-            abi.encode(
-                IP.MetadataV1({
-                    name: name,
-                    hash: keccak256(abi.encodePacked(name, uri, registrationDate)),
-                    registrationDate: uint64(registrationDate),
-                    registrant: msg.sender,
-                    uri: uri
-                })
-            )
-        );
-    }
-
-    /// @notice Registers an NFT as an IP asset.
+    /// @notice Registers an NFT as IP, creating a corresponding IP record.
     /// @param chainId The chain identifier of where the NFT resides.
     /// @param tokenContract The address of the NFT.
     /// @param tokenId The token identifier of the NFT.
@@ -206,7 +156,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @param id The canonical identifier for the IP.
     /// @return isRegistered Whether the IP was registered into the protocol.
     function isRegistered(address id) external view returns (bool) {
-        return _records[id].resolver != address(0) || id.code.length != 0;
+        return _records[id].resolver != address(0);
     }
 
     /// @notice Gets the resolver bound to an IP based on its ID.

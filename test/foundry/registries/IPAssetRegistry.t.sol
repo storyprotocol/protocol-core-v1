@@ -6,17 +6,12 @@ import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol"
 import { IP } from "contracts/lib/IP.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
-import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 /// @title IP Asset Registry Testing Contract
 /// @notice Contract for testing core IP registration.
 contract IPAssetRegistryTest is BaseTest {
-    using IPAccountStorageOps for IIPAccount;
-    using ShortStrings for *;
     // Default IP record attributes.
     string public constant IP_NAME = "IPAsset";
     string public constant IP_DESCRIPTION = "IPs all the way down.";
@@ -66,56 +61,6 @@ contract IPAssetRegistryTest is BaseTest {
         bytes memory metadata = _generateMetadata();
         vm.prank(bob);
         registry.register(block.chainid, tokenAddress, tokenId, resolver, true, metadata);
-    }
-
-    /// @notice Tests registration of IP assets without licenses.
-    function test_IPAssetRegistry_RegisterPermissionless() public {
-        uint256 totalSupply = registry.totalSupply();
-
-        assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-
-        vm.expectEmit(true, true, true, true);
-        emit IIPAssetRegistry.IPRegistered(
-            ipId,
-            block.chainid,
-            tokenAddress,
-            tokenId,
-            address(0),
-            address(registry.metadataProvider()),
-            abi.encode(
-                IP.MetadataV1({
-                    name: "Ape #99",
-                    hash: keccak256(
-                        abi.encodePacked("Ape #99", "https://storyprotocol.xyz/erc721/99", block.timestamp)
-                    ),
-                    registrationDate: uint64(block.timestamp),
-                    registrant: alice,
-                    uri: "https://storyprotocol.xyz/erc721/99"
-                })
-            )
-        );
-        vm.prank(alice);
-        registry.register(block.chainid, tokenAddress, tokenId);
-
-        assertEq(totalSupply + 1, registry.totalSupply());
-        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), "Ape #99");
-        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
-        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
-    }
-
-    /// @notice Tests registration of IP assets without licenses.
-    function test_IPAssetRegistry_revert_RegisterPermissionlessTwice() public {
-        assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-
-        vm.prank(alice);
-        registry.register(block.chainid, tokenAddress, tokenId);
-
-        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
-        vm.prank(alice);
-        registry.register(block.chainid, tokenAddress, tokenId);
     }
 
     /// @notice Tests registration of IP assets without licenses.
@@ -278,9 +223,5 @@ contract IPAssetRegistryTest is BaseTest {
                     uri: IP_EXTERNAL_URL
                 })
             );
-    }
-
-    function _toBytes32(address a) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(a)));
     }
 }

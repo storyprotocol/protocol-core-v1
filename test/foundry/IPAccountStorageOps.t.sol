@@ -5,7 +5,6 @@ import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 
 import { IPAccountStorageOps } from "../../contracts/lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
-import { Errors } from "../../contracts/lib/Errors.sol";
 
 import { MockModule } from "./mocks/module/MockModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";

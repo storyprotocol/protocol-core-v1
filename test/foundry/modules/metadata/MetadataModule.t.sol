@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
-import { Errors } from "../../../../contracts/lib/Errors.sol";
-
 import { MockModule } from "../../mocks/module/MockModule.sol";
 import { MockCoreMetadataViewModule } from "../../mocks/module/MockCoreMetadataViewModule.sol";
 import { MockAllMetadataViewModule } from "../../mocks/module/MockAllMetadataViewModule.sol";
 import { MockMetadataModule } from "../../mocks/module/MockMetadataModule.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-
-
 contract MetadataModuleTest is BaseTest {
-
     MockModule public module;
     MockCoreMetadataViewModule public coreMetadataViewModule;
     MockAllMetadataViewModule public allMetadataViewModule;

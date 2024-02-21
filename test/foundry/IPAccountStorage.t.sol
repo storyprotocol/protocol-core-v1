@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
-import { Errors } from "../../contracts/lib/Errors.sol";
 
 import { MockModule } from "./mocks/module/MockModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";

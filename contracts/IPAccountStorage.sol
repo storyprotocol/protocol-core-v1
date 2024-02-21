@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccountStorage } from "./interfaces/IIPAccountStorage.sol";
-import { IERC165, ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// @title IPAccount Storage
 /// @dev Implements the IIPAccountStorage interface for managing IPAccount's state using a namespaced storage pattern.

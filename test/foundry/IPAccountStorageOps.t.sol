@@ -1,44 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { Test } from "forge-std/Test.sol";
-
-import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
-import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
-import { Governance } from "contracts/governance/Governance.sol";
-
-import { MockAccessController } from "test/foundry/mocks/access/MockAccessController.sol";
-import { MockERC721 } from "test/foundry/mocks/token/MockERC721.sol";
-import { MockModule } from "test/foundry/mocks/module/MockModule.sol";
-import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 
-contract IPAccountStorageOpsTest is Test {
+import { IPAccountStorageOps } from "../../contracts/lib/IPAccountStorageOps.sol";
+import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
+import { Errors } from "../../contracts/lib/Errors.sol";
+
+import { MockModule } from "./mocks/module/MockModule.sol";
+import { BaseTest } from "./utils/BaseTest.t.sol";
+
+contract IPAccountStorageOpsTest is BaseTest {
     using ShortStrings for *;
 
-    IPAccountRegistry public registry;
-    IPAccountImpl public implementation;
-    MockERC721 public nft = new MockERC721("MockERC721");
-    ERC6551Registry public erc6551Registry = new ERC6551Registry();
-    MockAccessController public accessController = new MockAccessController();
-    ModuleRegistry public moduleRegistry;
     MockModule public module;
-    Governance public governance;
     IIPAccount public ipAccount;
 
-    function setUp() public {
-        governance = new Governance(address(this));
-        moduleRegistry = new ModuleRegistry(address(governance));
-        implementation = new IPAccountImpl();
-        registry = new IPAccountRegistry(address(erc6551Registry), address(accessController), address(implementation));
-        module = new MockModule(address(registry), address(moduleRegistry), "MockModule");
+    function setUp() public override {
+        super.setUp();
+        deployConditionally();
+        postDeploymentSetup();
+
+        module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
+
         address owner = vm.addr(1);
         uint256 tokenId = 100;
-        nft.mintId(owner, tokenId);
-        ipAccount = IIPAccount(payable(registry.registerIpAccount(block.chainid, address(nft), tokenId)));
+        mockNFT.mintId(owner, tokenId);
+        ipAccount = IIPAccount(payable(ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId)));
     }
 
     function test_IPAccountStorageOps_setString_ShortString() public {

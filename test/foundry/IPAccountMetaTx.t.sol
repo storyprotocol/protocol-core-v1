@@ -38,7 +38,7 @@ contract IPAccountMetaTxTest is BaseTest {
         module = new MockModule(address(ipAccountRegistry), address(moduleRegistry), "Module1WithPermission");
         accessControlledModule = new MockAccessControlledModule(
             address(accessController),
-            address(registry),
+            address(ipAccountRegistry),
             address(moduleRegistry),
             "AccessControlledModule"
         );
@@ -156,7 +156,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = registry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 

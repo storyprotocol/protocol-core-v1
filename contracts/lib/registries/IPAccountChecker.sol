@@ -5,7 +5,8 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 
 import { IIPAccountRegistry } from "../../interfaces/registries/IIPAccountRegistry.sol";
-import { IIPAccount } from "../..//interfaces/IIPAccount.sol";
+import { IIPAccount } from "../../interfaces/IIPAccount.sol";
+import { IIPAccountStorage } from "../../interfaces/IIPAccountStorage.sol";
 
 /// @title IPAccountChecker
 /// @dev This library provides utility functions to check the registration and validity of IP Accounts.
@@ -39,6 +40,7 @@ library IPAccountChecker {
         if (!ERC165Checker.supportsERC165(ipAccountAddress_)) return false;
         if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IERC6551Account).interfaceId)) return false;
         if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IIPAccount).interfaceId)) return false;
+        if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IIPAccountStorage).interfaceId)) return false;
         (uint chainId, address tokenContract, uint tokenId) = IIPAccount(payable(ipAccountAddress_)).token();
         return ipAccountAddress_ == ipAccountRegistry_.ipAccount(chainId, tokenContract, tokenId);
     }

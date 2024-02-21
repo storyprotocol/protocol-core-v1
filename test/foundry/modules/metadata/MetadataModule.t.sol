@@ -1,82 +1,66 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { Test } from "forge-std/Test.sol";
+import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
+import { Errors } from "../../../../contracts/lib/Errors.sol";
 
-import { IPAccountImpl } from "../../../../contracts/IPAccountImpl.sol";
-import { IPAssetRegistry } from "../../../../contracts/registries/IPAssetRegistry.sol";
-import { ModuleRegistry } from "../../../../contracts/registries/ModuleRegistry.sol";
-import { Governance } from "../../../../contracts/governance/Governance.sol";
-
-import { MockAccessController } from "../../mocks/access/MockAccessController.sol";
-import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { MockModule } from "../../mocks/module/MockModule.sol";
 import { MockCoreMetadataViewModule } from "../../mocks/module/MockCoreMetadataViewModule.sol";
 import { MockAllMetadataViewModule } from "../../mocks/module/MockAllMetadataViewModule.sol";
 import { MockMetadataModule } from "../../mocks/module/MockMetadataModule.sol";
+import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-contract MetadataModuleTest is Test {
-    IPAssetRegistry public registry;
-    IPAccountImpl public implementation;
-    MockERC721 public nft = new MockERC721("MockERC721");
-    ERC6551Registry public erc6551Registry = new ERC6551Registry();
-    MockAccessController public accessController = new MockAccessController();
-    ModuleRegistry public moduleRegistry;
+
+
+contract MetadataModuleTest is BaseTest {
+
     MockModule public module;
-    Governance public governance;
     MockCoreMetadataViewModule public coreMetadataViewModule;
     MockAllMetadataViewModule public allMetadataViewModule;
     MockMetadataModule public metadataModule;
 
-    function setUp() public {
-        governance = new Governance(address(this));
-        moduleRegistry = new ModuleRegistry(address(governance));
-        implementation = new IPAccountImpl();
-        registry = new IPAssetRegistry(
-            address(accessController),
-            address(erc6551Registry),
-            address(implementation),
-            address(moduleRegistry),
-            address(governance)
-        );
-        metadataModule = new MockMetadataModule(address(accessController), address(registry));
-        module = new MockModule(address(registry), address(moduleRegistry), "MockModule");
-        coreMetadataViewModule = new MockCoreMetadataViewModule(address(registry));
-        allMetadataViewModule = new MockAllMetadataViewModule(address(registry), address(metadataModule));
+    function setUp() public override {
+        super.setUp();
+        deployConditionally();
+        postDeploymentSetup();
+
+        metadataModule = new MockMetadataModule(address(accessController), address(ipAssetRegistry));
+        module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
+        coreMetadataViewModule = new MockCoreMetadataViewModule(address(ipAssetRegistry));
+        allMetadataViewModule = new MockAllMetadataViewModule(address(ipAssetRegistry), address(metadataModule));
     }
 
     function test_Metadata_CoreMetadata() public {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
-        nft.mintId(owner, tokenId);
+        mockNFT.mintId(owner, tokenId);
 
-        address ipAccount = registry.register(block.chainid, address(nft), tokenId);
+        address ipAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
-        assertEq(coreMetadataViewModule.getName(ipAccount), "MockERC721 #100");
+        assertEq(coreMetadataViewModule.getName(ipAccount), "Ape #100");
         assertEq(coreMetadataViewModule.registrationDate(ipAccount), block.timestamp);
         assertEq(coreMetadataViewModule.owner(ipAccount), owner);
-        assertEq(coreMetadataViewModule.uri(ipAccount), nft.tokenURI(100));
+        assertEq(coreMetadataViewModule.uri(ipAccount), mockNFT.tokenURI(100));
     }
 
     function test_Metadata_OptionalMetadata() public {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
-        nft.mintId(owner, tokenId);
+        mockNFT.mintId(owner, tokenId);
 
-        address ipAccount = registry.register(block.chainid, address(nft), tokenId);
+        address ipAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         vm.prank(owner);
         metadataModule.setIpDescription(ipAccount, "This is a mock ERC721 token");
         vm.prank(owner);
         metadataModule.setIpType(ipAccount, "STORY");
 
-        assertEq(coreMetadataViewModule.getName(ipAccount), "MockERC721 #100");
+        assertEq(coreMetadataViewModule.getName(ipAccount), "Ape #100");
         assertEq(coreMetadataViewModule.registrationDate(ipAccount), block.timestamp);
         assertEq(coreMetadataViewModule.owner(ipAccount), owner);
-        assertEq(coreMetadataViewModule.uri(ipAccount), nft.tokenURI(100));
+        assertEq(coreMetadataViewModule.uri(ipAccount), mockNFT.tokenURI(100));
         assertEq(allMetadataViewModule.description(ipAccount), "This is a mock ERC721 token");
         assertEq(allMetadataViewModule.ipType(ipAccount), "STORY");
     }
@@ -85,9 +69,9 @@ contract MetadataModuleTest is Test {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
-        nft.mintId(owner, tokenId);
+        mockNFT.mintId(owner, tokenId);
 
-        address ipAccount = registry.register(block.chainid, address(nft), tokenId);
+        address ipAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         vm.prank(owner);
         metadataModule.setIpDescription(ipAccount, "This is a mock ERC721 token");
@@ -107,19 +91,19 @@ contract MetadataModuleTest is Test {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
-        nft.mintId(owner, tokenId);
+        mockNFT.mintId(owner, tokenId);
 
-        address ipAccount = registry.register(block.chainid, address(nft), tokenId);
+        address ipAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         vm.prank(owner);
         metadataModule.setIpDescription(ipAccount, "This is a mock ERC721 token");
         vm.prank(owner);
         metadataModule.setIpType(ipAccount, "STORY");
 
-        assertEq(allMetadataViewModule.getName(ipAccount), "MockERC721 #100");
+        assertEq(allMetadataViewModule.getName(ipAccount), "Ape #100");
         assertEq(allMetadataViewModule.registrationDate(ipAccount), block.timestamp);
         assertEq(allMetadataViewModule.owner(ipAccount), owner);
-        assertEq(allMetadataViewModule.uri(ipAccount), nft.tokenURI(100));
+        assertEq(allMetadataViewModule.uri(ipAccount), mockNFT.tokenURI(100));
         assertEq(allMetadataViewModule.description(ipAccount), "This is a mock ERC721 token");
         assertEq(allMetadataViewModule.ipType(ipAccount), "STORY");
     }
@@ -128,9 +112,9 @@ contract MetadataModuleTest is Test {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
-        nft.mintId(owner, tokenId);
+        mockNFT.mintId(owner, tokenId);
 
-        address ipAccount = registry.register(block.chainid, address(nft), tokenId);
+        address ipAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         assertTrue(coreMetadataViewModule.isSupported(ipAccount));
         assertFalse(allMetadataViewModule.isSupported(ipAccount));

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -17,7 +17,7 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
-contract IPAccountImpl is IERC165, IPAccountStorage, IIPAccount {
+contract IPAccountImpl is IPAccountStorage, IIPAccount {
     address public immutable accessController;
 
     /// @notice Returns the IPAccount's internal nonce for transaction ordering.
@@ -39,12 +39,12 @@ contract IPAccountImpl is IERC165, IPAccountStorage, IIPAccount {
     /// @notice Checks if the contract supports a specific interface
     /// @param interfaceId The interface identifier, as specified in ERC-165
     /// @return bool is true if the contract supports the interface, false otherwise
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(IPAccountStorage, IERC165) returns (bool) {
         return (interfaceId == type(IIPAccount).interfaceId ||
             interfaceId == type(IERC6551Account).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
-            interfaceId == type(IERC165).interfaceId);
+            super.supportsInterface(interfaceId));
     }
 
     /// @notice Returns the identifier of the non-fungible token which owns the account

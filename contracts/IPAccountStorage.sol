@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccountStorage } from "./interfaces/IIPAccountStorage.sol";
+import { IERC165, ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// @title IPAccount Storage
 /// @dev Implements the IIPAccountStorage interface for managing IPAccount's state using a namespaced storage pattern.
@@ -9,7 +10,7 @@ import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortSt
 /// This contract allows Modules to store and retrieve data in a structured and conflict-free manner
 /// by utilizing namespaces, where the default namespace is determined by the
 /// `msg.sender` (the caller Module's address).
-contract IPAccountStorage is IIPAccountStorage {
+contract IPAccountStorage is ERC165, IIPAccountStorage {
     using ShortStrings for *;
 
     mapping(bytes32 => mapping(bytes32 => string)) public stringData;
@@ -95,6 +96,10 @@ contract IPAccountStorage is IIPAccountStorage {
     /// @inheritdoc IIPAccountStorage
     function setBool(bytes32 key, bool value) external {
         boolData[_toBytes32(msg.sender)][key] = value;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return interfaceId == type(IIPAccountStorage).interfaceId || super.supportsInterface(interfaceId);
     }
 
     function _toBytes32(string memory s) internal pure returns (bytes32) {

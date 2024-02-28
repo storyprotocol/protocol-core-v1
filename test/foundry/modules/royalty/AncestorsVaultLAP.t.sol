@@ -11,7 +11,7 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestAncestorsVaultLAP is BaseTest {
-    event Claimed(address ipId, address claimerIpId, bool withdrawETH, ERC20[] tokens);
+    event Claimed(address ipId, address claimerIpId, ERC20[] tokens);
 
     struct InitParams {
         address[] targetAncestors;
@@ -395,46 +395,31 @@ contract TestAncestorsVaultLAP is BaseTest {
     }
 
     function test_AncestorsVaultLAP_claim_AlreadyClaimed() public {
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
 
         vm.expectRevert(Errors.AncestorsVaultLAP__AlreadyClaimed.selector);
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
     }
 
     function test_AncestorsVaultLAP_claim_InvalidClaimer() public {
         vm.expectRevert(Errors.AncestorsVaultLAP__InvalidClaimer.selector);
-        ancestorsVault1.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault1.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
     }
 
     function test_AncestorsVaultLAP_claim_InvalidAncestorsHash() public {
         address[] memory invalidAncestors = new address[](14);
         vm.expectRevert(Errors.AncestorsVaultLAP__InvalidAncestorsHash.selector);
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, invalidAncestors, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, invalidAncestors, MAX_ANCESTORS_ROYALTY_, tokens);
 
         uint32[] memory invalidAncestorsRoyalty = new uint32[](14);
         vm.expectRevert(Errors.AncestorsVaultLAP__InvalidAncestorsHash.selector);
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, invalidAncestorsRoyalty, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, invalidAncestorsRoyalty, tokens);
     }
 
     function test_AncestorsVaultLAP_claim_ClaimerNotAnAncestor() public {
         address notAnAncestor = address(50);
         vm.expectRevert(Errors.AncestorsVaultLAP__ClaimerNotAnAncestor.selector);
-        ancestorsVault100.claim(ipIdToClaim, notAnAncestor, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
-    }
-
-    function test_AncestorsVaultLAP_claim_ETHBalanceNotZero() public {
-        vm.deal(address(splitClone100), 1 ether);
-
-        address[] memory ancestors = new address[](2);
-        ancestors[0] = address(100);
-        ancestors[1] = address(ancestorsVault100);
-
-        ILiquidSplitClone(splitClone100).distributeFunds(address(0), ancestors, address(0));
-
-        assertGt(ILiquidSplitMain(royaltyPolicyLAP.LIQUID_SPLIT_MAIN()).getETHBalance(address(ancestorsVault100)), 0);
-
-        vm.expectRevert(Errors.AncestorsVaultLAP__ETHBalanceNotZero.selector);
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, notAnAncestor, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
     }
 
     function test_AncestorsVaultLAP_claim_ERC20BalanceNotZero() public {
@@ -454,31 +439,27 @@ contract TestAncestorsVaultLAP is BaseTest {
         );
 
         vm.expectRevert(Errors.AncestorsVaultLAP__ERC20BalanceNotZero.selector);
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
     }
 
     function test_AncestorsVaultLAP_claim() public {
         // address 7 as the root will claim from address 100
-        uint256 rnftBalBefore = ILiquidSplitClone(splitClone100).balanceOf(splitClone7, 0);
+        uint256 rnftBalBefore = ILiquidSplitClone(splitClone100).balanceOf(address(7), 0);
         uint256 ancestorsVaultUSDCBalBefore = USDC.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultUSDCBalBefore = USDC.balanceOf(splitClone7);
+        uint256 claimerVaultUSDCBalBefore = USDC.balanceOf(address(7));
         uint256 ancestorsVaultLinkBalBefore = LINK.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultLinkBalBefore = LINK.balanceOf(splitClone7);
-        uint256 ancestorsVaultETHBalBefore = address(ancestorsVault100).balance;
-        uint256 claimerETHBalBefore = address(splitClone7).balance;
+        uint256 claimerVaultLinkBalBefore = LINK.balanceOf(address(7));
 
         vm.expectEmit(true, true, true, true, address(ancestorsVault100));
-        emit Claimed(ipIdToClaim, claimerIpId7, true, tokens);
+        emit Claimed(ipIdToClaim, claimerIpId7, tokens);
 
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
 
-        uint256 rnftBalAfter = ILiquidSplitClone(splitClone100).balanceOf(splitClone7, 0);
+        uint256 rnftBalAfter = ILiquidSplitClone(splitClone100).balanceOf(address(7), 0);
         uint256 ancestorsVaultUSDCBalAfter = USDC.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultUSDCBalAfter = USDC.balanceOf(splitClone7);
+        uint256 claimerVaultUSDCBalAfter = USDC.balanceOf(address(7));
         uint256 ancestorsVaultLinkBalAfter = LINK.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultLinkBalAfter = LINK.balanceOf(splitClone7);
-        uint256 ancestorsVaultETHBalAfter = address(ancestorsVault100).balance;
-        uint256 claimerETHBalAfter = address(splitClone7).balance;
+        uint256 claimerVaultLinkBalAfter = LINK.balanceOf(address(7));
 
         assertEq(ancestorsVault100.isClaimed(ipIdToClaim, claimerIpId7), true);
         assertEq(rnftBalAfter - rnftBalBefore, expectedRnft7);
@@ -498,37 +479,28 @@ contract TestAncestorsVaultLAP is BaseTest {
             claimerVaultLinkBalAfter - claimerVaultLinkBalBefore,
             (linkAccrued * expectedRnft7) / (royaltyStack100)
         );
-        assertEq(
-            ancestorsVaultETHBalBefore - ancestorsVaultETHBalAfter,
-            (ethAccrued * expectedRnft7) / (royaltyStack100)
-        );
-        assertEq(claimerETHBalAfter - claimerETHBalBefore, (ethAccrued * expectedRnft7) / (royaltyStack100));
     }
 
     function test_AncestorsVaultLAP_claim_MultipleClaims() public {
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId10, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId10, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
 
         // address 7 as the root will claim from address 100
-        uint256 rnftBalBefore = ILiquidSplitClone(splitClone100).balanceOf(splitClone7, 0);
+        uint256 rnftBalBefore = ILiquidSplitClone(splitClone100).balanceOf(address(7), 0);
         uint256 ancestorsVaultUSDCBalBefore = USDC.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultUSDCBalBefore = USDC.balanceOf(splitClone7);
+        uint256 claimerVaultUSDCBalBefore = USDC.balanceOf(address(7));
         uint256 ancestorsVaultLinkBalBefore = LINK.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultLinkBalBefore = LINK.balanceOf(splitClone7);
-        uint256 ancestorsVaultETHBalBefore = address(ancestorsVault100).balance;
-        uint256 claimerETHBalBefore = address(splitClone7).balance;
+        uint256 claimerVaultLinkBalBefore = LINK.balanceOf(address(7));
 
         vm.expectEmit(true, true, true, true, address(ancestorsVault100));
-        emit Claimed(ipIdToClaim, claimerIpId7, true, tokens);
+        emit Claimed(ipIdToClaim, claimerIpId7, tokens);
 
-        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, true, tokens);
+        ancestorsVault100.claim(ipIdToClaim, claimerIpId7, MAX_ANCESTORS_, MAX_ANCESTORS_ROYALTY_, tokens);
 
-        uint256 rnftBalAfter = ILiquidSplitClone(splitClone100).balanceOf(splitClone7, 0);
+        uint256 rnftBalAfter = ILiquidSplitClone(splitClone100).balanceOf(address(7), 0);
         uint256 ancestorsVaultUSDCBalAfter = USDC.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultUSDCBalAfter = USDC.balanceOf(splitClone7);
+        uint256 claimerVaultUSDCBalAfter = USDC.balanceOf(address(7));
         uint256 ancestorsVaultLinkBalAfter = LINK.balanceOf(address(ancestorsVault100));
-        uint256 claimerVaultLinkBalAfter = LINK.balanceOf(splitClone7);
-        uint256 ancestorsVaultETHBalAfter = address(ancestorsVault100).balance;
-        uint256 claimerETHBalAfter = address(splitClone7).balance;
+        uint256 claimerVaultLinkBalAfter = LINK.balanceOf(address(7));
 
         assertEq(ancestorsVault100.isClaimed(ipIdToClaim, claimerIpId7), true);
         assertEq(rnftBalAfter - rnftBalBefore, expectedRnft7);
@@ -548,10 +520,5 @@ contract TestAncestorsVaultLAP is BaseTest {
             claimerVaultLinkBalAfter - claimerVaultLinkBalBefore,
             (linkAccrued * expectedRnft7) / (royaltyStack100)
         );
-        assertEq(
-            ancestorsVaultETHBalBefore - ancestorsVaultETHBalAfter,
-            (ethAccrued * expectedRnft7) / (royaltyStack100)
-        );
-        assertEq(claimerETHBalAfter - claimerETHBalBefore, (ethAccrued * expectedRnft7) / (royaltyStack100));
     }
 }

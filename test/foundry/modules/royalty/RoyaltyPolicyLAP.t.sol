@@ -610,7 +610,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         uint256 splitMainUSDCBalBefore = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
         uint256 address2USDCBalBefore = USDC.balanceOf(address(2));
 
-        royaltyPolicyLAP.claimFromIpPool(address(2), 0, tokens);
+        royaltyPolicyLAP.claimFromIpPool(address(2), tokens);
 
         uint256 splitMainUSDCBalAfter = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
         uint256 address2USDCBalAfter = USDC.balanceOf(address(2));
@@ -624,12 +624,20 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         uint256 royaltyAmountUSDC = 100 * 10 ** 6;
         USDC.mint(address(splitClone7), royaltyAmountUSDC);
-        uint256 royaltyAmountETH = 1 ether;
-        vm.deal(address(splitClone7), royaltyAmountETH);
 
         vm.startPrank(address(7));
         ERC1155(address(splitClone7)).setApprovalForAll(address(royaltyPolicyLAP), true);
 
-        royaltyPolicyLAP.claimFromIpPoolAsTotalRnftOwner(address(7), 1, address(USDC));
+        uint256 usdcClaimerBalBefore = USDC.balanceOf(address(7));
+        uint256 rnftClaimerBalBefore = ERC1155(address(splitClone7)).balanceOf(address(7), 0);
+
+        royaltyPolicyLAP.claimFromIpPoolAsTotalRnftOwner(address(7), address(USDC));
+
+        uint256 usdcClaimerBalAfter = USDC.balanceOf(address(7));
+        uint256 rnftClaimerBalAfter = ERC1155(address(splitClone7)).balanceOf(address(7), 0);
+
+        assertApproxEqRel(usdcClaimerBalAfter - usdcClaimerBalBefore, royaltyAmountUSDC, 0.0001e18);
+        assertEq(rnftClaimerBalAfter, 1000);
+        assertEq(rnftClaimerBalBefore, 1000);
     }
 }

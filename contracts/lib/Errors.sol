@@ -242,7 +242,6 @@ library Errors {
     error AncestorsVaultLAP__InvalidAncestorsHash();
     error AncestorsVaultLAP__InvalidClaimer();
     error AncestorsVaultLAP__ClaimerNotAnAncestor();
-    error AncestorsVaultLAP__ETHBalanceNotZero();
     error AncestorsVaultLAP__ERC20BalanceNotZero();
     error AncestorsVaultLAP__TransferFailed();
 

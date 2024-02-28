@@ -250,18 +250,16 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
     /// @dev If there are no funds available in split main contract but there are funds in the split clone contract
     /// then a distributeIpPoolFunds() call should precede this call
     /// @param account The account to claim for
-    /// @param withdrawETH The amount of ETH to withdraw
     /// @param tokens The tokens to withdraw
-    function claimFromIpPool(address account, uint256 withdrawETH, ERC20[] calldata tokens) external {
-        ILiquidSplitMain(LIQUID_SPLIT_MAIN).withdraw(account, withdrawETH, tokens);
+    function claimFromIpPool(address account, ERC20[] calldata tokens) external {
+        ILiquidSplitMain(LIQUID_SPLIT_MAIN).withdraw(account, 0, tokens);
     }
 
     /// @notice Claims the available royalties for a given address that holds all the royalty nfts of an ipId
     /// @dev This call will revert if the caller does not hold all the royalty nfts of the ipId
     /// @param ipId The ipId whose received funds will be distributed
-    /// @param withdrawETH The amount of ETH to withdraw
     /// @param token The token to withdraw
-    function claimFromIpPoolAsTotalRnftOwner(address ipId, uint256 withdrawETH, address token) external nonReentrant {
+    function claimFromIpPoolAsTotalRnftOwner(address ipId, address token) external nonReentrant {
         ILiquidSplitClone splitClone = ILiquidSplitClone(royaltyData[ipId].splitClone);
         ILiquidSplitMain splitMain = ILiquidSplitMain(LIQUID_SPLIT_MAIN);
 
@@ -273,25 +271,17 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
         accounts[0] = msg.sender;
         accounts[1] = address(this);
 
-        ERC20[] memory tokens = withdrawETH != 0 ? new ERC20[](0) : new ERC20[](1);
+        ERC20[] memory tokens = new ERC20[](1);
 
-        if (withdrawETH != 0) {
-            splitClone.distributeFunds(address(0), accounts, address(0));
-        } else {
-            splitClone.distributeFunds(token, accounts, address(0));
-            tokens[0] = ERC20(token);
-        }
+        splitClone.distributeFunds(token, accounts, address(0));
+        tokens[0] = ERC20(token);
 
-        splitMain.withdraw(msg.sender, withdrawETH, tokens);
-        splitMain.withdraw(address(this), withdrawETH, tokens);
+        splitMain.withdraw(msg.sender, 0, tokens);
+        splitMain.withdraw(address(this), 0, tokens);
 
         splitClone.safeTransferFrom(address(this), msg.sender, 0, 1, "0x0");
 
-        if (withdrawETH != 0) {
-            _safeTransferETH(msg.sender, address(this).balance);
-        } else {
-            IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
-        }
+        IERC20(token).safeTransfer(msg.sender, IERC20(token).balanceOf(address(this)));
     }
 
     /// @notice Claims all available royalty nfts and accrued royalties for an ancestor of a given ipId
@@ -299,14 +289,12 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
     /// @param claimerIpId The claimer ipId is the ancestor address that wants to claim
     /// @param ancestors The ancestors for the selected ipId
     /// @param ancestorsRoyalties The royalties of the ancestors for the selected ipId
-    /// @param withdrawETH Indicates if the claimer wants to withdraw ETH
     /// @param tokens The ERC20 tokens to withdraw
     function claimFromAncestorsVault(
         address ipId,
         address claimerIpId,
         address[] calldata ancestors,
         uint32[] calldata ancestorsRoyalties,
-        bool withdrawETH,
         ERC20[] calldata tokens
     ) external {
         IAncestorsVaultLAP(royaltyData[ipId].ancestorsVault).claim(
@@ -314,7 +302,6 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
             claimerIpId,
             ancestors,
             ancestorsRoyalties,
-            withdrawETH,
             tokens
         );
     }
@@ -452,19 +439,5 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
         );
 
         return splitClone;
-    }
-
-    /// @dev Allows to transfers ETH
-    /// @param to The address to transfer to
-    /// @param amount The amount to transfer
-    function _safeTransferETH(address to, uint256 amount) internal {
-        bool callStatus;
-
-        assembly {
-            // Transfer the ETH and store if it succeeded or not.
-            callStatus := call(gas(), to, amount, 0, 0, 0, 0)
-        }
-
-        if (!callStatus) revert Errors.RoyaltyPolicyLAP__TransferFailed();
     }
 }

@@ -721,8 +721,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             // 0xSplitMain that acts as a ledger for revenue distribution.
             // vm.expectEmit(LIQUID_SPLIT_MAIN);
             // TODO: check Withdrawal(699999999999999998) (Royalty stack is 300, or 30% [absolute] sent to ancestors)
-            royaltyPolicyLAP.claimFromIpPool({ account: ipAcct[5], withdrawETH: 0, tokens: tokens });
-            royaltyPolicyLAP.claimFromIpPool({ account: ancestorVault_ipAcct5, withdrawETH: 0, tokens: tokens });
+            royaltyPolicyLAP.claimFromIpPool({ account: ipAcct[5], tokens: tokens });
+            royaltyPolicyLAP.claimFromIpPool({ account: ancestorVault_ipAcct5, tokens: tokens });
 
             // Bob (owner of IPAccount1) calls the claim her portion of rNFTs and tokens. He can only call
             // `claimFromAncestorsVault` once. Afterwards, she will automatically receive money on revenue distribution.
@@ -740,7 +740,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 claimerIpId: ipAcct[1],
                 ancestors: ancestors,
                 ancestorsRoyalties: ancestorsRoyalties,
-                withdrawETH: false,
                 tokens: tokens
             });
         }

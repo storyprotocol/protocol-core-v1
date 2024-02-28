@@ -37,14 +37,12 @@ contract AncestorsVaultLAP is IAncestorsVaultLAP, ERC1155Holder, ReentrancyGuard
     /// @param claimerIpId The claimer ipId is the ancestor address that wants to claim
     /// @param ancestors The ancestors for the selected ipId
     /// @param ancestorsRoyalties The royalties of the ancestors for the selected ipId
-    /// @param withdrawETH Indicates if the claimer wants to withdraw ETH
     /// @param tokens The ERC20 tokens to withdraw
     function claim(
         address ipId,
         address claimerIpId,
         address[] calldata ancestors,
         uint32[] calldata ancestorsRoyalties,
-        bool withdrawETH,
         ERC20[] calldata tokens
     ) external nonReentrant {
         (, address splitClone, address ancestorsVault, , bytes32 ancestorsHash) = ROYALTY_POLICY_LAP.royaltyData(ipId);
@@ -54,12 +52,12 @@ contract AncestorsVaultLAP is IAncestorsVaultLAP, ERC1155Holder, ReentrancyGuard
         if (keccak256(abi.encodePacked(ancestors, ancestorsRoyalties)) != ancestorsHash)
             revert Errors.AncestorsVaultLAP__InvalidAncestorsHash();
 
-        // transfer the rnfts to the claimer accrued royalties to the claimer split clone
-        _transferRnftsAndAccruedTokens(claimerIpId, splitClone, ancestors, ancestorsRoyalties, withdrawETH, tokens);
+        // transfer the rnfts to the claimer accrued royalties to the claimer IpId address
+        _transferRnftsAndAccruedTokens(claimerIpId, splitClone, ancestors, ancestorsRoyalties, tokens);
 
         isClaimed[ipId][claimerIpId] = true;
 
-        emit Claimed(ipId, claimerIpId, withdrawETH, tokens);
+        emit Claimed(ipId, claimerIpId, tokens);
     }
 
     /// @dev Transfers the Royalty NFTs and accrued tokens to the claimer
@@ -67,14 +65,12 @@ contract AncestorsVaultLAP is IAncestorsVaultLAP, ERC1155Holder, ReentrancyGuard
     /// @param splitClone The split clone address
     /// @param ancestors The ancestors of the IP
     /// @param ancestorsRoyalties The royalties of each of the ancestors
-    /// @param withdrawETH Indicates if the claimer wants to withdraw ETH
     /// @param tokens The ERC20 tokens to withdraw
     function _transferRnftsAndAccruedTokens(
         address claimerIpId,
         address splitClone,
         address[] calldata ancestors,
         uint32[] calldata ancestorsRoyalties,
-        bool withdrawETH,
         ERC20[] calldata tokens
     ) internal {
         (uint32 index, bool isIn) = ArrayUtils.indexOf(ancestors, claimerIpId);
@@ -85,38 +81,25 @@ contract AncestorsVaultLAP is IAncestorsVaultLAP, ERC1155Holder, ReentrancyGuard
         // and each ancestor can claim their share of the rnfts only once
         ILiquidSplitClone rnft = ILiquidSplitClone(splitClone);
         uint256 totalUnclaimedRnfts = rnft.balanceOf(address(this), 0);
-        (, address claimerSplitClone, , , ) = ROYALTY_POLICY_LAP.royaltyData(claimerIpId);
         uint32 rnftAmountToTransfer = ancestorsRoyalties[index];
-        rnft.safeTransferFrom(address(this), claimerSplitClone, 0, rnftAmountToTransfer, "");
+        rnft.safeTransferFrom(address(this), claimerIpId, 0, rnftAmountToTransfer, "");
 
-        // transfer the accrued tokens to the claimer split clone
-        _claimAccruedTokens(rnftAmountToTransfer, totalUnclaimedRnfts, claimerSplitClone, withdrawETH, tokens);
+        // transfer the accrued tokens to the claimer IpId address
+        _claimAccruedTokens(rnftAmountToTransfer, totalUnclaimedRnfts, claimerIpId, tokens);
     }
 
     /// @dev Claims the accrued tokens (if any)
     /// @param rnftClaimAmount The amount of rnfts to claim
     /// @param totalUnclaimedRnfts The total unclaimed rnfts
-    /// @param claimerSplitClone The claimer's split clone
-    /// @param withdrawETH Indicates if the claimer wants to withdraw ETH
+    /// @param claimerIpId The claimer ipId
     /// @param tokens The ERC20 tokens to withdraw
     function _claimAccruedTokens(
         uint256 rnftClaimAmount,
         uint256 totalUnclaimedRnfts,
-        address claimerSplitClone,
-        bool withdrawETH,
+        address claimerIpId,
         ERC20[] calldata tokens
     ) internal {
         ILiquidSplitMain splitMain = ILiquidSplitMain(ROYALTY_POLICY_LAP.LIQUID_SPLIT_MAIN());
-
-        if (withdrawETH) {
-            if (splitMain.getETHBalance(address(this)) != 0) revert Errors.AncestorsVaultLAP__ETHBalanceNotZero();
-
-            uint256 ethBalance = address(this).balance;
-            // when totalUnclaimedRnfts is 0, claim() call will revert as expected behaviour so no need to check for it
-            uint256 ethClaimAmount = (ethBalance * rnftClaimAmount) / totalUnclaimedRnfts;
-
-            _safeTransferETH(claimerSplitClone, ethClaimAmount);
-        }
 
         for (uint256 i = 0; i < tokens.length; ++i) {
             // When withdrawing ERC20, 0xSplits sets the value to 1 to have warm storage access.
@@ -129,21 +112,7 @@ contract AncestorsVaultLAP is IAncestorsVaultLAP, ERC1155Holder, ReentrancyGuard
             // when totalUnclaimedRnfts is 0, claim() call will revert as expected behaviour so no need to check for it
             uint256 tokenClaimAmount = (tokenBalance * rnftClaimAmount) / totalUnclaimedRnfts;
 
-            IToken.safeTransfer(claimerSplitClone, tokenClaimAmount);
+            IToken.safeTransfer(claimerIpId, tokenClaimAmount);
         }
-    }
-
-    /// @dev Allows to transfers ETH
-    /// @param to The address to transfer to
-    /// @param amount The amount to transfer
-    function _safeTransferETH(address to, uint256 amount) internal {
-        bool callStatus;
-
-        assembly {
-            // Transfer the ETH and store if it succeeded or not.
-            callStatus := call(gas(), to, amount, 0, 0, 0, 0)
-        }
-
-        if (!callStatus) revert Errors.AncestorsVaultLAP__TransferFailed();
     }
 }

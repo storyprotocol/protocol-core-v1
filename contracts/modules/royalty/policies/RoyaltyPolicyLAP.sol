@@ -197,6 +197,9 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
         // deploy split clone
         address splitClone = _deploySplitClone(ipId, ancestorsVault, royaltyStack);
 
+        // ancestorsVault is adjusted as address(this) was just used for the split clone deployment
+        ancestorsVault = ancestorsVault == address(this) ? address(0) : ancestorsVault;
+
         royaltyData[ipId] = LAPRoyaltyData({
             // whether calling via minting license or linking to parents the ipId becomes unlinkable
             isUnlinkableToParents: true,

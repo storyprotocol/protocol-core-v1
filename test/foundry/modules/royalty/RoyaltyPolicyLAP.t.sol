@@ -502,7 +502,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(royaltyStack, 0);
         assertEq(ancestorsHash, keccak256(abi.encodePacked(targetAncestors, targetRoyaltyAmount)));
         assertFalse(splitClone == address(0));
-        assertEq(ancestorsVault, address(royaltyPolicyLAP));
+        assertEq(ancestorsVault, address(0));
     }
 
     function test_RoyaltyPolicyLAP_onLinkToParents_revert_NotRoyaltyModule() public {

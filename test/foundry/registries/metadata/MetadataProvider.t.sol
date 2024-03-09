@@ -84,12 +84,7 @@ contract MetadataProviderTest is BaseTest {
     function setUp() public virtual override {
         super.setUp();
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: true,
-                disputeModule: false,
-                royaltyModule: false,
-                licensingModule: false
-            })
+            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: false })
         );
         buildDeployMiscCondition(
             DeployMiscCondition({ ipAssetRenderer: false, ipMetadataProvider: false, ipResolver: true })

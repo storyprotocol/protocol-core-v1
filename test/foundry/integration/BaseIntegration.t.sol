@@ -8,7 +8,6 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
-import { IRegistrationModule } from "contracts/interfaces/modules/IRegistrationModule.sol";
 import { IIPAccountRegistry } from "contracts/interfaces/registries/IIPAccountRegistry.sol";
 import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
@@ -25,12 +24,7 @@ contract BaseIntegration is BaseTest {
         buildDeployAccessCondition(DeployAccessCondition({ governance: true, accessController: true }));
         buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: true }));
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: true,
-                disputeModule: true,
-                royaltyModule: true,
-                licensingModule: true
-            })
+            DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: true })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
         buildDeployMiscCondition(
@@ -45,13 +39,13 @@ contract BaseIntegration is BaseTest {
 
     function approveRegistration() internal {
         vm.prank(u.alice);
-        ipAssetRegistry.setApprovalForAll(address(registrationModule), true);
+        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
         vm.prank(u.bob);
-        ipAssetRegistry.setApprovalForAll(address(registrationModule), true);
+        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
         vm.prank(u.carl);
-        ipAssetRegistry.setApprovalForAll(address(registrationModule), true);
+        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
         vm.prank(u.dan);
-        ipAssetRegistry.setApprovalForAll(address(registrationModule), true);
+        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -79,7 +73,7 @@ contract BaseIntegration is BaseTest {
         });
         bytes memory metadata = abi.encode(metadataV1);
 
-        // expect all events below when calling `registrationModule.registerRootIp`
+        // expect all events below when calling `ipAssetRegistry.register`
 
         vm.expectEmit();
         emit IERC6551Registry.ERC6551AccountCreated({
@@ -124,12 +118,9 @@ contract BaseIntegration is BaseTest {
             metadata: metadata
         });
 
-        vm.expectEmit();
-        emit IRegistrationModule.RootIPRegistered({ caller: caller, ipId: expectedAddr, policyId: 0 });
-
         // policyId = 0 means no policy attached directly on creation
         vm.startPrank(caller);
-        return registrationModule.registerRootIp(0, nft, tokenId, metadataV1.name, metadataV1.hash, metadataV1.uri);
+        return ipAssetRegistry.register(block.chainid, nft, tokenId, address(ipResolver), true, metadata);
     }
 
     function registerIpAccount(MockERC721 nft, uint256 tokenId, address caller) internal returns (address) {
@@ -194,40 +185,14 @@ contract BaseIntegration is BaseTest {
             metadata: abi.encode(metadata)
         });
 
-        vm.expectEmit();
-        emit IIPAssetRegistry.IPRegistered({
-            ipId: expectedAddr,
-            chainId: block.chainid,
-            tokenContract: nft,
-            tokenId: tokenId,
-            resolver: address(ipResolver), // default resolver for new IP registrations
-            provider: ipAssetRegistry.metadataProvider(), // default metadata provider for new IP registrations
-            metadata: abi.encode(metadata)
-        });
-
-        // Note that below events are emitted in function that's called by the registration module.
-        // TODO: re-enable these events
-        // for (uint256 i = 0; i < licenseIds.length; i++) {
-        //     vm.expectEmit();
-        //     emit ILicenseRegistry.PolicyAddedToIpId({
-        //         caller: address(registrationModule),
-        //         ipId: expectedAddr,
-        //         policyId: policyIds[i],
-        //         index: i,
-        //         isInherited: true
-        //     });
-        // }
+        _expectPolicyAddedToIpId(expectedAddr, licenseIds, policyIds);
 
         vm.expectEmit();
         emit ILicensingModule.IpIdLinkedToParents({
-            caller: address(registrationModule),
+            caller: address(ipAssetRegistry),
             ipId: expectedAddr,
             parentIpIds: parentIpIds
         });
-
-        // TODO: check event emit of RoyaltyPolicySet
-        // vm.expectEmit();
-        // emit RoyaltyPolicySet();
 
         if (licenseIds.length == 1) {
             vm.expectEmit();
@@ -255,17 +220,26 @@ contract BaseIntegration is BaseTest {
         }
 
         vm.expectEmit();
-        emit IRegistrationModule.DerivativeIPRegistered({ caller: caller, ipId: expectedAddr, licenseIds: licenseIds });
+        emit IIPAssetRegistry.IPRegistered({
+            ipId: expectedAddr,
+            chainId: block.chainid,
+            tokenContract: nft,
+            tokenId: tokenId,
+            resolver: address(ipResolver), // default resolver for new IP registrations
+            provider: ipAssetRegistry.metadataProvider(), // default metadata provider for new IP registrations
+            metadata: abi.encode(metadata)
+        });
 
         vm.startPrank(caller);
-        registrationModule.registerDerivativeIp(
+        ipAssetRegistry.register(
             licenseIds,
+            royaltyContext,
+            block.chainid,
             nft,
             tokenId,
-            metadata.name,
-            metadata.hash,
-            metadata.uri,
-            royaltyContext
+            address(ipResolver),
+            true,
+            abi.encode(metadata)
         );
         return expectedAddr;
     }
@@ -355,5 +329,31 @@ contract BaseIntegration is BaseTest {
         uint256[] memory licenseIds = new uint256[](1);
         licenseIds[0] = licenseId;
         linkIpToParents(licenseIds, ipId, caller, royaltyContext);
+    }
+
+    function _expectPolicyAddedToIpId(address ipId, uint256[] memory licenseIds, uint256[] memory policyIds) internal {
+        uint256 policyIdIndexTracker = 0; // start from 0 since this is a new IP (derivative)
+        for (uint256 i = 0; i < licenseIds.length; i++) {
+            bool isNewlyAddedPolicy = true;
+            for (uint256 j = 0; j < licenseIds.length; j++) {
+                if (j == i) continue;
+                if (policyIds[j] == policyIds[i]) {
+                    isNewlyAddedPolicy = false;
+                    break;
+                }
+            }
+
+            if (isNewlyAddedPolicy) {
+                vm.expectEmit();
+                emit ILicensingModule.PolicyAddedToIpId({
+                    caller: address(ipAssetRegistry),
+                    ipId: ipId,
+                    policyId: policyIds[i],
+                    index: policyIdIndexTracker,
+                    isInherited: true
+                });
+                policyIdIndexTracker++;
+            }
+        }
     }
 }

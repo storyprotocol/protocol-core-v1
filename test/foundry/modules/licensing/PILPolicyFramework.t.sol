@@ -27,12 +27,7 @@ contract PILPolicyFrameworkTest is BaseTest {
         super.setUp();
         buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: false,
-                disputeModule: false,
-                royaltyModule: false,
-                licensingModule: true
-            })
+            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
         );
         buildDeployPolicyCondition(
             DeployPolicyCondition({

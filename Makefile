@@ -59,7 +59,6 @@ abi:
 	@$(call generate_abi,"RoyaltyModule","./modules/royalty-module")
 	@$(call generate_abi,"LSClaimer","./modules/royalty-module/policies")
 	@$(call generate_abi,"RoyaltyPolicyLS","./modules/royalty-module/policies")
-	@$(call generate_abi,"RegistrationModule","./modules")
 	@$(call generate_abi,"IPAssetRenderer","./registries/metadata")
 	@$(call generate_abi,"IPMetadataProvider","./registries/metadata")
 	@$(call generate_abi,"MetadataProviderV1","./registries/metadata")

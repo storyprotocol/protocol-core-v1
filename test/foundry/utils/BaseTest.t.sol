@@ -9,7 +9,7 @@ import { Test } from "forge-std/Test.sol";
 // contracts
 import { AccessController } from "../../../contracts/AccessController.sol";
 // solhint-disable-next-line max-line-length
-import { IP_RESOLVER_MODULE_KEY, REGISTRATION_MODULE_KEY, DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
+import { IP_RESOLVER_MODULE_KEY, DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
 import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
@@ -63,8 +63,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         if (postDeployConditions.royaltyModule_configure) configureRoyaltyModule();
         if (postDeployConditions.disputeModule_configure) configureDisputeModule();
         if (deployConditions.registry.licenseRegistry) configureLicenseRegistry();
-        // TODO: also conditionally check on `deployConditions.registry.ipAssetRegistry`
-        if (deployConditions.module.registrationModule) configureIPAssetRegistry();
         if (deployConditions.policy.royaltyPolicyLAP) configureRoyaltyPolicyLAP();
 
         bool isMockRoyaltyPolicyLAP = address(royaltyPolicyLAP) == address(0) &&
@@ -116,17 +114,18 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
             AccessPermission.ALLOW
         );
 
-        // If REAL Registration Module and Licensing Module are deployed, set global permissions
-        if (deployConditions.module.registrationModule && deployConditions.module.licensingModule) {
+        // If REAL IPAssetRegistry and LicensingModule are deployed, set global permissions
+        // (NOTE: for now, IPAssetRegistry is always deployed with real contract)
+        if (deployConditions.module.licensingModule) {
             accessController.setGlobalPermission(
-                address(registrationModule),
+                address(ipAssetRegistry),
                 address(licensingModule),
                 bytes4(licensingModule.linkIpToParents.selector),
                 AccessPermission.ALLOW
             );
 
             accessController.setGlobalPermission(
-                address(registrationModule),
+                address(ipAssetRegistry),
                 address(licensingModule),
                 bytes4(licensingModule.addPolicyToIp.selector),
                 AccessPermission.ALLOW
@@ -142,9 +141,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         vm.startPrank(u.admin);
         // TODO: option to register "hookmodule", which will trigger the call below:
         //       moduleRegistry.registerModuleType(MODULE_TYPE_HOOK, type(IHookModule).interfaceId);
-        if (address(registrationModule) != address(0)) {
-            moduleRegistry.registerModule(REGISTRATION_MODULE_KEY, address(registrationModule));
-        }
         if (address(ipResolver) != address(0)) {
             moduleRegistry.registerModule(IP_RESOLVER_MODULE_KEY, address(ipResolver));
         }
@@ -197,16 +193,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         // Need to cast to LicenseRegistry to set dispute and licensing module, as interface doesn't expose those fns.
         LicenseRegistry(address(licenseRegistry)).setDisputeModule(getDisputeModule());
         LicenseRegistry(address(licenseRegistry)).setLicensingModule(getLicensingModule());
-        vm.stopPrank();
-    }
-
-    function configureIPAssetRegistry() public {
-        console2.log("BaseTest PostDeploymentSetup: Configure IP Asset Registry");
-        require(address(ipAssetRegistry) != address(0), "ipAssetRegistry not set");
-        require(address(registrationModule) != address(0), "registrationModule not set");
-
-        vm.startPrank(u.admin);
-        ipAssetRegistry.setRegistrationModule(address(registrationModule));
         vm.stopPrank();
     }
 

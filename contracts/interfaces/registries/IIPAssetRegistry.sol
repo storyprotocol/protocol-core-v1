@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import { IIPAccountRegistry } from "./IIPAccountRegistry.sol";
 import { IModuleRegistry } from "./IModuleRegistry.sol";
 import { IMetadataProviderMigratable } from "./metadata/IMetadataProviderMigratable.sol";
-import { IRegistrationModule } from "../modules/IRegistrationModule.sol";
 
 /// @title Interface for IP Account Registry
 /// @notice This interface manages the registration and tracking of IP Accounts
@@ -56,9 +55,6 @@ interface IIPAssetRegistry is IIPAccountRegistry {
 
     /// @notice The canonical module registry used by the protocol.
     function MODULE_REGISTRY() external view returns (IModuleRegistry);
-
-    /// @notice The registration module that interacts with IPAssetRegistry.
-    function REGISTRATION_MODULE() external view returns (IRegistrationModule);
 
     /// @notice Tracks the total number of IP assets in existence.
     function totalSupply() external view returns (uint256);

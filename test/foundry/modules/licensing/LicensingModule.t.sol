@@ -46,12 +46,7 @@ contract LicensingModuleTest is BaseTest {
     function setUp() public override {
         super.setUp();
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: false,
-                disputeModule: false,
-                royaltyModule: false,
-                licensingModule: true
-            })
+            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
         buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));

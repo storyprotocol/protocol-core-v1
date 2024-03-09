@@ -47,12 +47,7 @@ contract TestAncestorsVaultLAP is BaseTest {
     function setUp() public override {
         super.setUp();
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: false,
-                disputeModule: false,
-                royaltyModule: true,
-                licensingModule: false
-            })
+            DeployModuleCondition({ disputeModule: false, royaltyModule: true, licensingModule: false })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
         buildDeployMiscCondition(

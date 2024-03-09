@@ -24,7 +24,6 @@ import { IPAssetRenderer } from "../../../contracts/registries/metadata/IPAssetR
 import { ModuleRegistry } from "../../../contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 import { IPResolver } from "../../../contracts/resolvers/IPResolver.sol";
-import { RegistrationModule } from "../../../contracts/modules/RegistrationModule.sol";
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
 import { AncestorsVaultLAP } from "../../../contracts/modules/royalty/policies/AncestorsVaultLAP.sol";
 import { RoyaltyPolicyLAP } from "../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
@@ -56,7 +55,6 @@ contract DeployHelper {
     }
 
     struct DeployModuleCondition {
-        bool registrationModule;
         bool disputeModule;
         bool royaltyModule;
         bool licensingModule;
@@ -112,7 +110,6 @@ contract DeployHelper {
     ILicenseRegistry internal licenseRegistry;
 
     // Module
-    RegistrationModule internal registrationModule;
     IDisputeModule internal disputeModule;
     IRoyaltyModule internal royaltyModule;
     ILicensingModule internal licensingModule;
@@ -179,7 +176,7 @@ contract DeployHelper {
     /// @notice Deploys all contracts for integration test.
     function deployIntegration() public {
         buildDeployRegistryCondition(DeployRegistryCondition(true, true));
-        buildDeployModuleCondition(DeployModuleCondition(true, true, true, true));
+        buildDeployModuleCondition(DeployModuleCondition(true, true, true));
         buildDeployAccessCondition(DeployAccessCondition(true, true));
         buildDeployPolicyCondition(DeployPolicyCondition(true, true));
         buildDeployMiscCondition(DeployMiscCondition(true, true, true));
@@ -290,17 +287,6 @@ contract DeployHelper {
                 getDisputeModule()
             );
             console2.log("DeployHelper: Using REAL LicensingModule");
-        }
-
-        if (d.registrationModule) {
-            require(address(ipAssetRegistry) != address(0), "DeployHelper Module: IPAssetRegistry required");
-            require(address(ipResolver) != address(0), "DeployHelper Module: IPResolver required");
-            registrationModule = new RegistrationModule(
-                address(ipAssetRegistry),
-                getLicensingModule(),
-                address(ipResolver)
-            );
-            console2.log("DeployHelper: Using REAL RegistrationModule");
         }
     }
 

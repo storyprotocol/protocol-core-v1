@@ -9,13 +9,8 @@ string constant MODULE_TYPE_HOOK = "HOOK_MODULE";
 // String values for core protocol modules.
 string constant IP_RESOLVER_MODULE_KEY = "IP_RESOLVER_MODULE";
 
-// String values for core protocol modules.
-string constant REGISTRATION_MODULE_KEY = "REGISTRATION_MODULE";
-
-// String values for core protocol modules.
 string constant LICENSING_MODULE_KEY = "LICENSING_MODULE";
 
-// String values for core protocol modules.
 string constant DISPUTE_MODULE_KEY = "DISPUTE_MODULE";
 
 string constant ROYALTY_MODULE_KEY = "ROYALTY_MODULE";

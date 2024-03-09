@@ -15,7 +15,6 @@ import { LICENSING_MODULE_KEY } from "../lib/modules/Module.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
-import { IRegistrationModule } from "../interfaces/modules/IRegistrationModule.sol";
 import { Governable } from "../governance/Governable.sol";
 
 /// @title IP Asset Registry
@@ -30,9 +29,6 @@ import { Governable } from "../governance/Governable.sol";
 contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @notice The canonical module registry used by the protocol.
     IModuleRegistry public immutable MODULE_REGISTRY;
-
-    /// @notice The registration module that interacts with IPAssetRegistry.
-    IRegistrationModule public REGISTRATION_MODULE;
 
     /// @notice Tracks the total number of IP assets in existence.
     uint256 public totalSupply = 0;
@@ -64,12 +60,6 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     function setApprovalForAll(address operator, bool approved) external {
         isApprovedForAll[msg.sender][operator] = approved;
         emit ApprovalForAll(msg.sender, operator, approved);
-    }
-
-    /// @dev Sets the registration module that interacts with IPAssetRegistry.
-    /// @param registrationModule The address of the registration module.
-    function setRegistrationModule(address registrationModule) external onlyProtocolAdmin {
-        REGISTRATION_MODULE = IRegistrationModule(registrationModule);
     }
 
     /// @dev Sets the provider for storage of new IP metadata, while enabling existing IP assets to migrate their
@@ -243,9 +233,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         }
 
         address _owner = IERC721(tokenContract).ownerOf(tokenId);
-        if (
-            msg.sender != _owner && msg.sender != address(REGISTRATION_MODULE) && !isApprovedForAll[_owner][msg.sender]
-        ) {
+        if (msg.sender != _owner && !isApprovedForAll[_owner][msg.sender]) {
             revert Errors.IPAssetRegistry__RegistrantUnauthorized();
         }
 

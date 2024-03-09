@@ -3,7 +3,6 @@ pragma solidity 0.8.23;
 
 // external
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 // contracts
 import { Errors } from "contracts/lib/Errors.sol";
@@ -11,6 +10,7 @@ import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { ShortStringOps } from "contracts/utils/ShortStringOps.sol";
 import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
+import { IP } from "contracts/lib/IP.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 
@@ -43,12 +43,7 @@ contract DisputeModuleTest is BaseTest {
     function setUp() public override {
         super.setUp();
         buildDeployModuleCondition(
-            DeployModuleCondition({
-                registrationModule: true,
-                disputeModule: true,
-                royaltyModule: false,
-                licensingModule: false
-            })
+            DeployModuleCondition({ disputeModule: true, royaltyModule: false, licensingModule: false })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
         buildDeployMiscCondition(
@@ -106,19 +101,26 @@ contract DisputeModuleTest is BaseTest {
             address(mockNFT),
             0
         );
-        vm.label(expectedAddr, string(abi.encodePacked("IPAccount", Strings.toString(0))));
+        vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.alice);
-        ipAssetRegistry.setApprovalForAll(address(registrationModule), true);
-        ipAddr = registrationModule.registerRootIp(
-            policyIds["pil_cheap_flexible"],
+        ipAddr = ipAssetRegistry.register(
+            block.chainid,
             address(mockNFT),
             0,
-            "IPAccount1",
-            bytes32("some of the best description"),
-            "https://example.com/test-ip"
+            address(ipResolver),
+            true,
+            abi.encode(
+                IP.MetadataV1({
+                    name: "IPAccount0",
+                    hash: bytes32("content hash"),
+                    registrationDate: uint64(block.timestamp),
+                    registrant: u.alice,
+                    uri: "https://example.com/test-ip"
+                })
+            )
         );
-        vm.label(ipAddr, string(abi.encodePacked("IPAccount", Strings.toString(0))));
+        licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
 
         // set arbitration policy
         vm.startPrank(ipAddr);

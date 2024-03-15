@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ProtocolAccessManager } from "../access-protocol/ProtocolAccessManager.sol";
+import { ProtocolAccessManager } from "../../access-protocol/ProtocolAccessManager.sol";
 import { ProtocolRoles } from "./ProtocolRoles.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 

@@ -19,7 +19,9 @@ clean :; npx hardhat clean
 # Remove modules
 forge-remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
-install :; yarn install
+install :
+	yarn install 
+	forge install OpenZeppelin/openzeppelin-foundry-upgrades
 
 # Update Dependencies
 forge-update :; forge update

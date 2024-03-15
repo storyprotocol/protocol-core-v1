@@ -12,4 +12,5 @@ library ProtocolRoles {
     /// @notice Public role, has no special permissions
     /// @dev By default, everyone has this role in OZ AccessManager
     uint64 public constant PUBLIC = type(uint64).max; // 2**64-1
+
 }

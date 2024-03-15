@@ -15,7 +15,7 @@ import { LICENSING_MODULE_KEY } from "../lib/modules/Module.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
-import { Governable } from "../governance/Governable.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 /// @title IP Asset Registry
 /// @notice This contract acts as the source of truth for all IP registered in
@@ -26,7 +26,7 @@ import { Governable } from "../governance/Governable.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
+contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManaged {
     /// @notice The canonical module registry used by the protocol.
     IModuleRegistry public immutable MODULE_REGISTRY;
 
@@ -47,8 +47,8 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         address erc6551Registry,
         address ipAccountImpl,
         address moduleRegistry,
-        address governance
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) Governable(governance) {
+        address manager
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) AccessManaged(manager) {
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         _metadataProvider = IMetadataProviderMigratable(new MetadataProviderV1(address(this)));
     }
@@ -65,7 +65,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @dev Sets the provider for storage of new IP metadata, while enabling existing IP assets to migrate their
     /// metadata to the new provider.
     /// @param newMetadataProvider Address of the new metadata provider contract.
-    function setMetadataProvider(address newMetadataProvider) external onlyProtocolAdmin {
+    function setMetadataProvider(address newMetadataProvider) external restricted {
         _metadataProvider.setUpgradeProvider(newMetadataProvider);
         _metadataProvider = IMetadataProviderMigratable(newMetadataProvider);
     }

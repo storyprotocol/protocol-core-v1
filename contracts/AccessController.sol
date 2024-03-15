@@ -9,7 +9,8 @@ import { IPAccountChecker } from "./lib/registries/IPAccountChecker.sol";
 import { IIPAccount } from "./interfaces/IIPAccount.sol";
 import { AccessPermission } from "./lib/AccessPermission.sol";
 import { Errors } from "./lib/Errors.sol";
-import { Governable } from "./governance/Governable.sol";
+
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 /// @title AccessController
 /// @dev This contract is used to control access permissions for different function calls in the protocol.
@@ -26,7 +27,7 @@ import { Governable } from "./governance/Governable.sol";
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
-contract AccessController is IAccessController, Governable {
+contract AccessController is IAccessController, AccessManaged {
     using IPAccountChecker for IIPAccountRegistry;
 
     address public IP_ACCOUNT_REGISTRY;
@@ -36,17 +37,17 @@ contract AccessController is IAccessController, Governable {
     /// encoded permission path = keccak256(abi.encodePacked(ipAccount, signer, to, func))
     mapping(bytes32 => uint8) internal encodedPermissions;
 
-    constructor(address governance) Governable(governance) {}
+    constructor(address manager) AccessManaged(manager) {}
 
     // TODO: Change the function name to not clash with potential proxy contract `initialize`.
     // TODO: Only allow calling once.
     /// @dev Initialize the Access Controller with the IP Account Registry and Module Registry addresses.
     /// These are separated from the constructor, because we need to deploy the AccessController first for
     /// to deploy many registry and module contracts, including the IP Account Registry and Module Registry.
-    /// @dev Enforced to be only callable by the protocol admin in governance.
+    /// @dev Enforced to be only callable by the protocol admin.
     /// @param ipAccountRegistry The address of the IP Account Registry.
     /// @param moduleRegistry The address of the Module Registry.
-    function initialize(address ipAccountRegistry, address moduleRegistry) external onlyProtocolAdmin {
+    function initialize(address ipAccountRegistry, address moduleRegistry) external restricted {
         IP_ACCOUNT_REGISTRY = ipAccountRegistry;
         MODULE_REGISTRY = moduleRegistry;
     }
@@ -54,7 +55,8 @@ contract AccessController is IAccessController, Governable {
     /// @notice Sets a batch of permissions in a single transaction.
     /// @dev This function allows setting multiple permissions at once. Pausable.
     /// @param permissions An array of `Permission` structs, each representing the permission to be set.
-    function setBatchPermissions(AccessPermission.Permission[] memory permissions) external whenNotPaused {
+    function setBatchPermissions(AccessPermission.Permission[] memory permissions) external {
+        // TODO: reintroduce pause with Pausable
         for (uint256 i = 0; i < permissions.length; ) {
             setPermission(
                 permissions[i].ipAccount,
@@ -75,7 +77,7 @@ contract AccessController is IAccessController, Governable {
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @param permission The new permission level
-    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external onlyProtocolAdmin {
+    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external restricted {
         if (signer == address(0)) {
             revert Errors.AccessController__SignerIsZeroAddress();
         }
@@ -107,7 +109,8 @@ contract AccessController is IAccessController, Governable {
         address to,
         bytes4 func,
         uint8 permission
-    ) public whenNotPaused {
+    ) public {
+        // TODO: reintroduce pause with Pausable
         // IPAccount and signer does not support wildcard permission
         if (ipAccount == address(0)) {
             revert Errors.AccessController__IPAccountIsZeroAddress();
@@ -140,7 +143,8 @@ contract AccessController is IAccessController, Governable {
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     // solhint-disable code-complexity
-    function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view whenNotPaused {
+    function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
+        // TODO: reintroduce pause with Pausable
         // The ipAccount is restricted to interact exclusively with registered modules.
         // This includes initiating calls to these modules and receiving calls from them.
         // Additionally, it can modify Permissions settings.

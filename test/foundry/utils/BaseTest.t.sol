@@ -45,7 +45,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     /// @notice Sets up the base test contract.
     function setUp() public virtual {
         u = UsersLib.createMockUsers(vm);
-        setGovernanceAdmin(u.admin);
+        setProtocolAdmin(u.admin);
 
         admin = u.admin;
         alice = u.alice;

@@ -61,7 +61,7 @@ contract DisputeModuleTest is BaseTest {
             getDisputeModule(),
             address(USDC),
             ARBITRATION_PRICE,
-            getGovernance()
+            address(protocolAccessManager)
         );
 
         vm.startPrank(u.admin);

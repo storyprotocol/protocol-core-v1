@@ -369,7 +369,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
             address(2),
             address(3),
             address(4),
-            address(governance)
+            address(protocolAccessManager)
         );
 
         vm.startPrank(u.admin);

@@ -3,16 +3,16 @@ pragma solidity 0.8.23;
 
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
 import { IModule } from "../interfaces/modules/base/IModule.sol";
-import { Governable } from "../governance/Governable.sol";
 import { MODULE_TYPE_DEFAULT } from "../lib/modules/Module.sol";
 
 /// @title ModuleRegistry
 /// @notice This contract is used to register and track modules in the protocol.
-contract ModuleRegistry is IModuleRegistry, Governable {
+contract ModuleRegistry is IModuleRegistry, AccessManaged {
     using Strings for *;
     using ERC165Checker for address;
 
@@ -25,16 +25,16 @@ contract ModuleRegistry is IModuleRegistry, Governable {
     /// @dev Returns the interface ID of a registered module type.
     mapping(string moduleType => bytes4 moduleTypeInterface) internal allModuleTypes;
 
-    constructor(address governance) Governable(governance) {
+    constructor(address manager) AccessManaged(manager) {
         // Register the default module types
         allModuleTypes[MODULE_TYPE_DEFAULT] = type(IModule).interfaceId;
     }
 
     /// @notice Registers a new module type in the registry associate with an interface.
-    /// @dev Enforced to be only callable by the protocol admin in governance.
+    /// @dev Enforced to be only callable by the protocol admin role.
     /// @param name The name of the module type to be registered.
     /// @param interfaceId The interface ID associated with the module type.
-    function registerModuleType(string memory name, bytes4 interfaceId) external override onlyProtocolAdmin {
+    function registerModuleType(string memory name, bytes4 interfaceId) external override restricted {
         if (interfaceId == 0) {
             revert Errors.ModuleRegistry__InterfaceIdZero();
         }
@@ -48,9 +48,9 @@ contract ModuleRegistry is IModuleRegistry, Governable {
     }
 
     /// @notice Removes a module type from the registry.
-    /// @dev Enforced to be only callable by the protocol admin in governance.
+    /// @dev Enforced to be only callable by the protocol admin role.
     /// @param name The name of the module type to be removed.
-    function removeModuleType(string memory name) external override onlyProtocolAdmin {
+    function removeModuleType(string memory name) external override restricted {
         if (bytes(name).length == 0) {
             revert Errors.ModuleRegistry__NameEmptyString();
         }
@@ -64,7 +64,7 @@ contract ModuleRegistry is IModuleRegistry, Governable {
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module.
     /// @param moduleAddress The address of the module.
-    function registerModule(string memory name, address moduleAddress) external onlyProtocolAdmin {
+    function registerModule(string memory name, address moduleAddress) external restricted {
         _registerModule(name, moduleAddress, MODULE_TYPE_DEFAULT);
     }
 
@@ -76,14 +76,14 @@ contract ModuleRegistry is IModuleRegistry, Governable {
         string memory name,
         address moduleAddress,
         string memory moduleType
-    ) external onlyProtocolAdmin {
+    ) external restricted {
         _registerModule(name, moduleAddress, moduleType);
     }
 
     /// @notice Removes a module from the registry.
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module.
-    function removeModule(string memory name) external onlyProtocolAdmin {
+    function removeModule(string memory name) external restricted {
         if (bytes(name).length == 0) {
             revert Errors.ModuleRegistry__NameEmptyString();
         }

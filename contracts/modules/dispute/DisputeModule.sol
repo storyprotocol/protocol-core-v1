@@ -3,10 +3,10 @@ pragma solidity 0.8.23;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../../modules/BaseModule.sol";
-import { Governable } from "../../governance/Governable.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
@@ -17,7 +17,7 @@ import { ShortStringOps } from "../../utils/ShortStringOps.sol";
 /// @title Dispute Module
 /// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes
 /// through arbitration by judges.
-contract DisputeModule is IDisputeModule, BaseModule, Governable, ReentrancyGuard, AccessControlled {
+contract DisputeModule is IDisputeModule, BaseModule, AccessManaged, ReentrancyGuard, AccessControlled {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
     string public constant override name = DISPUTE_MODULE_KEY;
@@ -58,15 +58,15 @@ contract DisputeModule is IDisputeModule, BaseModule, Governable, ReentrancyGuar
     constructor(
         address _controller,
         address _assetRegistry,
-        address _governance
-    ) Governable(_governance) AccessControlled(_controller, _assetRegistry) {
+        address _manager
+    ) AccessManaged(_manager) AccessControlled(_controller, _assetRegistry) {
         IP_ASSET_REGISTRY = IIPAssetRegistry(_assetRegistry);
     }
 
     /// @notice Whitelists a dispute tag
     /// @param tag The dispute tag
     /// @param allowed Indicates if the dispute tag is whitelisted or not
-    function whitelistDisputeTag(bytes32 tag, bool allowed) external onlyProtocolAdmin {
+    function whitelistDisputeTag(bytes32 tag, bool allowed) external restricted {
         if (tag == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeTag();
 
         isWhitelistedDisputeTag[tag] = allowed;
@@ -77,7 +77,7 @@ contract DisputeModule is IDisputeModule, BaseModule, Governable, ReentrancyGuar
     /// @notice Whitelists an arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param allowed Indicates if the arbitration policy is whitelisted or not
-    function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external onlyProtocolAdmin {
+    function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external restricted {
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
 
         isWhitelistedArbitrationPolicy[arbitrationPolicy] = allowed;
@@ -93,7 +93,7 @@ contract DisputeModule is IDisputeModule, BaseModule, Governable, ReentrancyGuar
         address arbitrationPolicy,
         address arbPolicyRelayer,
         bool allowed
-    ) external onlyProtocolAdmin {
+    ) external restricted {
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
         if (arbPolicyRelayer == address(0)) revert Errors.DisputeModule__ZeroArbitrationRelayer();
 
@@ -104,7 +104,7 @@ contract DisputeModule is IDisputeModule, BaseModule, Governable, ReentrancyGuar
 
     /// @notice Sets the base arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
-    function setBaseArbitrationPolicy(address arbitrationPolicy) external onlyProtocolAdmin {
+    function setBaseArbitrationPolicy(address arbitrationPolicy) external restricted {
         if (!isWhitelistedArbitrationPolicy[arbitrationPolicy])
             revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
 

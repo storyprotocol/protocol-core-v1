@@ -4,9 +4,9 @@ pragma solidity 0.8.23;
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { BaseModule } from "../BaseModule.sol";
-import { Governable } from "../../governance/Governable.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { Errors } from "../../lib/Errors.sol";
@@ -16,7 +16,7 @@ import { BaseModule } from "../BaseModule.sol";
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
 ///         derivative IP.
-contract RoyaltyModule is IRoyaltyModule, Governable, ReentrancyGuard, BaseModule {
+contract RoyaltyModule is IRoyaltyModule, AccessManaged, ReentrancyGuard, BaseModule {
     using ERC165Checker for address;
 
     string public constant override name = ROYALTY_MODULE_KEY;
@@ -33,7 +33,7 @@ contract RoyaltyModule is IRoyaltyModule, Governable, ReentrancyGuard, BaseModul
     /// @notice Indicates the royalty policy for a given IP asset
     mapping(address ipId => address royaltyPolicy) public royaltyPolicies;
 
-    constructor(address governance) Governable(governance) {}
+    constructor(address manager) AccessManaged(manager) {}
 
     /// @notice Modifier to enforce that the caller is the licensing module
     modifier onlyLicensingModule() {
@@ -44,7 +44,7 @@ contract RoyaltyModule is IRoyaltyModule, Governable, ReentrancyGuard, BaseModul
     /// @notice Sets the license registry
     /// @dev Enforced to be only callable by the protocol admin
     /// @param licensingModule The address of the license registry
-    function setLicensingModule(address licensingModule) external onlyProtocolAdmin {
+    function setLicensingModule(address licensingModule) external restricted {
         if (licensingModule == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
         LICENSING_MODULE = licensingModule;
     }
@@ -53,7 +53,7 @@ contract RoyaltyModule is IRoyaltyModule, Governable, ReentrancyGuard, BaseModul
     /// @dev Enforced to be only callable by the protocol admin
     /// @param royaltyPolicy The address of the royalty policy
     /// @param allowed Indicates if the royalty policy is whitelisted or not
-    function whitelistRoyaltyPolicy(address royaltyPolicy, bool allowed) external onlyProtocolAdmin {
+    function whitelistRoyaltyPolicy(address royaltyPolicy, bool allowed) external restricted {
         if (royaltyPolicy == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
 
         isWhitelistedRoyaltyPolicy[royaltyPolicy] = allowed;
@@ -65,7 +65,7 @@ contract RoyaltyModule is IRoyaltyModule, Governable, ReentrancyGuard, BaseModul
     /// @dev Enforced to be only callable by the protocol admin
     /// @param token The token address
     /// @param allowed Indicates if the token is whitelisted or not
-    function whitelistRoyaltyToken(address token, bool allowed) external onlyProtocolAdmin {
+    function whitelistRoyaltyToken(address token, bool allowed) external restricted {
         if (token == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyToken();
 
         isWhitelistedRoyaltyToken[token] = allowed;

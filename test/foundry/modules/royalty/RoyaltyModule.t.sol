@@ -51,7 +51,7 @@ contract TestRoyaltyModule is BaseTest {
             getLicensingModule(),
             LIQUID_SPLIT_FACTORY,
             LIQUID_SPLIT_MAIN,
-            getGovernance()
+            address(protocolAccessManager)
         );
 
         vm.startPrank(u.admin);
@@ -122,7 +122,7 @@ contract TestRoyaltyModule is BaseTest {
     }
 
     function test_RoyaltyModule_setLicensingModule_revert_ZeroLicensingModule() public {
-        RoyaltyModule testRoyaltyModule = new RoyaltyModule(address(governance));
+        RoyaltyModule testRoyaltyModule = new RoyaltyModule(address(protocolAccessManager));
         vm.expectRevert(Errors.RoyaltyModule__ZeroLicensingModule.selector);
         vm.prank(u.admin);
         testRoyaltyModule.setLicensingModule(address(0));
@@ -130,7 +130,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_setLicensingModule() public {
         vm.startPrank(u.admin);
-        RoyaltyModule testRoyaltyModule = new RoyaltyModule(address(governance));
+        RoyaltyModule testRoyaltyModule = new RoyaltyModule(address(protocolAccessManager));
         testRoyaltyModule.setLicensingModule(address(licensingModule));
 
         assertEq(testRoyaltyModule.LICENSING_MODULE(), address(licensingModule));

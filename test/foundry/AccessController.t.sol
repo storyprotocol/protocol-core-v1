@@ -24,7 +24,7 @@ contract AccessControllerTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
+        buildDeployAccessCondition(DeployAccessCondition({ accessController: true }));
         deployConditionally();
         postDeploymentSetup();
 

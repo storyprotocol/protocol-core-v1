@@ -8,9 +8,9 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { IAncestorsVaultLAP } from "../../../interfaces/modules/royalty/policies/IAncestorsVaultLAP.sol";
-import { Governable } from "../../../../contracts/governance/Governable.sol";
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { ILiquidSplitFactory } from "../../../interfaces/modules/royalty/policies/ILiquidSplitFactory.sol";
@@ -20,7 +20,7 @@ import { Errors } from "../../../lib/Errors.sol";
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
-contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, ReentrancyGuard {
+contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManaged, ERC1155Holder, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice The state data of the LAP royalty policy
@@ -76,8 +76,8 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
         address licensingModule,
         address liquidSplitFactory,
         address liquidSplitMain,
-        address governance
-    ) Governable(governance) {
+        address manager
+    ) AccessManaged(manager) {
         if (royaltyModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroRoyaltyModule();
         if (licensingModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroLicensingModule();
         if (liquidSplitFactory == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroLiquidSplitFactory();
@@ -94,7 +94,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, Governable, ERC1155Holder, Reent
     /// @dev Set the ancestors vault implementation address
     /// @dev Enforced to be only callable by the protocol admin in governance
     /// @param ancestorsVaultImpl The ancestors vault implementation address
-    function setAncestorsVaultImplementation(address ancestorsVaultImpl) external onlyProtocolAdmin {
+    function setAncestorsVaultImplementation(address ancestorsVaultImpl) external restricted {
         if (ancestorsVaultImpl == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroAncestorsVaultImpl();
         if (ANCESTORS_VAULT_IMPL != address(0)) revert Errors.RoyaltyPolicyLAP__ImplementationAlreadySet();
 

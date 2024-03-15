@@ -9,11 +9,11 @@ import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 
 // contracts
+import { ProtocolAccessManager } from "contracts/access-protocol/ProtocolAccessManager.sol";
 import { AccessController } from "contracts/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-import { Governance } from "contracts/governance/Governance.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { IP } from "contracts/lib/IP.sol";
@@ -44,6 +44,7 @@ import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { StringUtil } from "../../../script/foundry/utils/StringUtil.sol";
 import { BroadcastManager } from "../../../script/foundry/utils/BroadcastManager.s.sol";
 import { JsonDeploymentHandler } from "../../../script/foundry/utils/JsonDeploymentHandler.s.sol";
+import { DeployEnv } from "../../../script/foundry/deployment/DeployEnv.sol";
 
 // test
 import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
@@ -79,7 +80,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
     PILPolicyFrameworkManager internal pilPfm;
 
     // Misc.
-    Governance internal governance;
+    ProtocolAccessManager internal protocolAccessManager;
     AccessController internal accessController;
     IPAssetRenderer internal ipAssetRenderer;
     IPResolver internal ipResolver;
@@ -97,6 +98,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
     mapping(string frameworkName => address frameworkAddr) internal frameworkAddrs;
 
+    DeployEnv internal env;
+
     // 0xSplits Liquid Split (Sepolia)
     address internal constant LIQUID_SPLIT_FACTORY = 0xF678Bae6091Ab6933425FE26Afc20Ee5F324c4aE;
     address internal constant LIQUID_SPLIT_MAIN = 0x57CBFA83f000a38C5b5881743E298819c503A559;
@@ -110,24 +113,15 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run() public {
-        _beginBroadcast(); // BroadcastManager.s.sol
+        env = _beginBroadcast(); // BroadcastManager.s.sol
 
-        bool configByMultisig = vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG");
-        console2.log("configByMultisig:", configByMultisig);
-
-        if (configByMultisig) {
-            _deployProtocolContracts(multisig);
-        } else {
-            _deployProtocolContracts(deployer);
-            _configureDeployment();
-        }
-        // _configureDeployedProtocolContracts();
-
+        _deployProtocolContracts();
+    
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
-    function _deployProtocolContracts(address accessControlDeployer) private {
+    function _deployProtocolContracts() private {
         require(
             LIQUID_SPLIT_FACTORY != address(0) && LIQUID_SPLIT_MAIN != address(0),
             "DeployMain: Liquid Split Addresses Not Set"
@@ -149,14 +143,19 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         // Core Protocol Contracts
 
-        contractKey = "Governance";
+        contractKey = "ProtocolAccessManager";
         _predeploy(contractKey);
-        governance = new Governance(accessControlDeployer);
-        _postdeploy(contractKey, address(governance));
+        protocolAccessManager = new ProtocolAccessManager(
+            env.multisig,
+            env.multisig,
+            env.roleGrantDelay,
+            env.roleExecDelay
+        );
+        _postdeploy(contractKey, address(protocolAccessManager));
 
         contractKey = "AccessController";
         _predeploy(contractKey);
-        accessController = new AccessController(address(governance));
+        accessController = new AccessController(address(protocolAccessManager));
         _postdeploy(contractKey, address(accessController));
 
         contractKey = "IPAccountImpl";
@@ -166,7 +165,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
-        moduleRegistry = new ModuleRegistry(address(governance));
+        moduleRegistry = new ModuleRegistry(address(protocolAccessManager));
         _postdeploy(contractKey, address(moduleRegistry));
 
         contractKey = "IPAccountRegistry";
@@ -180,7 +179,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             ERC6551_REGISTRY,
             address(ipAccountImpl),
             address(moduleRegistry),
-            address(governance)
+            address(protocolAccessManager)
         );
         _postdeploy(contractKey, address(ipAssetRegistry));
 
@@ -195,18 +194,18 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
-        royaltyModule = new RoyaltyModule(address(governance));
+        royaltyModule = new RoyaltyModule(address(protocolAccessManager));
         _postdeploy(contractKey, address(royaltyModule));
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
-        disputeModule = new DisputeModule(address(accessController), address(ipAssetRegistry), address(governance));
+        disputeModule = new DisputeModule(address(accessController), address(ipAssetRegistry), address(protocolAccessManager));
         _postdeploy(contractKey, address(disputeModule));
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
         licenseRegistry = new LicenseRegistry(
-            address(governance),
+            address(protocolAccessManager),
             "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
         );
         _postdeploy(contractKey, address(licenseRegistry));
@@ -242,7 +241,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             address(disputeModule),
             address(erc20),
             ARBITRATION_PRICE,
-            address(governance)
+            address(protocolAccessManager)
         );
         _postdeploy(contractKey, address(arbitrationPolicySP));
 
@@ -253,7 +252,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             address(licensingModule),
             LIQUID_SPLIT_FACTORY,
             LIQUID_SPLIT_MAIN,
-            address(governance)
+            address(protocolAccessManager)
         );
         _postdeploy(contractKey, address(royaltyPolicyLAP));
 
@@ -280,23 +279,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
         _predeploy(contractKey);
         mockTokenGatedHook = new MockTokenGatedHook();
         _postdeploy(contractKey, address(mockTokenGatedHook));
-    }
-
-    function _configureDeployedProtocolContracts() private {
-        _readDeployment();
-
-        accessController = AccessController(_readAddress("main.AccessController"));
-        moduleRegistry = ModuleRegistry(_readAddress("main.ModuleRegistry"));
-        licenseRegistry = LicenseRegistry(_readAddress("main.LicenseRegistry"));
-        ipAssetRegistry = IPAssetRegistry(_readAddress("main.IPAssetRegistry"));
-        ipResolver = IPResolver(_readAddress("main.IPResolver"));
-        royaltyModule = RoyaltyModule(_readAddress("main.RoyaltyModule"));
-        royaltyPolicyLAP = RoyaltyPolicyLAP(payable(_readAddress("main.royaltyPolicyLAP")));
-        disputeModule = DisputeModule(_readAddress("main.DisputeModule"));
-        ipAssetRenderer = IPAssetRenderer(_readAddress("main.IPAssetRenderer"));
-        ipMetadataProvider = IPMetadataProvider(_readAddress("main.IPMetadataProvider"));
-
-        _executeInteractions();
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -364,7 +346,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
         // whitelist
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
-        address arbitrationRelayer = deployer;
+        address arbitrationRelayer = env.deployer; // TODO: set an actual relayer for prod deployment
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), arbitrationRelayer, true);
 
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicySP));
@@ -372,15 +354,15 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
     function _executeInteractions() private {
         for (uint256 i = 1; i <= 5; i++) {
-            erc721.mintId(deployer, i);
+            erc721.mintId(env.deployer, i);
         }
-        erc721.mintId(deployer, 100);
-        erc721.mintId(deployer, 101);
-        erc721.mintId(deployer, 102);
-        erc721.mintId(deployer, 103);
-        erc721.mintId(deployer, 104);
-        erc721.mintId(deployer, 105);
-        erc20.mint(deployer, 100_000_000 ether);
+        erc721.mintId(env.deployer, 100);
+        erc721.mintId(env.deployer, 101);
+        erc721.mintId(env.deployer, 102);
+        erc721.mintId(env.deployer, 103);
+        erc721.mintId(env.deployer, 104);
+        erc721.mintId(env.deployer, 105);
+        erc20.mint(env.deployer, 100_000_000 ether);
 
         erc20.approve(address(arbitrationPolicySP), 1000 * ARBITRATION_PRICE); // 1000 * raising disputes
         // For license/royalty payment, on both minting license and royalty distribution
@@ -494,7 +476,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 name: "IPAccount1",
                 hash: bytes32("ip account content hash"),
                 registrationDate: uint64(block.timestamp),
-                registrant: deployer,
+                registrant: env.deployer,
                 uri: "https://example.com/test-ip"
             }))
         );
@@ -512,7 +494,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 name: "IPAccount2",
                 hash: bytes32("more content hash"),
                 registrationDate: uint64(block.timestamp),
-                registrant: deployer,
+                registrant: env.deployer,
                 uri: "https://example.com/test-ip"
             }))
         );
@@ -525,7 +507,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             abi.encodeWithSignature(
                 "setPermission(address,address,address,bytes4,uint8)",
                 ipAcct[1],
-                deployer,
+                env.deployer,
                 address(licenseRegistry),
                 bytes4(0),
                 AccessPermission.ALLOW
@@ -551,7 +533,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 policyIds["pil_com_deriv_expensive"],
                 ipAcct[1],
                 2,
-                deployer,
+                env.deployer,
                 emptyRoyaltyPolicyLAPInitParams
             );
 
@@ -581,7 +563,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                     name: "IPAccount3",
                     hash: bytes32("more content hash"),
                     registrationDate: uint64(block.timestamp),
-                    registrant: deployer,
+                    registrant: env.deployer,
                     uri: "https://example.com/test-derivative-ip"
                 }))
             );
@@ -595,7 +577,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 policyIds["pil_noncom_deriv_reciprocal"],
                 ipAcct[2],
                 1,
-                deployer,
+                env.deployer,
                 emptyRoyaltyPolicyLAPInitParams
             );
 
@@ -623,7 +605,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                     name: "IPAccount4",
                     hash: bytes32("more content hash"),
                     registrationDate: uint64(block.timestamp),
-                    registrant: deployer,
+                    registrant: env.deployer,
                     uri: "https://example.com/test-ip"
                 }))
             );
@@ -641,7 +623,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 policyIds["pil_com_deriv_expensive"],
                 ipAcct[1],
                 1,
-                deployer,
+                env.deployer,
                 emptyRoyaltyPolicyLAPInitParams
             );
 
@@ -660,7 +642,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                 policyIds["pil_com_deriv_expensive"],
                 ipAcct[3], // is child of ipAcct[1]
                 1,
-                deployer,
+                env.deployer,
                 abi.encode(paramsMintLicense)
             );
 
@@ -692,7 +674,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
                         name: "IPAccount5",
                         hash: bytes32("description"),
                         registrationDate: uint64(block.timestamp),
-                        registrant: deployer,
+                        registrant: env.deployer,
                         uri: "uri"
                     })
                 )
@@ -722,7 +704,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             accounts[1] = ipAcct[5];
             accounts[0] = ipAcct5_ancestorVault;
 
-            royaltyPolicyLAP.distributeIpPoolFunds(ipAcct[5], address(erc20), accounts, deployer);
+            royaltyPolicyLAP.distributeIpPoolFunds(ipAcct[5], address(erc20), accounts, env.deployer);
         }
 
         // IPAccount1 claims its rNFTs and tokens, only done once since it's a direct chain
@@ -764,7 +746,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
         ///////////////////////////////////////////////////////////////*/
 
         // Say, IPAccount4 is accused of plagiarism by IPAccount2
-        // Then, a judge (deployer in this example) settles as true.
+        // Then, a judge (env.deployer in this example) settles as true.
         // Then, the dispute is resolved.
         {
             uint256 disptueId = disputeModule.raiseDispute(

@@ -7,10 +7,9 @@ import { console2 } from "forge-std/console2.sol"; // console to indicate mock d
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 
 // contracts
+import { ProtocolAccessManager } from "../../../contracts/access-protocol/ProtocolAccessManager.sol";
 import { AccessController } from "../../../contracts/AccessController.sol";
-import { Governance } from "../../../contracts/governance/Governance.sol";
 import { IAccessController } from "../../../contracts/interfaces/IAccessController.sol";
-import { IGovernance } from "../../../contracts/interfaces/governance/IGovernance.sol";
 import { IDisputeModule } from "../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { IRoyaltyModule } from "../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
@@ -33,7 +32,6 @@ import { ArbitrationPolicySP } from "../../../contracts/modules/dispute/policies
 
 // test
 import { MockAccessController } from "../mocks/access/MockAccessController.sol";
-import { MockGovernance } from "../mocks/governance/MockGovernance.sol";
 import { MockDisputeModule } from "../mocks/module/MockDisputeModule.sol";
 import { MockLicensingModule } from "../mocks/module/MockLicensingModule.sol";
 import { MockRoyaltyModule } from "../mocks/module/MockRoyaltyModule.sol";
@@ -62,7 +60,6 @@ contract DeployHelper {
 
     struct DeployAccessCondition {
         bool accessController;
-        bool governance;
     }
 
     struct DeployPolicyCondition {
@@ -113,9 +110,9 @@ contract DeployHelper {
     IDisputeModule internal disputeModule;
     IRoyaltyModule internal royaltyModule;
     ILicensingModule internal licensingModule;
+    ProtocolAccessManager internal protocolAccessManager;
 
     // Access
-    IGovernance internal governance;
     IAccessController internal accessController;
 
     // Policy
@@ -147,11 +144,12 @@ contract DeployHelper {
     // DeployHelper
     DeployConditions internal deployConditions;
     PostDeployConditions internal postDeployConditions;
-    address private governanceAdmin;
+    address private protocolAdmin;
 
-    function setGovernanceAdmin(address admin) public {
-        governanceAdmin = admin;
+    function setProtocolAdmin(address _protocolAdmin) public {
+        protocolAdmin = _protocolAdmin;
     }
+
 
     function buildDeployRegistryCondition(DeployRegistryCondition memory d) public {
         deployConditions.registry = d;
@@ -177,7 +175,7 @@ contract DeployHelper {
     function deployIntegration() public {
         buildDeployRegistryCondition(DeployRegistryCondition(true, true));
         buildDeployModuleCondition(DeployModuleCondition(true, true, true));
-        buildDeployAccessCondition(DeployAccessCondition(true, true));
+        buildDeployAccessCondition(DeployAccessCondition(true));
         buildDeployPolicyCondition(DeployPolicyCondition(true, true));
         buildDeployMiscCondition(DeployMiscCondition(true, true, true));
 
@@ -186,7 +184,6 @@ contract DeployHelper {
 
     /// @notice Deploys contracts conditionally based on DeployConditions state variable.
     function deployConditionally() public {
-        require(governanceAdmin != address(0), "DeployHelper: Governance admin not set, setGovernanceAdmin(address)");
 
         DeployConditions memory dc = deployConditions; // alias
 
@@ -213,12 +210,9 @@ contract DeployHelper {
     }
 
     function _deployAccessConditionally(DeployAccessCondition memory d) public {
-        if (d.governance) {
-            governance = new Governance(governanceAdmin);
-            console2.log("DeployHelper: Using REAL Governance");
-        }
+        protocolAccessManager = new ProtocolAccessManager(protocolAdmin, protocolAdmin, 0, 0);
         if (d.accessController) {
-            accessController = new AccessController(getGovernance());
+            accessController = new AccessController(address(protocolAccessManager));
             console2.log("DeployHelper: Using REAL AccessController");
             postDeployConditions.accessController_init = true;
             // Access Controller uses IPAccountRegistry in its initialize function.
@@ -233,7 +227,7 @@ contract DeployHelper {
 
     function _deployRegistryConditionally(DeployRegistryCondition memory d) public {
         if (d.moduleRegistry) {
-            moduleRegistry = new ModuleRegistry(getGovernance());
+            moduleRegistry = new ModuleRegistry(address(protocolAccessManager));
             console2.log("DeployHelper: Using REAL ModuleRegistry");
             postDeployConditions.moduleRegistry_registerModules = true;
         }
@@ -247,12 +241,12 @@ contract DeployHelper {
             address(erc6551Registry),
             address(ipAccountImpl),
             getModuleRegistry(),
-            getGovernance()
+            address(protocolAccessManager)
         );
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
         if (d.licenseRegistry) {
-            licenseRegistry = new LicenseRegistry(getGovernance(), "deploy helper");
+            licenseRegistry = new LicenseRegistry(address(protocolAccessManager), "deploy helper");
             console2.log("DeployHelper: Using REAL LicenseRegistry");
         }
     }
@@ -267,13 +261,13 @@ contract DeployHelper {
 
     function _deployModuleConditionally(DeployModuleCondition memory d) public {
         if (d.royaltyModule) {
-            royaltyModule = new RoyaltyModule(getGovernance());
+            royaltyModule = new RoyaltyModule(address(protocolAccessManager));
             console2.log("DeployHelper: Using REAL RoyaltyModule");
             postDeployConditions.royaltyModule_configure = true;
         }
         if (d.disputeModule) {
             require(address(ipAssetRegistry) != address(0), "DeployHelper Module: IPAssetRegistry required");
-            disputeModule = new DisputeModule(getAccessController(), address(ipAssetRegistry), getGovernance());
+            disputeModule = new DisputeModule(getAccessController(), address(ipAssetRegistry), address(protocolAccessManager));
             console2.log("DeployHelper: Using REAL DisputeModule");
             postDeployConditions.disputeModule_configure = true;
         }
@@ -296,7 +290,7 @@ contract DeployHelper {
                 getDisputeModule(),
                 address(erc20),
                 ARBITRATION_PRICE,
-                getGovernance()
+                address(protocolAccessManager)
             );
             console2.log("DeployHelper: Using REAL ArbitrationPolicySP");
         } else {
@@ -309,7 +303,7 @@ contract DeployHelper {
                 getLicensingModule(),
                 LIQUID_SPLIT_FACTORY,
                 LIQUID_SPLIT_MAIN,
-                getGovernance()
+                address(protocolAccessManager)
             );
             console2.log("DeployHelper: Using REAL RoyaltyPolicyLAP");
 
@@ -358,17 +352,7 @@ contract DeployHelper {
             postDeployConditions.disputeModule_configure = true;
         }
         return address(disputeModule);
-    }
-
-    /// @dev Get or deploy mock Governance.
-    function getGovernance() public returns (address) {
-        if (address(governance) == address(0)) {
-            governance = new MockGovernance(governanceAdmin);
-            // solhint-disable-next-line no-console
-            console2.log("DeployHelper: Using Mock Governance");
-        }
-        return address(governance);
-    }
+    }    
 
     /// @dev Get or deploy mock Licensing Module.
     function getLicensingModule() public returns (address) {

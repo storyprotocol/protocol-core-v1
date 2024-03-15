@@ -99,39 +99,36 @@ contract TestArbitrationPolicySP is BaseTest {
         address disputeModule = address(0);
         address paymentToken = address(1);
         uint256 arbitrationPrice = 1000;
-        address governance = address(3);
 
         vm.expectRevert(Errors.ArbitrationPolicySP__ZeroDisputeModule.selector);
-        new ArbitrationPolicySP(disputeModule, paymentToken, arbitrationPrice, governance);
+        new ArbitrationPolicySP(disputeModule, paymentToken, arbitrationPrice, u.admin);
     }
 
     function test_ArbitrationPolicySP_constructor_ZeroPaymentToken() public {
         address disputeModule = address(1);
         address paymentToken = address(0);
         uint256 arbitrationPrice = 1000;
-        address governance = address(3);
 
         vm.expectRevert(Errors.ArbitrationPolicySP__ZeroPaymentToken.selector);
-        new ArbitrationPolicySP(disputeModule, paymentToken, arbitrationPrice, governance);
+        new ArbitrationPolicySP(disputeModule, paymentToken, arbitrationPrice, u.admin);
     }
 
     function test_ArbitrationPolicySP_constructor() public {
         address disputeModule = address(1);
         address paymentToken = address(2);
         uint256 arbitrationPrice = 1000;
-        address governance = address(3);
 
         ArbitrationPolicySP arbitrationPolicySP = new ArbitrationPolicySP(
             disputeModule,
             paymentToken,
             arbitrationPrice,
-            address(3)
+            address(protocolAccessManager)
         );
 
         assertEq(address(arbitrationPolicySP.DISPUTE_MODULE()), disputeModule);
         assertEq(address(arbitrationPolicySP.PAYMENT_TOKEN()), paymentToken);
         assertEq(arbitrationPolicySP.ARBITRATION_PRICE(), arbitrationPrice);
-        assertEq(arbitrationPolicySP.governance(), governance);
+        assertEq(arbitrationPolicySP.authority(), address(protocolAccessManager));
     }
 
     function test_ArbitrationPolicySP_onRaiseDispute_NotDisputeModule() public {
@@ -219,7 +216,7 @@ contract TestArbitrationPolicySP is BaseTest {
         USDC.mint(address(arbitrationPolicySP), mintAmount);
 
         uint256 arbitrationPolicySPUSDCBalanceBefore = USDC.balanceOf(address(arbitrationPolicySP));
-        uint256 governanceUSDCBalanceBefore = USDC.balanceOf(address(governance));
+        uint256 governanceUSDCBalanceBefore = USDC.balanceOf(address(u.admin));
 
         vm.expectEmit(true, true, true, true, address(arbitrationPolicySP));
         emit GovernanceWithdrew(mintAmount);
@@ -228,7 +225,7 @@ contract TestArbitrationPolicySP is BaseTest {
         arbitrationPolicySP.governanceWithdraw();
         vm.stopPrank();
 
-        uint256 governanceUSDCBalanceAfter = USDC.balanceOf(address(governance));
+        uint256 governanceUSDCBalanceAfter = USDC.balanceOf(address(u.admin));
         uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
 
         assertEq(governanceUSDCBalanceAfter - governanceUSDCBalanceBefore, mintAmount);

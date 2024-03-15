@@ -35,7 +35,7 @@ contract TokenWithdrawalModuleTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
+        buildDeployAccessCondition(DeployAccessCondition({ accessController: true }));
         buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: false, moduleRegistry: true }));
         deployConditionally();
         postDeploymentSetup();

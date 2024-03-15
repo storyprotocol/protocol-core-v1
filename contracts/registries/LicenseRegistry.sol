@@ -4,19 +4,19 @@ pragma solidity 0.8.23;
 import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { IPolicyFrameworkManager } from "../interfaces/modules/licensing/IPolicyFrameworkManager.sol";
 import { ILicenseRegistry } from "../interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "../interfaces/modules/dispute/IDisputeModule.sol";
-import { Governable } from "../governance/Governable.sol";
 import { Errors } from "../lib/Errors.sol";
 import { Licensing } from "../lib/Licensing.sol";
 import { DataUniqueness } from "../lib/DataUniqueness.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
-contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
+contract LicenseRegistry is ILicenseRegistry, ERC1155, AccessManaged {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
@@ -57,14 +57,14 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
         _;
     }
 
-    constructor(address governance, string memory url) ERC1155("") Governable(governance) {
+    constructor(address manager, string memory url) ERC1155("") AccessManaged(manager) {
         imageUrl = url;
     }
 
     /// @dev Sets the DisputeModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newDisputeModule The address of the DisputeModule
-    function setDisputeModule(address newDisputeModule) external onlyProtocolAdmin {
+    function setDisputeModule(address newDisputeModule) external restricted {
         if (newDisputeModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroDisputeModule();
         }
@@ -74,7 +74,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     /// @dev Sets the LicensingModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newLicensingModule The address of the LicensingModule
-    function setLicensingModule(address newLicensingModule) external onlyProtocolAdmin {
+    function setLicensingModule(address newLicensingModule) external restricted {
         if (newLicensingModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroLicensingModule();
         }
@@ -84,7 +84,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     /// @dev Sets the Licensing Image URL.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param url The URL of the Licensing Image
-    function setLicensingImageUrl(string calldata url) external onlyProtocolAdmin {
+    function setLicensingImageUrl(string calldata url) external restricted {
         imageUrl = url;
         emit BatchMetadataUpdate(1, _mintedLicenses);
     }

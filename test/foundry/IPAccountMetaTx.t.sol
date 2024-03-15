@@ -23,7 +23,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: false }));
+        buildDeployAccessCondition(DeployAccessCondition({ accessController: true }));
         buildDeployRegistryCondition(DeployRegistryCondition({ moduleRegistry: true, licenseRegistry: false }));
         deployConditionally();
         postDeploymentSetup();

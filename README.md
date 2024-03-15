@@ -68,6 +68,14 @@ yarn # this installs packages
 make # this builds
 ```
 
+## Verify Upgrade Storage Layout (before scripts or tests)
+
+```sh
+forge clean
+forge compile
+npx @openzeppelin/upgrades-core@^1.32.3 validate out/build-info 
+```
+
 ## Testing
 
 ```

@@ -29,7 +29,7 @@ forge-update :; forge update
 forge-build :; forge build
 build :; npx hardhat compile
 
-test :; forge test
+test :; forge test --ffi
 
 snapshot :; forge snapshot
 

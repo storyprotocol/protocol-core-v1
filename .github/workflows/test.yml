@@ -52,13 +52,14 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
+          forge install OpenZeppelin/openzeppelin-foundry-upgrades
           forge build --force --sizes --skip test --skip script
           forge build
         id: build
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000
+          forge test -vvv --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000 --ffi --skip build
         id: forge-test
 
       - name: Run solhint

@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 
 // external
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
@@ -204,9 +205,16 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
-        licenseRegistry = new LicenseRegistry(
-            address(protocolAccessManager),
-            "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+        licenseRegistry = LicenseRegistry(
+            Upgrades.deployUUPSProxy(
+                "LicenseRegistry.sol",
+                abi.encodeCall(
+                    LicenseRegistry.initialize, (
+                        address(protocolAccessManager),
+                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                    )
+                )
+            )
         );
         _postdeploy(contractKey, address(licenseRegistry));
 

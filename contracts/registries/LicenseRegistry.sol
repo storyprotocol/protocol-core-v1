@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
+
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
+import { Initializable } from  "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IPolicyFrameworkManager } from "../interfaces/modules/licensing/IPolicyFrameworkManager.sol";
 import { ILicenseRegistry } from "../interfaces/registries/ILicenseRegistry.sol";
@@ -16,17 +20,17 @@ import { DataUniqueness } from "../lib/DataUniqueness.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
-contract LicenseRegistry is ILicenseRegistry, ERC1155, AccessManaged {
+contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     /// @notice Name of the Programmable IP License NFT
-    string public name = "Programmable IP License NFT";
+    string public name;
 
     /// @notice Symbol of the Programmable IP License NFT
-    string public symbol = "PILNFT";
+    string public symbol;
 
     /// @notice URL of the Licensing Image
     string public imageUrl;
@@ -57,8 +61,17 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, AccessManaged {
         _;
     }
 
-    constructor(address manager, string memory url) ERC1155("") AccessManaged(manager) {
-        imageUrl = url;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address manager, string memory url) initializer public {
+        __ERC1155_init("");
+        __AccessManaged_init(manager);
+        __UUPSUpgradeable_init();
+        name = "Programmable IP License NFT";
+        symbol = "PILNFT";
     }
 
     /// @dev Sets the DisputeModule address.
@@ -272,4 +285,13 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, AccessManaged {
         }
         super._update(from, to, ids, values);
     }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// Must be called by ProtocolRoles.UPGRADER
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation)
+        internal
+        restricted
+        override
+    {}
 }

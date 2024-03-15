@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 // external
 import { console2 } from "forge-std/console2.sol"; // console to indicate mock deployment calls.
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
+import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 // contracts
 import { ProtocolAccessManager } from "../../../contracts/access-protocol/ProtocolAccessManager.sol";
@@ -246,7 +247,17 @@ contract DeployHelper {
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
         if (d.licenseRegistry) {
-            licenseRegistry = new LicenseRegistry(address(protocolAccessManager), "deploy helper");
+            licenseRegistry = LicenseRegistry(
+                Upgrades.deployUUPSProxy(
+                    "LicenseRegistry.sol",
+                    abi.encodeCall(
+                        LicenseRegistry.initialize, (
+                            address(protocolAccessManager),
+                            "deploy helper"
+                        )
+                    )
+                )
+            );
             console2.log("DeployHelper: Using REAL LicenseRegistry");
         }
     }

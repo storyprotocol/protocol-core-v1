@@ -30,6 +30,7 @@ import { RoyaltyPolicyLAP } from "../../../contracts/modules/royalty/policies/Ro
 import { DisputeModule } from "../../../contracts/modules/dispute/DisputeModule.sol";
 import { LicensingModule } from "../../../contracts/modules/licensing/LicensingModule.sol";
 import { ArbitrationPolicySP } from "../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
+import { RoleConfigHelper } from "../../../contracts/lib/access-protocol/RoleConfigHelper.sol";
 
 // test
 import { MockAccessController } from "../mocks/access/MockAccessController.sol";
@@ -245,20 +246,19 @@ contract DeployHelper {
         );
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
-        if (d.licenseRegistry) {
-            licenseRegistry = LicenseRegistry(
-                Upgrades.deployUUPSProxy(
-                    "LicenseRegistry.sol",
-                    abi.encodeCall(
-                        LicenseRegistry.initialize, (
-                            address(protocolAccessManager),
-                            "deploy helper"
-                        )
+        licenseRegistry = LicenseRegistry(
+            Upgrades.deployUUPSProxy(
+                "LicenseRegistry.sol",
+                abi.encodeCall(
+                    LicenseRegistry.initialize, (
+                        address(protocolAccessManager),
+                        "deploy helper"
                     )
                 )
-            );
-            console2.log("DeployHelper: Using REAL LicenseRegistry");
-        }
+            )
+        );
+
+        console2.log("DeployHelper: Using REAL LicenseRegistry");
     }
 
     function _deployIPResolverConditionally(DeployMiscCondition memory d) public {

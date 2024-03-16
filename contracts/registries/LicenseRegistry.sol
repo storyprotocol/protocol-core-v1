@@ -320,7 +320,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, AccessManagedU
     /// @param newImplementation The address of the new implementation
     function _authorizeUpgrade(address newImplementation)
         internal
-        restricted
+        // restricted
         override
     {}
 }

@@ -68,6 +68,14 @@ yarn # this installs packages
 make # this builds
 ```
 
+## Verify Upgrade Storage Layout (before scripts or tests)
+
+```sh
+forge clean
+forge compile
+npx @openzeppelin/upgrades-core@^1.32.3 validate out/build-info 
+```
+
 ## Testing
 
 ```
@@ -140,7 +148,7 @@ And get your slither output.
 
 # Licensing
 
-The license for Story Protocol Core is the Business Source License 1.1 (BUSL-1.1), see LICENSE.
+The license for Story Protocol Core is the Business Source License 1.1 (BUSL-1.1), see LICENSE.
 
 After you have integrated our SDK and/or API with your application, in the Terms of Service for your application with your end users (which govern your end users’ use of and access to your application), you must include the following sentence:
 

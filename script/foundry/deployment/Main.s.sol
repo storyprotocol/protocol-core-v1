@@ -7,6 +7,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
+import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 // contracts
 import { AccessController } from "contracts/AccessController.sol";
@@ -121,7 +122,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
             _deployProtocolContracts(deployer);
             _configureDeployment();
         }
-        // _configureDeployedProtocolContracts();
 
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol
@@ -205,9 +205,16 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
-        licenseRegistry = new LicenseRegistry(
-            address(governance),
-            "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+        licenseRegistry = LicenseRegistry(
+            Upgrades.deployUUPSProxy(
+                "LicenseRegistry.sol",
+                abi.encodeCall(
+                    LicenseRegistry.initialize, (
+                        address(governance),
+                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                    )
+                )
+            )
         );
         _postdeploy(contractKey, address(licenseRegistry));
 
@@ -280,23 +287,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
         _predeploy(contractKey);
         mockTokenGatedHook = new MockTokenGatedHook();
         _postdeploy(contractKey, address(mockTokenGatedHook));
-    }
-
-    function _configureDeployedProtocolContracts() private {
-        _readDeployment();
-
-        accessController = AccessController(_readAddress("main.AccessController"));
-        moduleRegistry = ModuleRegistry(_readAddress("main.ModuleRegistry"));
-        licenseRegistry = LicenseRegistry(_readAddress("main.LicenseRegistry"));
-        ipAssetRegistry = IPAssetRegistry(_readAddress("main.IPAssetRegistry"));
-        ipResolver = IPResolver(_readAddress("main.IPResolver"));
-        royaltyModule = RoyaltyModule(_readAddress("main.RoyaltyModule"));
-        royaltyPolicyLAP = RoyaltyPolicyLAP(payable(_readAddress("main.royaltyPolicyLAP")));
-        disputeModule = DisputeModule(_readAddress("main.DisputeModule"));
-        ipAssetRenderer = IPAssetRenderer(_readAddress("main.IPAssetRenderer"));
-        ipMetadataProvider = IPMetadataProvider(_readAddress("main.IPMetadataProvider"));
-
-        _executeInteractions();
     }
 
     function _predeploy(string memory contractKey) private view {

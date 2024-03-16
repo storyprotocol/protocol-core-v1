@@ -24,10 +24,10 @@ interface ILicenseRegistry is IERC1155 {
     );
 
     /// @notice Returns the canonical protocol-wide LicensingModule
-    function LICENSING_MODULE() external view returns (ILicensingModule);
+    function licensingModule() external view returns (ILicensingModule);
 
     /// @notice Returns the canonical protocol-wide DisputeModule
-    function DISPUTE_MODULE() external view returns (IDisputeModule);
+    function disputeModule() external view returns (IDisputeModule);
 
     /// @notice Mints license NFTs representing a policy granted by a set of ipIds (licensors). This NFT needs to be
     /// burned in order to link a derivative IP with its parents. If this is the first combination of policy and

@@ -37,7 +37,6 @@ import { MockDisputeModule } from "../mocks/module/MockDisputeModule.sol";
 import { MockLicensingModule } from "../mocks/module/MockLicensingModule.sol";
 import { MockRoyaltyModule } from "../mocks/module/MockRoyaltyModule.sol";
 import { MockArbitrationPolicy } from "../mocks/policy/MockArbitrationPolicy.sol";
-import { MockLicenseRegistry } from "../mocks/registry/MockLicenseRegistry.sol";
 import { MockModuleRegistry } from "../mocks/registry/MockModuleRegistry.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
@@ -377,11 +376,6 @@ contract DeployHelper {
 
     /// @dev Get or deploy mock License Registry.
     function getLicenseRegistry() public returns (address) {
-        if (address(licenseRegistry) == address(0)) {
-            licenseRegistry = new MockLicenseRegistry();
-            // solhint-disable-next-line no-console
-            console2.log("DeployHelper: Using Mock LicenseRegistry");
-        }
         return address(licenseRegistry);
     }
 

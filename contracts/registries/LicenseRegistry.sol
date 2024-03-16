@@ -26,24 +26,24 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
+    /// @dev Storage of the LicenseRegistry
+    /// @param name Name of the Programmable IP License NFT
+    /// @param symbol Symbol of the Programmable IP License NFT
+    /// @param imageUrl URL of the Licensing Image
+    /// @param licensingModule Returns the canonical protocol-wide LicensingModule
+    /// @param disputeModule Returns the canonical protocol-wide DisputeModule
+    /// @param hashedLicenses Maps the hash of the license data to the licenseId
+    /// @param licenses Maps the licenseId to the license data
+    /// @param mintedLicenses Tracks the number of licenses registered in the protocol, it will not decrease when a license is burnt.
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
-        /// @notice Name of the Programmable IP License NFT
         string name;
-        /// @notice Symbol of the Programmable IP License NFT
         string symbol;
-        /// @notice URL of the Licensing Image
         string imageUrl;
-        // TODO: deploy with CREATE2 to make this immutable
-        /// @notice Returns the canonical protocol-wide LicensingModule
         ILicensingModule licensingModule;
-        /// @notice Returns the canonical protocol-wide DisputeModule
         IDisputeModule disputeModule;
-        /// @dev Maps the hash of the license data to the licenseId
         mapping(bytes32 licenseHash => uint256 licenseId) hashedLicenses;
-        /// @dev Maps the licenseId to the license data
         mapping(uint256 licenseId => Licensing.License licenseData) licenses;
-        /// @dev Tracks the number of licenses registered in the protocol, it will not decrease when a license is burnt.
         uint256 mintedLicenses;
     }
 
@@ -309,7 +309,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
     //                         Upgrades related                               //
     ////////////////////////////////////////////////////////////////////////////
 
-    function _getLicenseRegistryStorage() private pure returns (LicenseRegistryStorage storage $) {
+    function _getLicenseRegistryStorage() internal pure returns (LicenseRegistryStorage storage $) {
         assembly {
             $.slot := LicenseRegistryStorageLocation
         }

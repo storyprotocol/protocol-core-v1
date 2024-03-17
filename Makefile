@@ -21,7 +21,6 @@ forge-remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && tou
 
 install :
 	yarn install 
-	forge install OpenZeppelin/openzeppelin-foundry-upgrades
 
 # Update Dependencies
 forge-update :; forge update

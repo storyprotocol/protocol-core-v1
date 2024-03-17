@@ -65,13 +65,14 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
         _disableInitializers();
     }
 
-    function initialize(address governance, string memory url) initializer public {
+    function initialize(address governance, string memory imageUrl) initializer public {
         __ERC1155_init("");
         __GovernableUpgradeable_init(governance);
         __UUPSUpgradeable_init();
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.name = "Programmable IP License NFT";
         $.symbol = "PILNFT";
+        $.imageUrl = imageUrl;
     }
 
     /// @dev Sets the DisputeModule address.

@@ -28,8 +28,6 @@ contract UpgradesTest is BaseTest {
             "MockLicenseRegistryV2.sol",
             abi.encodeCall(MockLicenseRegistryV2.setFoo, ("bar"))
         );
-        // Set new storage
-        MockLicenseRegistryV2(address(licenseRegistry)).setFoo("bar");
         
         // New storage is here.
         assertEq(MockLicenseRegistryV2(address(licenseRegistry)).foo(), "bar");

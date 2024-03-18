@@ -52,7 +52,6 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge install OpenZeppelin/openzeppelin-foundry-upgrades
           forge build --force --sizes --skip test --skip script
           forge build
         id: build

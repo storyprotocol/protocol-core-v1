@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 // external
 import { console2 } from "forge-std/console2.sol"; // console to indicate mock deployment calls.
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import { TestProxyHelper } from "./TestProxyHelper.sol";
 
 // contracts
 import { AccessController } from "../../../contracts/AccessController.sol";
@@ -253,9 +253,10 @@ contract DeployHelper {
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
         if (d.licenseRegistry) {
+            address newIml = address(new LicenseRegistry());
             licenseRegistry = LicenseRegistry(
-                Upgrades.deployUUPSProxy(
-                    "LicenseRegistry.sol",
+                TestProxyHelper.deployUUPSProxy(
+                    newIml,
                     abi.encodeCall(
                         LicenseRegistry.initialize, (
                             address(getGovernance()),

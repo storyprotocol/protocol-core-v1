@@ -36,6 +36,25 @@ interface IIPAssetRegistry is IIPAccountRegistry {
         bytes metadata
     );
 
+    // TODO: replace the IPRegistered event with IPRegisteredPermissionless
+    /// @notice Emits when an IP is officially registered into the protocol.
+    /// @param ipId The canonical identifier for the IP.
+    /// @param chainId The chain identifier of where the IP resides.
+    /// @param tokenContract The token contract address of the IP NFT.
+    /// @param tokenId The token identifier of the IP.
+    /// @param name The name of the IP.
+    /// @param uri The URI of the IP.
+    /// @param registrationDate The date and time the IP was registered.
+    event IPRegisteredPermissionless(
+        address ipId,
+        uint256 indexed chainId,
+        address indexed tokenContract,
+        uint256 indexed tokenId,
+        string name,
+        string uri,
+        uint256 registrationDate
+    );
+
     /// @notice Emits when an IP resolver is bound to an IP.
     /// @param ipId The canonical identifier of the specified IP.
     /// @param resolver The address of the new resolver bound to the IP.
@@ -69,6 +88,12 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     /// @param operator The address of the operator the sender authorizes.
     /// @param approved Whether or not to approve that operator for registration.
     function setApprovalForAll(address operator, bool approved) external;
+
+    /// @notice Registers an NFT as an IP asset.
+    /// @param tokenContract The address of the NFT.
+    /// @param tokenId The token identifier of the NFT.
+    /// @return id The address of the newly registered IP.
+    function register(address tokenContract, uint256 tokenId) external returns (address id);
 
     /// @notice Registers an NFT as IP, creating a corresponding IP record.
     /// @param chainId The chain identifier of where the NFT resides.

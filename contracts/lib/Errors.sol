@@ -63,6 +63,15 @@ library Errors {
     /// @notice The metadata provider is not valid.
     error IPAssetRegistry__InvalidMetadataProvider();
 
+    /// @notice The NFT token contract is not valid ERC721 contract.
+    error IPAssetRegistry__UnsupportedIERC721(address contractAddress);
+
+    /// @notice The NFT token contract does not support ERC721Metadata.
+    error IPAssetRegistry__UnsupportedIERC721Metadata(address contractAddress);
+
+    /// @notice The NFT token id does not exist or invalid.
+    error IPAssetRegistry__InvalidToken(address contractAddress, uint256 tokenId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                                 IPResolver                            ///
     ////////////////////////////////////////////////////////////////////////////

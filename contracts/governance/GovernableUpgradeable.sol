@@ -12,7 +12,6 @@ import { GovernanceLib } from "../lib/GovernanceLib.sol";
 /// @title Governable
 /// @dev All contracts managed by governance should inherit from this contract.
 abstract contract GovernableUpgradeable is IGovernable, Initializable {
-    
     /// @custom:storage-location erc7201:story-protocol.GovernableUpgradeable
     /// @param governance The address of the governance.
     struct GovernableUpgradeableStorage {
@@ -20,7 +19,8 @@ abstract contract GovernableUpgradeable is IGovernable, Initializable {
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GovernableUpgradeable")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant GovernableUpgradeableStorageLocation = 0xaed547d8331715caab0800583ca79170ef3186de64f009413517d98c5b905c00;
+    bytes32 private constant GovernableUpgradeableStorageLocation =
+        0xaed547d8331715caab0800583ca79170ef3186de64f009413517d98c5b905c00;
 
     /// @dev Ensures that the function is called by the protocol admin.
     modifier onlyProtocolAdmin() {

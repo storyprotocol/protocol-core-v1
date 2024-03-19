@@ -5,8 +5,6 @@ import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import { Initializable } from  "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IPolicyFrameworkManager } from "../interfaces/modules/licensing/IPolicyFrameworkManager.sol";
@@ -34,7 +32,8 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
     /// @param disputeModule Returns the canonical protocol-wide DisputeModule
     /// @param hashedLicenses Maps the hash of the license data to the licenseId
     /// @param licenses Maps the licenseId to the license data
-    /// @param mintedLicenses Tracks the number of licenses registered in the protocol, it will not decrease when a license is burnt.
+    /// @param mintedLicenses Tracks the number of licenses registered in the protocol,
+    /// it will not decrease when a license is burnt.
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         string name;
@@ -48,7 +47,8 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant LicenseRegistryStorageLocation = 0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
+    bytes32 private constant LicenseRegistryStorageLocation =
+        0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
 
     /// @dev We have to implement this modifier instead of inheriting `LicensingModuleAware` because LicensingModule
     /// constructor requires the licenseRegistry address, which would create a circular dependency. Thus, we use the
@@ -65,7 +65,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
         _disableInitializers();
     }
 
-    function initialize(address governance, string memory imageUrl) initializer public {
+    function initialize(address governance, string memory imageUrl) public initializer {
         __ERC1155_init("");
         __GovernableUpgradeable_init(governance);
         __UUPSUpgradeable_init();
@@ -319,9 +319,5 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgr
     /// @dev Hook to authorize the upgrade according to UUPSUgradeable
     /// Must be called by ProtocolRoles.UPGRADER
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation)
-        internal
-        onlyProtocolAdmin
-        override
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
 }

@@ -59,7 +59,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000 --ffi --skip build
+          forge test -vvv --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000 --ffi
         id: forge-test
 
       - name: Run solhint

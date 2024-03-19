@@ -190,6 +190,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @param id The canonical identifier for the IP.
     /// @return isRegistered Whether the IP was registered into the protocol.
     function isRegistered(address id) external view returns (bool) {
+        // TODO: also check the ipAccount has "Name" metadata after clean up permissioned functions.
         return _records[id].resolver != address(0) || id.code.length != 0;
     }
 

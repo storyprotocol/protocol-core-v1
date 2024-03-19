@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IERC721, IERC165 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract MockERC721WithoutMetadata is IERC721 {
-    mapping (uint256 => address) private _owners;
+    mapping(uint256 => address) private _owners;
 
     function mint(address to, uint256 tokenId) external {
         _owners[tokenId] = to;

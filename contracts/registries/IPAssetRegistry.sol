@@ -114,7 +114,6 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         emit IPRegisteredPermissionless(id, block.chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
 
-
     /// @notice Registers an NFT as IP, creating a corresponding IP record.
     /// @param chainId The chain identifier of where the NFT resides.
     /// @param tokenContract The address of the NFT.

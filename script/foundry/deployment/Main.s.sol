@@ -7,7 +7,9 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
-import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
+// TODO: fix the install of this plugin for safer deployments
+// import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
+import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 // contracts
 import { AccessController } from "contracts/AccessController.sol";
@@ -205,9 +207,10 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
+        address impl = address(new LicenseRegistry());
         licenseRegistry = LicenseRegistry(
-            Upgrades.deployUUPSProxy(
-                "LicenseRegistry.sol",
+            TestProxyHelper.deployUUPSProxy(
+                impl,
                 abi.encodeCall(
                     LicenseRegistry.initialize, (
                         address(governance),

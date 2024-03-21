@@ -2,9 +2,6 @@
 pragma solidity 0.8.23;
 
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
-import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { IDisputeModule } from "contracts/interfaces/modules/dispute/IDisputeModule.sol";
-import { Licensing } from "contracts/lib/Licensing.sol";
 
 /// @custom:oz-upgrades-from LicenseRegistry
 contract MockLicenseRegistryV2 is LicenseRegistry {

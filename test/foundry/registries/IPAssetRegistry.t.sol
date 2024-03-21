@@ -10,6 +10,7 @@ import { Errors } from "contracts/lib/Errors.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721WithoutMetadata.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
@@ -19,6 +20,7 @@ import { BaseTest } from "../utils/BaseTest.t.sol";
 contract IPAssetRegistryTest is BaseTest {
     using IPAccountStorageOps for IIPAccount;
     using ShortStrings for *;
+    using Strings for *;
     // Default IP record attributes.
     string public constant IP_NAME = "IPAsset";
     string public constant IP_DESCRIPTION = "IPs all the way down.";
@@ -76,14 +78,14 @@ contract IPAssetRegistryTest is BaseTest {
 
         assertTrue(!registry.isRegistered(ipId));
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
         vm.expectEmit(true, true, true, true);
         emit IIPAssetRegistry.IPRegisteredPermissionless(
             ipId,
             block.chainid,
             tokenAddress,
             tokenId,
-            "Ape #99",
+            name,
             "https://storyprotocol.xyz/erc721/99",
             block.timestamp
         );
@@ -92,7 +94,7 @@ contract IPAssetRegistryTest is BaseTest {
 
         assertEq(totalSupply + 1, registry.totalSupply());
         assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), "Ape #99");
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
     }
@@ -102,14 +104,14 @@ contract IPAssetRegistryTest is BaseTest {
         uint256 totalSupply = registry.totalSupply();
 
         IIPAccountRegistry(registry).registerIpAccount(block.chainid, tokenAddress, tokenId);
-
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
         vm.expectEmit(true, true, true, true);
         emit IIPAssetRegistry.IPRegisteredPermissionless(
             ipId,
             block.chainid,
             tokenAddress,
             tokenId,
-            "Ape #99",
+            name,
             "https://storyprotocol.xyz/erc721/99",
             block.timestamp
         );
@@ -118,7 +120,7 @@ contract IPAssetRegistryTest is BaseTest {
 
         assertEq(totalSupply + 1, registry.totalSupply());
         assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
-        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), "Ape #99");
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
     }

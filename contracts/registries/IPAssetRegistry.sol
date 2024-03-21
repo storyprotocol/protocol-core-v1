@@ -102,7 +102,13 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
             revert Errors.IPAssetRegistry__AlreadyRegistered();
         }
 
-        string memory name = string.concat(IERC721Metadata(tokenContract).name(), " #", tokenId.toString());
+        string memory name = string.concat(
+            block.chainid.toString(),
+            ": ",
+            IERC721Metadata(tokenContract).name(),
+            " #",
+            tokenId.toString()
+        );
         string memory uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
         uint256 registrationDate = block.timestamp;
         ipAccount.setString("NAME", name);

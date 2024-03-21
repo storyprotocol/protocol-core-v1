@@ -53,7 +53,6 @@ jobs:
         run: |
           forge --version
           forge build --force --sizes --skip test --skip script
-          forge build
         id: build
 
       - name: Run Forge tests
@@ -63,9 +62,6 @@ jobs:
 
       - name: Run solhint
         run: npx solhint contracts/**/*.sol
-
-      - name: Run solhint
-        run: npx solhint contracts/*.sol
 
       # - name: Gas Difference
       #   run:

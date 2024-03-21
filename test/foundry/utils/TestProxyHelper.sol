@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 library TestProxyHelper {
-
     /// Deploys a new UUPS proxy with the provided implementation and data
     /// @dev WARNING: DO NOT USE IN PRODUCTION, this doesn't check for storage layout compatibility
     /// @param impl address of the implementation contract

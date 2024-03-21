@@ -257,12 +257,7 @@ contract DeployHelper {
             licenseRegistry = LicenseRegistry(
                 TestProxyHelper.deployUUPSProxy(
                     newIml,
-                    abi.encodeCall(
-                        LicenseRegistry.initialize, (
-                            address(getGovernance()),
-                            "deploy helper"
-                        )
-                    )
+                    abi.encodeCall(LicenseRegistry.initialize, (address(getGovernance()), "deploy helper"))
                 )
             );
             console2.log("DeployHelper: Using REAL LicenseRegistry");

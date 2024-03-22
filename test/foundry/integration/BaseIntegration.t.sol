@@ -27,9 +27,7 @@ contract BaseIntegration is BaseTest {
             DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: true })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-        buildDeployMiscCondition(
-            DeployMiscCondition({ ipMetadataProvider: true, ipResolver: true })
-        );
+        buildDeployMiscCondition(DeployMiscCondition({ ipMetadataProvider: true, ipResolver: true }));
         deployConditionally();
         postDeploymentSetup();
 

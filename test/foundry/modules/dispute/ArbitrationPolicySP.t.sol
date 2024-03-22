@@ -26,9 +26,7 @@ contract TestArbitrationPolicySP is BaseTest {
             DeployModuleCondition({ disputeModule: true, royaltyModule: false, licensingModule: false })
         );
         buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-        buildDeployMiscCondition(
-            DeployMiscCondition({ ipMetadataProvider: false, ipResolver: true })
-        );
+        buildDeployMiscCondition(DeployMiscCondition({ ipMetadataProvider: false, ipResolver: true }));
         deployConditionally();
         postDeploymentSetup();
 

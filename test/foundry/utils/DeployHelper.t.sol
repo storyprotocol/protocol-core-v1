@@ -20,7 +20,6 @@ import { IPAccountImpl } from "../../../contracts/IPAccountImpl.sol";
 import { IPMetadataProvider } from "../../../contracts/registries/metadata/IPMetadataProvider.sol";
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "../../../contracts/registries/IPAssetRegistry.sol";
-import { IPAssetRenderer } from "../../../contracts/registries/metadata/IPAssetRenderer.sol";
 import { ModuleRegistry } from "../../../contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 import { IPResolver } from "../../../contracts/resolvers/IPResolver.sol";
@@ -71,7 +70,6 @@ contract DeployHelper {
     }
 
     struct DeployMiscCondition {
-        bool ipAssetRenderer;
         bool ipMetadataProvider;
         bool ipResolver;
     }
@@ -124,7 +122,6 @@ contract DeployHelper {
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
 
     // Misc.
-    IPAssetRenderer internal ipAssetRenderer;
     IPMetadataProvider internal ipMetadataProvider;
     IPResolver internal ipResolver;
 
@@ -179,7 +176,7 @@ contract DeployHelper {
         buildDeployModuleCondition(DeployModuleCondition(true, true, true));
         buildDeployAccessCondition(DeployAccessCondition(true, true));
         buildDeployPolicyCondition(DeployPolicyCondition(true, true));
-        buildDeployMiscCondition(DeployMiscCondition(true, true, true));
+        buildDeployMiscCondition(DeployMiscCondition(true, true));
 
         deployConditionally();
     }
@@ -323,11 +320,6 @@ contract DeployHelper {
 
     function _deployMiscConditionally(DeployMiscCondition memory d) public {
         // Skip IPResolver here, called in `_deployIPResolverConditionally`
-        if (d.ipAssetRenderer) {
-            require(address(ipAssetRegistry) != address(0), "DeployHelper Misc: IPAssetRegistry required");
-            ipAssetRenderer = new IPAssetRenderer(address(ipAssetRegistry), getLicenseRegistry(), getRoyaltyModule());
-            console2.log("DeployHelper: Using REAL IPAssetRenderer");
-        }
         if (d.ipMetadataProvider) {
             ipMetadataProvider = new IPMetadataProvider(getModuleRegistry());
             console2.log("DeployHelper: Using REAL IPMetadataProvider");

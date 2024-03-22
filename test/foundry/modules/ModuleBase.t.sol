@@ -15,7 +15,7 @@ abstract contract ModuleBaseTest is BaseTest {
     function setUp() public virtual override(BaseTest) {
         super.setUp();
         buildDeployMiscCondition(
-            DeployMiscCondition({ ipAssetRenderer: false, ipMetadataProvider: false, ipResolver: true })
+            DeployMiscCondition({ ipMetadataProvider: false, ipResolver: true })
         );
         deployConditionally();
         postDeploymentSetup();

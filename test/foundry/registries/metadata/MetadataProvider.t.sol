@@ -87,7 +87,7 @@ contract MetadataProviderTest is BaseTest {
             DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: false })
         );
         buildDeployMiscCondition(
-            DeployMiscCondition({ ipAssetRenderer: false, ipMetadataProvider: false, ipResolver: true })
+            DeployMiscCondition({ ipMetadataProvider: false, ipResolver: true })
         );
         deployConditionally();
         postDeploymentSetup();

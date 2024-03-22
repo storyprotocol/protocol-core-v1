@@ -22,6 +22,14 @@ contract MockLicenseRegistry is ERC1155, ILicenseRegistry {
         LICENSING_MODULE = ILicensingModule(newLicensingModule);
     }
 
+    function disputeModule() external view returns (IDisputeModule) {
+        return DISPUTE_MODULE;
+    }
+
+    function licensingModule() external view returns (ILicensingModule) {
+        return LICENSING_MODULE;
+    }
+
     function mintLicense(
         uint256 policyId,
         address licensorIpId_,

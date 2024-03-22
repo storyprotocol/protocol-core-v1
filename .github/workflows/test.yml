@@ -1,38 +1,36 @@
-name: UnitTest
+name: Foundry CI
 
-on: [pull_request]
-
-env:
-  FOUNDRY_PROFILE: ci
-  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+on:
+  pull_request:
+    branches:
+      - main
 
 jobs:
+
+  # Add job timestamp
+  print_timestamp: 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate timestamp
+        run: |
+          echo "TIMESTAMP=$(TZ='America/Los_Angeles' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Print timestamp
+        run: |
+          echo "Execution time (Pacific Time Zone) $TIMESTAMP"
 
   foundry-test:
     strategy:
       fail-fast: true
-
     name: Foundry Unit Test
     runs-on: ubuntu-latest
+    needs: print_timestamp
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           submodules: recursive
           fetch-depth: 0
           
-      - name: List files in the repository
-        run: |
-          ls -R ${{ github.workspace }}
-
-      - name: Test Env Variables
-        env:
-          MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
-        run: |
-          echo "MAINNET_RPC_URL is ${{ secrets.MAINNET_RPC_URL }}"
-          echo "env.MAINNET_RPC_URL is $MAINNET_RPC_URL"
-          echo "env.FOUNDRY_PROFILE is $FOUNDRY_PROFILE"
-          echo "DONE."
-
       - name: Run install
         uses: borales/actions-yarn@v4
         with:
@@ -43,36 +41,16 @@ jobs:
         with:
           version: nightly
 
-      - name: List files in the repository
-        run: |
-          ls -R ${{ github.workspace }}          
-
       # first, build contracts excluding the tests and scripts. Check contract sizes in this step.
       # then, build contracts including the tests and scripts. Don't check contract sizes.
       - name: Run Forge build
         run: |
           forge --version
           forge build --force --sizes --skip test --skip script
-          forge build
-        id: build
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000
-        id: forge-test
+          forge test -v --fork-url https://gateway.tenderly.co/public/sepolia --fork-block-number 5196000
 
       - name: Run solhint
         run: npx solhint contracts/**/*.sol
-
-      - name: Run solhint
-        run: npx solhint contracts/*.sol
-
-      # - name: Gas Difference
-      #   run:
-      #     forge snapshot --gas-report --diff --desc
-      #   id: forge-gas-snapshot-diff
-
-      # - name: Code Coverage
-      #   run:
-      #     forge coverage --report lcov --report summary
-      #   id: forge-code-coverage

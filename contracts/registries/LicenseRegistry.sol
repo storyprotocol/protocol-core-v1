@@ -1,64 +1,78 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IPolicyFrameworkManager } from "../interfaces/modules/licensing/IPolicyFrameworkManager.sol";
 import { ILicenseRegistry } from "../interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "../interfaces/modules/dispute/IDisputeModule.sol";
-import { Governable } from "../governance/Governable.sol";
 import { Errors } from "../lib/Errors.sol";
 import { Licensing } from "../lib/Licensing.sol";
 import { DataUniqueness } from "../lib/DataUniqueness.sol";
+import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
-contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
+contract LicenseRegistry is ILicenseRegistry, ERC1155Upgradeable, GovernableUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
-    /// @notice Name of the Programmable IP License NFT
-    string public name = "Programmable IP License NFT";
+    /// @dev Storage of the LicenseRegistry
+    /// @param name Name of the Programmable IP License NFT
+    /// @param symbol Symbol of the Programmable IP License NFT
+    /// @param imageUrl URL of the Licensing Image
+    /// @param licensingModule Returns the canonical protocol-wide LicensingModule
+    /// @param disputeModule Returns the canonical protocol-wide DisputeModule
+    /// @param hashedLicenses Maps the hash of the license data to the licenseId
+    /// @param licenses Maps the licenseId to the license data
+    /// @param mintedLicenses Tracks the number of licenses registered in the protocol,
+    /// it will not decrease when a license is burnt.
+    /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
+    struct LicenseRegistryStorage {
+        string name;
+        string symbol;
+        string imageUrl;
+        ILicensingModule licensingModule;
+        IDisputeModule disputeModule;
+        mapping(bytes32 licenseHash => uint256 licenseId) hashedLicenses;
+        mapping(uint256 licenseId => Licensing.License licenseData) licenses;
+        uint256 mintedLicenses;
+    }
 
-    /// @notice Symbol of the Programmable IP License NFT
-    string public symbol = "PILNFT";
-
-    /// @notice URL of the Licensing Image
-    string public imageUrl;
-
-    // TODO: deploy with CREATE2 to make this immutable
-    /// @notice Returns the canonical protocol-wide LicensingModule
-    ILicensingModule public LICENSING_MODULE;
-
-    /// @notice Returns the canonical protocol-wide DisputeModule
-    IDisputeModule public DISPUTE_MODULE;
-
-    /// @dev Maps the hash of the license data to the licenseId
-    mapping(bytes32 licenseHash => uint256 licenseId) private _hashedLicenses;
-
-    /// @dev Maps the licenseId to the license data
-    mapping(uint256 licenseId => Licensing.License licenseData) private _licenses;
-
-    /// @dev Tracks the number of licenses registered in the protocol, it will not decrease when a license is burnt.
-    uint256 private _mintedLicenses;
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant LicenseRegistryStorageLocation =
+        0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
 
     /// @dev We have to implement this modifier instead of inheriting `LicensingModuleAware` because LicensingModule
     /// constructor requires the licenseRegistry address, which would create a circular dependency. Thus, we use the
     /// function `setLicensingModule` to set the licensing module address after deploying the module.
     modifier onlyLicensingModule() {
-        if (msg.sender != address(LICENSING_MODULE)) {
+        if (msg.sender != address(_getLicenseRegistryStorage().licensingModule)) {
             revert Errors.LicenseRegistry__CallerNotLicensingModule();
         }
         _;
     }
 
-    constructor(address governance, string memory url) ERC1155("") Governable(governance) {
-        imageUrl = url;
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address governance, string memory imageUrl) public initializer {
+        __ERC1155_init("");
+        __GovernableUpgradeable_init(governance);
+        __UUPSUpgradeable_init();
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        $.name = "Programmable IP License NFT";
+        $.symbol = "PILNFT";
+        $.imageUrl = imageUrl;
     }
 
     /// @dev Sets the DisputeModule address.
@@ -68,7 +82,8 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
         if (newDisputeModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroDisputeModule();
         }
-        DISPUTE_MODULE = IDisputeModule(newDisputeModule);
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        $.disputeModule = IDisputeModule(newDisputeModule);
     }
 
     /// @dev Sets the LicensingModule address.
@@ -78,15 +93,17 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
         if (newLicensingModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroLicensingModule();
         }
-        LICENSING_MODULE = ILicensingModule(newLicensingModule);
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
     /// @dev Sets the Licensing Image URL.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param url The URL of the Licensing Image
     function setLicensingImageUrl(string calldata url) external onlyProtocolAdmin {
-        imageUrl = url;
-        emit BatchMetadataUpdate(1, _mintedLicenses);
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        $.imageUrl = url;
+        emit BatchMetadataUpdate(1, $.mintedLicenses);
     }
 
     /// @notice Mints license NFTs representing a policy granted by a set of ipIds (licensors). This NFT needs to be
@@ -112,14 +129,16 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
             transferable: transferable
         });
         bool isNew;
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+
         (licenseId, isNew) = DataUniqueness.addIdOrGetExisting(
             abi.encode(licenseData),
-            _hashedLicenses,
-            _mintedLicenses
+            $.hashedLicenses,
+            $.mintedLicenses
         );
         if (isNew) {
-            _mintedLicenses = licenseId;
-            _licenses[licenseId] = licenseData;
+            $.mintedLicenses = licenseId;
+            $.licenses[licenseId] = licenseData;
             emit LicenseMinted(msg.sender, receiver, licenseId, amount, licenseData);
         }
         _mint(receiver, licenseId, amount, "");
@@ -139,7 +158,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     /// @dev Token ID counter total count.
     /// @return mintedLicenses The number of minted licenses
     function mintedLicenses() external view returns (uint256) {
-        return _mintedLicenses;
+        return _getLicenseRegistryStorage().mintedLicenses;
     }
 
     /// @notice Returns true if holder has positive balance for the given license ID.
@@ -153,21 +172,31 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     /// @param licenseId The ID of the license
     /// @return licenseData The license data
     function license(uint256 licenseId) external view returns (Licensing.License memory) {
-        return _licenses[licenseId];
+        return _getLicenseRegistryStorage().licenses[licenseId];
     }
 
     /// @notice Returns the ID of the IP asset that is the licensor of the given license ID
     /// @param licenseId The ID of the license
     /// @return licensorIpId The ID of the licensor
     function licensorIpId(uint256 licenseId) external view returns (address) {
-        return _licenses[licenseId].licensorIpId;
+        return _getLicenseRegistryStorage().licenses[licenseId].licensorIpId;
     }
 
     /// @notice Returns the policy ID for the given license ID
     /// @param licenseId The ID of the license
     /// @return policyId The ID of the policy
     function policyIdForLicense(uint256 licenseId) external view returns (uint256) {
-        return _licenses[licenseId].policyId;
+        return _getLicenseRegistryStorage().licenses[licenseId].policyId;
+    }
+
+    /// @notice Returns the canonical protocol-wide LicensingModule
+    function licensingModule() external view returns (ILicensingModule) {
+        return _getLicenseRegistryStorage().licensingModule;
+    }
+
+    /// @notice Returns the canonical protocol-wide DisputeModule
+    function disputeModule() external view returns (IDisputeModule) {
+        return _getLicenseRegistryStorage().disputeModule;
     }
 
     /// @notice Returns true if the license has been revoked (licensor tagged after a dispute in
@@ -177,15 +206,18 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     function isLicenseRevoked(uint256 licenseId) public view returns (bool) {
         // For beta, any tag means revocation, for mainnet we need more context.
         // TODO: signal metadata update when tag changes.
-        return DISPUTE_MODULE.isIpTagged(_licenses[licenseId].licensorIpId);
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return $.disputeModule.isIpTagged($.licenses[licenseId].licensorIpId);
     }
 
     /// @notice ERC1155 OpenSea metadata JSON representation of the LNFT parameters
     /// @dev Expect PFM.policyToJson to return {'trait_type: 'value'},{'trait_type': 'value'},...,{...}
     /// (last attribute must not have a comma at the end)
     function uri(uint256 id) public view virtual override returns (string memory) {
-        Licensing.License memory licenseData = _licenses[id];
-        Licensing.Policy memory pol = LICENSING_MODULE.policy(licenseData.policyId);
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+
+        Licensing.License memory licenseData = $.licenses[id];
+        Licensing.Policy memory pol = $.licensingModule.policy(licenseData.policyId);
 
         string memory licensorIpIdHex = licenseData.licensorIpId.toHexString();
 
@@ -205,7 +237,7 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
                 '",',
                 // solhint-disable-next-line max-length
                 '"image": "',
-                imageUrl,
+                $.imageUrl,
                 '",',
                 '"attributes": ['
             )
@@ -255,9 +287,10 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
     ) internal virtual override {
         // We are interested in transfers, minting and burning are checked in mintLicense and
         // linkIpToParent in LicensingModule respectively
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (from != address(0) && to != address(0)) {
             for (uint256 i = 0; i < ids.length; i++) {
-                Licensing.License memory lic = _licenses[ids[i]];
+                Licensing.License memory lic = $.licenses[ids[i]];
                 // TODO: Hook for verify transfer params
                 if (isLicenseRevoked(ids[i])) {
                     revert Errors.LicenseRegistry__RevokedLicense();
@@ -272,4 +305,19 @@ contract LicenseRegistry is ILicenseRegistry, ERC1155, Governable {
         }
         super._update(from, to, ids, values);
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                         Upgrades related                               //
+    ////////////////////////////////////////////////////////////////////////////
+
+    function _getLicenseRegistryStorage() internal pure returns (LicenseRegistryStorage storage $) {
+        assembly {
+            $.slot := LicenseRegistryStorageLocation
+        }
+    }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// Must be called by ProtocolRoles.UPGRADER
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
 }

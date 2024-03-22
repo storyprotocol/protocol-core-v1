@@ -5,13 +5,22 @@ import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegist
 import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol";
 import { IP } from "contracts/lib/IP.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
+import { IIPAccountRegistry } from "contracts/interfaces/registries/IIPAccountRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
+import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
+import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
+import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721WithoutMetadata.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 /// @title IP Asset Registry Testing Contract
 /// @notice Contract for testing core IP registration.
 contract IPAssetRegistryTest is BaseTest {
+    using IPAccountStorageOps for IIPAccount;
+    using ShortStrings for *;
+    using Strings for *;
     // Default IP record attributes.
     string public constant IP_NAME = "IPAsset";
     string public constant IP_DESCRIPTION = "IPs all the way down.";
@@ -61,6 +70,98 @@ contract IPAssetRegistryTest is BaseTest {
         bytes memory metadata = _generateMetadata();
         vm.prank(bob);
         registry.register(block.chainid, tokenAddress, tokenId, resolver, true, metadata);
+    }
+
+    /// @notice Tests registration of IP permissionlessly.
+    function test_IPAssetRegistry_RegisterPermissionless() public {
+        uint256 totalSupply = registry.totalSupply();
+
+        assertTrue(!registry.isRegistered(ipId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegisteredPermissionless(
+            ipId,
+            block.chainid,
+            tokenAddress,
+            tokenId,
+            name,
+            "https://storyprotocol.xyz/erc721/99",
+            block.timestamp
+        );
+        vm.prank(alice);
+        registry.register(tokenAddress, tokenId);
+
+        assertEq(totalSupply + 1, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
+    /// @notice Tests registration of IP permissionlessly for IPAccount already created.
+    function test_IPAssetRegistry_RegisterPermissionless_IPAccountAlreadyExist() public {
+        uint256 totalSupply = registry.totalSupply();
+
+        IIPAccountRegistry(registry).registerIpAccount(block.chainid, tokenAddress, tokenId);
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegisteredPermissionless(
+            ipId,
+            block.chainid,
+            tokenAddress,
+            tokenId,
+            name,
+            "https://storyprotocol.xyz/erc721/99",
+            block.timestamp
+        );
+        vm.prank(alice);
+        registry.register(tokenAddress, tokenId);
+
+        assertEq(totalSupply + 1, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
+    /// @notice Tests registration of the same IP twice.
+    function test_IPAssetRegistry_revert_RegisterPermissionlessTwice() public {
+        assertTrue(!registry.isRegistered(ipId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+
+        vm.prank(alice);
+        registry.register(tokenAddress, tokenId);
+
+        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
+        vm.prank(alice);
+        registry.register(tokenAddress, tokenId);
+    }
+
+    /// @notice Tests registration of IP with non ERC721 token.
+    function test_IPAssetRegistry_revert_InvalidTokenContract() public {
+        // not an ERC721 contract
+        vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__UnsupportedIERC721.selector, address(0x12345)));
+        registry.register(address(0x12345), 1);
+
+        // not implemented ERC721Metadata contract
+        MockERC721WithoutMetadata erc721WithoutMetadata = new MockERC721WithoutMetadata();
+        erc721WithoutMetadata.mint(alice, 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.IPAssetRegistry__UnsupportedIERC721Metadata.selector, erc721WithoutMetadata)
+        );
+        registry.register(address(erc721WithoutMetadata), 1);
+    }
+
+    /// @notice Tests registration of IP with non-exist NFT.
+    function test_IPAssetRegistry_revert_InvalidNFTToken() public {
+        MockERC721WithoutMetadata erc721WithoutMetadata = new MockERC721WithoutMetadata();
+        erc721WithoutMetadata.mint(alice, 1);
+        // non exist token id
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.IPAssetRegistry__InvalidToken.selector, erc721WithoutMetadata, 999)
+        );
+        registry.register(address(erc721WithoutMetadata), 999);
     }
 
     /// @notice Tests registration of IP assets without licenses.
@@ -223,5 +324,9 @@ contract IPAssetRegistryTest is BaseTest {
                     uri: IP_EXTERNAL_URL
                 })
             );
+    }
+
+    function _toBytes32(address a) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(a)));
     }
 }

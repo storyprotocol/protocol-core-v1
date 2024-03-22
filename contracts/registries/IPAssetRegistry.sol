@@ -2,7 +2,9 @@
 pragma solidity 0.8.23;
 
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
@@ -16,6 +18,7 @@ import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { Governable } from "../governance/Governable.sol";
+import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
 /// @title IP Asset Registry
 /// @notice This contract acts as the source of truth for all IP registered in
@@ -27,6 +30,10 @@ import { Governable } from "../governance/Governable.sol";
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
 contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
+    using ERC165Checker for address;
+    using Strings for *;
+    using IPAccountStorageOps for IIPAccount;
+
     /// @notice The canonical module registry used by the protocol.
     IModuleRegistry public immutable MODULE_REGISTRY;
 
@@ -68,6 +75,49 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     function setMetadataProvider(address newMetadataProvider) external onlyProtocolAdmin {
         _metadataProvider.setUpgradeProvider(newMetadataProvider);
         _metadataProvider = IMetadataProviderMigratable(newMetadataProvider);
+    }
+
+    /// @notice Registers an NFT as an IP asset.
+    /// @dev The IP required metadata name and URI are derived from the NFT's metadata.
+    /// @param tokenContract The address of the NFT.
+    /// @param tokenId The token identifier of the NFT.
+    /// @return id The address of the newly registered IP.
+    function register(address tokenContract, uint256 tokenId) external returns (address id) {
+        if (!tokenContract.supportsInterface(type(IERC721).interfaceId)) {
+            revert Errors.IPAssetRegistry__UnsupportedIERC721(tokenContract);
+        }
+
+        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
+            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
+        }
+
+        if (!tokenContract.supportsInterface(type(IERC721Metadata).interfaceId)) {
+            revert Errors.IPAssetRegistry__UnsupportedIERC721Metadata(tokenContract);
+        }
+
+        id = registerIpAccount(block.chainid, tokenContract, tokenId);
+        IIPAccount ipAccount = IIPAccount(payable(id));
+
+        if (bytes(ipAccount.getString("NAME")).length != 0) {
+            revert Errors.IPAssetRegistry__AlreadyRegistered();
+        }
+
+        string memory name = string.concat(
+            block.chainid.toString(),
+            ": ",
+            IERC721Metadata(tokenContract).name(),
+            " #",
+            tokenId.toString()
+        );
+        string memory uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
+        uint256 registrationDate = block.timestamp;
+        ipAccount.setString("NAME", name);
+        ipAccount.setString("URI", uri);
+        ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
+
+        totalSupply++;
+
+        emit IPRegisteredPermissionless(id, block.chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
 
     /// @notice Registers an NFT as IP, creating a corresponding IP record.
@@ -146,7 +196,8 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @param id The canonical identifier for the IP.
     /// @return isRegistered Whether the IP was registered into the protocol.
     function isRegistered(address id) external view returns (bool) {
-        return _records[id].resolver != address(0);
+        // TODO: also check the ipAccount has "Name" metadata after clean up permissioned functions.
+        return _records[id].resolver != address(0) || id.code.length != 0;
     }
 
     /// @notice Gets the resolver bound to an IP based on its ID.

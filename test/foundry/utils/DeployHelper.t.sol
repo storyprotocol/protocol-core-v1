@@ -41,6 +41,8 @@ import { MockLicenseRegistry } from "../mocks/registry/MockLicenseRegistry.sol";
 import { MockModuleRegistry } from "../mocks/registry/MockModuleRegistry.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
+import { TestProxyHelper } from "./TestProxyHelper.sol";
+
 
 contract DeployHelper {
     // TODO: three options, auto/mock/real in deploy condition, so that we don't need to manually
@@ -249,7 +251,13 @@ contract DeployHelper {
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
         if (d.licenseRegistry) {
-            licenseRegistry = new LicenseRegistry(getGovernance(), "deploy helper");
+            address newIml = address(new LicenseRegistry());
+            licenseRegistry = LicenseRegistry(
+                TestProxyHelper.deployUUPSProxy(
+                    newIml,
+                    abi.encodeCall(LicenseRegistry.initialize, (address(getGovernance()), "deploy helper"))
+                )
+            );
             console2.log("DeployHelper: Using REAL LicenseRegistry");
         }
     }

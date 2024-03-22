@@ -17,7 +17,6 @@ docs/
 .env
 
 .idea/
-.github/
 node_modules/
 
 .vscode

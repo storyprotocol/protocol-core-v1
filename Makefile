@@ -19,7 +19,8 @@ clean :; npx hardhat clean
 # Remove modules
 forge-remove :; rm -rf .gitmodules && rm -rf .git/modules/* && rm -rf lib && touch .gitmodules && git add . && git commit -m "modules"
 
-install :; yarn install
+install :
+	yarn install 
 
 # Update Dependencies
 forge-update :; forge update
@@ -27,7 +28,7 @@ forge-update :; forge update
 forge-build :; forge build
 build :; npx hardhat compile
 
-test :; forge test
+test :; forge test --ffi
 
 snapshot :; forge snapshot
 
@@ -77,4 +78,3 @@ deploy-goerli :; npx hardhat run ./script/deploy-reveal-engine.js --network goer
 verify-goerli :; npx hardhat verify --network goerli ${contract}
 
 anvil :; anvil -m 'test test test test test test test test test test test junk'
-

@@ -280,4 +280,9 @@ library Errors {
     error AccessControlled__ZeroAddress();
     error AccessControlled__NotIpAccount(address ipAccount);
     error AccessControlled__CallerIsNotIpAccount(address caller);
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                         CoreMetadataModule                       //
+    ////////////////////////////////////////////////////////////////////////////
+    error CoreMetadataModule__MetadataAlreadySet();
 }

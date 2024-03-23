@@ -150,6 +150,14 @@ contract IPAssetRegistryTest is BaseTest {
         registry.register(address(erc721WithoutMetadata), 999);
     }
 
+    function test_IPAssetRegistry_not_registered() public {
+        assertTrue(!registry.isRegistered(address(0)));
+        assertTrue(!registry.isRegistered(address(0x12345)));
+        assertTrue(!registry.isRegistered(address(this)));
+        mockNFT.mintId(alice, 1000);
+        assertTrue(!registry.isRegistered(ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), 1000)));
+    }
+
     /// @notice Helper function for generating an account address.
     function _getIPAccount(uint256 contractId) internal view returns (address) {
         return

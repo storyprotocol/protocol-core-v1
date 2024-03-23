@@ -163,8 +163,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             address[] memory accounts = new address[](2);
             // If you face InvalidSplit__AccountsOutOfOrder, shuffle the order of accounts (swap index 0 and 1)
-            accounts[0] = ipAcct[3];
-            accounts[1] = ipAcct3_ancestorVault;
+            accounts[1] = ipAcct[3];
+            accounts[0] = ipAcct3_ancestorVault;
 
             royaltyPolicyLAP.distributeIpPoolFunds(ipAcct[3], address(mockToken), accounts, address(u.dan));
 

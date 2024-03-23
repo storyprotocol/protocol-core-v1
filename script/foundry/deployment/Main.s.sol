@@ -47,13 +47,14 @@ import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { StringUtil } from "../../../script/foundry/utils/StringUtil.sol";
 import { BroadcastManager } from "../../../script/foundry/utils/BroadcastManager.s.sol";
 import { JsonDeploymentHandler } from "../../../script/foundry/utils/JsonDeploymentHandler.s.sol";
+import { StorageLayoutChecker } from "../../../script/foundry/utils/upgrades/StorageLayoutCheck.s.sol";
 
 // test
 import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
 import { MockERC721 } from "test/foundry/mocks/token/MockERC721.sol";
 import { MockTokenGatedHook } from "test/foundry/mocks/MockTokenGatedHook.sol";
 
-contract Main is Script, BroadcastManager, JsonDeploymentHandler {
+contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
     using stdJson for string;
 
@@ -112,7 +113,9 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler {
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run() public {
+    function run() virtual override public {
+        // This will run OZ storage layout check for all contracts. Requires --ffi flag.
+        super.run(); 
         _beginBroadcast(); // BroadcastManager.s.sol
 
         bool configByMultisig = vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG");

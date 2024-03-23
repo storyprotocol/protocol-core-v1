@@ -1,5 +1,6 @@
 @ethereum-waffle/=node_modules/@ethereum-waffle/
 @openzeppelin/=node_modules/@openzeppelin/
+@openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades
 forge-std/=node_modules/forge-std/src/
 ds-test/=node_modules/ds-test/src/
 base64-sol/=node_modules/base64-sol/

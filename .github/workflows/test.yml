@@ -47,6 +47,11 @@ jobs:
         run: |
           forge --version
           forge build --force --sizes --skip test --skip script
+      
+      - name: Upgrade Safety test
+        run: |
+          forge install OpenZeppelin/openzeppelin-foundry-upgrades --no-git
+          npx @openzeppelin/upgrades-core validate out/build-info
 
       - name: Run Forge tests
         run: |

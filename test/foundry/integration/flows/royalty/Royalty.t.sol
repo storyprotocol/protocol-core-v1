@@ -8,7 +8,6 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // contract
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IP } from "contracts/lib/IP.sol";
 
 // test
 import { BaseIntegration } from "test/foundry/integration/BaseIntegration.t.sol";
@@ -86,25 +85,10 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 ""
             );
 
-            ipAssetRegistry.register(
-                licenseIds,
-                "",
-                block.chainid,
-                address(mockNFT),
-                2,
-                address(ipResolver),
-                true,
-                abi.encode(
-                    IP.MetadataV1({
-                        name: "IPAccount2",
-                        hash: bytes32("description"),
-                        registrationDate: uint64(block.timestamp),
-                        registrant: u.bob,
-                        uri: "https://example.com/best-derivative-ip"
-                    })
-                )
-            );
-
+            address ipId = ipAssetRegistry.register(address(mockNFT), 2);
+            if (licenseIds.length != 0) {
+                licensingModule.linkIpToParents(licenseIds, ipId, "");
+            }
             vm.stopPrank();
         }
 
@@ -142,25 +126,10 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 ""
             );
 
-            ipAssetRegistry.register(
-                licenseIds,
-                "",
-                block.chainid,
-                address(mockNFT),
-                3,
-                address(ipResolver),
-                true,
-                abi.encode(
-                    IP.MetadataV1({
-                        name: "IPAccount3",
-                        hash: bytes32("description"),
-                        registrationDate: uint64(block.timestamp),
-                        registrant: u.bob,
-                        uri: "https://example.com/best-derivative-ip"
-                    })
-                )
-            );
-
+            address ipId = ipAssetRegistry.register(address(mockNFT), 3);
+            if (licenseIds.length != 0) {
+                licensingModule.linkIpToParents(licenseIds, ipId, "");
+            }
             vm.stopPrank();
         }
 
@@ -194,8 +163,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             address[] memory accounts = new address[](2);
             // If you face InvalidSplit__AccountsOutOfOrder, shuffle the order of accounts (swap index 0 and 1)
-            accounts[1] = ipAcct[3];
-            accounts[0] = ipAcct3_ancestorVault;
+            accounts[0] = ipAcct[3];
+            accounts[1] = ipAcct3_ancestorVault;
 
             royaltyPolicyLAP.distributeIpPoolFunds(ipAcct[3], address(mockToken), accounts, address(u.dan));
 

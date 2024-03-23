@@ -19,17 +19,14 @@ import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies
 import { Governance } from "contracts/governance/Governance.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { Errors } from "contracts/lib/Errors.sol";
-import { IP } from "contracts/lib/IP.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
-import { IP_RESOLVER_MODULE_KEY, DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY } from "contracts/lib/modules/Module.sol";
-import { IPMetadataProvider } from "contracts/registries/metadata/IPMetadataProvider.sol";
+import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY } from "contracts/lib/modules/Module.sol";
 import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
-import { IPResolver } from "contracts/resolvers/IPResolver.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { AncestorsVaultLAP } from "contracts/modules/royalty/policies/AncestorsVaultLAP.sol";
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
@@ -62,7 +59,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
     // Registry
     IPAccountRegistry internal ipAccountRegistry;
-    IPMetadataProvider public ipMetadataProvider;
     IPAssetRegistry internal ipAssetRegistry;
     LicenseRegistry internal licenseRegistry;
     ModuleRegistry internal moduleRegistry;
@@ -84,7 +80,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     // Misc.
     Governance internal governance;
     AccessController internal accessController;
-    IPResolver internal ipResolver;
 
     // Mocks
     MockERC20 internal erc20;
@@ -113,7 +108,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
     function run() virtual override public {
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        super.run(); 
+        super.run();
         _beginBroadcast(); // BroadcastManager.s.sol
 
         bool configByMultisig = vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG");
@@ -182,7 +177,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         ipAssetRegistry = new IPAssetRegistry(
             ERC6551_REGISTRY,
             address(ipAccountImpl),
-            address(moduleRegistry),
             address(governance)
         );
         _postdeploy(contractKey, address(ipAssetRegistry));
@@ -223,11 +217,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             address(disputeModule)
         );
         _postdeploy(contractKey, address(licensingModule));
-
-        contractKey = "IPResolver";
-        _predeploy(contractKey);
-        ipResolver = new IPResolver(address(accessController), address(ipAssetRegistry));
-        _postdeploy(contractKey, address(ipResolver));
 
         contractKey = "TokenWithdrawalModule";
         _predeploy(contractKey);
@@ -303,9 +292,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     }
 
     function _configureMisc() private {
-        ipMetadataProvider = IPMetadataProvider(ipAssetRegistry.metadataProvider());
-        _postdeploy("IPMetadataProvider", address(ipMetadataProvider));
-
         licenseRegistry.setDisputeModule(address(disputeModule));
         licenseRegistry.setLicensingModule(address(licensingModule));
     }
@@ -329,7 +315,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     }
 
     function _configureModuleRegistry() private {
-        moduleRegistry.registerModule(IP_RESOLVER_MODULE_KEY, address(ipResolver));
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
         moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));
         moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
@@ -458,38 +443,12 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
         // IPAccount1 (tokenId 1) with no initial policy
         vm.label(getIpId(erc721, 1), "IPAccount1");
-        ipAcct[1] = ipAssetRegistry.register(
-            block.chainid,
-            address(erc721),
-            1,
-            address(ipResolver),
-            true,
-            abi.encode(IP.MetadataV1({
-                name: "IPAccount1",
-                hash: bytes32("ip account content hash"),
-                registrationDate: uint64(block.timestamp),
-                registrant: deployer,
-                uri: "https://example.com/test-ip"
-            }))
-        );
+        ipAcct[1] = ipAssetRegistry.register(address(erc721), 1);
         disputeModule.setArbitrationPolicy(ipAcct[1], address(arbitrationPolicySP));
 
         // IPAccount2 (tokenId 2) and attach policy "pil_noncom_deriv_reciprocal"
         vm.label(getIpId(erc721, 2), "IPAccount2");
-        ipAcct[2] = ipAssetRegistry.register(
-            block.chainid,
-            address(erc721),
-            2,
-            address(ipResolver),
-            true,
-            abi.encode(IP.MetadataV1({
-                name: "IPAccount2",
-                hash: bytes32("more content hash"),
-                registrationDate: uint64(block.timestamp),
-                registrant: deployer,
-                uri: "https://example.com/test-ip"
-            }))
-        );
+        ipAcct[2] = ipAssetRegistry.register(address(erc721), 2);
         licensingModule.addPolicyToIp(ipAcct[2], policyIds["pil_noncom_deriv_reciprocal"]);
 
         // wildcard allow
@@ -532,22 +491,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             ipAcct[3] = getIpId(erc721, 3);
             vm.label(ipAcct[3], "IPAccount3");
 
-            ipAssetRegistry.register(
-                licenseIds,
-                "",
-                block.chainid,
-                address(erc721),
-                3,
-                address(ipResolver),
-                true,
-                abi.encode(IP.MetadataV1({
-                    name: "IPAccount3",
-                    hash: bytes32("more content hash"),
-                    registrationDate: uint64(block.timestamp),
-                    registrant: deployer,
-                    uri: "https://example.com/test-derivative-ip"
-                }))
-            );
+            address ipId = ipAssetRegistry.register(address(erc721), 3);
+            licensingModule.linkIpToParents(licenseIds, ipId, "");
         }
 
         // Mint 1 license of policy "pil_noncom_deriv_reciprocal" on IPAccount2
@@ -565,20 +510,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             ipAcct[4] = getIpId(erc721, 4);
             vm.label(ipAcct[4], "IPAccount4");
 
-            ipAcct[4] = ipAssetRegistry.register(
-                block.chainid,
-                address(erc721),
-                4,
-                address(ipResolver),
-                true,
-                abi.encode(IP.MetadataV1({
-                    name: "IPAccount4",
-                    hash: bytes32("more content hash"),
-                    registrationDate: uint64(block.timestamp),
-                    registrant: deployer,
-                    uri: "https://example.com/test-ip"
-                }))
-            );
+            ipAcct[4] = ipAssetRegistry.register(address(erc721), 4);
 
             licensingModule.linkIpToParents(licenseIds, ipAcct[4], "");
         }
@@ -605,24 +537,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
                 ""
             );
 
-            ipAssetRegistry.register(
-                licenseIds,
-                "",
-                block.chainid,
-                address(erc721),
-                5,
-                address(ipResolver),
-                true,
-                abi.encode(
-                    IP.MetadataV1({
-                        name: "IPAccount5",
-                        hash: bytes32("description"),
-                        registrationDate: uint64(block.timestamp),
-                        registrant: deployer,
-                        uri: "uri"
-                    })
-                )
-            );
+            address ipId = ipAssetRegistry.register(address(erc721), 5);
+            licensingModule.linkIpToParents(licenseIds, ipId, "");
         }
 
         /*///////////////////////////////////////////////////////////////

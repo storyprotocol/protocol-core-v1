@@ -6,7 +6,6 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 
 // contract
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
-import { IP } from "../../../../contracts/lib/IP.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { PILPolicy } from "../../../../contracts/modules/licensing/PILPolicyFrameworkManager.sol";
 
@@ -185,24 +184,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             );
 
             // TODO: events check
-            ipAssetRegistry.register(
-                carl_license_from_root_bob,
-                "",
-                block.chainid,
-                address(mockNFT),
-                7,
-                address(ipResolver),
-                true,
-                abi.encode(
-                    IP.MetadataV1({
-                        name: "IP NAME",
-                        hash: bytes32("hash"),
-                        registrationDate: uint64(block.timestamp),
-                        registrant: u.carl, // caller
-                        uri: "external URL"
-                    })
-                )
-            );
+            address ipId = ipAssetRegistry.register(address(mockNFT), 7);
+            licensingModule.linkIpToParents(carl_license_from_root_bob, ipId, "");
         }
 
         // Alice mints 2 license for policy "pil_com_deriv_cheap_flexible" on Bob's NFT 3 IPAccount
@@ -239,13 +222,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 alice_license_from_root_bob,
                 address(mockNFT),
                 tokenId,
-                IP.MetadataV1({
-                    name: "IP NAME",
-                    hash: bytes32("hash"),
-                    registrationDate: uint64(block.timestamp),
-                    registrant: u.alice, // caller
-                    uri: "external URL"
-                }),
                 u.alice, // caller
                 ""
             );
@@ -263,14 +239,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
             mockToken.mint(u.carl, mintingFee * license0_mintAmount);
             mockToken.approve(address(royaltyPolicyLAP), mintingFee * license0_mintAmount);
-
-            IP.MetadataV1 memory metadata = IP.MetadataV1({
-                name: "IP NAME",
-                hash: bytes32("hash"),
-                registrationDate: uint64(block.timestamp),
-                registrant: u.carl, // caller
-                uri: "external URL"
-            });
 
             uint256[] memory carl_licenses = new uint256[](2);
             // Commercial license (Carl already has mockGatedNft from above, so he passes commercializer checker check)
@@ -291,18 +259,10 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 ""
             );
 
+            address ipId = ipAssetRegistry.register(address(mockNFT), tokenId);
             // This should revert since license[0] is commercial but license[1] is non-commercial
             vm.expectRevert(Errors.LicensingModule__IncompatibleLicensorCommercialPolicy.selector);
-            ipAssetRegistry.register(
-                carl_licenses,
-                "",
-                block.chainid,
-                address(mockNFT),
-                tokenId,
-                address(ipResolver),
-                true,
-                abi.encode(metadata)
-            );
+            licensingModule.linkIpToParents(carl_licenses, ipId, "");
 
             uint256 license1_mintAmount = 500;
             mockToken.mint(u.carl, mintingFee * license1_mintAmount);
@@ -321,11 +281,12 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             // These licenses are from 2 different parents, ipAcct[1] and ipAcct[300], respectively.
 
             // This should succeed since both license[0] and license[1] are commercial
+            tokenId = 70001;
+            mockNFT.mintId(u.carl, tokenId);
             registerDerivativeIps(
                 carl_licenses, // ipAcct[1] and ipAcct[3] licenses
                 address(mockNFT),
                 tokenId,
-                metadata,
                 u.carl, // caller
                 ""
             );

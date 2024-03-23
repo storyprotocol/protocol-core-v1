@@ -9,7 +9,7 @@ import { Test } from "forge-std/Test.sol";
 // contracts
 import { AccessController } from "../../../contracts/AccessController.sol";
 // solhint-disable-next-line max-line-length
-import { IP_RESOLVER_MODULE_KEY, DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
+import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
 import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
@@ -141,9 +141,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         vm.startPrank(u.admin);
         // TODO: option to register "hookmodule", which will trigger the call below:
         //       moduleRegistry.registerModuleType(MODULE_TYPE_HOOK, type(IHookModule).interfaceId);
-        if (address(ipResolver) != address(0)) {
-            moduleRegistry.registerModule(IP_RESOLVER_MODULE_KEY, address(ipResolver));
-        }
+
         if (address(disputeModule) != address(0)) {
             moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
         }

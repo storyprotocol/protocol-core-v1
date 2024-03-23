@@ -17,12 +17,10 @@ import { IRoyaltyModule } from "../../../contracts/interfaces/modules/royalty/IR
 import { ILicenseRegistry } from "../../../contracts/interfaces/registries/ILicenseRegistry.sol";
 import { IModuleRegistry } from "../../../contracts/interfaces/registries/IModuleRegistry.sol";
 import { IPAccountImpl } from "../../../contracts/IPAccountImpl.sol";
-import { IPMetadataProvider } from "../../../contracts/registries/metadata/IPMetadataProvider.sol";
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "../../../contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "../../../contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
-import { IPResolver } from "../../../contracts/resolvers/IPResolver.sol";
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
 import { AncestorsVaultLAP } from "../../../contracts/modules/royalty/policies/AncestorsVaultLAP.sol";
 import { RoyaltyPolicyLAP } from "../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
@@ -70,18 +68,12 @@ contract DeployHelper {
         bool royaltyPolicyLAP;
     }
 
-    struct DeployMiscCondition {
-        bool ipMetadataProvider;
-        bool ipResolver;
-    }
-
     /// @dev Conditions that determine whether to deploy a contract.
     struct DeployConditions {
         DeployRegistryCondition registry;
         DeployModuleCondition module;
         DeployAccessCondition access;
         DeployPolicyCondition policy;
-        DeployMiscCondition misc;
     }
 
     /// @dev Store deployment info for post-deployment setups.
@@ -121,10 +113,6 @@ contract DeployHelper {
     ArbitrationPolicySP internal arbitrationPolicySP;
     AncestorsVaultLAP internal ancestorsVaultImpl;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
-
-    // Misc.
-    IPMetadataProvider internal ipMetadataProvider;
-    IPResolver internal ipResolver;
 
     // Royalty Policy — 0xSplits Liquid Split (Sepolia)
     address internal constant LIQUID_SPLIT_FACTORY = 0xF678Bae6091Ab6933425FE26Afc20Ee5F324c4aE;
@@ -167,17 +155,12 @@ contract DeployHelper {
         deployConditions.policy = d;
     }
 
-    function buildDeployMiscCondition(DeployMiscCondition memory d) public {
-        deployConditions.misc = d;
-    }
-
     /// @notice Deploys all contracts for integration test.
     function deployIntegration() public {
         buildDeployRegistryCondition(DeployRegistryCondition(true, true));
         buildDeployModuleCondition(DeployModuleCondition(true, true, true));
         buildDeployAccessCondition(DeployAccessCondition(true, true));
         buildDeployPolicyCondition(DeployPolicyCondition(true, true));
-        buildDeployMiscCondition(DeployMiscCondition(true, true));
 
         deployConditionally();
     }
@@ -197,11 +180,8 @@ contract DeployHelper {
         ipAccountImpl = new IPAccountImpl(address(accessController));
 
         _deployRegistryConditionally(dc.registry);
-        // Registration module requires ipResolver
-        _deployIPResolverConditionally(dc.misc);
         _deployModuleConditionally(dc.module);
         _deployPolicyConditionally(dc.policy);
-        _deployMiscConditionally(dc.misc);
     }
 
     function _deployMockAssets() public {
@@ -244,7 +224,6 @@ contract DeployHelper {
         ipAssetRegistry = new IPAssetRegistry(
             address(erc6551Registry),
             address(ipAccountImpl),
-            getModuleRegistry(),
             getGovernance()
         );
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
@@ -258,14 +237,6 @@ contract DeployHelper {
                 )
             );
             console2.log("DeployHelper: Using REAL LicenseRegistry");
-        }
-    }
-
-    function _deployIPResolverConditionally(DeployMiscCondition memory d) public {
-        if (d.ipResolver) {
-            require(address(ipAssetRegistry) != address(0), "DeployHelper IPResolver: IPAssetRegistry required");
-            ipResolver = new IPResolver(getAccessController(), address(ipAssetRegistry));
-            console2.log("DeployHelper: Using REAL IPResolver");
         }
     }
 
@@ -322,14 +293,6 @@ contract DeployHelper {
         } else {
             // mockRoyaltyPolicyLAP = new MockRoyaltyPolicyLAP(getRoyaltyModule());
             // console2.log("DeployHelper: Using Mock RoyaltyPolicyLAP");
-        }
-    }
-
-    function _deployMiscConditionally(DeployMiscCondition memory d) public {
-        // Skip IPResolver here, called in `_deployIPResolverConditionally`
-        if (d.ipMetadataProvider) {
-            ipMetadataProvider = new IPMetadataProvider(getModuleRegistry());
-            console2.log("DeployHelper: Using REAL IPMetadataProvider");
         }
     }
 

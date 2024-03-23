@@ -10,8 +10,6 @@ import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
-import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol";
-import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { Governable } from "../governance/Governable.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
@@ -102,5 +100,4 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
         if (id != ipAccount(chainId, tokenContract, tokenId)) return false;
         return bytes(IIPAccount(payable(id)).getString("NAME")).length != 0;
     }
-
 }

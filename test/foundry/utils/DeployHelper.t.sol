@@ -221,11 +221,7 @@ contract DeployHelper {
         console2.log("DeployHelper: Using REAL IPAccountRegistry");
 
         // TODO: Allow using mock IPAssetRegistry, instead of forcing deployment of actual IPAssetRegistry.
-        ipAssetRegistry = new IPAssetRegistry(
-            address(erc6551Registry),
-            address(ipAccountImpl),
-            getGovernance()
-        );
+        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl), getGovernance());
         console2.log("DeployHelper: Using REAL IPAssetRegistry");
 
         if (d.licenseRegistry) {

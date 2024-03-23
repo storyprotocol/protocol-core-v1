@@ -67,10 +67,7 @@ contract TestArbitrationPolicySP is BaseTest {
         vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.admin);
-        ipAddr = ipAssetRegistry.register(
-            address(mockNFT),
-            0
-        );
+        ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
         licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
 
         // set arbitration policy

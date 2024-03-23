@@ -116,35 +116,35 @@ contract BaseIntegration is BaseTest {
             parentIpIds[i] = licenseRegistry.licensorIpId(licenseIds[i]);
         }
 
-                vm.expectEmit();
-                emit IERC6551Registry.ERC6551AccountCreated({
-                    account: expectedAddr,
-                    implementation: address(ipAccountImpl),
-                    salt: ipAccountRegistry.IP_ACCOUNT_SALT(),
-                    chainId: block.chainid,
-                    tokenContract: nft,
-                    tokenId: tokenId
-                });
+        vm.expectEmit();
+        emit IERC6551Registry.ERC6551AccountCreated({
+            account: expectedAddr,
+            implementation: address(ipAccountImpl),
+            salt: ipAccountRegistry.IP_ACCOUNT_SALT(),
+            chainId: block.chainid,
+            tokenContract: nft,
+            tokenId: tokenId
+        });
 
-                vm.expectEmit();
-                emit IIPAccountRegistry.IPAccountRegistered({
-                    account: expectedAddr,
-                    implementation: address(ipAccountImpl),
-                    chainId: block.chainid,
-                    tokenContract: nft,
-                    tokenId: tokenId
-                });
+        vm.expectEmit();
+        emit IIPAccountRegistry.IPAccountRegistered({
+            account: expectedAddr,
+            implementation: address(ipAccountImpl),
+            chainId: block.chainid,
+            tokenContract: nft,
+            tokenId: tokenId
+        });
 
-                vm.expectEmit();
-                emit IIPAssetRegistry.IPRegistered({
-                    ipId: expectedAddr,
-                    chainId: block.chainid,
-                    tokenContract: nft,
-                    tokenId: tokenId,
-                    name: string.concat(block.chainid.toString(), ": Ape #", tokenId.toString()),
-                    uri: string.concat("https://storyprotocol.xyz/erc721/", tokenId.toString()),
-                    registrationDate: block.timestamp
-                });
+        vm.expectEmit();
+        emit IIPAssetRegistry.IPRegistered({
+            ipId: expectedAddr,
+            chainId: block.chainid,
+            tokenContract: nft,
+            tokenId: tokenId,
+            name: string.concat(block.chainid.toString(), ": Ape #", tokenId.toString()),
+            uri: string.concat("https://storyprotocol.xyz/erc721/", tokenId.toString()),
+            registrationDate: block.timestamp
+        });
 
         address ipId = ipAssetRegistry.register(nft, tokenId);
 

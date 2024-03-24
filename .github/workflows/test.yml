@@ -47,6 +47,7 @@ jobs:
         run: |
           forge --version
           forge build --force --sizes --skip test --skip script
+          forge build
       
       - name: Upgrade Safety test
         run: |

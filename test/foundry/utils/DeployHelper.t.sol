@@ -44,7 +44,6 @@ import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { TestProxyHelper } from "./TestProxyHelper.sol";
 
-
 contract DeployHelper {
     // TODO: three options, auto/mock/real in deploy condition, so that we don't need to manually
     //       call getXXX to get mock contract (if there's no real contract deployed).

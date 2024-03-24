@@ -42,15 +42,15 @@ jobs:
           version: nightly
 
       # first, build contracts excluding the tests and scripts. Check contract sizes in this step.
-      # then, build contracts including the tests and scripts. Don't check contract sizes.
-      - name: Run Forge build
+      - name: Run Contract Size check
         run: |
           forge --version
           forge build --force --sizes --skip test --skip script
-          forge build
       
+      # This step requires full build to be run first
       - name: Upgrade Safety test
         run: |
+          forge clean && forge build
           npx @openzeppelin/upgrades-core validate out/build-info
 
       - name: Run Forge tests

@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.1",
-    "@openzeppelin/contracts-upgradeable": "5.0.1",
+    "@openzeppelin/contracts-upgradeable": "5.0.2",
     "erc6551": "^0.3.1"
   }
 }

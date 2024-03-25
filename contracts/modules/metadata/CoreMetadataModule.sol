@@ -35,21 +35,36 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         address ipAccountRegistry
     ) AccessControlled(accessController, ipAccountRegistry) {}
 
-    /// @inheritdoc ICoreMetadataModule
+    /// @notice Sets the name for an IP asset.
+    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @param ipAccount The address of the IP asset.
+    /// @param name The name to set for the IP asset.
     function setIpName(address ipAccount, string memory ipName) external verifyPermission(ipAccount) {
         _setIpName(ipAccount, ipName);
     }
 
-    /// @inheritdoc ICoreMetadataModule
+    /// @notice Sets the description for an IP asset.
+    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @param ipAccount The address of the IP asset.
+    /// @param description The description to set for the IP asset.
     function setIpDescription(address ipAccount, string memory description) external verifyPermission(ipAccount) {
         _setIpDescription(ipAccount, description);
     }
 
-    /// @inheritdoc ICoreMetadataModule
+    /// @notice Sets the content hash for an IP asset.
+    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @param ipAccount The address of the IP asset.
+    /// @param contentHash The content hash to set for the IP asset.
     function setIpContentHash(address ipAccount, bytes32 contentHash) external verifyPermission(ipAccount) {
         _setIpContentHash(ipAccount, contentHash);
     }
 
+    /// @notice Sets all core metadata for an IP asset.
+    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @param ipAccount The address of the IP asset.
+    /// @param name The name to set for the IP asset.
+    /// @param description The description to set for the IP asset.
+    /// @param contentHash The content hash to set for the IP asset.
     function setIpMetadata(
         address ipAccount,
         string memory ipName,

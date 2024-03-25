@@ -9,7 +9,6 @@ import { IViewModule } from "../base/IViewModule.sol";
 ///         The view module consolidates core metadata for IPAccounts from both IPAssetRegistry and CoreMetadataModule.
 /// @dev The "name" from CoreMetadataModule overrides the "name" from IPAssetRegistry if set.
 interface ICoreMetadataViewModule is IViewModule {
-
     /// @notice Core metadata struct for IPAccounts.
     struct CoreMetadata {
         string name;

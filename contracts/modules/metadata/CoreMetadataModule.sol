@@ -36,32 +36,55 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     ) AccessControlled(accessController, ipAccountRegistry) {}
 
     /// @inheritdoc ICoreMetadataModule
-    function setIpName(
-        address ipAccount,
-        string memory ipName
-    ) external verifyPermission(ipAccount) onlyOnce(ipAccount, "IP_NAME") {
-        IIPAccount(payable(ipAccount)).setString("IP_NAME", ipName);
+    function setIpName(address ipAccount, string memory ipName) external verifyPermission(ipAccount) {
+        _setIpName(ipAccount, ipName);
     }
 
     /// @inheritdoc ICoreMetadataModule
-    function setIpDescription(
-        address ipAccount,
-        string memory description
-    ) external verifyPermission(ipAccount) onlyOnce(ipAccount, "IP_DESCRIPTION") {
-        IIPAccount(payable(ipAccount)).setString("IP_DESCRIPTION", description);
+    function setIpDescription(address ipAccount, string memory description) external verifyPermission(ipAccount) {
+        _setIpDescription(ipAccount, description);
     }
 
     /// @inheritdoc ICoreMetadataModule
     function setIpContentHash(address ipAccount, bytes32 contentHash) external verifyPermission(ipAccount) {
-        if (IIPAccount(payable(ipAccount)).getBytes32("IP_CONTENT_HASH") != bytes32(0)) {
-            revert Errors.CoreMetadataModule__MetadataAlreadySet();
-        }
-        IIPAccount(payable(ipAccount)).setBytes32("IP_CONTENT_HASH", contentHash);
+        _setIpContentHash(ipAccount, contentHash);
+    }
+
+    function setIpMetadata(
+        address ipAccount,
+        string memory ipName,
+        string memory description,
+        bytes32 contentHash
+    ) external verifyPermission(ipAccount) {
+        _setIpName(ipAccount, ipName);
+        _setIpDescription(ipAccount, description);
+        _setIpContentHash(ipAccount, contentHash);
     }
 
     /// @dev Implements the IERC165 interface.
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(ICoreMetadataModule).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function _setIpName(address ipAccount, string memory ipName) internal onlyOnce(ipAccount, "IP_NAME") {
+        IIPAccount(payable(ipAccount)).setString("IP_NAME", ipName);
+        emit IPNameSet(ipAccount, ipName);
+    }
+
+    function _setIpDescription(
+        address ipAccount,
+        string memory description
+    ) internal onlyOnce(ipAccount, "IP_DESCRIPTION") {
+        IIPAccount(payable(ipAccount)).setString("IP_DESCRIPTION", description);
+        emit IPDescriptionSet(ipAccount, description);
+    }
+
+    function _setIpContentHash(address ipAccount, bytes32 contentHash) internal {
+        if (IIPAccount(payable(ipAccount)).getBytes32("IP_CONTENT_HASH") != bytes32(0)) {
+            revert Errors.CoreMetadataModule__MetadataAlreadySet();
+        }
+        IIPAccount(payable(ipAccount)).setBytes32("IP_CONTENT_HASH", contentHash);
+        emit IPContentHashSet(ipAccount, contentHash);
     }
 
     /// @dev Checks if a string is empty.

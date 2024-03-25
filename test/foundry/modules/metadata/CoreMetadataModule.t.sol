@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { CoreMetadataModule } from "../../../../contracts/modules/metadata/CoreMetadataModule.sol";
+import { ICoreMetadataModule } from "../../../../contracts/interfaces/modules/metadata/ICoreMetadataModule.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { CORE_METADATA_MODULE_KEY } from "../../../../contracts/lib/modules/Module.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
@@ -34,6 +35,9 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_Name() public {
+        vm.expectEmit();
+        emit ICoreMetadataModule.IPNameSet(address(ipAccount), "My IP");
+
         vm.prank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
@@ -84,6 +88,9 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_Description() public {
+        vm.expectEmit();
+        emit ICoreMetadataModule.IPDescriptionSet(address(ipAccount), "My Description");
+
         vm.prank(alice);
         coreMetadataModule.setIpDescription(address(ipAccount), "My Description");
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_DESCRIPTION"), "My Description");
@@ -134,6 +141,9 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_ContentHash() public {
+        vm.expectEmit();
+        emit ICoreMetadataModule.IPContentHashSet(address(ipAccount), bytes32("0x1234"));
+
         vm.prank(alice);
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
@@ -183,7 +193,7 @@ contract CoreMetadataModuleTest is BaseTest {
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
     }
 
-    function test_CoreMetadata_All() public {
+    function test_CoreMetadata_Batch() public {
         vm.startPrank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
         coreMetadataModule.setIpDescription(address(ipAccount), "My Description");
@@ -192,5 +202,67 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_DESCRIPTION"), "My Description");
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
+    }
+
+    function test_CoreMetadata_All() public {
+        vm.prank(alice);
+        coreMetadataModule.setIpMetadata(
+            address(ipAccount),
+            "My IP",
+            "My Description",
+            bytes32("0x1234")
+        );
+        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_DESCRIPTION"), "My Description");
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
+    }
+
+    function test_CoreMetadata_AllTwice() public {
+        vm.prank(alice);
+        coreMetadataModule.setIpMetadata(
+            address(ipAccount),
+            "My IP",
+            "My Description",
+            bytes32("0x1234")
+        );
+
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
+        vm.prank(alice);
+        coreMetadataModule.setIpMetadata(
+            address(ipAccount),
+            "My New IP",
+            "My New Description",
+            bytes32("0x5678")
+        );
+    }
+
+    function test_CoreMetadata_All_InvalidIpAccount() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
+        vm.prank(alice);
+        coreMetadataModule.setIpMetadata(
+            address(0x1234),
+            "My IP",
+            "My Description",
+            bytes32("0x1234")
+        );
+    }
+
+    function test_CoreMetadata_All_InvalidCaller() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                bob,
+                address(coreMetadataModule),
+                coreMetadataModule.setIpMetadata.selector
+            )
+        );
+        vm.prank(bob);
+        coreMetadataModule.setIpMetadata(
+            address(ipAccount),
+            "My IP",
+            "My Description",
+            bytes32("0x1234")
+        );
     }
 }

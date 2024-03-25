@@ -9,6 +9,17 @@ import { IViewModule } from "../base/IViewModule.sol";
 ///         The view module consolidates core metadata for IPAccounts from both IPAssetRegistry and CoreMetadataModule.
 /// @dev The "name" from CoreMetadataModule overrides the "name" from IPAssetRegistry if set.
 interface ICoreMetadataViewModule is IViewModule {
+
+    /// @notice Core metadata struct for IPAccounts.
+    struct CoreMetadata {
+        string name;
+        string description;
+        uint256 registrationDate;
+        bytes32 contentHash;
+        string uri;
+        address owner;
+    }
+
     /// @notice Retrieves the name of the IPAccount, preferring the name from CoreMetadataModule if available.
     /// @param ipId The address of the IPAccount.
     /// @return The name of the IPAccount.
@@ -39,10 +50,16 @@ interface ICoreMetadataViewModule is IViewModule {
     /// @return The address of the owner of the IPAccount.
     function getOwner(address ipId) external view returns (address);
 
-    /// @notice Generates a JSON string of all metadata for the IPAccount.
+    /// @notice Retrieves all core metadata of the IPAccount.
+    /// @param ipId The address of the IPAccount.
+    /// @return The CoreMetadata struct of the IPAccount.
+    function getCoreMetadata(address ipId) external view returns (CoreMetadata memory);
+
+    /// @notice Generates a JSON string formatted according to the standard NFT metadata schema for the IPAccount,
+    ////        including all relevant metadata fields.
     /// @dev This function consolidates metadata from both IPAssetRegistry
     ///      and CoreMetadataModule, with "name" from CoreMetadataModule taking precedence.
     /// @param ipId The address of the IPAccount.
     /// @return A JSON string representing all metadata of the IPAccount.
-    function tokenURI(address ipId) external view returns (string memory);
+    function getJsonString(address ipId) external view returns (string memory);
 }

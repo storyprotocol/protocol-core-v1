@@ -35,6 +35,19 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     }
 
     /// @inheritdoc ICoreMetadataViewModule
+    function getCoreMetadata(address ipId) external view returns (CoreMetadata memory) {
+        return
+            CoreMetadata({
+                name: getName(ipId),
+                description: getDescription(ipId),
+                registrationDate: getRegistrationDate(ipId),
+                contentHash: getContentHash(ipId),
+                uri: getUri(ipId),
+                owner: getOwner(ipId)
+            });
+    }
+
+    /// @inheritdoc ICoreMetadataViewModule
     function getName(address ipId) public view returns (string memory) {
         string memory ipName = IIPAccount(payable(ipId)).getString(coreMetadataModule, "IP_NAME");
         if (_isEmptyString(ipName)) {
@@ -59,7 +72,7 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     }
 
     /// @inheritdoc ICoreMetadataViewModule
-    function getUri(address ipId) external view returns (string memory) {
+    function getUri(address ipId) public view returns (string memory) {
         return IIPAccount(payable(ipId)).getString(IP_ASSET_REGISTRY, "URI");
     }
 
@@ -69,7 +82,7 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     }
 
     /// @inheritdoc ICoreMetadataViewModule
-    function tokenURI(address ipId) external view returns (string memory) {
+    function getJsonString(address ipId) external view returns (string memory) {
         string memory baseJson = string(
             /* solhint-disable */
             abi.encodePacked(

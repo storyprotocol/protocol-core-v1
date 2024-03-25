@@ -70,7 +70,7 @@ contract CoreMetadataViewModuleTest is BaseTest {
         assertEq(coreMetadataViewModule.getContentHash(address(ipAccount)), bytes32(0));
     }
 
-    function test_CoreMetadataViewModule_TokenURI() public {
+    function test_CoreMetadataViewModule_JsonString() public {
         vm.prank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
         vm.prank(alice);
@@ -78,17 +78,34 @@ contract CoreMetadataViewModuleTest is BaseTest {
         vm.prank(alice);
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
         assertEq(
-            _getExpectedTokenURI("My IP", "My Description", bytes32("0x1234")),
-            coreMetadataViewModule.tokenURI(address(ipAccount))
+            _getExpectedJsonString("My IP", "My Description", bytes32("0x1234")),
+            coreMetadataViewModule.getJsonString(address(ipAccount))
         );
     }
 
-    function test_CoreMetadataViewModule_TokenURI_without_CoreMetadata() public {
-        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
-        assertEq(_getExpectedTokenURI(name, "", bytes32(0)), coreMetadataViewModule.tokenURI(address(ipAccount)));
+    function test_CoreMetadataViewModule_GetCoreMetadataStrut() public {
+        vm.prank(alice);
+        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", "My Description", bytes32("0x1234"));
+        CoreMetadataViewModule.CoreMetadata memory coreMetadata = coreMetadataViewModule.getCoreMetadata(
+            address(ipAccount)
+        );
+        assertEq(coreMetadata.name, "My IP");
+        assertEq(coreMetadata.description, "My Description");
+        assertEq(coreMetadata.contentHash, bytes32("0x1234"));
+        assertEq(coreMetadata.registrationDate, block.timestamp);
+        assertEq(coreMetadata.owner, alice);
+        assertEq(coreMetadata.uri, "https://storyprotocol.xyz/erc721/99");
     }
 
-    function _getExpectedTokenURI(
+    function test_CoreMetadataViewModule_GetJsonStr_without_CoreMetadata() public {
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        assertEq(
+            _getExpectedJsonString(name, "", bytes32(0)),
+            coreMetadataViewModule.getJsonString(address(ipAccount))
+        );
+    }
+
+    function _getExpectedJsonString(
         string memory name,
         string memory description,
         bytes32 contentHash

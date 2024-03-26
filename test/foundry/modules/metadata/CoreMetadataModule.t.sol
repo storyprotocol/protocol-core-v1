@@ -87,6 +87,59 @@ contract CoreMetadataModuleTest is BaseTest {
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
     }
 
+    function test_CoreMetadata_MetadataURI() public {
+        vm.expectEmit();
+        emit ICoreMetadataModule.MetadataURISet(address(ipAccount), "My MetadataURI");
+
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+    }
+
+    function test_CoreMetadata_MetadataURI_Two_IPAccounts() public {
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+
+        mockNFT.mintId(alice, 2);
+        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
+        vm.label(address(ipAccount2), "IPAccount2");
+
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount2), "My MetadataURI2");
+        assertEq(ipAccount2.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI2");
+    }
+
+    function test_CoreMetadata_MetadataURITwice() public {
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My New MetadataURI");
+    }
+
+    function test_CoreMetadata_MetadataURI_InvalidIpAccount() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(0x1234), "My MetadataURI");
+    }
+
+    function test_CoreMetadata_MetadataURI_InvalidCaller() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                bob,
+                address(coreMetadataModule),
+                coreMetadataModule.setMetadataURI.selector
+            )
+        );
+        vm.prank(bob);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+    }
+
     function test_CoreMetadata_ContentHash() public {
         vm.expectEmit();
         emit ICoreMetadataModule.IPContentHashSet(address(ipAccount), bytes32("0x1234"));
@@ -143,32 +196,35 @@ contract CoreMetadataModuleTest is BaseTest {
     function test_CoreMetadata_Batch() public {
         vm.startPrank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
         vm.stopPrank();
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
     }
 
     function test_CoreMetadata_All() public {
         vm.prank(alice);
-        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
         assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
     }
 
     function test_CoreMetadata_AllTwice() public {
         vm.prank(alice);
-        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
 
         vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
         vm.prank(alice);
-        coreMetadataModule.setIpMetadata(address(ipAccount), "My New IP", bytes32("0x5678"));
+        coreMetadataModule.setAll(address(ipAccount), "My New IP", "My New MetadataURI", bytes32("0x5678"));
     }
 
     function test_CoreMetadata_All_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
         vm.prank(alice);
-        coreMetadataModule.setIpMetadata(address(0x1234), "My IP", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(0x1234), "My IP", "My MetadataURI", bytes32("0x1234"));
     }
 
     function test_CoreMetadata_All_InvalidCaller() public {
@@ -178,10 +234,10 @@ contract CoreMetadataModuleTest is BaseTest {
                 address(ipAccount),
                 bob,
                 address(coreMetadataModule),
-                coreMetadataModule.setIpMetadata.selector
+                coreMetadataModule.setAll.selector
             )
         );
         vm.prank(bob);
-        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
     }
 }

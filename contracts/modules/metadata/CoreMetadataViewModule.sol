@@ -12,7 +12,7 @@ import { ICoreMetadataViewModule, IViewModule } from "../../interfaces/modules/m
 import { IModuleRegistry } from "contracts/interfaces/registries/IModuleRegistry.sol";
 
 /// @title Implementation of the ICoreMetadataViewModule interface
-/// @dev Provides functionalities to retrieve core metadata of IP assets, including name, and more.
+/// @dev Provides functionalities to retrieve core metadata of IP assets, including name, metadataURI, and more.
 contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     using IPAccountStorageOps for IIPAccount;
 
@@ -41,6 +41,7 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
         return
             CoreMetadata({
                 name: getName(ipId),
+                metadataURI: getMetadataURI(ipId),
                 registrationDate: getRegistrationDate(ipId),
                 contentHash: getContentHash(ipId),
                 uri: getUri(ipId),
@@ -57,6 +58,13 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
             ipName = IIPAccount(payable(ipId)).getString(IP_ASSET_REGISTRY, "NAME");
         }
         return ipName;
+    }
+
+    /// @notice Retrieves the metadataURI of the IPAccount from CoreMetadataModule.
+    /// @param ipId The address of the IPAccount.
+    /// @return The metadataURI of the IPAccount.
+    function getMetadataURI(address ipId) public view returns (string memory) {
+        return IIPAccount(payable(ipId)).getString(coreMetadataModule, "METADATA_URI");
     }
 
     /// @notice Retrieves the registration date of the IPAccount from IPAssetRegistry.
@@ -111,6 +119,9 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
                 '"},'
                 '{"trait_type": "ContentHash", "value": "',
                 Strings.toHexString(uint256(getContentHash(ipId)), 32),
+                '"},'
+                '{"trait_type": "MetadataURI", "value": "',
+                getMetadataURI(ipId),
                 '"},'
                 '{"trait_type": "Registration Date", "value": "',
                 Strings.toString(getRegistrationDate(ipId)),

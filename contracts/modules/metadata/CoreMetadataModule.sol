@@ -43,6 +43,14 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         _setIpName(ipAccount, ipName);
     }
 
+    /// @notice Sets the metadataURI for an IP asset.
+    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @param ipAccount The address of the IP asset.
+    /// @param metadataURI The metadataURI to set for the IP asset.
+    function setMetadataURI(address ipAccount, string memory metadataURI) external verifyPermission(ipAccount) {
+        _setMetadataURI(ipAccount, metadataURI);
+    }
+
     /// @notice Sets the content hash for an IP asset.
     /// @dev Can only be called once per IP asset to prevent overwriting.
     /// @param ipAccount The address of the IP asset.
@@ -55,13 +63,16 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     /// @dev Can only be called once per IP asset to prevent overwriting.
     /// @param ipAccount The address of the IP asset.
     /// @param ipName The name to set for the IP asset.
+    /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param contentHash The content hash to set for the IP asset.
-    function setIpMetadata(
+    function setAll(
         address ipAccount,
         string memory ipName,
+        string memory metadataURI,
         bytes32 contentHash
     ) external verifyPermission(ipAccount) {
         _setIpName(ipAccount, ipName);
+        _setMetadataURI(ipAccount, metadataURI);
         _setIpContentHash(ipAccount, contentHash);
     }
 
@@ -73,6 +84,14 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     function _setIpName(address ipAccount, string memory ipName) internal onlyOnce(ipAccount, "IP_NAME") {
         IIPAccount(payable(ipAccount)).setString("IP_NAME", ipName);
         emit IPNameSet(ipAccount, ipName);
+    }
+
+    function _setMetadataURI(
+        address ipAccount,
+        string memory metadataURI
+    ) internal onlyOnce(ipAccount, "METADATA_URI") {
+        IIPAccount(payable(ipAccount)).setString("METADATA_URI", metadataURI);
+        emit MetadataURISet(ipAccount, metadataURI);
     }
 
     function _setIpContentHash(address ipAccount, bytes32 contentHash) internal {

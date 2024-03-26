@@ -310,7 +310,7 @@ contract PILPolicyFrameworkManager is
     /// @param policy The policy to encode
     function _policyCommercialTraitsToJson(PILPolicy memory policy) internal pure returns (string memory) {
         /* solhint-disable */
-        // NOTE: TOTAL_RNFT_SUPPLY = 1000 in trait with max_value. For numbers, don't add any display_type, so that
+        // NOTE: TOTAL_RT_SUPPLY = 100*10**18 in trait with max_value. For numbers, don't add any display_type, so that
         // they will show up in the "Ranking" section of the OpenSea UI.
         return
             string(
@@ -337,7 +337,7 @@ contract PILPolicyFrameworkManager is
     /// @param policy The policy to encode
     function _policyDerivativeTraitsToJson(PILPolicy memory policy) internal pure returns (string memory) {
         /* solhint-disable */
-        // NOTE: TOTAL_RNFT_SUPPLY = 1000 in trait with max_value. For numbers, don't add any display_type, so that
+        // NOTE: TOTAL_RT_SUPPLY = 100*10**18 in trait with max_value. For numbers, don't add any display_type, so that
         // they will show up in the "Ranking" section of the OpenSea UI.
         return
             string(

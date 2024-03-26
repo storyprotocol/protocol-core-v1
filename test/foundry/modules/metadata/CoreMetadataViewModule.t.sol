@@ -48,12 +48,9 @@ contract CoreMetadataViewModuleTest is BaseTest {
         vm.prank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
         vm.prank(alice);
-        coreMetadataModule.setIpDescription(address(ipAccount), "My Description");
-        vm.prank(alice);
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
 
         assertEq(coreMetadataViewModule.getName(address(ipAccount)), "My IP");
-        assertEq(coreMetadataViewModule.getDescription(address(ipAccount)), "My Description");
         assertEq(coreMetadataViewModule.getOwner(address(ipAccount)), alice);
         assertEq(coreMetadataViewModule.getUri(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
         assertEq(coreMetadataViewModule.getRegistrationDate(address(ipAccount)), block.timestamp);
@@ -63,7 +60,6 @@ contract CoreMetadataViewModuleTest is BaseTest {
     function test_CoreMetadataViewModule_GetAllMetadata_without_CoreMetadata() public {
         string memory name = string.concat(block.chainid.toString(), ": Ape #99");
         assertEq(coreMetadataViewModule.getName(address(ipAccount)), name);
-        assertEq(coreMetadataViewModule.getDescription(address(ipAccount)), "");
         assertEq(coreMetadataViewModule.getOwner(address(ipAccount)), alice);
         assertEq(coreMetadataViewModule.getUri(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
         assertEq(coreMetadataViewModule.getRegistrationDate(address(ipAccount)), block.timestamp);
@@ -74,23 +70,20 @@ contract CoreMetadataViewModuleTest is BaseTest {
         vm.prank(alice);
         coreMetadataModule.setIpName(address(ipAccount), "My IP");
         vm.prank(alice);
-        coreMetadataModule.setIpDescription(address(ipAccount), "My Description");
-        vm.prank(alice);
         coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
         assertEq(
-            _getExpectedJsonString("My IP", "My Description", bytes32("0x1234")),
+            _getExpectedJsonString("My IP", bytes32("0x1234")),
             coreMetadataViewModule.getJsonString(address(ipAccount))
         );
     }
 
     function test_CoreMetadataViewModule_GetCoreMetadataStrut() public {
         vm.prank(alice);
-        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", "My Description", bytes32("0x1234"));
+        coreMetadataModule.setIpMetadata(address(ipAccount), "My IP", bytes32("0x1234"));
         CoreMetadataViewModule.CoreMetadata memory coreMetadata = coreMetadataViewModule.getCoreMetadata(
             address(ipAccount)
         );
         assertEq(coreMetadata.name, "My IP");
-        assertEq(coreMetadata.description, "My Description");
         assertEq(coreMetadata.contentHash, bytes32("0x1234"));
         assertEq(coreMetadata.registrationDate, block.timestamp);
         assertEq(coreMetadata.owner, alice);
@@ -99,26 +92,13 @@ contract CoreMetadataViewModuleTest is BaseTest {
 
     function test_CoreMetadataViewModule_GetJsonStr_without_CoreMetadata() public {
         string memory name = string.concat(block.chainid.toString(), ": Ape #99");
-        assertEq(
-            _getExpectedJsonString(name, "", bytes32(0)),
-            coreMetadataViewModule.getJsonString(address(ipAccount))
-        );
+        assertEq(_getExpectedJsonString(name, bytes32(0)), coreMetadataViewModule.getJsonString(address(ipAccount)));
     }
 
-    function _getExpectedJsonString(
-        string memory name,
-        string memory description,
-        bytes32 contentHash
-    ) internal view returns (string memory) {
+    function _getExpectedJsonString(string memory name, bytes32 contentHash) internal view returns (string memory) {
         /* solhint-disable */
         string memory baseJson = string(
-            abi.encodePacked(
-                '{"name": "IP Asset # ',
-                Strings.toHexString(address(ipAccount)),
-                '", "description": "',
-                description,
-                '", "attributes": ['
-            )
+            abi.encodePacked('{"name": "IP Asset # ', Strings.toHexString(address(ipAccount)), '", "attributes": [')
         );
 
         string memory ipAttributes = string(

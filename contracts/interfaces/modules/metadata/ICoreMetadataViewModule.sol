@@ -12,7 +12,6 @@ interface ICoreMetadataViewModule is IViewModule {
     /// @notice Core metadata struct for IPAccounts.
     struct CoreMetadata {
         string name;
-        string description;
         uint256 registrationDate;
         bytes32 contentHash;
         string uri;
@@ -23,11 +22,6 @@ interface ICoreMetadataViewModule is IViewModule {
     /// @param ipId The address of the IPAccount.
     /// @return The name of the IPAccount.
     function getName(address ipId) external view returns (string memory);
-
-    /// @notice Retrieves the description of the IPAccount from CoreMetadataModule.
-    /// @param ipId The address of the IPAccount.
-    /// @return The description of the IPAccount.
-    function getDescription(address ipId) external view returns (string memory);
 
     /// @notice Retrieves the registration date of the IPAccount from IPAssetRegistry.
     /// @param ipId The address of the IPAccount.

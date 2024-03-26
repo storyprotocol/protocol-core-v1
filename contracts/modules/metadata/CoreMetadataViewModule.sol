@@ -12,7 +12,7 @@ import { ICoreMetadataViewModule, IViewModule } from "../../interfaces/modules/m
 import { IModuleRegistry } from "contracts/interfaces/registries/IModuleRegistry.sol";
 
 /// @title Implementation of the ICoreMetadataViewModule interface
-/// @dev Provides functionalities to retrieve core metadata of IP assets, including name, description, and more.
+/// @dev Provides functionalities to retrieve core metadata of IP assets, including name, and more.
 contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     using IPAccountStorageOps for IIPAccount;
 
@@ -41,7 +41,6 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
         return
             CoreMetadata({
                 name: getName(ipId),
-                description: getDescription(ipId),
                 registrationDate: getRegistrationDate(ipId),
                 contentHash: getContentHash(ipId),
                 uri: getUri(ipId),
@@ -58,13 +57,6 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
             ipName = IIPAccount(payable(ipId)).getString(IP_ASSET_REGISTRY, "NAME");
         }
         return ipName;
-    }
-
-    /// @notice Retrieves the description of the IPAccount from CoreMetadataModule.
-    /// @param ipId The address of the IPAccount.
-    /// @return The description of the IPAccount.
-    function getDescription(address ipId) public view returns (string memory) {
-        return IIPAccount(payable(ipId)).getString(coreMetadataModule, "IP_DESCRIPTION");
     }
 
     /// @notice Retrieves the registration date of the IPAccount from IPAssetRegistry.
@@ -104,13 +96,7 @@ contract CoreMetadataViewModule is BaseModule, ICoreMetadataViewModule {
     function getJsonString(address ipId) external view returns (string memory) {
         string memory baseJson = string(
             /* solhint-disable */
-            abi.encodePacked(
-                '{"name": "IP Asset # ',
-                Strings.toHexString(ipId),
-                '", "description": "',
-                getDescription(ipId),
-                '", "attributes": ['
-            )
+            abi.encodePacked('{"name": "IP Asset # ', Strings.toHexString(ipId), '", "attributes": [')
             /* solhint-enable */
         );
 

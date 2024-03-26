@@ -43,14 +43,6 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         _setIpName(ipAccount, ipName);
     }
 
-    /// @notice Sets the description for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
-    /// @param ipAccount The address of the IP asset.
-    /// @param description The description to set for the IP asset.
-    function setIpDescription(address ipAccount, string memory description) external verifyPermission(ipAccount) {
-        _setIpDescription(ipAccount, description);
-    }
-
     /// @notice Sets the content hash for an IP asset.
     /// @dev Can only be called once per IP asset to prevent overwriting.
     /// @param ipAccount The address of the IP asset.
@@ -63,16 +55,13 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     /// @dev Can only be called once per IP asset to prevent overwriting.
     /// @param ipAccount The address of the IP asset.
     /// @param ipName The name to set for the IP asset.
-    /// @param description The description to set for the IP asset.
     /// @param contentHash The content hash to set for the IP asset.
     function setIpMetadata(
         address ipAccount,
         string memory ipName,
-        string memory description,
         bytes32 contentHash
     ) external verifyPermission(ipAccount) {
         _setIpName(ipAccount, ipName);
-        _setIpDescription(ipAccount, description);
         _setIpContentHash(ipAccount, contentHash);
     }
 
@@ -84,14 +73,6 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     function _setIpName(address ipAccount, string memory ipName) internal onlyOnce(ipAccount, "IP_NAME") {
         IIPAccount(payable(ipAccount)).setString("IP_NAME", ipName);
         emit IPNameSet(ipAccount, ipName);
-    }
-
-    function _setIpDescription(
-        address ipAccount,
-        string memory description
-    ) internal onlyOnce(ipAccount, "IP_DESCRIPTION") {
-        IIPAccount(payable(ipAccount)).setString("IP_DESCRIPTION", description);
-        emit IPDescriptionSet(ipAccount, description);
     }
 
     function _setIpContentHash(address ipAccount, bytes32 contentHash) internal {

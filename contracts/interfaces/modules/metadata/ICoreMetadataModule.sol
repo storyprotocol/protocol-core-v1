@@ -40,10 +40,5 @@ interface ICoreMetadataModule is IModule {
     /// @param name The name to set for the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param contentHash The content hash to set for the IP asset.
-    function setAll(
-        address ipAccount,
-        string memory name,
-        string memory metadataURI,
-        bytes32 contentHash
-    ) external;
+    function setAll(address ipAccount, string memory name, string memory metadataURI, bytes32 contentHash) external;
 }

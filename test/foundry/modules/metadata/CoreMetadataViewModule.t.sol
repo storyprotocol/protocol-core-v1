@@ -105,6 +105,16 @@ contract CoreMetadataViewModuleTest is BaseTest {
         );
     }
 
+    function test_CoreMetadataViewModule_isSupported() public {
+        assertTrue(coreMetadataViewModule.isSupported(address(ipAccount)));
+    }
+
+    function test_CoreMetadataViewModule_revert_isSupported() public {
+        mockNFT.mintId(alice, 999);
+        address nonIpAsset = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), 999);
+        assertFalse(coreMetadataViewModule.isSupported(nonIpAsset));
+    }
+
     function _getExpectedJsonString(
         string memory name,
         string memory metadataURI,
@@ -112,11 +122,7 @@ contract CoreMetadataViewModuleTest is BaseTest {
     ) internal view returns (string memory) {
         /* solhint-disable */
         string memory baseJson = string(
-            abi.encodePacked(
-                '{"name": "IP Asset # ',
-                Strings.toHexString(address(ipAccount)),
-                '", "attributes": ['
-            )
+            abi.encodePacked('{"name": "IP Asset # ', Strings.toHexString(address(ipAccount)), '", "attributes": [')
         );
 
         string memory ipAttributes = string(

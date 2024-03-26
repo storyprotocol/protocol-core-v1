@@ -36,8 +36,7 @@ slither :; slither ./contracts
 
 # glob doesn't work for nested folders, so we do it manually
 format:
-	npx prettier --write contracts/*.sol
-	npx prettier --write contracts/**/*.sol
+	npx prettier --write contracts
 
 # generate forge coverage on pinned mainnet fork
 # process lcov file, ignore test, script, and contracts/mocks folders

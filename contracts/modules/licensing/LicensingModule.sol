@@ -284,6 +284,11 @@ contract LicensingModule is
         address childIpId,
         bytes calldata royaltyContext
     ) external nonReentrant verifyPermission(childIpId) {
+        LicensingModuleStorage storage $ = _getLicensingModuleStorage();
+        if ($.ipIdParents[childIpId].length() > 0) {
+            revert Errors.LicensingModule__IpAlreadyLinked();
+        }
+
         _verifyIpNotDisputed(childIpId);
         address holder = IIPAccount(payable(childIpId)).owner();
         address[] memory licensors = new address[](licenseIds.length);

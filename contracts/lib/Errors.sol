@@ -133,6 +133,7 @@ library Errors {
     //                            LicensingModule                             //
     ////////////////////////////////////////////////////////////////////////////
 
+    error LicensingModule__IpAlreadyLinked();
     error LicensingModule__PolicyAlreadySetForIpId();
     error LicensingModule__FrameworkNotFound();
     error LicensingModule__EmptyLicenseUrl();

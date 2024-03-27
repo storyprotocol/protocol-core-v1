@@ -34,6 +34,7 @@ contract LicensingModuleTest is BaseTest {
     string public licenseUrl = "https://example.com/license";
     address public ipId1;
     address public ipId2;
+    address public ipId3;
     address public ipOwner = address(0x100); // use static address, otherwise uri check fails because licensor changes
     address public licenseHolder = address(0x101);
 
@@ -68,12 +69,15 @@ contract LicensingModuleTest is BaseTest {
         // Create IPAccounts
         nft.mintId(ipOwner, 1);
         nft.mintId(ipOwner, 2);
+        nft.mintId(ipOwner, 3);
 
         ipId1 = ipAccountRegistry.registerIpAccount(block.chainid, address(nft), 1);
         ipId2 = ipAccountRegistry.registerIpAccount(block.chainid, address(nft), 2);
+        ipId3 = ipAccountRegistry.registerIpAccount(block.chainid, address(nft), 3);
 
         vm.label(ipId1, "IPAccount1");
         vm.label(ipId2, "IPAccount2");
+        vm.label(ipId3, "IPAccount3");
     }
 
     function _createMockPolicy() internal pure returns (bytes memory) {
@@ -501,6 +505,32 @@ contract LicensingModuleTest is BaseTest {
 
         vm.expectRevert(Errors.LicensingModule__ParentIdEqualThanChild.selector);
         licensingModule.linkIpToParents(licenseIds, ipId1, "");
+        vm.stopPrank();
+    }
+
+    function test_LicensingModule_linkIpToParents_revert_linkTwice() public withPolicyFrameworkManager {
+        vm.prank(address(mockPFM));
+        uint256 policyId = licensingModule.registerPolicy(_createPolicyFrameworkData());
+
+        vm.startPrank(ipOwner);
+        uint256 indexOnIpId = licensingModule.addPolicyToIp(ipId1, policyId);
+        assertEq(policyId, 1);
+
+        uint256 licenseId = licensingModule.mintLicense(policyId, ipId1, 2, ipOwner, "");
+        assertEq(licenseId, 1);
+
+        uint256[] memory licenseIds = new uint256[](1);
+        licenseIds[0] = licenseId;
+
+        licensingModule.linkIpToParents(licenseIds, ipId3, "");
+
+        indexOnIpId = licensingModule.addPolicyToIp(ipId2, policyId);
+        licenseId = licensingModule.mintLicense(policyId, ipId2, 2, ipOwner, "");
+        licenseIds = new uint256[](1);
+        licenseIds[0] = licenseId;
+
+        vm.expectRevert(Errors.LicensingModule__IpAlreadyLinked.selector);
+        licensingModule.linkIpToParents(licenseIds, ipId3, "");
         vm.stopPrank();
     }
 

@@ -19,7 +19,6 @@ interface ICoreMetadataViewModule is IViewModule {
         address owner;
     }
 
-
     /// @notice Retrieves the metadataURI of the IPAsset from CoreMetadataModule.
     /// @param ipId The address of the IPAsset.
     /// @return The metadataURI of the IPAsset.

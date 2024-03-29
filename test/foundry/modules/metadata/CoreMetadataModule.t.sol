@@ -60,15 +60,17 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x5678"));
     }
 
-//    function test_CoreMetadata_NftTokenURITwice() public {
-//        vm.prank(alice);
-//        coreMetadataModule.updateNftTokenURI(address(ipAccount));
-//        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
-//
-//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-//        vm.prank(alice);
-//        coreMetadataModule.updateNftTokenURI(address(ipAccount));
-//    }
+    function test_CoreMetadata_revert_NftTokenURI_Immutable() public {
+        assertFalse(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        vm.prank(alice);
+        coreMetadataModule.freezeMetadata(address(ipAccount));
+        assertTrue(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        assertTrue(ipAccount.getBool(address(coreMetadataModule), "IMMUTABLE"));
+
+        vm.prank(alice);
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadyFrozen.selector);
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32(0));
+    }
 
     function test_CoreMetadata_NftTokenURI_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
@@ -116,15 +118,17 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x5678"));
     }
 
-//    function test_CoreMetadata_MetadataURITwice() public {
-//        vm.prank(alice);
-//        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-//        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
-//
-//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-//        vm.prank(alice);
-//        coreMetadataModule.setMetadataURI(address(ipAccount), "My New MetadataURI");
-//    }
+    function test_CoreMetadata_revert_MetadataURI_Immutable() public {
+        assertFalse(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        vm.prank(alice);
+        coreMetadataModule.freezeMetadata(address(ipAccount));
+        assertTrue(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        assertTrue(ipAccount.getBool(address(coreMetadataModule), "IMMUTABLE"));
+
+        vm.prank(alice);
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadyFrozen.selector);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32(0));
+    }
 
     function test_CoreMetadata_MetadataURI_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
@@ -166,14 +170,17 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
     }
 
-//    function test_CoreMetadata_AllTwice() public {
-//        vm.prank(alice);
-//        coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
-//
-//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-//        vm.prank(alice);
-//        coreMetadataModule.setAll(address(ipAccount), "My New MetadataURI", bytes32("0x5678"));
-//    }
+    function test_CoreMetadata_revert_All_Immutable() public {
+        assertFalse(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        vm.prank(alice);
+        coreMetadataModule.freezeMetadata(address(ipAccount));
+        assertTrue(coreMetadataModule.isMetadataFrozen(address(ipAccount)));
+        assertTrue(ipAccount.getBool(address(coreMetadataModule), "IMMUTABLE"));
+
+        vm.prank(alice);
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadyFrozen.selector);
+        coreMetadataModule.setAll(address(ipAccount), "My New MetadataURI", bytes32("0x5678"), bytes32("0x1234"));
+    }
 
     function test_CoreMetadata_All_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));

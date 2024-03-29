@@ -39,10 +39,13 @@ interface ICoreMetadataModule is IModule {
     /// @param nftMetadataHash A bytes32 hash representing the metadata of the NFT.
     /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
     /// Use bytes32(0) to indicate that the metadata is not available.
-    function setAll(
-        address ipId,
-        string memory metadataURI,
-        bytes32 metadataHash,
-        bytes32 nftMetadataHash
-    ) external;
+    function setAll(address ipId, string memory metadataURI, bytes32 metadataHash, bytes32 nftMetadataHash) external;
+
+    /// @notice make all metadata of the IP Asset immutable.
+    /// @param ipId The address of the IP asset.
+    function freezeMetadata(address ipId) external;
+
+    /// @notice Check if the metadata of the IP Asset is immutable.
+    /// @param ipId The address of the IP asset.
+    function isMetadataFrozen(address ipId) external view returns (bool);
 }

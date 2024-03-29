@@ -20,10 +20,10 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
 
     string public override name = CORE_METADATA_MODULE_KEY;
 
-    /// @notice Modifier to ensure that metadata can only be set once.
-    modifier onlyOnce(address ipId, bytes32 metadataName) {
-        if (!_isEmptyString(IIPAccount(payable(ipId)).getString(metadataName))) {
-            revert Errors.CoreMetadataModule__MetadataAlreadySet();
+    /// @notice Modifier to ensure that metadata can only be changed when mutable.
+    modifier onlyMutable(address ipId) {
+        if (IIPAccount(payable(ipId)).getBool("IMMUTABLE")) {
+            revert Errors.CoreMetadataModule__MetadataAlreadyFrozen();
         }
         _;
     }
@@ -53,7 +53,11 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param metadataHash The hash of metadata at metadataURI.
     /// Use bytes32(0) to indicate that the metadata is not available.
-    function setMetadataURI(address ipId, string memory metadataURI, bytes32 metadataHash) external verifyPermission(ipId) {
+    function setMetadataURI(
+        address ipId,
+        string memory metadataURI,
+        bytes32 metadataHash
+    ) external verifyPermission(ipId) {
         _setMetadataURI(ipId, metadataURI, metadataHash);
     }
 
@@ -76,12 +80,24 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         _setMetadataURI(ipId, metadataURI, metadataHash);
     }
 
+    /// @notice make all metadata of the IP Asset immutable.
+    /// @param ipId The address of the IP asset.
+    function freezeMetadata(address ipId) external verifyPermission(ipId) {
+        IIPAccount(payable(ipId)).setBool("IMMUTABLE", true);
+    }
+
+    /// @notice Check if the metadata of the IP Asset is immutable.
+    /// @param ipId The address of the IP asset.
+    function isMetadataFrozen(address ipId) external view returns (bool) {
+        return IIPAccount(payable(ipId)).getBool("IMMUTABLE");
+    }
+
     /// @dev Implements the IERC165 interface.
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(ICoreMetadataModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _updateNftTokenURI(address ipId, bytes32 nftMetadataHash) internal onlyOnce(ipId, "NFT_TOKEN_URI") {
+    function _updateNftTokenURI(address ipId, bytes32 nftMetadataHash) internal onlyMutable(ipId) {
         (, address tokenAddress, uint256 tokenId) = IIPAccount(payable(ipId)).token();
         string memory nftTokenURI = IERC721Metadata(tokenAddress).tokenURI(tokenId);
         IIPAccount(payable(ipId)).setString("NFT_TOKEN_URI", nftTokenURI);
@@ -89,11 +105,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         emit NFTTokenURISet(ipId, nftTokenURI, nftMetadataHash);
     }
 
-    function _setMetadataURI(
-        address ipId,
-        string memory metadataURI,
-        bytes32 metadataHash
-    ) internal onlyOnce(ipId, "METADATA_URI") {
+    function _setMetadataURI(address ipId, string memory metadataURI, bytes32 metadataHash) internal onlyMutable(ipId) {
         IIPAccount(payable(ipId)).setString("METADATA_URI", metadataURI);
         IIPAccount(payable(ipId)).setBytes32("METADATA_HASH", metadataHash);
         emit MetadataURISet(ipId, metadataURI, metadataHash);

@@ -58,6 +58,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "@openzeppelin/contracts-v4": "npm:@openzeppelin/contracts@4.9.6",
     "erc6551": "^0.3.1"
   }
 }

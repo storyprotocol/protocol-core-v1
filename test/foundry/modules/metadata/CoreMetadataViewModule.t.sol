@@ -46,61 +46,53 @@ contract CoreMetadataViewModuleTest is BaseTest {
 
     function test_CoreMetadataViewModule_GetAllMetadata() public {
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
-        vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
 
-        assertEq(coreMetadataViewModule.getName(address(ipAccount)), "My IP");
         assertEq(coreMetadataViewModule.getMetadataURI(address(ipAccount)), "My MetadataURI");
         assertEq(coreMetadataViewModule.getOwner(address(ipAccount)), alice);
-        assertEq(coreMetadataViewModule.getUri(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadataViewModule.getNftTokenURI(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadataViewModule.getNftMetadataHash(address(ipAccount)), bytes32(0));
         assertEq(coreMetadataViewModule.getRegistrationDate(address(ipAccount)), block.timestamp);
-        assertEq(coreMetadataViewModule.getContentHash(address(ipAccount)), bytes32("0x1234"));
+        assertEq(coreMetadataViewModule.getMetadataHash(address(ipAccount)), bytes32("0x1234"));
     }
 
-    function test_CoreMetadataViewModule_GetAllMetadata_without_CoreMetadata() public {
-        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
-        assertEq(coreMetadataViewModule.getName(address(ipAccount)), name);
+    function test_CoreMetadataViewModule_GetAllMetadata_without_SetAnyCoreMetadata() public {
         assertEq(coreMetadataViewModule.getMetadataURI(address(ipAccount)), "");
         assertEq(coreMetadataViewModule.getOwner(address(ipAccount)), alice);
-        assertEq(coreMetadataViewModule.getUri(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadataViewModule.getNftTokenURI(address(ipAccount)), "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadataViewModule.getNftMetadataHash(address(ipAccount)), bytes32(0));
         assertEq(coreMetadataViewModule.getRegistrationDate(address(ipAccount)), block.timestamp);
-        assertEq(coreMetadataViewModule.getContentHash(address(ipAccount)), bytes32(0));
+        assertEq(coreMetadataViewModule.getMetadataHash(address(ipAccount)), bytes32(0));
     }
 
     function test_CoreMetadataViewModule_JsonString() public {
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x5678"));
         vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
         assertEq(
-            _getExpectedJsonString("My IP", "My MetadataURI", bytes32("0x1234")),
+            _getExpectedJsonString(mockNFT.tokenURI(99), bytes32("0x5678"), "My MetadataURI", bytes32("0x1234")),
             coreMetadataViewModule.getJsonString(address(ipAccount))
         );
     }
 
     function test_CoreMetadataViewModule_GetCoreMetadataStrut() public {
         vm.prank(alice);
-        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
         CoreMetadataViewModule.CoreMetadata memory coreMetadata = coreMetadataViewModule.getCoreMetadata(
             address(ipAccount)
         );
-        assertEq(coreMetadata.name, "My IP");
         assertEq(coreMetadata.metadataURI, "My MetadataURI");
-        assertEq(coreMetadata.contentHash, bytes32("0x1234"));
+        assertEq(coreMetadata.metadataHash, bytes32("0x1234"));
         assertEq(coreMetadata.registrationDate, block.timestamp);
         assertEq(coreMetadata.owner, alice);
-        assertEq(coreMetadata.uri, "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadata.nftTokenURI, "https://storyprotocol.xyz/erc721/99");
+        assertEq(coreMetadata.nftMetadataHash, bytes32("0x5678"));
     }
 
     function test_CoreMetadataViewModule_GetJsonStr_without_CoreMetadata() public {
-        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
         assertEq(
-            _getExpectedJsonString(name, "", bytes32(0)),
+            _getExpectedJsonString(mockNFT.tokenURI(99), bytes32(0), "", bytes32(0)),
             coreMetadataViewModule.getJsonString(address(ipAccount))
         );
     }
@@ -116,9 +108,10 @@ contract CoreMetadataViewModuleTest is BaseTest {
     }
 
     function _getExpectedJsonString(
-        string memory name,
+        string memory nftTokenURI,
+        bytes32 nftMedataHash,
         string memory metadataURI,
-        bytes32 contentHash
+        bytes32 metadataHash
     ) internal view returns (string memory) {
         /* solhint-disable */
         string memory baseJson = string(
@@ -127,17 +120,20 @@ contract CoreMetadataViewModuleTest is BaseTest {
 
         string memory ipAttributes = string(
             abi.encodePacked(
-                '{"trait_type": "Name", "value": "',
-                name,
-                '"},'
                 '{"trait_type": "Owner", "value": "',
                 Strings.toHexString(alice),
                 '"},'
-                '{"trait_type": "ContentHash", "value": "',
-                Strings.toHexString(uint256(contentHash), 32),
+                '{"trait_type": "MetadataHash", "value": "',
+                Strings.toHexString(uint256(metadataHash), 32),
                 '"},'
                 '{"trait_type": "MetadataURI", "value": "',
                 metadataURI,
+                '"},'
+                '{"trait_type": "NFTMetadataHash", "value": "',
+                Strings.toHexString(uint256(nftMedataHash), 32),
+                '"},'
+                '{"trait_type": "NFTTokenURI", "value": "',
+                nftTokenURI,
                 '"},'
                 '{"trait_type": "Registration Date", "value": "',
                 Strings.toString(block.timestamp),

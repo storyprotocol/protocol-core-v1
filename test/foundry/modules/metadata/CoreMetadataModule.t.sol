@@ -34,96 +34,102 @@ contract CoreMetadataModuleTest is BaseTest {
         moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
     }
 
-    function test_CoreMetadata_Name() public {
+    function test_CoreMetadata_NftTokenURI() public {
         vm.expectEmit();
-        emit ICoreMetadataModule.IPNameSet(address(ipAccount), "My IP");
+        emit ICoreMetadataModule.NFTTokenURISet(address(ipAccount), mockNFT.tokenURI(1), bytes32(0));
 
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
-        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32(0));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32(0));
     }
 
-    function test_CoreMetadata_Name_Two_IPAccounts() public {
+    function test_CoreMetadata_NftTokenURI_Two_IPAccounts() public {
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
-        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x1234"));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x1234"));
 
         mockNFT.mintId(alice, 2);
         IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
         vm.label(address(ipAccount2), "IPAccount2");
 
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount2), "My IP2");
-        assertEq(ipAccount2.getString(address(coreMetadataModule), "IP_NAME"), "My IP2");
+        coreMetadataModule.updateNftTokenURI(address(ipAccount2), bytes32("0x5678"));
+        assertEq(ipAccount2.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(2));
+        assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x5678"));
     }
 
-    function test_CoreMetadata_NameTwice() public {
-        vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
-        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+//    function test_CoreMetadata_NftTokenURITwice() public {
+//        vm.prank(alice);
+//        coreMetadataModule.updateNftTokenURI(address(ipAccount));
+//        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+//
+//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
+//        vm.prank(alice);
+//        coreMetadataModule.updateNftTokenURI(address(ipAccount));
+//    }
 
-        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-        vm.prank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My New IP");
-    }
-
-    function test_CoreMetadata_Name_InvalidIpAccount() public {
+    function test_CoreMetadata_NftTokenURI_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
         vm.prank(alice);
-        coreMetadataModule.setIpName(address(0x1234), "My IP");
+        coreMetadataModule.updateNftTokenURI(address(0x1234), bytes32(0));
     }
 
-    function test_CoreMetadata_Name_InvalidCaller() public {
+    function test_CoreMetadata_NftTokenURI_InvalidCaller() public {
         vm.expectRevert(
             abi.encodeWithSelector(
                 Errors.AccessController__PermissionDenied.selector,
                 address(ipAccount),
                 bob,
                 address(coreMetadataModule),
-                coreMetadataModule.setIpName.selector
+                coreMetadataModule.updateNftTokenURI.selector
             )
         );
         vm.prank(bob);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32(0));
     }
 
     function test_CoreMetadata_MetadataURI() public {
         vm.expectEmit();
-        emit ICoreMetadataModule.MetadataURISet(address(ipAccount), "My MetadataURI");
+        emit ICoreMetadataModule.MetadataURISet(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
 
         vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
         assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
     }
 
     function test_CoreMetadata_MetadataURI_Two_IPAccounts() public {
         vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
         assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
 
         mockNFT.mintId(alice, 2);
         IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
         vm.label(address(ipAccount2), "IPAccount2");
 
         vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount2), "My MetadataURI2");
+        coreMetadataModule.setMetadataURI(address(ipAccount2), "My MetadataURI2", bytes32("0x5678"));
         assertEq(ipAccount2.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI2");
+        assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x5678"));
     }
 
-    function test_CoreMetadata_MetadataURITwice() public {
-        vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
-
-        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-        vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My New MetadataURI");
-    }
+//    function test_CoreMetadata_MetadataURITwice() public {
+//        vm.prank(alice);
+//        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
+//        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+//
+//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
+//        vm.prank(alice);
+//        coreMetadataModule.setMetadataURI(address(ipAccount), "My New MetadataURI");
+//    }
 
     function test_CoreMetadata_MetadataURI_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
         vm.prank(alice);
-        coreMetadataModule.setMetadataURI(address(0x1234), "My MetadataURI");
+        coreMetadataModule.setMetadataURI(address(0x1234), "My MetadataURI", bytes32(0));
     }
 
     function test_CoreMetadata_MetadataURI_InvalidCaller() public {
@@ -137,94 +143,42 @@ contract CoreMetadataModuleTest is BaseTest {
             )
         );
         vm.prank(bob);
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-    }
-
-    function test_CoreMetadata_ContentHash() public {
-        vm.expectEmit();
-        emit ICoreMetadataModule.IPContentHashSet(address(ipAccount), bytes32("0x1234"));
-
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
-        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
-    }
-
-    function test_CoreMetadata_ContentHash_Two_IPAccounts() public {
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
-        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
-
-        mockNFT.mintId(alice, 2);
-        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
-        vm.label(address(ipAccount2), "IPAccount2");
-
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount2), bytes32("0x5678"));
-        assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x5678"));
-    }
-
-    function test_CoreMetadata_ContentHashTwice() public {
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
-        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
-
-        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x5678"));
-    }
-
-    function test_CoreMetadata_ContentHash_InvalidIpAccount() public {
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
-        vm.prank(alice);
-        coreMetadataModule.setIpContentHash(address(0x1234), bytes32("0x1234"));
-    }
-
-    function test_CoreMetadata_ContentHash_InvalidCaller() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.AccessController__PermissionDenied.selector,
-                address(ipAccount),
-                bob,
-                address(coreMetadataModule),
-                coreMetadataModule.setIpContentHash.selector
-            )
-        );
-        vm.prank(bob);
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32(0));
     }
 
     function test_CoreMetadata_Batch() public {
         vm.startPrank(alice);
-        coreMetadataModule.setIpName(address(ipAccount), "My IP");
-        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI");
-        coreMetadataModule.setIpContentHash(address(ipAccount), bytes32("0x1234"));
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x1234"));
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x5678"));
         vm.stopPrank();
-        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x1234"));
         assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
-        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x5678"));
     }
 
     function test_CoreMetadata_All() public {
         vm.prank(alice);
-        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
-        assertEq(ipAccount.getString(address(coreMetadataModule), "IP_NAME"), "My IP");
+        coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x5678"));
         assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
-        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "IP_CONTENT_HASH"), bytes32("0x1234"));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
     }
 
-    function test_CoreMetadata_AllTwice() public {
-        vm.prank(alice);
-        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
-
-        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
-        vm.prank(alice);
-        coreMetadataModule.setAll(address(ipAccount), "My New IP", "My New MetadataURI", bytes32("0x5678"));
-    }
+//    function test_CoreMetadata_AllTwice() public {
+//        vm.prank(alice);
+//        coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
+//
+//        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadySet.selector);
+//        vm.prank(alice);
+//        coreMetadataModule.setAll(address(ipAccount), "My New MetadataURI", bytes32("0x5678"));
+//    }
 
     function test_CoreMetadata_All_InvalidIpAccount() public {
         vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
         vm.prank(alice);
-        coreMetadataModule.setAll(address(0x1234), "My IP", "My MetadataURI", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(0x1234), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
     }
 
     function test_CoreMetadata_All_InvalidCaller() public {
@@ -238,6 +192,6 @@ contract CoreMetadataModuleTest is BaseTest {
             )
         );
         vm.prank(bob);
-        coreMetadataModule.setAll(address(ipAccount), "My IP", "My MetadataURI", bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
     }
 }

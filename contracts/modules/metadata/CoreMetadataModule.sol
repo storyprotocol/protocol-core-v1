@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { BaseModule } from "../BaseModule.sol";
@@ -20,8 +21,8 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     string public override name = CORE_METADATA_MODULE_KEY;
 
     /// @notice Modifier to ensure that metadata can only be set once.
-    modifier onlyOnce(address ipAccount, bytes32 metadataName) {
-        if (!_isEmptyString(IIPAccount(payable(ipAccount)).getString(metadataName))) {
+    modifier onlyOnce(address ipId, bytes32 metadataName) {
+        if (!_isEmptyString(IIPAccount(payable(ipId)).getString(metadataName))) {
             revert Errors.CoreMetadataModule__MetadataAlreadySet();
         }
         _;
@@ -35,45 +36,44 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         address ipAccountRegistry
     ) AccessControlled(accessController, ipAccountRegistry) {}
 
-    /// @notice Sets the name for an IP asset.
+    /// @notice Update the nftTokenURI for an IP asset,
+    /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.
     /// @dev Can only be called once per IP asset to prevent overwriting.
-    /// @param ipAccount The address of the IP asset.
-    /// @param ipName The name to set for the IP asset.
-    function setIpName(address ipAccount, string memory ipName) external verifyPermission(ipAccount) {
-        _setIpName(ipAccount, ipName);
+    /// @param ipId The address of the IP asset.
+    /// @param nftMetadataHash A bytes32 hash representing the metadata of the NFT.
+    /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
+    /// Use bytes32(0) to indicate that the metadata is not available.
+    function updateNftTokenURI(address ipId, bytes32 nftMetadataHash) external verifyPermission(ipId) {
+        _updateNftTokenURI(ipId, nftMetadataHash);
     }
 
     /// @notice Sets the metadataURI for an IP asset.
     /// @dev Can only be called once per IP asset to prevent overwriting.
-    /// @param ipAccount The address of the IP asset.
+    /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
-    function setMetadataURI(address ipAccount, string memory metadataURI) external verifyPermission(ipAccount) {
-        _setMetadataURI(ipAccount, metadataURI);
-    }
-
-    /// @notice Sets the content hash for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
-    /// @param ipAccount The address of the IP asset.
-    /// @param contentHash The content hash to set for the IP asset.
-    function setIpContentHash(address ipAccount, bytes32 contentHash) external verifyPermission(ipAccount) {
-        _setIpContentHash(ipAccount, contentHash);
+    /// @param metadataHash The hash of metadata at metadataURI.
+    /// Use bytes32(0) to indicate that the metadata is not available.
+    function setMetadataURI(address ipId, string memory metadataURI, bytes32 metadataHash) external verifyPermission(ipId) {
+        _setMetadataURI(ipId, metadataURI, metadataHash);
     }
 
     /// @notice Sets all core metadata for an IP asset.
     /// @dev Can only be called once per IP asset to prevent overwriting.
-    /// @param ipAccount The address of the IP asset.
-    /// @param ipName The name to set for the IP asset.
+    /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
-    /// @param contentHash The content hash to set for the IP asset.
+    /// @param metadataHash The hash of metadata at metadataURI.
+    /// Use bytes32(0) to indicate that the metadata is not available.
+    /// @param nftMetadataHash A bytes32 hash representing the metadata of the NFT.
+    /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
+    /// Use bytes32(0) to indicate that the metadata is not available.
     function setAll(
-        address ipAccount,
-        string memory ipName,
+        address ipId,
         string memory metadataURI,
-        bytes32 contentHash
-    ) external verifyPermission(ipAccount) {
-        _setIpName(ipAccount, ipName);
-        _setMetadataURI(ipAccount, metadataURI);
-        _setIpContentHash(ipAccount, contentHash);
+        bytes32 metadataHash,
+        bytes32 nftMetadataHash
+    ) external verifyPermission(ipId) {
+        _updateNftTokenURI(ipId, nftMetadataHash);
+        _setMetadataURI(ipId, metadataURI, metadataHash);
     }
 
     /// @dev Implements the IERC165 interface.
@@ -81,25 +81,22 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         return interfaceId == type(ICoreMetadataModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _setIpName(address ipAccount, string memory ipName) internal onlyOnce(ipAccount, "IP_NAME") {
-        IIPAccount(payable(ipAccount)).setString("IP_NAME", ipName);
-        emit IPNameSet(ipAccount, ipName);
+    function _updateNftTokenURI(address ipId, bytes32 nftMetadataHash) internal onlyOnce(ipId, "NFT_TOKEN_URI") {
+        (, address tokenAddress, uint256 tokenId) = IIPAccount(payable(ipId)).token();
+        string memory nftTokenURI = IERC721Metadata(tokenAddress).tokenURI(tokenId);
+        IIPAccount(payable(ipId)).setString("NFT_TOKEN_URI", nftTokenURI);
+        IIPAccount(payable(ipId)).setBytes32("NFT_METADATA_HASH", nftMetadataHash);
+        emit NFTTokenURISet(ipId, nftTokenURI, nftMetadataHash);
     }
 
     function _setMetadataURI(
-        address ipAccount,
-        string memory metadataURI
-    ) internal onlyOnce(ipAccount, "METADATA_URI") {
-        IIPAccount(payable(ipAccount)).setString("METADATA_URI", metadataURI);
-        emit MetadataURISet(ipAccount, metadataURI);
-    }
-
-    function _setIpContentHash(address ipAccount, bytes32 contentHash) internal {
-        if (IIPAccount(payable(ipAccount)).getBytes32("IP_CONTENT_HASH") != bytes32(0)) {
-            revert Errors.CoreMetadataModule__MetadataAlreadySet();
-        }
-        IIPAccount(payable(ipAccount)).setBytes32("IP_CONTENT_HASH", contentHash);
-        emit IPContentHashSet(ipAccount, contentHash);
+        address ipId,
+        string memory metadataURI,
+        bytes32 metadataHash
+    ) internal onlyOnce(ipId, "METADATA_URI") {
+        IIPAccount(payable(ipId)).setString("METADATA_URI", metadataURI);
+        IIPAccount(payable(ipId)).setBytes32("METADATA_HASH", metadataHash);
+        emit MetadataURISet(ipId, metadataURI, metadataHash);
     }
 
     /// @dev Checks if a string is empty.

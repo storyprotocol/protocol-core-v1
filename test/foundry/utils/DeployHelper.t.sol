@@ -22,7 +22,6 @@ import { IPAssetRegistry } from "../../../contracts/registries/IPAssetRegistry.s
 import { ModuleRegistry } from "../../../contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
-import { AncestorsVaultLAP } from "../../../contracts/modules/royalty/policies/AncestorsVaultLAP.sol";
 import { RoyaltyPolicyLAP } from "../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { DisputeModule } from "../../../contracts/modules/dispute/DisputeModule.sol";
 import { LicensingModule } from "../../../contracts/modules/licensing/LicensingModule.sol";
@@ -111,7 +110,6 @@ contract DeployHelper {
 
     // Policy
     ArbitrationPolicySP internal arbitrationPolicySP;
-    AncestorsVaultLAP internal ancestorsVaultImpl;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
 
     // Royalty Policy — 0xSplits Liquid Split (Sepolia)
@@ -301,9 +299,6 @@ contract DeployHelper {
                 TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
             );
             console2.log("DeployHelper: Using REAL RoyaltyPolicyLAP");
-
-            ancestorsVaultImpl = new AncestorsVaultLAP(address(royaltyPolicyLAP));
-            console2.log("DeployHelper: Using REAL AncestorsVaultLAP");
         } else {
             // mockRoyaltyPolicyLAP = new MockRoyaltyPolicyLAP(getRoyaltyModule());
             // console2.log("DeployHelper: Using Mock RoyaltyPolicyLAP");

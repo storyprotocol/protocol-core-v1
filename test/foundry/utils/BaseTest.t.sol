@@ -197,10 +197,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     function configureRoyaltyPolicyLAP() public {
         console2.log("BaseTest PostDeploymentSetup: Configure Royalty Policy LAP");
         require(address(royaltyPolicyLAP) != address(0), "royaltyPolicyLAP not set");
-
-        vm.startPrank(u.admin);
-        royaltyPolicyLAP.setAncestorsVaultImplementation(address(ancestorsVaultImpl));
-        vm.stopPrank();
     }
 
     function _getIpId(MockERC721 mnft, uint256 tokenId) internal view returns (address ipId) {

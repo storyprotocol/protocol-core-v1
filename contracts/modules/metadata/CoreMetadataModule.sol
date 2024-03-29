@@ -110,9 +110,4 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         IIPAccount(payable(ipId)).setBytes32("METADATA_HASH", metadataHash);
         emit MetadataURISet(ipId, metadataURI, metadataHash);
     }
-
-    /// @dev Checks if a string is empty.
-    function _isEmptyString(string memory str) internal pure returns (bool) {
-        return bytes(str).length == 0;
-    }
 }

@@ -18,7 +18,7 @@ interface ICoreMetadataModule is IModule {
 
     /// @notice Update the nftTokenURI for an IP asset,
     /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param nftMetadataHash A bytes32 hash representing the metadata of the NFT.
     /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
@@ -26,7 +26,7 @@ interface ICoreMetadataModule is IModule {
     function updateNftTokenURI(address ipId, bytes32 nftMetadataHash) external;
 
     /// @notice Sets the metadataURI for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param metadataHash The hash of metadata at metadataURI.
@@ -34,7 +34,7 @@ interface ICoreMetadataModule is IModule {
     function setMetadataURI(address ipId, string memory metadataURI, bytes32 metadataHash) external;
 
     /// @notice Sets all core metadata for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param metadataHash The hash of metadata at metadataURI.

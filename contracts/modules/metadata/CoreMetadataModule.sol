@@ -12,9 +12,11 @@ import { CORE_METADATA_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { ICoreMetadataModule } from "../../interfaces/modules/metadata/ICoreMetadataModule.sol";
 
 /// @title CoreMetadataModule
-/// @notice Manages the core metadata for IP assets within the Story Protocol, all metadata can only update once.
+/// @notice Manages the core metadata for IP assets within the Story Protocol.
 /// @dev This contract allows setting core metadata attributes for IP assets.
 ///      It implements the ICoreMetadataModule interface.
+///      The metadata can be set and updated by the owner of the IP asset.
+///      The metadata can be frozen to prevent further changes.
 contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule {
     using IPAccountStorageOps for IIPAccount;
 
@@ -38,7 +40,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
 
     /// @notice Update the nftTokenURI for an IP asset,
     /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param nftMetadataHash A bytes32 hash representing the metadata of the NFT.
     /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
@@ -48,7 +50,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     }
 
     /// @notice Sets the metadataURI for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param metadataHash The hash of metadata at metadataURI.
@@ -62,7 +64,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     }
 
     /// @notice Sets all core metadata for an IP asset.
-    /// @dev Can only be called once per IP asset to prevent overwriting.
+    /// @dev Will revert if IP asset's metadata is frozen.
     /// @param ipId The address of the IP asset.
     /// @param metadataURI The metadataURI to set for the IP asset.
     /// @param metadataHash The hash of metadata at metadataURI.

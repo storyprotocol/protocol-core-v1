@@ -7,7 +7,7 @@ import { console2 } from "forge-std/console2.sol"; // console to indicate mock d
 import { Test } from "forge-std/Test.sol";
 
 // contracts
-import { AccessController } from "../../../contracts/AccessController.sol";
+import { AccessController } from "../../../contracts/access/AccessController.sol";
 // solhint-disable-next-line max-line-length
 import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
 import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";

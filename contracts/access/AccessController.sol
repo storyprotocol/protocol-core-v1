@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IModuleRegistry } from "./interfaces/registries/IModuleRegistry.sol";
-import { IAccessController } from "./interfaces/IAccessController.sol";
-import { IIPAccountRegistry } from "./interfaces/registries/IIPAccountRegistry.sol";
-import { IModuleRegistry } from "./interfaces/registries/IModuleRegistry.sol";
-import { IPAccountChecker } from "./lib/registries/IPAccountChecker.sol";
-import { IIPAccount } from "./interfaces/IIPAccount.sol";
-import { AccessPermission } from "./lib/AccessPermission.sol";
-import { Errors } from "./lib/Errors.sol";
-import { GovernableUpgradeable } from "./governance/GovernableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+import { IAccessController } from "../interfaces/access/IAccessController.sol";
+import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
+import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.sol";
+import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
+import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
+import { IIPAccount } from "../interfaces/IIPAccount.sol";
+import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
+import { AccessPermission } from "../lib/AccessPermission.sol";
+import { Errors } from "../lib/Errors.sol";
 
 /// @title AccessController
 /// @dev This contract is used to control access permissions for different function calls in the protocol.

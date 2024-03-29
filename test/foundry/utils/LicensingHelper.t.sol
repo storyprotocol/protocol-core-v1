@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contract
-import { IAccessController } from "../../../contracts/interfaces/IAccessController.sol";
+import { IAccessController } from "../../../contracts/interfaces/access/IAccessController.sol";
 import { IIPAccountRegistry } from "../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
 import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { IRoyaltyModule } from "../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";

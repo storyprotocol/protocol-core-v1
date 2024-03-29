@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
-import { IAccessController } from "../../../../contracts/interfaces/IAccessController.sol";
+import { IAccessController } from "../../../../contracts/interfaces/access/IAccessController.sol";
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { IModule } from "../../../../contracts/interfaces/modules/base/IModule.sol";
 import { IIPAccountRegistry } from "../../../../contracts/interfaces/registries/IIPAccountRegistry.sol";

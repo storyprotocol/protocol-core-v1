@@ -12,7 +12,7 @@ import { stdJson } from "forge-std/StdJson.sol";
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 // contracts
-import { AccessController } from "contracts/AccessController.sol";
+import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";

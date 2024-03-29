@@ -7,9 +7,9 @@ import { console2 } from "forge-std/console2.sol"; // console to indicate mock d
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 
 // contracts
-import { AccessController } from "../../../contracts/AccessController.sol";
+import { AccessController } from "../../../contracts/access/AccessController.sol";
 import { Governance } from "../../../contracts/governance/Governance.sol";
-import { IAccessController } from "../../../contracts/interfaces/IAccessController.sol";
+import { IAccessController } from "../../../contracts/interfaces/access/IAccessController.sol";
 import { IGovernance } from "../../../contracts/interfaces/governance/IGovernance.sol";
 import { IDisputeModule } from "../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";

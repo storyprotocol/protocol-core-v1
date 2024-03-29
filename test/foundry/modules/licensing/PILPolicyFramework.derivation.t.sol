@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IAccessController } from "contracts/interfaces/IAccessController.sol";
+import { IAccessController } from "contracts/interfaces/access/IAccessController.sol";
 import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { Errors } from "contracts/lib/Errors.sol";

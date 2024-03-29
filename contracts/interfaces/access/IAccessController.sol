@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { AccessPermission } from "../lib/AccessPermission.sol";
+import { AccessPermission } from "../../lib/AccessPermission.sol";
 
 interface IAccessController {
     /// @notice Emitted when a permission is set.

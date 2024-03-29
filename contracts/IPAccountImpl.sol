@@ -9,7 +9,7 @@ import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/Sig
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 
-import { IAccessController } from "./interfaces/IAccessController.sol";
+import { IAccessController } from "./interfaces/access/IAccessController.sol";
 import { IIPAccount } from "./interfaces/IIPAccount.sol";
 import { MetaTx } from "./lib/MetaTx.sol";
 import { Errors } from "./lib/Errors.sol";

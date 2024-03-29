@@ -53,9 +53,6 @@ contract PILPolicyFrameworkCompatibilityTest is BaseTest {
         ipId2 = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), 2);
         vm.label(ipId1, "IP1");
         vm.label(ipId2, "IP2");
-
-        vm.label(LIQUID_SPLIT_FACTORY, "LIQUID_SPLIT_FACTORY");
-        vm.label(LIQUID_SPLIT_MAIN, "LIQUID_SPLIT_MAIN");
     }
 
     /////////////////////////////////////////////////////////////

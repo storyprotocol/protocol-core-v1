@@ -52,9 +52,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         bob = u.bob;
         carl = u.carl;
         dan = u.dan;
-
-        vm.label(LIQUID_SPLIT_FACTORY, "LIQUID_SPLIT_FACTORY");
-        vm.label(LIQUID_SPLIT_MAIN, "LIQUID_SPLIT_MAIN");
     }
 
     function postDeploymentSetup() public {

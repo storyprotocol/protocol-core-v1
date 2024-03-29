@@ -112,9 +112,9 @@ contract DeployHelper {
     ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
 
-    // Royalty Policy — 0xSplits Liquid Split (Sepolia)
-    address internal constant LIQUID_SPLIT_FACTORY = 0xF678Bae6091Ab6933425FE26Afc20Ee5F324c4aE;
-    address internal constant LIQUID_SPLIT_MAIN = 0x57CBFA83f000a38C5b5881743E298819c503A559;
+    // Misc.
+    IPMetadataProvider internal ipMetadataProvider;
+    IPResolver internal ipResolver;
 
     // Arbitration Policy
     // TODO: custom arbitration price for testing
@@ -292,9 +292,7 @@ contract DeployHelper {
             console2.log("DeployHelper: Using Mock ArbitrationPolicySP");
         }
         if (d.royaltyPolicyLAP) {
-            address impl = address(
-                new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule(), LIQUID_SPLIT_FACTORY, LIQUID_SPLIT_MAIN)
-            );
+            address impl = address(new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule()));
             royaltyPolicyLAP = RoyaltyPolicyLAP(
                 TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
             );

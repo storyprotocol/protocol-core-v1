@@ -1,20 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { ERC1155 } from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-
 import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { ILiquidSplitMain } from "../../../../contracts/interfaces/modules/royalty/policies/ILiquidSplitMain.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
-import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestRoyaltyPolicyLAP is BaseTest {
     event PolicyInitialized(
         address ipId,
-        address splitClone,
+        address ipPool,
         address claimer,
         uint32 royaltyStack,
         address[] targetAncestors,
@@ -165,28 +160,15 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         parentsIpIds100[1] = address(2);
     }
 
-    function test_RoyaltyPolicyLAP_setAncestorsVaultImplementation_ZeroAncestorsVaultImpl() public {
-        vm.startPrank(u.admin);
-        vm.expectRevert(Errors.RoyaltyPolicyLAP__ZeroAncestorsVaultImpl.selector);
-        royaltyPolicyLAP.setAncestorsVaultImplementation(address(0));
+    function test_RoyaltyPolicyLAP_setSnapshotInterval_revert_NotOwner() public {
+        vm.expectRevert(Errors.Governance__OnlyProtocolAdmin.selector);
+        royaltyPolicyLAP.setSnapshotInterval(100);
     }
 
-    function test_RoyaltyPolicyLAP_setAncestorsVaultImplementation_ImplementationAlreadySet() public {
+    function test_RoyaltyPolicyLAP_setSnapshotInterval() public {
         vm.startPrank(u.admin);
-        vm.expectRevert(Errors.RoyaltyPolicyLAP__ImplementationAlreadySet.selector);
-        royaltyPolicyLAP.setAncestorsVaultImplementation(address(2));
-    }
-
-    function test_RoyaltyPolicyLAP_setAncestorsVaultImplementation() public {
-        address impl = address(new RoyaltyPolicyLAP(address(1), address(2), address(3), address(4)));
-        RoyaltyPolicyLAP royaltyPolicyLAP2 = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
-        );
-
-        vm.startPrank(u.admin);
-        royaltyPolicyLAP2.setAncestorsVaultImplementation(address(2));
-
-        assertEq(royaltyPolicyLAP2.ancestorsVaultImpl(), address(2));
+        royaltyPolicyLAP.setSnapshotInterval(100);
+        assertEq(royaltyPolicyLAP.getSnapshotInterval(), 100);
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_NotRoyaltyModule() public {
@@ -196,8 +178,9 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_AboveRoyaltyStackLimit() public {
+        uint256 excessPercent = royaltyPolicyLAP.TOTAL_RT_SUPPLY() + 1;
         vm.expectRevert(Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit.selector);
-        royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(uint32(1001)), "");
+        royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(excessPercent), "");
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_LastPositionNotAbleToMintLicense() public {
@@ -217,8 +200,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         (
             ,
-            address splitClone,
-            address ancestorsVault,
+            address ipPool,
             uint32 royaltyStack,
             address[] memory ancestors,
             uint32[] memory ancestorsRoyalties
@@ -227,8 +209,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(royaltyStack, 0);
         assertEq(ancestors.length, 0);
         assertEq(ancestorsRoyalties.length, 0);
-        assertFalse(splitClone == address(0));
-        assertEq(ancestorsVault, address(0));
+        assertFalse(ipPool == address(0));
     }
 
     function test_RoyaltyPolicyLAP_onLinkToParents_revert_NotRoyaltyModule() public {
@@ -267,8 +248,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         (
             ,
-            address splitClone,
-            address ancestorsVault,
+            address ipPool,
             uint32 royaltyStack,
             address[] memory ancestors,
             uint32[] memory ancestorsRoyalties
@@ -279,8 +259,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
             assertEq(ancestorsRoyalties[i], MAX_ANCESTORS_ROYALTY_[i]);
         }
         assertEq(ancestors, MAX_ANCESTORS_);
-        assertFalse(splitClone == address(0));
-        assertFalse(ancestorsVault == address(0));
+        assertFalse(ipPool == address(0));
     }
 
     function test_RoyaltyPolicyLAP_onRoyaltyPayment_NotRoyaltyModule() public {
@@ -290,7 +269,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onRoyaltyPayment() public {
-        (, address splitClone2, , , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, address ipPool2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         uint256 royaltyAmount = 1000 * 10 ** 6;
         USDC.mint(address(1), royaltyAmount);
         vm.stopPrank();
@@ -301,93 +280,15 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         vm.startPrank(address(royaltyModule));
 
-        uint256 splitClone2USDCBalBefore = USDC.balanceOf(splitClone2);
+        uint256 ipPool2USDCBalBefore = USDC.balanceOf(ipPool2);
         uint256 splitMainUSDCBalBefore = USDC.balanceOf(address(1));
 
         royaltyPolicyLAP.onRoyaltyPayment(address(1), address(2), address(USDC), royaltyAmount);
 
-        uint256 splitClone2USDCBalAfter = USDC.balanceOf(splitClone2);
+        uint256 ipPool2USDCBalAfter = USDC.balanceOf(ipPool2);
         uint256 splitMainUSDCBalAfter = USDC.balanceOf(address(1));
 
-        assertEq(splitClone2USDCBalAfter - splitClone2USDCBalBefore, royaltyAmount);
+        assertEq(ipPool2USDCBalAfter - ipPool2USDCBalBefore, royaltyAmount);
         assertEq(splitMainUSDCBalBefore - splitMainUSDCBalAfter, royaltyAmount);
-    }
-
-    function test_RoyaltyPolicyLAP_distributeIpPoolFunds() public {
-        (, address splitClone2, address ancestorsVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
-
-        // send USDC to 0xSplitClone
-        uint256 royaltyAmount = 1000 * 10 ** 6;
-        USDC.mint(splitClone2, royaltyAmount);
-
-        address[] memory accounts = new address[](2);
-        accounts[0] = address(2);
-        accounts[1] = ancestorsVault2;
-
-        uint256 splitClone2USDCBalBefore = USDC.balanceOf(splitClone2);
-        uint256 splitMainUSDCBalBefore = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
-
-        royaltyPolicyLAP.distributeIpPoolFunds(address(2), address(USDC), accounts, address(0));
-
-        uint256 splitClone2USDCBalAfter = USDC.balanceOf(splitClone2);
-        uint256 splitMainUSDCBalAfter = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
-
-        assertApproxEqRel(splitClone2USDCBalBefore - splitClone2USDCBalAfter, royaltyAmount, 0.0001e18);
-        assertApproxEqRel(splitMainUSDCBalAfter - splitMainUSDCBalBefore, royaltyAmount, 0.0001e18);
-    }
-
-    function test_RoyaltyPolicyLAP_claimFromIpPool() public {
-        (, address splitClone2, address ancestorsVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
-
-        // send USDC to 0xSplitClone
-        uint256 royaltyAmount = 1000 * 10 ** 6;
-        USDC.mint(splitClone2, royaltyAmount);
-
-        address[] memory accounts = new address[](2);
-        accounts[0] = address(2);
-        accounts[1] = ancestorsVault2;
-
-        royaltyPolicyLAP.distributeIpPoolFunds(address(2), address(USDC), accounts, address(0));
-
-        uint256 expectedAmountToBeClaimed = ILiquidSplitMain(royaltyPolicyLAP.LIQUID_SPLIT_MAIN()).getERC20Balance(
-            address(2),
-            USDC
-        );
-
-        ERC20[] memory tokens = new ERC20[](1);
-        tokens[0] = USDC;
-
-        uint256 splitMainUSDCBalBefore = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
-        uint256 address2USDCBalBefore = USDC.balanceOf(address(2));
-
-        royaltyPolicyLAP.claimFromIpPool(address(2), tokens);
-
-        uint256 splitMainUSDCBalAfter = USDC.balanceOf(royaltyPolicyLAP.LIQUID_SPLIT_MAIN());
-        uint256 address2USDCBalAfter = USDC.balanceOf(address(2));
-
-        assertApproxEqRel(splitMainUSDCBalBefore - splitMainUSDCBalAfter, expectedAmountToBeClaimed, 0.0001e18);
-        assertApproxEqRel(address2USDCBalAfter - address2USDCBalBefore, expectedAmountToBeClaimed, 0.0001e18);
-    }
-
-    function test_RoyaltyPolicyLAP_claimAsFullRnftOwner() public {
-        (, address splitClone7, , , , ) = royaltyPolicyLAP.getRoyaltyData(address(7));
-
-        uint256 royaltyAmountUSDC = 100 * 10 ** 6;
-        USDC.mint(address(splitClone7), royaltyAmountUSDC);
-
-        vm.startPrank(address(7));
-        ERC1155(address(splitClone7)).setApprovalForAll(address(royaltyPolicyLAP), true);
-
-        uint256 usdcClaimerBalBefore = USDC.balanceOf(address(7));
-        uint256 rnftClaimerBalBefore = ERC1155(address(splitClone7)).balanceOf(address(7), 0);
-
-        royaltyPolicyLAP.claimFromIpPoolAsTotalRnftOwner(address(7), address(USDC));
-
-        uint256 usdcClaimerBalAfter = USDC.balanceOf(address(7));
-        uint256 rnftClaimerBalAfter = ERC1155(address(splitClone7)).balanceOf(address(7), 0);
-
-        assertApproxEqRel(usdcClaimerBalAfter - usdcClaimerBalBefore, royaltyAmountUSDC, 0.0001e18);
-        assertEq(rnftClaimerBalAfter, 1000);
-        assertEq(rnftClaimerBalBefore, 1000);
     }
 }

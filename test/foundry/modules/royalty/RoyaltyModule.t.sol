@@ -47,9 +47,7 @@ contract TestRoyaltyModule is BaseTest {
 
         USDC.mint(ipAccount2, 1000 * 10 ** 6); // 1000 USDC
 
-        address impl = address(
-            new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule(), LIQUID_SPLIT_FACTORY, LIQUID_SPLIT_MAIN)
-        );
+        address impl = address(new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule()));
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
         );
@@ -468,14 +466,14 @@ contract TestRoyaltyModule is BaseTest {
         address receiverIpId = address(7);
         address payerIpId = address(3);
 
-        (, address splitClone, , , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipPool, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
 
         uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
-        uint256 splitCloneUSDCBalBefore = USDC.balanceOf(splitClone);
+        uint256 ipPoolUSDCBalBefore = USDC.balanceOf(ipPool);
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount);
@@ -483,10 +481,10 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
 
         uint256 payerIpIdUSDCBalAfter = USDC.balanceOf(payerIpId);
-        uint256 splitCloneUSDCBalAfter = USDC.balanceOf(splitClone);
+        uint256 ipPoolUSDCBalAfter = USDC.balanceOf(ipPool);
 
         assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, royaltyAmount);
-        assertEq(splitCloneUSDCBalAfter - splitCloneUSDCBalBefore, royaltyAmount);
+        assertEq(ipPoolUSDCBalAfter - ipPoolUSDCBalBefore, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {
@@ -496,7 +494,7 @@ contract TestRoyaltyModule is BaseTest {
         address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
         address token = address(USDC);
 
-        (, address splitClone, , , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipPool, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerAddress);
         USDC.mint(payerAddress, royaltyAmount);
@@ -504,7 +502,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.stopPrank;
 
         uint256 payerAddressUSDCBalBefore = USDC.balanceOf(payerAddress);
-        uint256 splitCloneUSDCBalBefore = USDC.balanceOf(splitClone);
+        uint256 ipPoolUSDCBalBefore = USDC.balanceOf(ipPool);
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount);
@@ -513,9 +511,9 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
 
         uint256 payerAddressUSDCBalAfter = USDC.balanceOf(payerAddress);
-        uint256 splitCloneUSDCBalAfter = USDC.balanceOf(splitClone);
+        uint256 ipPoolUSDCBalAfter = USDC.balanceOf(ipPool);
 
         assertEq(payerAddressUSDCBalBefore - payerAddressUSDCBalAfter, royaltyAmount);
-        assertEq(splitCloneUSDCBalAfter - splitCloneUSDCBalBefore, royaltyAmount);
+        assertEq(ipPoolUSDCBalAfter - ipPoolUSDCBalBefore, royaltyAmount);
     }
 }

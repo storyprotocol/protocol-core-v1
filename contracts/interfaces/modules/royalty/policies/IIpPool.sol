@@ -1,34 +1,51 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { IERC20 } from "../../../../modules/royalty/policies/oppenzeppelin/IERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts-v4/token/ERC20/IERC20.sol";
 
 /// @title Ip pool interface
 interface IIpPool is IERC20 {
     /// @notice Event emitted when a claim is made
-    /// @param ipId The ipId address
     /// @param claimerIpId The claimer ipId address
-    event Claimed(address ipId, address claimerIpId);
+    event Claimed(address claimerIpId);
 
-    /// @notice A function to calculate the amount of ETH claimable by a token holder at certain snapshot
+    /// @notice Event emitted when a snapshot is taken
+    /// @param snapshotId The snapshot id
+    /// @param snapshotTimestamp The timestamp of the snapshot
+    /// @param unclaimedTokens The amount of unclaimed tokens at the snapshot
+    event SnapshotCompleted(uint256 snapshotId, uint256 snapshotTimestamp, uint32 unclaimedTokens);
+
+    /// @notice Adds a new revenue token to the pool
+    /// @param token The address of the revenue token
+    /// @dev Only callable by the royalty policy LAP
+    function updateIpPoolTokens(address token) external;
+
+    /// @notice A function to snapshot the claimable revenue and royalty token amounts
+    /// @return The snapshot id
+    function snapshot() external returns (uint256);
+
+    /// @notice A function to calculate the amount of revenue token claimable by a token holder at certain snapshot
     /// @param account The address of the token holder
     /// @param snapshotId The snapshot id
-    /// @param token The address of the revenue token
+    /// @param token The revenue token to claim
     /// @return The amount of revenue token claimable
     function claimableRevenue(address account, uint256 snapshotId, address token) external view returns (uint256);
 
-    /// @notice A function for token holder to claim revenue token based on the token balance at certain snapshot
+    /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
-    /// @param tokens The list of royalty tokens to claim
+    /// @param tokens The list of revenue tokens to claim
     function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokens) external;
 
-    /// @notice A function to claim by a list of snapshot ids
+    /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
-    /// @param token The royalty token to claim
+    /// @param token The revenue token to claim
     function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external;
 
-    /// @notice A function to snapshot the token balance and the claimable revenue token balance
-    /// @return The snapshot id
-    /// @notice Should have `require` to avoid ddos attack
-    function snapshot() external returns (uint256);
+    /// @notice Allows ancestors to claim the royalty tokens and any accrued revenue tokens
+    /// @param claimerIpId The ip id of the claimer
+    function collectRoyaltyTokens(address claimerIpId) external;
+
+    /// @notice Returns the list of revenue tokens in the pool
+    /// @return The list of revenue tokens
+    function getPoolTokens() external view returns (address[] memory);
 }

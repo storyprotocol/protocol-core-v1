@@ -177,7 +177,7 @@ contract RoyaltyModule is
 
         address payerRoyaltyPolicy = $.royaltyPolicies[payerIpId];
         // if the payer does not have a royalty policy set, then the payer is not a derivative ip and does not pay
-        // royalties the receiver ip can have a zero royalty policy since that could mean it is an ip a root
+        // royalties while the receiver ip can have a zero royalty policy since that could mean it is an ip a root
         if (payerRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[payerRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();

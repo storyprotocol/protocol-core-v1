@@ -201,4 +201,50 @@ contract CoreMetadataModuleTest is BaseTest {
         vm.prank(bob);
         coreMetadataModule.setAll(address(ipAccount), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
     }
+
+    function test_CoreMetadata_Immutable_Two_IPAccounts() public {
+        vm.startPrank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI", bytes32("0x1234"));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI");
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
+        coreMetadataModule.setAll(address(ipAccount), "My New MetadataURI", bytes32("0x2222"), bytes32("0x5678"));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "METADATA_URI"), "My New MetadataURI");
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x2222"));
+        assertEq(ipAccount.getString(address(coreMetadataModule), "NFT_TOKEN_URI"), mockNFT.tokenURI(1));
+        assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x5678"));
+
+        vm.expectEmit();
+        emit ICoreMetadataModule.MetadataFrozen(address(ipAccount));
+        coreMetadataModule.freezeMetadata(address(ipAccount));
+        assertTrue(ipAccount.getBool(address(coreMetadataModule), "IMMUTABLE"));
+
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadyFrozen.selector);
+        coreMetadataModule.setMetadataURI(address(ipAccount), "My MetadataURI2", bytes32("0x5678"));
+        vm.expectRevert(Errors.CoreMetadataModule__MetadataAlreadyFrozen.selector);
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x1234"));
+
+        mockNFT.mintId(alice, 2);
+        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
+        vm.label(address(ipAccount2), "IPAccount2");
+
+        coreMetadataModule.setMetadataURI(address(ipAccount2), "My MetadataURI2", bytes32("0x5678"));
+        assertEq(ipAccount2.getString(address(coreMetadataModule), "METADATA_URI"), "My MetadataURI2");
+        assertEq(ipAccount2.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x5678"));
+        assertFalse(ipAccount2.getBool(address(coreMetadataModule), "IMMUTABLE"));
+        vm.stopPrank();
+    }
+
+    function test_CoreMetadata_Immutable_InvalidCaller() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                bob,
+                address(coreMetadataModule),
+                coreMetadataModule.freezeMetadata.selector
+            )
+        );
+        vm.prank(bob);
+        coreMetadataModule.freezeMetadata(address(ipAccount));
+    }
 }

@@ -84,6 +84,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     /// @param ipId The address of the IP asset.
     function freezeMetadata(address ipId) external verifyPermission(ipId) {
         IIPAccount(payable(ipId)).setBool("IMMUTABLE", true);
+        emit MetadataFrozen(ipId);
     }
 
     /// @notice Check if the metadata of the IP Asset is immutable.

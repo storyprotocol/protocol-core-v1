@@ -13,6 +13,9 @@ interface ICoreMetadataModule is IModule {
     /// @notice Emitted when the metadataURI for an IP asset is set.
     event MetadataURISet(address indexed ipId, string metadataURI, bytes32 metadataHash);
 
+    /// @notice Emitted when all metadata for an IP asset are frozen.
+    event MetadataFrozen(address indexed ipId);
+
     /// @notice Update the nftTokenURI for an IP asset,
     /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.
     /// @dev Can only be called once per IP asset to prevent overwriting.

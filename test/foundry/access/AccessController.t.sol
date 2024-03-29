@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
-import { AccessPermission } from "../../contracts/lib/AccessPermission.sol";
-import { Errors } from "../../contracts/lib/Errors.sol";
-import { TOKEN_WITHDRAWAL_MODULE_KEY } from "../../contracts/lib/modules/Module.sol";
-import { TokenWithdrawalModule } from "../../contracts/modules/external/TokenWithdrawalModule.sol";
+import { IIPAccount } from "../../../contracts/interfaces/IIPAccount.sol";
+import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";
+import { Errors } from "../../../contracts/lib/Errors.sol";
+import { TOKEN_WITHDRAWAL_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
+import { TokenWithdrawalModule } from "../../../contracts/modules/external/TokenWithdrawalModule.sol";
 
-import { MockModule } from "./mocks/module/MockModule.sol";
-import { MockOrchestratorModule } from "./mocks/module/MockOrchestratorModule.sol";
-import { MockERC1155 } from "./mocks/token/MockERC1155.sol";
-import { MockERC20 } from "./mocks/token/MockERC20.sol";
-import { BaseTest } from "./utils/BaseTest.t.sol";
+import { MockModule } from "../mocks/module/MockModule.sol";
+import { MockOrchestratorModule } from "../mocks/module/MockOrchestratorModule.sol";
+import { MockERC1155 } from "../mocks/token/MockERC1155.sol";
+import { MockERC20 } from "../mocks/token/MockERC20.sol";
+import { BaseTest } from "../utils/BaseTest.t.sol";
 
 contract AccessControllerTest is BaseTest {
     MockModule public mockModule;

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -19,7 +18,6 @@ import { Errors } from "../../../lib/Errors.sol";
 contract RoyaltyPolicyLAP is
     IRoyaltyPolicyLAP,
     GovernableUpgradeable,
-    ERC1155Holder,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {

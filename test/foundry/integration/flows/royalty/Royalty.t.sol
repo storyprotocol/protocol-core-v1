@@ -6,8 +6,8 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IpPool } from "contracts/modules/royalty/policies/IpPool.sol";
-import { IIpPool } from "contracts/interfaces/modules/royalty/policies/IIpPool.sol";
+import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
+import { IIpRoyaltyVault } from "contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
 // test
 import { BaseIntegration } from "test/foundry/integration/BaseIntegration.t.sol";
@@ -160,18 +160,18 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipPool, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             vm.warp(block.timestamp + 7 days + 1);
-            IpPool(ipPool).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault).snapshot();
 
-            vm.expectEmit(ipPool);
-            emit IERC20.Transfer({ from: ipPool, to: ipAcct[2], value: 10_000_000 }); // 10%
+            vm.expectEmit(ipRoyaltyVault);
+            emit IERC20.Transfer({ from: ipRoyaltyVault, to: ipAcct[2], value: 10_000_000 }); // 10%
 
-            vm.expectEmit(ipPool);
-            emit IIpPool.Claimed(ipAcct[2]);
+            vm.expectEmit(ipRoyaltyVault);
+            emit IIpRoyaltyVault.Claimed(ipAcct[2]);
 
-            IpPool(ipPool).collectRoyaltyTokens(ipAcct[2]);
+            IpRoyaltyVault(ipRoyaltyVault).collectRoyaltyTokens(ipAcct[2]);
         }
 
         // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 pools
@@ -181,42 +181,42 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipPool2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipPool3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
+            (, address ipRoyaltyVault3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             vm.warp(block.timestamp + 7 days + 1);
-            IpPool(ipPool2).snapshot();
-            IpPool(ipPool3).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault2).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
 
-            vm.expectEmit(ipPool2);
-            emit IERC20.Transfer({ from: ipPool2, to: ipAcct[1], value: 10_000_000 }); // 10%
-            vm.expectEmit(ipPool2);
-            emit IIpPool.Claimed(ipAcct[1]);
-            IpPool(ipPool2).collectRoyaltyTokens(ipAcct[1]);
+            vm.expectEmit(ipRoyaltyVault2);
+            emit IERC20.Transfer({ from: ipRoyaltyVault2, to: ipAcct[1], value: 10_000_000 }); // 10%
+            vm.expectEmit(ipRoyaltyVault2);
+            emit IIpRoyaltyVault.Claimed(ipAcct[1]);
+            IpRoyaltyVault(ipRoyaltyVault2).collectRoyaltyTokens(ipAcct[1]);
 
-            vm.expectEmit(ipPool3);
+            vm.expectEmit(ipRoyaltyVault3);
             // reason for 20%: absolute stack, so 10% from IPAccount2 and 10% from IPAccount3
-            emit IERC20.Transfer({ from: ipPool3, to: ipAcct[1], value: 20_000_000 }); // 20%
-            vm.expectEmit(ipPool3);
-            emit IIpPool.Claimed(ipAcct[1]);
-            IpPool(ipPool3).collectRoyaltyTokens(ipAcct[1]);
+            emit IERC20.Transfer({ from: ipRoyaltyVault3, to: ipAcct[1], value: 20_000_000 }); // 20%
+            vm.expectEmit(ipRoyaltyVault3);
+            emit IIpRoyaltyVault.Claimed(ipAcct[1]);
+            IpRoyaltyVault(ipRoyaltyVault3).collectRoyaltyTokens(ipAcct[1]);
         }
 
         // Owner of IPAccount2, Bob, takes snapshot on IPAccount3 pool and claims his revenue from IPAccount3 pool
         {
             vm.startPrank(u.bob);
 
-            (, address ipPool, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             // take snapshot
             vm.warp(block.timestamp + 7 days + 1);
-            IpPool(ipPool).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault).snapshot();
 
             address[] memory tokens = new address[](2);
             tokens[0] = address(mockToken);
             tokens[1] = address(LINK);
 
-            IpPool(ipPool).claimRevenueByTokenBatch(1, tokens);
+            IpRoyaltyVault(ipRoyaltyVault).claimRevenueByTokenBatch(1, tokens);
 
             vm.stopPrank();
         }
@@ -226,20 +226,20 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.alice);
 
-            (, address ipPool2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipPool3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
+            (, address ipRoyaltyVault3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             address[] memory tokens = new address[](2);
             tokens[0] = address(mockToken);
             tokens[1] = address(LINK);
 
-            IpPool(ipPool3).claimRevenueByTokenBatch(1, tokens);
+            IpRoyaltyVault(ipRoyaltyVault3).claimRevenueByTokenBatch(1, tokens);
 
             // take snapshot
             vm.warp(block.timestamp + 7 days + 1);
-            IpPool(ipPool2).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault2).snapshot();
 
-            IpPool(ipPool2).claimRevenueByTokenBatch(1, tokens);
+            IpRoyaltyVault(ipRoyaltyVault2).claimRevenueByTokenBatch(1, tokens);
         }
     }
 }

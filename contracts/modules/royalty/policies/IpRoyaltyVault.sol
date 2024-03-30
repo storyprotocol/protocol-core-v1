@@ -9,13 +9,13 @@ import { SafeERC20 } from "@openzeppelin/contracts-v4/token/ERC20/utils/SafeERC2
 import { IERC20 } from "@openzeppelin/contracts-v4/token/ERC20/IERC20.sol";
 
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-import { IIpPool } from "../../../interfaces/modules/royalty/policies/IIpPool.sol";
+import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
 
-/// @title Ip Pool
+/// @title Ip Royalty Vault
 /// @notice Defines the logic for claiming royalty tokens and revenue tokens for a given IP
-contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
+contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Snapshot, ReentrancyGuard {
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeERC20 for IERC20;
 
@@ -54,7 +54,7 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
     EnumerableSet.AddressSet private _tokens;
 
     // TODO: change to beacon upgradeable contract
-    /// @notice The constructor of the IpPool
+    /// @notice Constructor
     /// @param name The name of the pool token
     /// @param symbol The symbol of the pool token
     /// @param royaltyPolicyLAP The address of the royalty policy LAP
@@ -69,8 +69,8 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
         uint32 unclaimedTokens,
         address ipId
     ) ERC20(name, symbol) {
-        if (ipId == address(0)) revert Errors.IpPool__ZeroIpId();
-        if (royaltyPolicyLAP == address(0)) revert Errors.IpPool__ZeroRoyaltyPolicyLAP();
+        if (ipId == address(0)) revert Errors.IpRoyaltyVault__ZeroIpId();
+        if (royaltyPolicyLAP == address(0)) revert Errors.IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
 
         ROYALTY_POLICY_LAP = IRoyaltyPolicyLAP(royaltyPolicyLAP);
         IP_ID = ipId;
@@ -84,8 +84,8 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
     /// @notice Adds a new revenue token to the pool
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
-    function updateIpPoolTokens(address token) external {
-        if (msg.sender != address(ROYALTY_POLICY_LAP)) revert Errors.IpPool__NotRoyaltyPolicyLAP();
+    function updateIpRoyaltyVaultTokens(address token) external {
+        if (msg.sender != address(ROYALTY_POLICY_LAP)) revert Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP();
         _tokens.add(token);
     }
 
@@ -93,7 +93,7 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
     /// @return snapshotId The snapshot id
     function snapshot() external returns (uint256) {
         if (block.timestamp - lastSnapshotTimestamp < ROYALTY_POLICY_LAP.getSnapshotInterval())
-            revert Errors.IpPool__SnapshotIntervalTooShort();
+            revert Errors.IpRoyaltyVault__SnapshotIntervalTooShort();
 
         uint256 snapshotId = _snapshot();
         lastSnapshotTimestamp = block.timestamp;
@@ -170,11 +170,11 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
             IP_ID
         );
 
-        if (isClaimedByAncestor[claimerIpId]) revert Errors.IpPool__AlreadyClaimed();
+        if (isClaimedByAncestor[claimerIpId]) revert Errors.IpRoyaltyVault__AlreadyClaimed();
 
         // check if the claimer is an ancestor
         (uint32 index, bool isIn) = ArrayUtils.indexOf(ancestors, claimerIpId);
-        if (!isIn) revert Errors.IpPool__ClaimerNotAnAncestor();
+        if (!isIn) revert Errors.IpRoyaltyVault__ClaimerNotAnAncestor();
 
         // transfer royalty tokens to the claimer
         IERC20(address(this)).safeTransfer(claimerIpId, ancestorsRoyalties[index]);
@@ -214,7 +214,7 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
 
         for (uint256 i = 0; i < tokens.length; ++i) {
             // the only case in which unclaimedRoyaltyTokens can be 0 is when the pool is empty and everyone claimed
-            // in which case the call will revert upstream with IpPool__AlreadyClaimed error
+            // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
             uint256 collectAmount = (ancestorsPoolAmount[tokens[i]] * royaltyTokensToClaim) / unclaimedRoyaltyTokens;
             if (collectAmount == 0) continue;
 

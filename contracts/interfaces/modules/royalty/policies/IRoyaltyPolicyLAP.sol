@@ -7,13 +7,13 @@ import { IRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/
 interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @notice Event emitted when a policy is initialized
     /// @param ipId The ID of the IP asset that the policy is being initialized for
-    /// @param ipPool The ip pool address
+    /// @param IpRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack
     /// @param targetAncestors The ip ancestors array
     /// @param targetRoyaltyAmount The ip royalty amount array
     event PolicyInitialized(
         address ipId,
-        address ipPool,
+        address IpRoyaltyVault,
         uint32 royaltyStack,
         address[] targetAncestors,
         uint32[] targetRoyaltyAmount
@@ -41,7 +41,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @notice Returns the royalty data for a given IP asset
     /// @param ipId The ID of the IP asset
     /// @return isUnlinkable Indicates if the ipId is unlinkable to new parents
-    /// @return ipPool
+    /// @return IpRoyaltyVault The ip royalty vault address
     /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
     /// @return targetAncestors The ip ancestors array
     /// @return targetRoyaltyAmount The ip royalty amount array

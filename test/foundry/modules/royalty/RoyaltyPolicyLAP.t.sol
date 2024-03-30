@@ -7,15 +7,6 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestRoyaltyPolicyLAP is BaseTest {
-    event PolicyInitialized(
-        address ipId,
-        address ipPool,
-        address claimer,
-        uint32 royaltyStack,
-        address[] targetAncestors,
-        uint32[] targetRoyaltyAmount
-    );
-
     RoyaltyPolicyLAP internal testRoyaltyPolicyLAP;
 
     address[] internal MAX_ANCESTORS_ = new address[](14);
@@ -200,7 +191,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         (
             ,
-            address ipPool,
+            address ipRoyaltyVault,
             uint32 royaltyStack,
             address[] memory ancestors,
             uint32[] memory ancestorsRoyalties
@@ -209,7 +200,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(royaltyStack, 0);
         assertEq(ancestors.length, 0);
         assertEq(ancestorsRoyalties.length, 0);
-        assertFalse(ipPool == address(0));
+        assertFalse(ipRoyaltyVault == address(0));
     }
 
     function test_RoyaltyPolicyLAP_onLinkToParents_revert_NotRoyaltyModule() public {
@@ -248,7 +239,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         (
             ,
-            address ipPool,
+            address ipRoyaltyVault,
             uint32 royaltyStack,
             address[] memory ancestors,
             uint32[] memory ancestorsRoyalties
@@ -259,7 +250,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
             assertEq(ancestorsRoyalties[i], MAX_ANCESTORS_ROYALTY_[i]);
         }
         assertEq(ancestors, MAX_ANCESTORS_);
-        assertFalse(ipPool == address(0));
+        assertFalse(ipRoyaltyVault == address(0));
     }
 
     function test_RoyaltyPolicyLAP_onRoyaltyPayment_NotRoyaltyModule() public {
@@ -269,7 +260,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onRoyaltyPayment() public {
-        (, address ipPool2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         uint256 royaltyAmount = 1000 * 10 ** 6;
         USDC.mint(address(1), royaltyAmount);
         vm.stopPrank();
@@ -280,15 +271,15 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         vm.startPrank(address(royaltyModule));
 
-        uint256 ipPool2USDCBalBefore = USDC.balanceOf(ipPool2);
+        uint256 ipRoyaltyVault2USDCBalBefore = USDC.balanceOf(ipRoyaltyVault2);
         uint256 splitMainUSDCBalBefore = USDC.balanceOf(address(1));
 
         royaltyPolicyLAP.onRoyaltyPayment(address(1), address(2), address(USDC), royaltyAmount);
 
-        uint256 ipPool2USDCBalAfter = USDC.balanceOf(ipPool2);
+        uint256 ipRoyaltyVault2USDCBalAfter = USDC.balanceOf(ipRoyaltyVault2);
         uint256 splitMainUSDCBalAfter = USDC.balanceOf(address(1));
 
-        assertEq(ipPool2USDCBalAfter - ipPool2USDCBalBefore, royaltyAmount);
+        assertEq(ipRoyaltyVault2USDCBalAfter - ipRoyaltyVault2USDCBalBefore, royaltyAmount);
         assertEq(splitMainUSDCBalBefore - splitMainUSDCBalAfter, royaltyAmount);
     }
 }

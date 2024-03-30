@@ -239,12 +239,12 @@ library Errors {
     error RoyaltyPolicyLAP__UnlinkableToParents();
     error RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
 
-    error IpPool__ZeroIpId();
-    error IpPool__ZeroRoyaltyPolicyLAP();
-    error IpPool__NotRoyaltyPolicyLAP();
-    error IpPool__SnapshotIntervalTooShort();
-    error IpPool__AlreadyClaimed();
-    error IpPool__ClaimerNotAnAncestor();
+    error IpRoyaltyVault__ZeroIpId();
+    error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
+    error IpRoyaltyVault__NotRoyaltyPolicyLAP();
+    error IpRoyaltyVault__SnapshotIntervalTooShort();
+    error IpRoyaltyVault__AlreadyClaimed();
+    error IpRoyaltyVault__ClaimerNotAnAncestor();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             ModuleRegistry                             //

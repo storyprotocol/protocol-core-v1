@@ -3,8 +3,8 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts-v4/token/ERC20/IERC20.sol";
 
-/// @title Ip pool interface
-interface IIpPool is IERC20 {
+/// @title Ip royalty vault interface
+interface IIpRoyaltyVault is IERC20 {
     /// @notice Event emitted when a claim is made
     /// @param claimerIpId The claimer ipId address
     event Claimed(address claimerIpId);
@@ -18,7 +18,7 @@ interface IIpPool is IERC20 {
     /// @notice Adds a new revenue token to the pool
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
-    function updateIpPoolTokens(address token) external;
+    function updateIpRoyaltyVaultTokens(address token) external;
 
     /// @notice A function to snapshot the claimable revenue and royalty token amounts
     /// @return The snapshot id

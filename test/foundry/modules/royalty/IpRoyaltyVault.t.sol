@@ -3,16 +3,16 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IpPool } from "../../../../contracts/modules/royalty/policies/IpPool.sol";
+import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-contract TestIpPool is BaseTest {
+contract TestIpRoyaltyVault is BaseTest {
     event Claimed(address claimerIpId);
     event SnapshotCompleted(uint256 snapshotId, uint256 timestamp, uint32 unclaimedTokens);
 
-    IpPool ipPool;
+    IpRoyaltyVault ipRoyaltyVault;
 
     function setUp() public override {
         super.setUp();
@@ -33,8 +33,8 @@ contract TestIpPool is BaseTest {
         vm.startPrank(address(royaltyModule));
         _setupMaxUniqueTree();
 
-        (, address ipPool2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
-        ipPool = IpPool(ipPool2);
+        (, address IpRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        ipRoyaltyVault = IpRoyaltyVault(IpRoyaltyVault2);
     }
 
     function _setupMaxUniqueTree() internal {
@@ -139,22 +139,22 @@ contract TestIpPool is BaseTest {
         //royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
     }
 
-    function test_IpPool_UpdateIpPoolTokens_NotRoyaltyPolicyLAP() public {
-        vm.expectRevert(Errors.IpPool__NotRoyaltyPolicyLAP.selector);
-        ipPool.updateIpPoolTokens(address(0));
+    function test_IpRoyaltyVault_UpdateIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP.selector);
+        ipRoyaltyVault.updateIpRoyaltyVaultTokens(address(0));
     }
 
-    function test_IpPool_UpdateIpPoolTokens() public {
+    function test_IpRoyaltyVault_UpdateIpRoyaltyVaultTokens() public {
         vm.startPrank(address(royaltyPolicyLAP));
-        ipPool.updateIpPoolTokens(address(1));
+        ipRoyaltyVault.updateIpRoyaltyVaultTokens(address(1));
 
-        address[] memory tokens = ipPool.getPoolTokens();
+        address[] memory tokens = ipRoyaltyVault.getPoolTokens();
 
         assertEq(tokens.length, 1);
         assertEq(tokens[0], address(1));
     }
 
-    function test_IpPool_ClaimableRevenue() public {
+    function test_IpRoyaltyVault_ClaimableRevenue() public {
         // payment is made to pool
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(100), 100000 * 10 ** 6); // 100k USDC
@@ -165,18 +165,18 @@ contract TestIpPool is BaseTest {
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
-        uint256 claimableRevenue = ipPool.claimableRevenue(address(2), 1, address(USDC));
+        uint256 claimableRevenue = ipRoyaltyVault.claimableRevenue(address(2), 1, address(USDC));
         assertEq(
             claimableRevenue,
             royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
     }
 
-    function test_IpPool_ClaimRevenueByTokenBatch() public {
+    function test_IpRoyaltyVault_ClaimRevenueByTokenBatch() public {
         // payment is made to pool
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(100), royaltyAmount); // 100k USDC
@@ -190,7 +190,7 @@ contract TestIpPool is BaseTest {
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
@@ -200,27 +200,27 @@ contract TestIpPool is BaseTest {
 
         uint256 userUsdcBalanceBefore = USDC.balanceOf(address(2));
         uint256 userLinkBalanceBefore = LINK.balanceOf(address(2));
-        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipPool));
-        uint256 contractLinkBalanceBefore = LINK.balanceOf(address(ipPool));
-        uint256 usdcClaimPoolBefore = ipPool.claimPoolAmount(address(USDC));
-        uint256 linkClaimPoolBefore = ipPool.claimPoolAmount(address(LINK));
+        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 contractLinkBalanceBefore = LINK.balanceOf(address(ipRoyaltyVault));
+        uint256 usdcClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(USDC));
+        uint256 linkClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(LINK));
 
         vm.startPrank(address(2));
-        ipPool.claimRevenueByTokenBatch(1, tokens);
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
 
         uint256 expectedAmount = royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
 
         assertEq(USDC.balanceOf(address(2)) - userUsdcBalanceBefore, expectedAmount);
         assertEq(LINK.balanceOf(address(2)) - userLinkBalanceBefore, expectedAmount);
-        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipPool)), expectedAmount);
-        assertEq(contractLinkBalanceBefore - LINK.balanceOf(address(ipPool)), expectedAmount);
-        assertEq(usdcClaimPoolBefore - ipPool.claimPoolAmount(address(USDC)), expectedAmount);
-        assertEq(linkClaimPoolBefore - ipPool.claimPoolAmount(address(LINK)), expectedAmount);
-        assertEq(ipPool.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
-        assertEq(ipPool.isClaimedAtSnapshot(1, address(2), address(LINK)), true);
+        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(contractLinkBalanceBefore - LINK.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(usdcClaimPoolBefore - ipRoyaltyVault.claimPoolAmount(address(USDC)), expectedAmount);
+        assertEq(linkClaimPoolBefore - ipRoyaltyVault.claimPoolAmount(address(LINK)), expectedAmount);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(LINK)), true);
     }
 
-    function test_IpPool_ClaimRevenueBySnapshotBatch() public {
+    function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch() public {
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(100), royaltyAmount); // 100k USDC
 
@@ -231,7 +231,7 @@ contract TestIpPool is BaseTest {
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         // 2nt payment is made to pool
         royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount / 2);
@@ -239,7 +239,7 @@ contract TestIpPool is BaseTest {
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
@@ -248,27 +248,27 @@ contract TestIpPool is BaseTest {
         snapshots[1] = 2;
 
         uint256 userUsdcBalanceBefore = USDC.balanceOf(address(2));
-        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipPool));
-        uint256 usdcClaimPoolBefore = ipPool.claimPoolAmount(address(USDC));
+        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 usdcClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(USDC));
 
         vm.startPrank(address(2));
-        ipPool.claimRevenueBySnapshotBatch(snapshots, address(USDC));
+        ipRoyaltyVault.claimRevenueBySnapshotBatch(snapshots, address(USDC));
 
         uint256 expectedAmount = royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
 
         assertEq(USDC.balanceOf(address(2)) - userUsdcBalanceBefore, expectedAmount);
-        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipPool)), expectedAmount);
-        assertEq(usdcClaimPoolBefore - ipPool.claimPoolAmount(address(USDC)), expectedAmount);
-        assertEq(ipPool.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
-        assertEq(ipPool.isClaimedAtSnapshot(2, address(2), address(USDC)), true);
+        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(usdcClaimPoolBefore - ipRoyaltyVault.claimPoolAmount(address(USDC)), expectedAmount);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(2, address(2), address(USDC)), true);
     }
 
-    function test_IpPool_Snapshot_SnapshotIntervalTooShort() public {
-        vm.expectRevert(Errors.IpPool__SnapshotIntervalTooShort.selector);
-        ipPool.snapshot();
+    function test_IpRoyaltyVault_Snapshot_SnapshotIntervalTooShort() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__SnapshotIntervalTooShort.selector);
+        ipRoyaltyVault.snapshot();
     }
 
-    function test_IpPool_Snapshot() public {
+    function test_IpRoyaltyVault_Snapshot() public {
         // payment is made to pool
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(100), royaltyAmount); // 100k USDC
@@ -283,45 +283,45 @@ contract TestIpPool is BaseTest {
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
 
-        uint256 usdcClaimPoolBefore = ipPool.claimPoolAmount(address(USDC));
-        uint256 linkClaimPoolBefore = ipPool.claimPoolAmount(address(LINK));
-        uint256 usdcAncestorsPoolBefore = ipPool.ancestorsPoolAmount(address(USDC));
-        uint256 linkAncestorsPoolBefore = ipPool.ancestorsPoolAmount(address(LINK));
+        uint256 usdcClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(USDC));
+        uint256 linkClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(LINK));
+        uint256 usdcAncestorsPoolBefore = ipRoyaltyVault.ancestorsPoolAmount(address(USDC));
+        uint256 linkAncestorsPoolBefore = ipRoyaltyVault.ancestorsPoolAmount(address(LINK));
 
         (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
-        vm.expectEmit(true, true, true, true, address(ipPool));
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit SnapshotCompleted(1, block.timestamp, royaltyStack2);
 
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
-        assertEq(ipPool.claimPoolAmount(address(USDC)) + ipPool.ancestorsPoolAmount(address(USDC)), royaltyAmount);
-        assertEq(ipPool.claimPoolAmount(address(LINK)) + ipPool.ancestorsPoolAmount(address(LINK)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimPoolAmount(address(USDC)) + ipRoyaltyVault.ancestorsPoolAmount(address(USDC)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimPoolAmount(address(LINK)) + ipRoyaltyVault.ancestorsPoolAmount(address(LINK)), royaltyAmount);
         assertEq(
-            ipPool.claimPoolAmount(address(USDC)) - usdcClaimPoolBefore,
+            ipRoyaltyVault.claimPoolAmount(address(USDC)) - usdcClaimPoolBefore,
             royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
         assertEq(
-            ipPool.claimPoolAmount(address(LINK)) - linkClaimPoolBefore,
+            ipRoyaltyVault.claimPoolAmount(address(LINK)) - linkClaimPoolBefore,
             royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
         assertEq(
-            ipPool.ancestorsPoolAmount(address(USDC)) - usdcAncestorsPoolBefore,
+            ipRoyaltyVault.ancestorsPoolAmount(address(USDC)) - usdcAncestorsPoolBefore,
             (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
         assertEq(
-            ipPool.ancestorsPoolAmount(address(LINK)) - linkAncestorsPoolBefore,
+            ipRoyaltyVault.ancestorsPoolAmount(address(LINK)) - linkAncestorsPoolBefore,
             (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
-        assertEq(ipPool.lastSnapshotTimestamp(), block.timestamp);
-        assertEq(ipPool.unclaimedRoyaltyTokens(), royaltyStack2);
-        assertEq(ipPool.unclaimedAtSnapshot(1), royaltyStack2);
+        assertEq(ipRoyaltyVault.lastSnapshotTimestamp(), block.timestamp);
+        assertEq(ipRoyaltyVault.unclaimedRoyaltyTokens(), royaltyStack2);
+        assertEq(ipRoyaltyVault.unclaimedAtSnapshot(1), royaltyStack2);
         assertEq(
-            ipPool.claimableAtSnapshot(1, address(USDC)),
+            ipRoyaltyVault.claimableAtSnapshot(1, address(USDC)),
             royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
         assertEq(
-            ipPool.claimableAtSnapshot(1, address(LINK)),
+            ipRoyaltyVault.claimableAtSnapshot(1, address(LINK)),
             royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
         );
 
@@ -329,36 +329,36 @@ contract TestIpPool is BaseTest {
         address[] memory tokens = new address[](1);
         tokens[0] = address(USDC);
         vm.prank(address(2));
-        ipPool.claimRevenueByTokenBatch(1, tokens);
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
 
-        ipPool.collectRoyaltyTokens(address(5));
-        ipPool.collectRoyaltyTokens(address(11));
-        ipPool.collectRoyaltyTokens(address(12));
-        ipPool.collectRoyaltyTokens(address(6));
-        ipPool.collectRoyaltyTokens(address(13));
-        ipPool.collectRoyaltyTokens(address(14));
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
+        ipRoyaltyVault.collectRoyaltyTokens(address(11));
+        ipRoyaltyVault.collectRoyaltyTokens(address(12));
+        ipRoyaltyVault.collectRoyaltyTokens(address(6));
+        ipRoyaltyVault.collectRoyaltyTokens(address(13));
+        ipRoyaltyVault.collectRoyaltyTokens(address(14));
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         // all USDC was claimed but LINK was not
-        assertEq(ipPool.getPoolTokens().length, 1);
+        assertEq(ipRoyaltyVault.getPoolTokens().length, 1);
     }
 
-    function test_IpPool_CollectRoyaltyTokens_AlreadyClaimed() public {
-        ipPool.collectRoyaltyTokens(address(5));
+    function test_IpRoyaltyVault_CollectRoyaltyTokens_AlreadyClaimed() public {
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
 
-        vm.expectRevert(Errors.IpPool__AlreadyClaimed.selector);
-        ipPool.collectRoyaltyTokens(address(5));
+        vm.expectRevert(Errors.IpRoyaltyVault__AlreadyClaimed.selector);
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
     }
 
-    function test_IpPool_CollectRoyaltyTokens_ClaimerNotAnAncestor() public {
-        vm.expectRevert(Errors.IpPool__ClaimerNotAnAncestor.selector);
-        ipPool.collectRoyaltyTokens(address(0));
+    function test_IpRoyaltyVault_CollectRoyaltyTokens_ClaimerNotAnAncestor() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__ClaimerNotAnAncestor.selector);
+        ipRoyaltyVault.collectRoyaltyTokens(address(0));
     }
 
-    function test_IpPool_CollectRoyaltyTokens() public {
+    function test_IpRoyaltyVault_CollectRoyaltyTokens() public {
         uint256 parentRoyalty = 5 * 10 ** 5;
         uint256 royaltyAmount = 100000 * 10 ** 6;
         uint256 accruedCollectableRevenue = (royaltyAmount * 5 * 10 ** 5) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
@@ -372,27 +372,27 @@ contract TestIpPool is BaseTest {
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
-        ipPool.snapshot();
+        ipRoyaltyVault.snapshot();
 
         uint256 userUsdcBalanceBefore = USDC.balanceOf(address(5));
-        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipPool));
-        uint256 usdcClaimPoolBefore = ipPool.claimPoolAmount(address(USDC));
-        uint256 contractRTBalBefore = IERC20(address(ipPool)).balanceOf(address(ipPool));
-        uint256 userRTBalBefore = IERC20(address(ipPool)).balanceOf(address(5));
-        uint256 unclaimedRoyaltyTokensBefore = ipPool.unclaimedRoyaltyTokens();
-        uint256 ancestorsPoolAmountBefore = ipPool.ancestorsPoolAmount(address(USDC));
+        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 usdcClaimPoolBefore = ipRoyaltyVault.claimPoolAmount(address(USDC));
+        uint256 contractRTBalBefore = IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault));
+        uint256 userRTBalBefore = IERC20(address(ipRoyaltyVault)).balanceOf(address(5));
+        uint256 unclaimedRoyaltyTokensBefore = ipRoyaltyVault.unclaimedRoyaltyTokens();
+        uint256 ancestorsPoolAmountBefore = ipRoyaltyVault.ancestorsPoolAmount(address(USDC));
 
-        vm.expectEmit(true, true, true, true, address(ipPool));
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit Claimed(address(5));
 
-        ipPool.collectRoyaltyTokens(address(5));
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
 
         assertEq(USDC.balanceOf(address(5)) - userUsdcBalanceBefore, accruedCollectableRevenue);
-        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipPool)), accruedCollectableRevenue);
-        assertEq(ipPool.isClaimedByAncestor(address(5)), true);
-        assertEq(contractRTBalBefore - IERC20(address(ipPool)).balanceOf(address(ipPool)), parentRoyalty);
-        assertEq(IERC20(address(ipPool)).balanceOf(address(5)) - userRTBalBefore, parentRoyalty);
-        assertEq(unclaimedRoyaltyTokensBefore - ipPool.unclaimedRoyaltyTokens(), parentRoyalty);
-        assertEq(ancestorsPoolAmountBefore - ipPool.ancestorsPoolAmount(address(USDC)), accruedCollectableRevenue);
+        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), accruedCollectableRevenue);
+        assertEq(ipRoyaltyVault.isClaimedByAncestor(address(5)), true);
+        assertEq(contractRTBalBefore - IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault)), parentRoyalty);
+        assertEq(IERC20(address(ipRoyaltyVault)).balanceOf(address(5)) - userRTBalBefore, parentRoyalty);
+        assertEq(unclaimedRoyaltyTokensBefore - ipRoyaltyVault.unclaimedRoyaltyTokens(), parentRoyalty);
+        assertEq(ancestorsPoolAmountBefore - ipRoyaltyVault.ancestorsPoolAmount(address(USDC)), accruedCollectableRevenue);
     }
 }

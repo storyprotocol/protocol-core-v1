@@ -6,8 +6,8 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import { IpPool } from "./IpPool.sol";
-import { IIpPool } from "../../../interfaces/modules/royalty/policies/IIpPool.sol";
+import { IpRoyaltyVault } from "./IpRoyaltyVault.sol";
+import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { GovernableUpgradeable } from "../../../../contracts/governance/GovernableUpgradeable.sol";
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
@@ -25,13 +25,13 @@ contract RoyaltyPolicyLAP is
 
     /// @notice The state data of the LAP royalty policy
     /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
-    /// @param ipPool The ip pool address
+    /// @param ipRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
     /// @param ancestorsAddresses The ancestors addresses array
     /// @param ancestorsRoyalties The ancestors royalties array
     struct LAPRoyaltyData {
         bool isUnlinkableToParents;
-        address ipPool;
+        address ipRoyaltyVault;
         uint32 royaltyStack;
         address[] ancestorsAddresses;
         uint32[] ancestorsRoyalties;
@@ -121,7 +121,7 @@ contract RoyaltyPolicyLAP is
         if (data.royaltyStack + newLicenseRoyalty > TOTAL_RT_SUPPLY)
             revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
-        if (data.ipPool == address(0)) {
+        if (data.ipRoyaltyVault == address(0)) {
             // If the policy is already initialized, it means that the ipId setup is already done. If not, it means
             // that the license for this royalty policy is being minted for the first time parentIpIds are zero given
             // that only roots can call _initPolicy() for the first time in the function onLicenseMinting() while
@@ -161,15 +161,15 @@ contract RoyaltyPolicyLAP is
     /// @param amount The amount to pay
     function onRoyaltyPayment(address caller, address ipId, address token, uint256 amount) external onlyRoyaltyModule {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-        address destination = $.royaltyData[ipId].ipPool;
-        IIpPool(destination).updateIpPoolTokens(token);
+        address destination = $.royaltyData[ipId].ipRoyaltyVault;
+        IIpRoyaltyVault(destination).updateIpRoyaltyVaultTokens(token);
         IERC20(token).safeTransferFrom(caller, destination, amount);
     }
 
     /// @notice Returns the royalty data for a given IP asset
     /// @param ipId The ipId to get the royalty data for
     /// @return isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
-    /// @return ipPool The ip pool address
+    /// @return ipRoyaltyVault The ip royalty vault address
     /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
     /// @return ancestorsAddresses The ancestors addresses array
     /// @return ancestorsRoyalties The ancestors royalties array
@@ -180,7 +180,7 @@ contract RoyaltyPolicyLAP is
         LAPRoyaltyData memory data = $.royaltyData[ipId];
         return (
             data.isUnlinkableToParents,
-            data.ipPool,
+            data.ipRoyaltyVault,
             data.royaltyStack,
             data.ancestorsAddresses,
             data.ancestorsRoyalties
@@ -225,20 +225,20 @@ contract RoyaltyPolicyLAP is
             $.royaltyData[parentIpIds[i]].isUnlinkableToParents = true;
         }
 
-        // deploy ip pool
-        // TODO: to be adjusted when ip pool is an upgradeable contract
-        address ipPool = address(new IpPool("Royalty Token", "RT", address(this), TOTAL_RT_SUPPLY, royaltyStack, ipId));
+        // deploy ip royalty vault
+        // TODO: to be adjusted when ip royalty vault is an upgradeable contract
+        address ipRoyaltyVault = address(new IpRoyaltyVault("Royalty Token", "RT", address(this), TOTAL_RT_SUPPLY, royaltyStack, ipId));
 
         $.royaltyData[ipId] = LAPRoyaltyData({
             // whether calling via minting license or linking to parents the ipId becomes unlinkable
             isUnlinkableToParents: true,
-            ipPool: ipPool,
+            ipRoyaltyVault: ipRoyaltyVault,
             royaltyStack: royaltyStack,
             ancestorsAddresses: newAncestors,
             ancestorsRoyalties: newAncestorsRoyalties
         });
 
-        emit PolicyInitialized(ipId, ipPool, royaltyStack, newAncestors, newAncestorsRoyalties);
+        emit PolicyInitialized(ipId, ipRoyaltyVault, royaltyStack, newAncestors, newAncestorsRoyalties);
     }
 
     /// @dev Gets the new ancestors data

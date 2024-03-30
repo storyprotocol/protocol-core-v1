@@ -28,7 +28,6 @@ import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
-import { AncestorsVaultLAP } from "contracts/modules/royalty/policies/AncestorsVaultLAP.sol";
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
@@ -73,7 +72,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
     // Policy
     ArbitrationPolicySP internal arbitrationPolicySP;
-    AncestorsVaultLAP internal ancestorsVaultImpl;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     PILPolicyFrameworkManager internal pilPfm;
 
@@ -94,10 +92,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
     mapping(string frameworkName => address frameworkAddr) internal frameworkAddrs;
 
-    // 0xSplits Liquid Split (Sepolia)
-    address internal constant LIQUID_SPLIT_FACTORY = 0xF678Bae6091Ab6933425FE26Afc20Ee5F324c4aE;
-    address internal constant LIQUID_SPLIT_MAIN = 0x57CBFA83f000a38C5b5881743E298819c503A559;
-
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
@@ -106,7 +100,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run() virtual override public {
+    function run() public virtual override {
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         super.run();
         _beginBroadcast(); // BroadcastManager.s.sol
@@ -114,7 +108,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         bool configByMultisig;
         try vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG") returns (bool mult) {
             configByMultisig = mult;
-        } catch  {
+        } catch {
             configByMultisig = false;
         }
         console2.log("configByMultisig:", configByMultisig);
@@ -131,11 +125,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     }
 
     function _deployProtocolContracts(address accessControlDeployer) private {
-        require(
-            LIQUID_SPLIT_FACTORY != address(0) && LIQUID_SPLIT_MAIN != address(0),
-            "DeployMain: Liquid Split Addresses Not Set"
-        );
-        
         string memory contractKey;
 
         // Mock Assets (deploy first)
@@ -162,13 +151,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
         address impl = address(new AccessController());
         accessController = AccessController(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    AccessController.initialize,
-                    address(governance)
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(AccessController.initialize, address(governance)))
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(accessController));
@@ -182,13 +165,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         _predeploy(contractKey);
         impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    ModuleRegistry.initialize,
-                    address(governance)
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ModuleRegistry.initialize, address(governance)))
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(moduleRegistry));
@@ -211,35 +188,16 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         _predeploy(contractKey);
         impl = address(new RoyaltyModule());
         royaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    RoyaltyModule.initialize, (
-                        address(governance)
-                    )
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(governance))))
         );
         impl = address(0);
         _postdeploy(contractKey, address(royaltyModule));
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
-        impl = address(
-            new DisputeModule(
-                address(accessController),
-                address(ipAssetRegistry)
-            )
-        );
+        impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
         disputeModule = DisputeModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    DisputeModule.initialize, (
-                        address(governance)
-                    )
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(DisputeModule.initialize, (address(governance))))
         );
         impl = address(0);
         _postdeploy(contractKey, address(disputeModule));
@@ -251,7 +209,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             TestProxyHelper.deployUUPSProxy(
                 impl,
                 abi.encodeCall(
-                    LicenseRegistry.initialize, (
+                    LicenseRegistry.initialize,
+                    (
                         address(governance),
                         "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
                     )
@@ -274,13 +233,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             )
         );
         licensingModule = LicensingModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    LicensingModule.initialize,
-                    address(governance)
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(LicensingModule.initialize, address(governance)))
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
@@ -296,54 +249,22 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
         contractKey = "ArbitrationPolicySP";
         _predeploy(contractKey);
-        impl = address(
-            new ArbitrationPolicySP(
-                address(disputeModule),
-                address(erc20),
-                ARBITRATION_PRICE
-            )
-        );
+        impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
         arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    ArbitrationPolicySP.initialize, (
-                        address(governance)
-                    )
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, (address(governance))))
         );
         impl = address(0);
         _postdeploy(contractKey, address(arbitrationPolicySP));
 
         contractKey = "RoyaltyPolicyLAP";
         _predeploy(contractKey);
-        impl = address(
-            new RoyaltyPolicyLAP(
-                address(royaltyModule),
-                address(licensingModule),
-                LIQUID_SPLIT_FACTORY,
-                LIQUID_SPLIT_MAIN
-            )
-        );
-        
+        impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
+
         royaltyPolicyLAP = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    RoyaltyPolicyLAP.initialize, (
-                        address(governance)
-                    )
-                )
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (address(governance))))
         );
         impl = address(0);
         _postdeploy(contractKey, address(royaltyPolicyLAP));
-
-        contractKey = "AncestorsVaultLAP";
-        _predeploy(contractKey);
-        ancestorsVaultImpl = new AncestorsVaultLAP(address(royaltyPolicyLAP));
-        _postdeploy(contractKey, address(ancestorsVaultImpl));
 
         _predeploy("PILPolicyFrameworkManager");
         impl = address(
@@ -358,10 +279,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
                 impl,
                 abi.encodeCall(
                     PILPolicyFrameworkManager.initialize,
-                    (
-                        "pil",
-                        "https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf"
-                    )
+                    ("pil", "https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf")
                 )
             )
         );
@@ -431,8 +349,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         // whitelist
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-
-        royaltyPolicyLAP.setAncestorsVaultImplementation(address(ancestorsVaultImpl));
+        // policy
+        royaltyPolicyLAP.setSnapshotInterval(7 days);
     }
 
     function _configureDisputeModule() private {
@@ -644,64 +562,6 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
 
             address ipId = ipAssetRegistry.register(address(erc721), 5);
             licensingModule.linkIpToParents(licenseIds, ipId, "");
-        }
-
-        /*///////////////////////////////////////////////////////////////
-                            ROYALTY PAYMENT AND CLAIMS
-        ///////////////////////////////////////////////////////////////*/
-
-        // IPAccount1 and IPAccount3 have commercial policy, of which IPAccount5 has used to mint licenses.
-        // Thus, any payment to IPAccount5 will get split to IPAccount1 and IPAccount3.
-
-        // Deployer pays IPAccount5
-        {
-            royaltyModule.payRoyaltyOnBehalf(ipAcct[5], ipAcct[5], address(erc20), 1 ether);
-        }
-
-        // Distribute the accrued revenue from the 0xSplitWallet associated with IPAccount3 to
-        // 0xSplits Main, which will get distributed to IPAccount3 AND its claimer based on revenue
-        // sharing terms specified in the royalty policy.
-        {
-            (, , address ipAcct5_ancestorVault, , ,) = royaltyPolicyLAP.getRoyaltyData(ipAcct[5]);
-
-            address[] memory accounts = new address[](2);
-            // If you face InvalidSplit__AccountsOutOfOrder, shuffle the order of accounts (swap index 0 and 1)
-            accounts[1] = ipAcct[5];
-            accounts[0] = ipAcct5_ancestorVault;
-
-            royaltyPolicyLAP.distributeIpPoolFunds(ipAcct[5], address(erc20), accounts, deployer);
-        }
-
-        // IPAccount1 claims its rNFTs and tokens, only done once since it's a direct chain
-        {
-            ERC20[] memory tokens = new ERC20[](1);
-            tokens[0] = erc20;
-
-            (, , address ancestorVault_ipAcct5, , ,) = royaltyPolicyLAP.getRoyaltyData(ipAcct[5]);
-
-            // First, release the money from the IPAccount5's 0xSplitWallet (that just received money) to the main
-            // 0xSplitMain that acts as a ledger for revenue distribution.
-            // vm.expectEmit(LIQUID_SPLIT_MAIN);
-            // TODO: check Withdrawal(699999999999999998) (Royalty stack is 300, or 30% [absolute] sent to ancestors)
-            royaltyPolicyLAP.claimFromIpPool({ account: ipAcct[5], tokens: tokens });
-            royaltyPolicyLAP.claimFromIpPool({ account: ancestorVault_ipAcct5, tokens: tokens });
-
-            // Bob (owner of IPAccount1) calls the claim her portion of rNFTs and tokens. He can only call
-            // `claimFromAncestorsVault` once. Afterwards, she will automatically receive money on revenue distribution.
-
-            address[] memory ancestors = new address[](2);
-            uint32[] memory ancestorsRoyalties = new uint32[](2);
-            ancestors[0] = ipAcct[1]; // grandparent
-            ancestors[1] = ipAcct[3]; // parent (claimer)
-            ancestorsRoyalties[0] = 200;
-            ancestorsRoyalties[1] = 100;
-
-            // IPAccount1 wants to claim from IPAccount5
-            royaltyPolicyLAP.claimFromAncestorsVault({
-                ipId: ipAcct[5],
-                claimerIpId: ipAcct[1],
-                tokens: tokens
-            });
         }
 
         /*///////////////////////////////////////////////////////////////

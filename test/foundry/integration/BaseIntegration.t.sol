@@ -32,21 +32,9 @@ contract BaseIntegration is BaseTest {
         postDeploymentSetup();
 
         dealMockAssets();
-        approveRegistration();
 
         vm.prank(u.admin);
         royaltyPolicyLAP.setSnapshotInterval(7 days);
-    }
-
-    function approveRegistration() internal {
-        vm.prank(u.alice);
-        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
-        vm.prank(u.bob);
-        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
-        vm.prank(u.carl);
-        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
-        vm.prank(u.dan);
-        ipAssetRegistry.setApprovalForAll(address(ipAssetRegistry), true);
     }
 
     /*//////////////////////////////////////////////////////////////////////////

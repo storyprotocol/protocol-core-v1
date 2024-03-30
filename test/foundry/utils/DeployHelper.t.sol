@@ -112,10 +112,6 @@ contract DeployHelper {
     ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
 
-    // Misc.
-    IPMetadataProvider internal ipMetadataProvider;
-    IPResolver internal ipResolver;
-
     // Arbitration Policy
     // TODO: custom arbitration price for testing
     uint256 internal constant ARBITRATION_PRICE = 1000; // not decimal exponentiated

@@ -6,7 +6,6 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IP } from "contracts/lib/IP.sol";
 import { IpPool } from "contracts/modules/royalty/policies/IpPool.sol";
 import { IIpPool } from "contracts/interfaces/modules/royalty/policies/IIpPool.sol";
 

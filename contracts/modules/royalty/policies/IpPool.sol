@@ -59,7 +59,7 @@ contract IpPool is IIpPool, ERC20Snapshot, ReentrancyGuard {
     /// @param symbol The symbol of the pool token
     /// @param royaltyPolicyLAP The address of the royalty policy LAP
     /// @param supply The total supply of the pool token
-    /// @param unclaimedTokens The amount of unclaimed tokens reserved for ancestors
+    /// @param unclaimedTokens The amount of unclaimed royalty tokens reserved for ancestors
     /// @param ipId The ip id the pool belongs to
     constructor(
         string memory name,

@@ -57,6 +57,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Constructor
     /// @param royaltyPolicyLAP The address of the royalty policy LAP
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address royaltyPolicyLAP) {
         if (royaltyPolicyLAP == address(0)) revert Errors.IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
         ROYALTY_POLICY_LAP = IRoyaltyPolicyLAP(royaltyPolicyLAP);

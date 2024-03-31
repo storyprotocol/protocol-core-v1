@@ -7,13 +7,13 @@ import { IRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/
 interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @notice Event emitted when a policy is initialized
     /// @param ipId The ID of the IP asset that the policy is being initialized for
-    /// @param IpRoyaltyVault The ip royalty vault address
+    /// @param ipRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack
     /// @param targetAncestors The ip ancestors array
     /// @param targetRoyaltyAmount The ip royalty amount array
     event PolicyInitialized(
         address ipId,
-        address IpRoyaltyVault,
+        address ipRoyaltyVault,
         uint32 royaltyStack,
         address[] targetAncestors,
         uint32[] targetRoyaltyAmount

@@ -41,7 +41,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @notice Returns the royalty data for a given IP asset
     /// @param ipId The ID of the IP asset
     /// @return isUnlinkable Indicates if the ipId is unlinkable to new parents
-    /// @return IpRoyaltyVault The ip royalty vault address
+    /// @return ipRoyaltyVault The ip royalty vault address
     /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
     /// @return targetAncestors The ip ancestors array
     /// @return targetRoyaltyAmount The ip royalty amount array

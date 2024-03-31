@@ -5,8 +5,8 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 
-import { IpRoyaltyVault } from "./IpRoyaltyVault.sol";
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { GovernableUpgradeable } from "../../../../contracts/governance/GovernableUpgradeable.sol";
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
@@ -15,12 +15,7 @@ import { Errors } from "../../../lib/Errors.sol";
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
-contract RoyaltyPolicyLAP is
-    IRoyaltyPolicyLAP,
-    GovernableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    UUPSUpgradeable
-{
+contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice The state data of the LAP royalty policy
@@ -38,10 +33,12 @@ contract RoyaltyPolicyLAP is
     }
 
     /// @dev Storage structure for the RoyaltyPolicyLAP
+    /// @param ipRoyaltyVaultBeacon The ip royalty vault beacon address
     /// @param snapshotInterval The minimum timestamp interval between snapshots
     /// @param royaltyData The royalty data for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLAP
     struct RoyaltyPolicyLAPStorage {
+        address ipRoyaltyVaultBeacon;
         uint256 snapshotInterval;
         mapping(address ipId => LAPRoyaltyData) royaltyData;
     }
@@ -87,7 +84,7 @@ contract RoyaltyPolicyLAP is
         _disableInitializers();
     }
 
-    /// @notice initializer for this implementation contract
+    /// @notice Initializer for this implementation contract
     /// @param governance The governance address
     function initialize(address governance) external initializer {
         __GovernableUpgradeable_init(governance);
@@ -101,6 +98,15 @@ contract RoyaltyPolicyLAP is
     function setSnapshotInterval(uint256 timestampInterval) public onlyProtocolAdmin {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.snapshotInterval = timestampInterval;
+    }
+
+    /// @dev Set the ip royalty vault beacon
+    /// @dev Enforced to be only callable by the protocol admin in governance
+    /// @param beacon The ip royalty vault beacon address
+    function setIpRoyaltyVaultBeacon(address beacon) public onlyProtocolAdmin {
+        if (beacon == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
+        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
+        $.ipRoyaltyVaultBeacon = beacon;
     }
 
     /// @notice Executes royalty related logic on minting a license
@@ -194,6 +200,13 @@ contract RoyaltyPolicyLAP is
         return $.snapshotInterval;
     }
 
+    /// @notice Returns the ip royalty vault beacon
+    /// @return ipRoyaltyVaultBeacon The ip royalty vault beacon address
+    function getIpRoyaltyVaultBeacon() external view returns (address) {
+        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
+        return $.ipRoyaltyVaultBeacon;
+    }
+
     /// @dev Initializes the royalty policy for a given IP asset.
     /// @dev Enforced to be only callable by RoyaltyModule
     /// @param ipId The to initialize the policy for
@@ -226,8 +239,8 @@ contract RoyaltyPolicyLAP is
         }
 
         // deploy ip royalty vault
-        // TODO: to be adjusted when ip royalty vault is an upgradeable contract
-        address ipRoyaltyVault = address(new IpRoyaltyVault("Royalty Token", "RT", address(this), TOTAL_RT_SUPPLY, royaltyStack, ipId));
+        address ipRoyaltyVault = address(new BeaconProxy($.ipRoyaltyVaultBeacon, ""));
+        IIpRoyaltyVault(ipRoyaltyVault).initialize("Royalty Token", "RT", TOTAL_RT_SUPPLY, royaltyStack, ipId);
 
         $.royaltyData[ipId] = LAPRoyaltyData({
             // whether calling via minting license or linking to parents the ipId becomes unlinkable

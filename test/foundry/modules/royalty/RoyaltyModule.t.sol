@@ -266,11 +266,11 @@ contract TestRoyaltyModule is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(u.admin);
-        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP2), true);
+        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         vm.stopPrank();
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP2), licenseData, nullBytes);
+        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, nullBytes);
     }
 
     function test_RoyaltyModule_onLinkToParents_revert_NotWhitelistedRoyaltyPolicy() public {

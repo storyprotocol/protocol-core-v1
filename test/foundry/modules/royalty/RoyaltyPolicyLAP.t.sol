@@ -162,6 +162,23 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(royaltyPolicyLAP.getSnapshotInterval(), 100);
     }
 
+    function test_RoyaltyPolicyLAP_setIpRoyaltyVaultBeacon_revert_NotOwner() public {
+        vm.expectRevert(Errors.Governance__OnlyProtocolAdmin.selector);
+        royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
+    }
+
+    function testRoyaltyPolicyLAP_setIpRoyaltyVaultBeacon_revert_ZeroIpRoyaltyVaultBeacon() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon.selector);
+        royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(0));
+    }
+
+    function test_RoyaltyPolicyLAP_setIpRoyaltyVaultBeacon() public {
+        vm.startPrank(u.admin);
+        royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
+        assertEq(royaltyPolicyLAP.getIpRoyaltyVaultBeacon(), address(1));
+    }
+
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_NotRoyaltyModule() public {
         vm.stopPrank();
         vm.expectRevert(Errors.RoyaltyPolicyLAP__NotRoyaltyModule.selector);

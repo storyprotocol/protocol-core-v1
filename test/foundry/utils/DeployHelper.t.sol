@@ -4,7 +4,9 @@ pragma solidity 0.8.23;
 
 // external
 import { console2 } from "forge-std/console2.sol"; // console to indicate mock deployment calls.
+import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
+import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 // contracts
 import { AccessController } from "../../../contracts/access/AccessController.sol";
@@ -26,6 +28,7 @@ import { RoyaltyPolicyLAP } from "../../../contracts/modules/royalty/policies/Ro
 import { DisputeModule } from "../../../contracts/modules/dispute/DisputeModule.sol";
 import { LicensingModule } from "../../../contracts/modules/licensing/LicensingModule.sol";
 import { ArbitrationPolicySP } from "../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
+import { IpRoyaltyVault } from "../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 
 // test
 import { MockAccessController } from "../mocks/access/MockAccessController.sol";
@@ -40,7 +43,7 @@ import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { TestProxyHelper } from "./TestProxyHelper.sol";
 
-contract DeployHelper {
+contract DeployHelper is Test {
     // TODO: three options, auto/mock/real in deploy condition, so that we don't need to manually
     //       call getXXX to get mock contract (if there's no real contract deployed).
 
@@ -293,6 +296,14 @@ contract DeployHelper {
                 TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
             );
             console2.log("DeployHelper: Using REAL RoyaltyPolicyLAP");
+
+            // deploy ip royalty vault implementation and beacon
+            vm.startPrank(governanceAdmin);
+            address ipRoyaltyVaultImplementation = address(new IpRoyaltyVault(address(royaltyPolicyLAP)));
+            address ipRoyaltyVaultBeacon = address(
+                new UpgradeableBeacon(ipRoyaltyVaultImplementation, getGovernance())
+            );
+            royaltyPolicyLAP.setIpRoyaltyVaultBeacon(ipRoyaltyVaultBeacon);
         } else {
             // mockRoyaltyPolicyLAP = new MockRoyaltyPolicyLAP(getRoyaltyModule());
             // console2.log("DeployHelper: Using Mock RoyaltyPolicyLAP");

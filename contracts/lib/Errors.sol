@@ -238,6 +238,7 @@ library Errors {
     error RoyaltyPolicyLAP__NotFullOwnership();
     error RoyaltyPolicyLAP__UnlinkableToParents();
     error RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
+    error RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
 
     error IpRoyaltyVault__ZeroIpId();
     error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();

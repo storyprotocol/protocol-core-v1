@@ -153,7 +153,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             vm.stopPrank();
         }
 
-        // Owner of IPAccount2, Bob, claims his RTs from IPAccount3 pool
+        // Owner of IPAccount2, Bob, claims his RTs from IPAccount3 vault
         {
             vm.startPrank(u.bob);
 
@@ -174,7 +174,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             IpRoyaltyVault(ipRoyaltyVault).collectRoyaltyTokens(ipAcct[2]);
         }
 
-        // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 pools
+        // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 vaults
         {
             vm.startPrank(u.alice);
 
@@ -202,7 +202,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             IpRoyaltyVault(ipRoyaltyVault3).collectRoyaltyTokens(ipAcct[1]);
         }
 
-        // Owner of IPAccount2, Bob, takes snapshot on IPAccount3 pool and claims his revenue from IPAccount3 pool
+        // Owner of IPAccount2, Bob, takes snapshot on IPAccount3 vault and claims his revenue from IPAccount3 vault
         {
             vm.startPrank(u.bob);
 
@@ -221,8 +221,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             vm.stopPrank();
         }
 
-        // Owner of IPAccount1, Alice, takes snapshot on IPAccount2 pool and claims her revenue from both
-        // IPAccount2 and IPAccount3 pools
+        // Owner of IPAccount1, Alice, takes snapshot on IPAccount2 vault and claims her revenue from both
+        // IPAccount2 and IPAccount3 vaults
         {
             vm.startPrank(u.alice);
 

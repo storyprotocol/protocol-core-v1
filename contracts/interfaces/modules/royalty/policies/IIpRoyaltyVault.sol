@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import { IERC20 } from "@openzeppelin/contracts-v4/token/ERC20/IERC20.sol";
-
 /// @title Ip royalty vault interface
-interface IIpRoyaltyVault is IERC20 {
+interface IIpRoyaltyVault {
     /// @notice Event emitted when a claim is made
     /// @param claimerIpId The claimer ipId address
     event Claimed(address claimerIpId);
@@ -15,7 +13,21 @@ interface IIpRoyaltyVault is IERC20 {
     /// @param unclaimedTokens The amount of unclaimed tokens at the snapshot
     event SnapshotCompleted(uint256 snapshotId, uint256 snapshotTimestamp, uint32 unclaimedTokens);
 
-    /// @notice Adds a new revenue token to the pool
+    /// @notice initializer for this implementation contract
+    /// @param name The name of the royalty token
+    /// @param symbol The symbol of the royalty token
+    /// @param supply The total supply of the royalty token
+    /// @param unclaimedTokens The amount of unclaimed royalty tokens reserved for ancestors
+    /// @param ipIdAddress The ip id the royalty vault belongs to
+    function initialize(
+        string memory name,
+        string memory symbol,
+        uint32 supply,
+        uint32 unclaimedTokens,
+        address ipIdAddress
+    ) external;
+
+    /// @notice Adds a new revenue token to the vault
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
     function updateIpRoyaltyVaultTokens(address token) external;
@@ -45,7 +57,7 @@ interface IIpRoyaltyVault is IERC20 {
     /// @param claimerIpId The ip id of the claimer
     function collectRoyaltyTokens(address claimerIpId) external;
 
-    /// @notice Returns the list of revenue tokens in the pool
+    /// @notice Returns the list of revenue tokens in the vault
     /// @return The list of revenue tokens
-    function getPoolTokens() external view returns (address[] memory);
+    function getVaultTokens() external view returns (address[] memory);
 }

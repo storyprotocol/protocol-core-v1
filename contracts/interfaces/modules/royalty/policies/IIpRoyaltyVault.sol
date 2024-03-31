@@ -54,8 +54,8 @@ interface IIpRoyaltyVault {
     function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external;
 
     /// @notice Allows ancestors to claim the royalty tokens and any accrued revenue tokens
-    /// @param claimerIpId The ip id of the claimer
-    function collectRoyaltyTokens(address claimerIpId) external;
+    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
+    function collectRoyaltyTokens(address ancestorIpId) external;
 
     /// @notice Returns the list of revenue tokens in the vault
     /// @return The list of revenue tokens

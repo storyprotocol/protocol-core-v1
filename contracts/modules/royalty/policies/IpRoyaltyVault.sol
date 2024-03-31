@@ -37,7 +37,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     mapping(address token => uint256 amount) public ancestorsVaultAmount;
 
     /// @notice Indicates if a given ancestor address has already claimed
-    mapping(address claimerIpId => bool) public isClaimedByAncestor;
+    mapping(address ancestorIpId => bool) public isClaimedByAncestor;
 
     /// @notice Amount of revenue token in the claim vault
     mapping(address token => uint256 amount) public claimVaultAmount;
@@ -175,28 +175,28 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     }
 
     /// @notice Allows ancestors to claim the royalty tokens and any accrued revenue tokens
-    /// @param claimerIpId The ip id of the claimer
-    function collectRoyaltyTokens(address claimerIpId) external nonReentrant {
+    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
+    function collectRoyaltyTokens(address ancestorIpId) external nonReentrant {
         (, , , address[] memory ancestors, uint32[] memory ancestorsRoyalties) = ROYALTY_POLICY_LAP.getRoyaltyData(
             ipId
         );
 
-        if (isClaimedByAncestor[claimerIpId]) revert Errors.IpRoyaltyVault__AlreadyClaimed();
+        if (isClaimedByAncestor[ancestorIpId]) revert Errors.IpRoyaltyVault__AlreadyClaimed();
 
-        // check if the claimer is an ancestor
-        (uint32 index, bool isIn) = ArrayUtils.indexOf(ancestors, claimerIpId);
+        // check if the address being claimed to is an ancestor
+        (uint32 index, bool isIn) = ArrayUtils.indexOf(ancestors, ancestorIpId);
         if (!isIn) revert Errors.IpRoyaltyVault__ClaimerNotAnAncestor();
 
-        // transfer royalty tokens to the claimer
-        IERC20Upgradeable(address(this)).safeTransfer(claimerIpId, ancestorsRoyalties[index]);
+        // transfer royalty tokens to the ancestor
+        IERC20Upgradeable(address(this)).safeTransfer(ancestorIpId, ancestorsRoyalties[index]);
 
         // collect accrued revenue tokens (if any)
-        _collectAccruedTokens(ancestorsRoyalties[index], claimerIpId);
+        _collectAccruedTokens(ancestorsRoyalties[index], ancestorIpId);
 
-        isClaimedByAncestor[claimerIpId] = true;
+        isClaimedByAncestor[ancestorIpId] = true;
         unclaimedRoyaltyTokens -= ancestorsRoyalties[index];
 
-        emit Claimed(claimerIpId);
+        emit Claimed(ancestorIpId);
     }
 
     /// @notice Returns the list of revenue tokens in the vault
@@ -219,8 +219,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @dev Collect the accrued tokens (if any)
     /// @param royaltyTokensToClaim The amount of royalty tokens being claimed by the ancestor
-    /// @param claimerIpId The ip id of the claimer
-    function _collectAccruedTokens(uint256 royaltyTokensToClaim, address claimerIpId) internal {
+    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
+    function _collectAccruedTokens(uint256 royaltyTokensToClaim, address ancestorIpId) internal {
         address[] memory tokens = _tokens.values();
 
         for (uint256 i = 0; i < tokens.length; ++i) {
@@ -230,7 +230,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             if (collectAmount == 0) continue;
 
             ancestorsVaultAmount[tokens[i]] -= collectAmount;
-            IERC20Upgradeable(tokens[i]).safeTransfer(claimerIpId, collectAmount);
+            IERC20Upgradeable(tokens[i]).safeTransfer(ancestorIpId, collectAmount);
         }
     }
 }

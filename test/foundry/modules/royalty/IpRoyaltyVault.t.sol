@@ -9,7 +9,7 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestIpRoyaltyVault is BaseTest {
-    event Claimed(address claimerIpId);
+    event RoyaltyTokensCollected(address ancestorIpId, uint256 royaltyTokensCollected);
     event SnapshotCompleted(uint256 snapshotId, uint256 timestamp, uint32 unclaimedTokens);
 
     IpRoyaltyVault ipRoyaltyVault;
@@ -389,7 +389,7 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 ancestorsVaultAmountBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
-        emit Claimed(address(5));
+        emit RoyaltyTokensCollected(address(5), parentRoyalty);
 
         ipRoyaltyVault.collectRoyaltyTokens(address(5));
 

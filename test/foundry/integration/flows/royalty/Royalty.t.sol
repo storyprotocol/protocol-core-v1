@@ -169,7 +169,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             emit IERC20.Transfer({ from: ipRoyaltyVault, to: ipAcct[2], value: 10_000_000 }); // 10%
 
             vm.expectEmit(ipRoyaltyVault);
-            emit IIpRoyaltyVault.Claimed(ipAcct[2]);
+            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[2], 10_000_000);
 
             IpRoyaltyVault(ipRoyaltyVault).collectRoyaltyTokens(ipAcct[2]);
         }
@@ -191,14 +191,14 @@ contract Flows_Integration_Disputes is BaseIntegration {
             vm.expectEmit(ipRoyaltyVault2);
             emit IERC20.Transfer({ from: ipRoyaltyVault2, to: ipAcct[1], value: 10_000_000 }); // 10%
             vm.expectEmit(ipRoyaltyVault2);
-            emit IIpRoyaltyVault.Claimed(ipAcct[1]);
+            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[1], 10_000_000);
             IpRoyaltyVault(ipRoyaltyVault2).collectRoyaltyTokens(ipAcct[1]);
 
             vm.expectEmit(ipRoyaltyVault3);
             // reason for 20%: absolute stack, so 10% from IPAccount2 and 10% from IPAccount3
             emit IERC20.Transfer({ from: ipRoyaltyVault3, to: ipAcct[1], value: 20_000_000 }); // 20%
             vm.expectEmit(ipRoyaltyVault3);
-            emit IIpRoyaltyVault.Claimed(ipAcct[1]);
+            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[1], 20_000_000);
             IpRoyaltyVault(ipRoyaltyVault3).collectRoyaltyTokens(ipAcct[1]);
         }
 

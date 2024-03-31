@@ -3,9 +3,10 @@ pragma solidity 0.8.23;
 
 /// @title Ip royalty vault interface
 interface IIpRoyaltyVault {
-    /// @notice Event emitted when a claim is made
-    /// @param claimerIpId The claimer ipId address
-    event Claimed(address claimerIpId);
+    /// @notice Event emitted when royalty tokens are collected
+    /// @param ancestorIpId The ancestor ipId address
+    /// @param royaltyTokensCollected The amount of royalty tokens collected
+    event RoyaltyTokensCollected(address ancestorIpId, uint256 royaltyTokensCollected);
 
     /// @notice Event emitted when a snapshot is taken
     /// @param snapshotId The snapshot id

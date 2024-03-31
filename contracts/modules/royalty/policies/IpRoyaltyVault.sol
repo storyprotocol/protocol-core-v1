@@ -197,7 +197,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         isClaimedByAncestor[ancestorIpId] = true;
         unclaimedRoyaltyTokens -= ancestorsRoyalties[index];
 
-        emit Claimed(ancestorIpId);
+        emit RoyaltyTokensCollected(ancestorIpId, ancestorsRoyalties[index]);
     }
 
     /// @notice Returns the list of revenue tokens in the vault

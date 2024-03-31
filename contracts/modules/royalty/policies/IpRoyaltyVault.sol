@@ -94,7 +94,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Adds a new revenue token to the vault
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
-    function updateIpRoyaltyVaultTokens(address token) external {
+    function addIpRoyaltyVaultTokens(address token) external {
         if (msg.sender != address(ROYALTY_POLICY_LAP)) revert Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP();
         _tokens.add(token);
     }

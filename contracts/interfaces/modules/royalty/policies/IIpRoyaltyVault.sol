@@ -30,7 +30,7 @@ interface IIpRoyaltyVault {
     /// @notice Adds a new revenue token to the vault
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
-    function updateIpRoyaltyVaultTokens(address token) external;
+    function addIpRoyaltyVaultTokens(address token) external;
 
     /// @notice A function to snapshot the claimable revenue and royalty token amounts
     /// @return The snapshot id

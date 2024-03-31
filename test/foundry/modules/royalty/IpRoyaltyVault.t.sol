@@ -139,14 +139,14 @@ contract TestIpRoyaltyVault is BaseTest {
         //royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
     }
 
-    function test_IpRoyaltyVault_UpdateIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
+    function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
         vm.expectRevert(Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP.selector);
-        ipRoyaltyVault.updateIpRoyaltyVaultTokens(address(0));
+        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(0));
     }
 
-    function test_IpRoyaltyVault_UpdateIpRoyaltyVaultTokens() public {
+    function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens() public {
         vm.startPrank(address(royaltyPolicyLAP));
-        ipRoyaltyVault.updateIpRoyaltyVaultTokens(address(1));
+        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(1));
 
         address[] memory tokens = ipRoyaltyVault.getVaultTokens();
 

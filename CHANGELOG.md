@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v1.0.0-rc.1
+
+- Migrate to upgradable contracts (for some) and toolings (#6, #7, #8, #16, #25)
+- Introduce IPAccount Namespace Storage for Open Data Access design and IViewModule for Enhanced Metadata Display (#2)
+- Introduce the Core Metadata Module and its View Module for storing and viewing metadata in individual IPAccounts (#15)
+- Deprecate Registration Module (#3) and IPAssetRenderer (#14)
+- Simplify RoyaltyPolicyLAP logic by removing native token payment (#1) and ancestor hash & royalty context (#4) with additional minor changes.
+- Simplify IP registration in IPAssetRegistry and enable permissionless registration on behalf of IP NFT owners (#17)
+- Replace SP royalty policy's 0xSplits with custom ERC20 Royalty Vault based on ERC20Snapshot (#26)
+- Prevent child IPs from linking to parents more than once in the LicensingModule (#28)
+- Refactor codebase structure (#29)
+- Enhance CI/CD and repo (#10, #11, #12, #13, #16, #18), bump pkgs (#19...#24), and misc. (#27, #30)
+
 ## v1.0.0-beta-rc6
 
 This release patches the beta release of Story Protocol.

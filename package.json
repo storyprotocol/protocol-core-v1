@@ -1,6 +1,6 @@
 {
     "name": "@story-protocol/protocol-core",
-    "version": "v1.0.0-beta-rc6",
+    "version": "v1.0.0-rc.1",
     "description": "Story Protocol core smart contracts",
     "main": "",
     "directories": {

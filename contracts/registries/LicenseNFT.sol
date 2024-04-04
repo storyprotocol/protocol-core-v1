@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
-
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -86,7 +85,7 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
     function mintLicenseTokens(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
@@ -94,10 +93,10 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
         LicenseTokenMetadata memory licenseTokenMetadata = LicenseTokenMetadata({
             originalIpId: originalIpId,
             licenseTemplate: licenseTemplate,
-            licenseConfigId: licenseConfigId,
-            transferable: ILicenseTemplate(licenseTemplate).isTransferable(licenseConfigId),
+            licenseTermsId: licenseTermsId,
+            transferable: ILicenseTemplate(licenseTemplate).isTransferable(licenseTermsId),
             mintedAt: block.timestamp,
-            expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(block.timestamp, licenseConfigId)
+            expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(block.timestamp, licenseTermsId)
         });
 
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
@@ -124,12 +123,12 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
     )
         external
         view
-        returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseConfigIds)
+        returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds)
     {
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         originalIpIds = new address[](tokenIds.length);
-        licenseConfigIds = new uint256[](tokenIds.length);
+        licenseTermsIds = new uint256[](tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
@@ -150,7 +149,7 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
             }
 
             originalIpIds[i] = ltm.originalIpId;
-            licenseConfigIds[i] = ltm.licenseConfigId;
+            licenseTermsIds[i] = ltm.licenseTermsId;
         }
     }
 
@@ -159,16 +158,16 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
     }
 
     /// @notice Returns the license data for the given license ID
-    /// @param licenseConfigId The ID of the license
+    /// @param licenseTermsId The ID of the license
     /// @return licenseData The license data
-    function licenseTokenMetadata(uint256 licenseConfigId) external view returns (LicenseTokenMetadata memory) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseConfigId];
+    function licenseTokenMetadata(uint256 licenseTermsId) external view returns (LicenseTokenMetadata memory) {
+        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseTermsId];
     }
 
     /// @notice Returns the ID of the IP asset that is the licensor of the given license ID
-    /// @param licenseConfigId The ID of the license
-    function originalIpId(uint256 licenseConfigId) external view returns (address) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseConfigId].originalIpId;
+    /// @param licenseTermsId The ID of the license
+    function originalIpId(uint256 licenseTermsId) external view returns (address) {
+        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseTermsId].originalIpId;
     }
 
     /// @notice Returns the canonical protocol-wide LicensingModule
@@ -215,7 +214,7 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
             )
         );
 
-        json = string(abi.encodePacked(json, ILicenseTemplate(ltm.licenseTemplate).toJson(ltm.licenseConfigId)));
+        json = string(abi.encodePacked(json, ILicenseTemplate(ltm.licenseTemplate).toJson(ltm.licenseTermsId)));
 
         // append the common license attributes
         json = string(

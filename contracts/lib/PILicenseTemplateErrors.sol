@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-/// @title PILFrameworkErrors Errors Library
-/// @notice Library for all PILFramework related contract errors.
+/// @title PILicenseTemplate Errors Library
+/// @notice Library for all PILicenseTemplate related contract errors.
 library PILicenseTemplateErrors {
     ////////////////////////////////////////////////////////////////////////////
     //                         PILicenseTemplate                      //
@@ -18,7 +18,7 @@ library PILicenseTemplateErrors {
     error PILicenseTemplate__DerivativesDisabled_CantAddAttribution();
     error PILicenseTemplate__DerivativesDisabled_CantAddApproval();
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
-    error PILicenseTemplate__RightsNotFound();
+    error PILicenseTemplate__LicenseTermsNotFound();
     error PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
     error PILicenseTemplate__CommercialEnabled_RoyaltyPolicyRequired();
     error PILicenseTemplate__ReciprocalButDifferentPolicyIds();

@@ -11,11 +11,11 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 /// licensing terms like "Derivatives With Approval" in PIL.
 abstract contract LicensorApprovalCheckerV2 is AccessControlled, Initializable {
     /// @notice Emits when a derivative IP account is approved by the originalIp.
-    /// @param licenseId The ID of the license waiting for approval
+    /// @param licenseTokenId The ID of the license waiting for approval
     /// @param ipId The ID of the derivative IP to be approved
     /// @param caller The executor of the approval
     /// @param approved Result of the approval
-    event DerivativeApproved(uint256 indexed licenseId, address indexed ipId, address indexed caller, bool approved);
+    event DerivativeApproved(uint256 indexed licenseTokenId, address indexed ipId, address indexed caller, bool approved);
 
     /// @notice Storage for derivative IP approvals.
     /// @param approvals Approvals for derivative IP.
@@ -32,7 +32,7 @@ abstract contract LicensorApprovalCheckerV2 is AccessControlled, Initializable {
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensorApprovalChecker")) - 1))
     // & ~bytes32(uint256(0xff));
     bytes32 private constant LicensorApprovalCheckerStorageLocation =
-        0x7a71306cccadc52d66a0a466930bd537acf0ba900f21654919d58cece4cf9500;
+    0x7a71306cccadc52d66a0a466930bd537acf0ba900f21654919d58cece4cf9500;
 
     /// @notice Constructor function
     /// @param accessController The address of the AccessController contract

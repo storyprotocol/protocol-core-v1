@@ -31,13 +31,13 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         ILicensingModule licensingModule;
         IDisputeModule disputeModule;
         address defaultLicenseTemplate;
-        uint256 defaultLicenseConfigId;
+        uint256 defaultLicenseTermsId;
         mapping(address => bool) registeredLicenseTemplates;
         mapping(address => bool) registeredRoyaltyPolicies;
         mapping(address => bool) registeredCurrencyTokens;
         mapping(address derivativeIpId => EnumerableSet.AddressSet originalIpIds) originalIps;
         mapping(address originalIpId => EnumerableSet.AddressSet derivativeIpIds) derivativeIps;
-        mapping(address ipId => EnumerableSet.UintSet licenseConfigIds) attachedLicenseConfigs;
+        mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
         mapping(address ipId => uint256) expireTimes;
         mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseSpec mintingLicenseSpec) mintingLicenseSpecs;
@@ -90,13 +90,10 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
-    function setDefaultLicenseConfig(
-        address newLicenseTemplate,
-        uint256 newLicenseConfigId
-    ) external onlyProtocolAdmin {
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external onlyProtocolAdmin {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
-        $.defaultLicenseConfigId = newLicenseConfigId;
+        $.defaultLicenseTermsId = newLicenseTermsId;
     }
 
     function registerLicenseTemplate(address licenseTemplate) external onlyProtocolAdmin {
@@ -124,14 +121,14 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
     function setMintingLicenseSpec(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         Licensing.MintingLicenseSpec calldata mintingLicenseSpec
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseConfigId)] = Licensing.MintingLicenseSpec({
+        $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.MintingLicenseSpec({
             isSet: true,
             mintingFee: mintingLicenseSpec.mintingFee,
             mintingFeeModule: mintingLicenseSpec.mintingFeeModule,
@@ -139,7 +136,7 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
             receiverCheckData: mintingLicenseSpec.receiverCheckData
         });
 
-        emit MintingLicenseSpecSet(ipId, licenseTemplate, licenseConfigId, mintingLicenseSpec);
+        emit MintingLicenseSpecSet(ipId, licenseTemplate, licenseTermsId, mintingLicenseSpec);
     }
 
     function setMintingLicenseSpecForAll(
@@ -157,24 +154,24 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         emit MintingLicenseSpecSetForAll(ipId, mintingLicenseSpec);
     }
 
-    function attachLicenseConfigToIp(
+    function attachLicenseTermsToIp(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external onlyLicensingModule {
-        if (!_existsLicenseConfig(licenseTemplate, licenseConfigId)) {
-            revert Errors.LicensingModule__LicenseConfigNotFound(licenseTemplate, licenseConfigId);
+        if (!_existsLicenseTerms(licenseTemplate, licenseTermsId)) {
+            revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
 
         if (_isDerivativeIp(ipId)) {
-            revert Errors.LicensingModule__DerivativesCannotAddLicenseConfig();
+            revert Errors.LicensingModule__DerivativesCannotAddLicenseTerms();
         }
 
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.expireTimes[ipId] < block.timestamp) {
             revert Errors.LicenseRegistry__IpExpired(ipId);
         }
-        $.attachedLicenseConfigs[ipId].add(licenseConfigId);
+        $.attachedLicenseTerms[ipId].add(licenseTermsId);
     }
 
     // solhint-disable-next-line code-complexity
@@ -182,13 +179,13 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         address derivativeIpId,
         address[] calldata originalIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseConfigIds
+        uint256[] calldata licenseTermsIds
     ) external onlyLicensingModule {
         if (originalIpIds.length == 0) {
             revert Errors.LicenseRegistry__NoOriginalIp();
         }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.attachedLicenseConfigs[derivativeIpId].length() > 0) {
+        if ($.attachedLicenseTerms[derivativeIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(derivativeIpId);
         }
         if ($.originalIps[derivativeIpId].length() > 0) {
@@ -206,30 +203,30 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
                 revert Errors.LicenseRegistry__OriginalIpExpired(originalIpIds[i]);
             }
             // derivativeIp can only register with default license terms or the same license terms as the original IP
-            if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseConfigId != licenseConfigIds[i]) {
+            if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsIds[i]) {
                 if ($.licenseTemplates[originalIpIds[i]] != licenseTemplate) {
                     revert Errors.LicenseRegistry__OriginalIpUnmachedLicenseTemplate(originalIpIds[i], licenseTemplate);
                 }
-                if (!$.attachedLicenseConfigs[originalIpIds[i]].contains(licenseConfigIds[i])) {
-                    revert Errors.LicenseRegistry__OriginalIpHasNoLicenseConfig(originalIpIds[i], licenseConfigIds[i]);
+                if (!$.attachedLicenseTerms[originalIpIds[i]].contains(licenseTermsIds[i])) {
+                    revert Errors.LicenseRegistry__OriginalIpHasNoLicenseTerms(originalIpIds[i], licenseTermsIds[i]);
                 }
             }
             $.originalIps[derivativeIpId].add(originalIpIds[i]);
             $.derivativeIps[originalIpIds[i]].add(derivativeIpId);
-            $.attachedLicenseConfigs[derivativeIpId].add(licenseConfigIds[i]);
+            $.attachedLicenseTerms[derivativeIpId].add(licenseTermsIds[i]);
         }
 
         $.licenseTemplates[derivativeIpId] = licenseTemplate;
         _setExpireTime(
             derivativeIpId,
-            ILicenseTemplate(licenseTemplate).getEarlierExpireTime(block.timestamp, licenseConfigIds)
+            ILicenseTemplate(licenseTemplate).getEarlierExpireTime(block.timestamp, licenseTermsIds)
         );
     }
 
     function verifyMintLicenseToken(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.MintingLicenseSpec memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
@@ -237,13 +234,13 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
             revert Errors.LicenseRegistry__OriginalIpExpired(originalIpId);
         }
         if (isMintedByIpOwner) {
-            if (!_existsLicenseConfig(licenseTemplate, licenseConfigId)) {
-                revert Errors.LicenseRegistry__LicenseConfigNotExists(licenseTemplate, licenseConfigId);
+            if (!_existsLicenseTerms(licenseTemplate, licenseTermsId)) {
+                revert Errors.LicenseRegistry__LicenseTermsNotExists(licenseTemplate, licenseTermsId);
             }
-        } else if (!_hasIpAttachedLicenseConfig(originalIpId, licenseTemplate, licenseConfigId)) {
-            revert Errors.LicenseRegistry__OriginalIpHasNoLicenseConfig(originalIpId, licenseConfigId);
+        } else if (!_hasIpAttachedLicenseTerms(originalIpId, licenseTemplate, licenseTermsId)) {
+            revert Errors.LicenseRegistry__OriginalIpHasNoLicenseTerms(originalIpId, licenseTermsId);
         }
-        return _getMintingLicenseSpec(originalIpId, licenseTemplate, licenseConfigId);
+        return _getMintingLicenseSpec(originalIpId, licenseTemplate, licenseTermsId);
     }
 
     function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool) {
@@ -266,40 +263,40 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _getLicenseRegistryStorage().derivativeIps[originalIpId].length() > 0;
     }
 
-    function existsLicenseConfig(address licenseTemplate, uint256 licenseConfigId) external view returns (bool) {
-        return _existsLicenseConfig(licenseTemplate, licenseConfigId);
+    function existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
+        return _existsLicenseTerms(licenseTemplate, licenseTermsId);
     }
 
-    function hasIpAttachedLicenseConfig(
+    function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external view returns (bool) {
-        return _hasIpAttachedLicenseConfig(ipId, licenseTemplate, licenseConfigId);
+        return _hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId);
     }
 
-    function getAttachedLicenseConfig(
+    function getAttachedLicenseTerms(
         address ipId,
         uint256 index
-    ) external view returns (address licenseTemplate, uint256 licenseConfigId) {
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if (index >= $.attachedLicenseConfigs[ipId].length()) {
+        if (index >= $.attachedLicenseTerms[ipId].length()) {
             revert Errors.LicenseRegistry__IndexOutOfBounds(ipId, index);
         }
         licenseTemplate = $.licenseTemplates[ipId];
-        licenseConfigId = $.attachedLicenseConfigs[ipId].at(index);
+        licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
     }
 
-    function getAttachedLicenseConfigCount(address ipId) external view returns (uint256) {
-        return _getLicenseRegistryStorage().attachedLicenseConfigs[ipId].length();
+    function getAttachedLicenseTermsCount(address ipId) external view returns (uint256) {
+        return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
     }
 
     function getMintingLicenseSpec(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external view returns (Licensing.MintingLicenseSpec memory) {
-        return _getMintingLicenseSpec(ipId, licenseTemplate, licenseConfigId);
+        return _getMintingLicenseSpec(ipId, licenseTemplate, licenseTermsId);
     }
 
     /// @notice Returns the canonical protocol-wide LicensingModule
@@ -316,9 +313,9 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _getLicenseRegistryStorage().expireTimes[ipId];
     }
 
-    function getDefaultLicenseConfig() external view returns (address licenseTemplate, uint256 licenseConfigId) {
+    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        return ($.defaultLicenseTemplate, $.defaultLicenseConfigId);
+        return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
     }
 
     function _setExpireTime(address ipId, uint256 expireTime) internal {
@@ -333,37 +330,37 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
     function _getMintingLicenseSpec(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) internal view returns (Licensing.MintingLicenseSpec memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        if ($.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseConfigId)].isSet) {
-            return $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseConfigId)];
+        if ($.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
+            return $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)];
         }
         return $.mintingLicenseSpecsForAll[ipId];
     }
 
-    function _getHash(address ipId, address licenseTemplate, uint256 licenseConfigId) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(ipId, licenseTemplate, licenseConfigId));
+    function _getHash(address ipId, address licenseTemplate, uint256 licenseTermsId) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(ipId, licenseTemplate, licenseTermsId));
     }
 
-    function _hasIpAttachedLicenseConfig(
+    function _hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) internal view returns (bool) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseConfigId == licenseConfigId) return true;
-        return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseConfigs[ipId].contains(licenseConfigId);
+        if ($.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseTermsId == licenseTermsId) return true;
+        return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseTerms[ipId].contains(licenseTermsId);
     }
 
-    function _existsLicenseConfig(address licenseTemplate, uint256 licenseConfigId) internal view returns (bool) {
+    function _existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) internal view returns (bool) {
         if (!_getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate]) {
             return false;
         }
-        return ILicenseTemplate(licenseTemplate).exists(licenseConfigId);
+        return ILicenseTemplate(licenseTemplate).exists(licenseTermsId);
     }
 
     ////////////////////////////////////////////////////////////////////////////

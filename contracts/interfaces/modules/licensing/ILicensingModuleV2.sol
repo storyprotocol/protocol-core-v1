@@ -5,18 +5,18 @@ import { IModule } from "../base/IModule.sol";
 
 /// @title ILicensingModule
 interface ILicensingModuleV2 is IModule {
-    event LicenseConfigAttached(
+    event LicenseTermsAttached(
         address indexed caller,
         address indexed ipId,
         address licenseTemplate,
-        uint256 licenseId
+        uint256 licenseTermsId
     );
 
     event LicenseTokensMinted(
         address indexed caller,
         address indexed originalIpId,
         address licenseTemplate,
-        uint256 indexed licenseId,
+        uint256 indexed licenseTermsId,
         uint256 amount,
         address receiver,
         uint256 startLicenseTokenId,
@@ -27,7 +27,7 @@ interface ILicensingModuleV2 is IModule {
         address indexed caller,
         address indexed derivativeIpId,
         address[] originalIpIds,
-        uint256[] licenseConfigIds,
+        uint256[] licenseTermsIds,
         address licenseTemplate
     );
 
@@ -36,16 +36,16 @@ interface ILicensingModuleV2 is IModule {
         address indexed derivativeIpId,
         uint256[] licenseTokenIds,
         address[] originalIpIds,
-        uint256[] licenseConfigIds,
+        uint256[] licenseTermsIds,
         address licenseTemplate
     );
 
-    function attachLicenseConfig(address ipId, address licenseTemplate, uint256 licenseId) external;
+    function attachLicenseTerms(address ipId, address licenseTemplate, uint256 licenseTermsId) external;
 
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseId,
+        uint256 licenseTermsId,
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
@@ -54,7 +54,7 @@ interface ILicensingModuleV2 is IModule {
     function registerDerivative(
         address derivativeIpId,
         address[] calldata originalIpIds,
-        uint256[] calldata licenseIds,
+        uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
     ) external;

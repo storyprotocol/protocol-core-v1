@@ -6,7 +6,7 @@ interface ILicenseNFT {
     struct LicenseTokenMetadata {
         address originalIpId;
         address licenseTemplate;
-        uint256 licenseConfigId;
+        uint256 licenseTermsId;
         bool transferable;
         uint256 mintedAt;
         uint256 expiresAt;
@@ -22,7 +22,7 @@ interface ILicenseNFT {
     function mintLicenseTokens(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
@@ -43,7 +43,7 @@ interface ILicenseNFT {
         address derivativeIpOwner,
         uint256[] calldata tokenIds
     )
-        external
-        view
-        returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseConfigIds);
+    external
+    view
+    returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds);
 }

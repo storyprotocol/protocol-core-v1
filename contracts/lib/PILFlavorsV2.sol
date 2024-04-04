@@ -14,33 +14,33 @@ library PILFlavorsV2 {
         return _defaultPIL();
     }
 
-    /// @notice Helper method to get licenseConfigId for the defaultValuesPolicy() configuration
+    /// @notice Helper method to get licenseTermsId for the defaultValuesPolicy() configuration
     /// @param pilTemplate The address of the PILicenseTemplate
-    /// @return The licenseConfigId for the defaultValuesPolicy() configuration, 0 if not registered
-    function getDefaultValuesLicenseConfigId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
+    /// @return The licenseTermsId for the defaultValuesPolicy() configuration, 0 if not registered
+    function getDefaultValuesLicenseTermsId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
         return pilTemplate.getLicenseTermsId(_defaultPIL());
     }
 
-    /// @notice Gets the values to create a Non Commercial Social Remix licenseConfig flavor, as described in:
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
     /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-1-non-commercial-social-remixing
-    /// @return The input struct for PILicenseTemplate.registerLicenseConfig()
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
     function nonCommercialSocialRemixing() internal returns (PILTerms memory) {
         return _nonComSocialRemixingPIL();
     }
 
-    /// @notice Helper method to get the licenseConfigId for the nonCommercialSocialRemixing() configuration
+    /// @notice Helper method to get the licenseTermsId for the nonCommercialSocialRemixing() configuration
     /// @param pilTemplate The address of the PILicenseTemplate
-    /// @return The licenseConfigId for the nonCommercialSocialRemixing() configuration, 0 if not registered
+    /// @return The licenseTermsId for the nonCommercialSocialRemixing() configuration, 0 if not registered
     function getNonCommercialSocialRemixingId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
         return pilTemplate.getLicenseTermsId(_nonComSocialRemixingPIL());
     }
 
-    /// @notice Gets the values to create a Non Commercial Social Remix licenseConfig flavor, as described in:
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
     /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-2-commercial-use
     /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
     /// @param currencyToken The token to be used to pay the minting fee
-    /// @param royaltyPolicy The address of the royalty licenseConfig to be used by the license template.
-    /// @return The input struct for PILicenseTemplate.registerLicenseConfig()
+    /// @param royaltyPolicy The address of the royalty licenseTerms to be used by the license template.
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
     function commercialUse(
         uint256 mintingFee,
         address currencyToken,
@@ -49,10 +49,10 @@ library PILFlavorsV2 {
         return _commercialUsePIL(mintingFee, currencyToken, royaltyPolicy);
     }
 
-    /// @notice Helper method to get the licenseConfigId for the commercialUse() configuration
+    /// @notice Helper method to get the licenseTermsId for the commercialUse() configuration
     /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
     /// @param currencyToken The token to be used to pay the minting fee
-    /// @return The licenseConfigId for the commercialUse() configuration, 0 if not registered
+    /// @return The licenseTermsId for the commercialUse() configuration, 0 if not registered
     function getCommercialUseId(
         IPILicenseTemplate pilTemplate,
         uint256 mintingFee,
@@ -62,22 +62,22 @@ library PILFlavorsV2 {
         return pilTemplate.getLicenseTermsId(_commercialUsePIL(mintingFee, currencyToken, royaltyPolicy));
     }
 
-    /// @notice Gets the values to create a Commercial Remixing licenseConfig flavor, as described in:
+    /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor, as described in:
     /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-3-commercial-remix
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share
     /// with the original creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
-    /// @return The input struct for PILicenseTemplate.registerLicenseConfig()
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
     function commercialRemix(uint32 commercialRevShare, address royaltyPolicy) internal pure returns (PILTerms memory) {
         return _commercialRemixPIL(commercialRevShare, royaltyPolicy);
     }
 
-    /// @notice Helper method to get the licenseConfigId for the commercialRemix() configuration from LicensingModule
+    /// @notice Helper method to get the licenseTermsId for the commercialRemix() configuration from LicensingModule
     /// @param pilTemplate The address of the PILicenseTemplate
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share with the
     /// original creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
-    /// @return The licenseConfigId for the commercialRemix() configuration, 0 if not registered
+    /// @return The licenseTermsId for the commercialRemix() configuration, 0 if not registered
     function getCommercialRemixId(
         IPILicenseTemplate pilTemplate,
         uint32 commercialRevShare,
@@ -90,49 +90,49 @@ library PILFlavorsV2 {
     function _defaultPIL() private pure returns (PILTerms memory) {
         return
             PILTerms({
-                transferable: true,
-                royaltyPolicy: address(0),
-                mintingFee: 0,
-                expiration: 0,
-                commercialUse: false,
-                commercialAttribution: false,
-                commercializerChecker: address(0),
-                commercializerCheckerData: EMPTY_BYTES,
-                commercialRevShare: 0,
-                commercialRevCelling: 0,
-                derivativesAllowed: false,
-                derivativesAttribution: false,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                derivativeRevCelling: 0,
-                currency: address(0)
-            });
+            transferable: true,
+            royaltyPolicy: address(0),
+            mintingFee: 0,
+            expiration: 0,
+            commercialUse: false,
+            commercialAttribution: false,
+            commercializerChecker: address(0),
+            commercializerCheckerData: EMPTY_BYTES,
+            commercialRevShare: 0,
+            commercialRevCelling: 0,
+            derivativesAllowed: false,
+            derivativesAttribution: false,
+            derivativesApproval: false,
+            derivativesReciprocal: false,
+            derivativeRevCelling: 0,
+            currency: address(0)
+        });
     }
 
-    /// @notice Gets the values to create a Non Commercial Social Remix licenseConfig flavor
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor
     function _nonComSocialRemixingPIL() private pure returns (PILTerms memory) {
         return
             PILTerms({
-                transferable: true,
-                royaltyPolicy: address(0),
-                mintingFee: 0,
-                expiration: 0,
-                commercialUse: false,
-                commercialAttribution: false,
-                commercializerChecker: address(0),
-                commercializerCheckerData: EMPTY_BYTES,
-                commercialRevShare: 0,
-                commercialRevCelling: 0,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: true,
-                derivativeRevCelling: 0,
-                currency: address(0)
-            });
+            transferable: true,
+            royaltyPolicy: address(0),
+            mintingFee: 0,
+            expiration: 0,
+            commercialUse: false,
+            commercialAttribution: false,
+            commercializerChecker: address(0),
+            commercializerCheckerData: EMPTY_BYTES,
+            commercialRevShare: 0,
+            commercialRevCelling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: true,
+            derivativeRevCelling: 0,
+            currency: address(0)
+        });
     }
 
-    /// @notice Gets the values to create a Commercial Use licenseConfig flavor
+    /// @notice Gets the values to create a Commercial Use licenseTerms flavor
     function _commercialUsePIL(
         uint256 mintingFee,
         address currencyToken,
@@ -140,48 +140,48 @@ library PILFlavorsV2 {
     ) private pure returns (PILTerms memory) {
         return
             PILTerms({
-                transferable: true,
-                royaltyPolicy: royaltyPolicy,
-                mintingFee: mintingFee,
-                expiration: 0,
-                commercialUse: true,
-                commercialAttribution: true,
-                commercializerChecker: address(0),
-                commercializerCheckerData: EMPTY_BYTES,
-                commercialRevShare: 0,
-                commercialRevCelling: 0,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                derivativeRevCelling: 0,
-                currency: currencyToken
-            });
+            transferable: true,
+            royaltyPolicy: royaltyPolicy,
+            mintingFee: mintingFee,
+            expiration: 0,
+            commercialUse: true,
+            commercialAttribution: true,
+            commercializerChecker: address(0),
+            commercializerCheckerData: EMPTY_BYTES,
+            commercialRevShare: 0,
+            commercialRevCelling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: false,
+            derivativeRevCelling: 0,
+            currency: currencyToken
+        });
     }
 
-    /// @notice Gets the values to create a Commercial Remixing licenseConfig flavor
+    /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor
     function _commercialRemixPIL(
         uint32 commercialRevShare,
         address royaltyPolicy
     ) private pure returns (PILTerms memory) {
         return
             PILTerms({
-                transferable: true,
-                royaltyPolicy: royaltyPolicy,
-                mintingFee: 0,
-                expiration: 0,
-                commercialUse: true,
-                commercialAttribution: true,
-                commercializerChecker: address(0),
-                commercializerCheckerData: EMPTY_BYTES,
-                commercialRevShare: commercialRevShare,
-                commercialRevCelling: 0,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: true,
-                derivativeRevCelling: 0,
-                currency: address(0)
-            });
+            transferable: true,
+            royaltyPolicy: royaltyPolicy,
+            mintingFee: 0,
+            expiration: 0,
+            commercialUse: true,
+            commercialAttribution: true,
+            commercializerChecker: address(0),
+            commercializerCheckerData: EMPTY_BYTES,
+            commercialRevShare: commercialRevShare,
+            commercialRevCelling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: true,
+            derivativeRevCelling: 0,
+            currency: address(0)
+        });
     }
 }

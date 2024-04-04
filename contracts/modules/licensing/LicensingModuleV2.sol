@@ -100,20 +100,20 @@ contract LicensingModuleV2 is
         __GovernableUpgradeable_init(governance);
     }
 
-    function attachLicenseConfig(
+    function attachLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external verifyPermission(ipId) {
         _verifyIpNotDisputed(ipId);
-        LICENSE_REGISTRY.attachLicenseConfigToIp(ipId, licenseTemplate, licenseConfigId);
-        emit LicenseConfigAttached(msg.sender, ipId, licenseTemplate, licenseConfigId);
+        LICENSE_REGISTRY.attachLicenseTermsToIp(ipId, licenseTemplate, licenseTermsId);
+        emit LicenseTermsAttached(msg.sender, ipId, licenseTemplate, licenseTermsId);
     }
 
     function mintLicenseTokens(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
@@ -130,7 +130,7 @@ contract LicensingModuleV2 is
         Licensing.MintingLicenseSpec memory mlc = LICENSE_REGISTRY.verifyMintLicenseToken(
             originalIpId,
             licenseTemplate,
-            licenseConfigId,
+            licenseTermsId,
             _hasPermission(originalIpId)
         );
         if (mlc.receiverCheckModule != address(0)) {
@@ -139,14 +139,14 @@ contract LicensingModuleV2 is
             }
         }
 
-        _payMintingFee(originalIpId, licenseTemplate, licenseConfigId, amount, royaltyContext, mlc);
+        _payMintingFee(originalIpId, licenseTemplate, licenseTermsId, amount, royaltyContext, mlc);
 
-        ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseConfigId, receiver, originalIpId, amount);
+        ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, originalIpId, amount);
 
         (startLicenseTokenId, endLicenseTokenId) = LICENSE_NFT.mintLicenseTokens(
             originalIpId,
             licenseTemplate,
-            licenseConfigId,
+            licenseTermsId,
             amount,
             msg.sender,
             receiver
@@ -156,7 +156,7 @@ contract LicensingModuleV2 is
             msg.sender,
             originalIpId,
             licenseTemplate,
-            licenseConfigId,
+            licenseTermsId,
             amount,
             receiver,
             startLicenseTokenId,
@@ -167,12 +167,12 @@ contract LicensingModuleV2 is
     function registerDerivative(
         address derivativeIpId,
         address[] calldata originalIpIds,
-        uint256[] calldata licenseConfigIds,
+        uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
     ) external nonReentrant verifyPermission(derivativeIpId) {
-        if (originalIpIds.length != licenseConfigIds.length) {
-            revert Errors.LicensingModule__LicenseConfigLengthMismatch(originalIpIds.length, licenseConfigIds.length);
+        if (originalIpIds.length != licenseTermsIds.length) {
+            revert Errors.LicensingModule__LicenseTermsLengthMismatch(originalIpIds.length, licenseTermsIds.length);
         }
         if (originalIpIds.length == 0) {
             revert Errors.LicensingModule__NoOriginalIp();
@@ -182,21 +182,21 @@ contract LicensingModuleV2 is
 
         address derivativeIpOwner = IIPAccount(payable(derivativeIpId)).owner();
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!lct.verifyRegisterDerivativeForAll(derivativeIpId, originalIpIds, licenseConfigIds, derivativeIpOwner)) {
+        if (!lct.verifyRegisterDerivativeForAll(derivativeIpId, originalIpIds, licenseTermsIds, derivativeIpOwner)) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(derivativeIpId);
         }
 
-        LICENSE_REGISTRY.registerDerivativeIp(derivativeIpId, originalIpIds, licenseTemplate, licenseConfigIds);
+        LICENSE_REGISTRY.registerDerivativeIp(derivativeIpId, originalIpIds, licenseTemplate, licenseTermsIds);
         // pay minting fee
         (address commonRoyaltyPolicy, bytes[] memory royaltyDatas) = _payMintingFeeForAll(
             originalIpIds,
-            licenseConfigIds,
+            licenseTermsIds,
             licenseTemplate,
             derivativeIpOwner,
             royaltyContext
         );
         // emit event
-        emit DerivativeRegistered(msg.sender, derivativeIpId, originalIpIds, licenseConfigIds, licenseTemplate);
+        emit DerivativeRegistered(msg.sender, derivativeIpId, originalIpIds, licenseTermsIds, licenseTemplate);
 
         if (commonRoyaltyPolicy != address(0)) {
             ROYALTY_MODULE.onLinkToParents(
@@ -219,22 +219,22 @@ contract LicensingModuleV2 is
         }
 
         address derivativeIpOwner = IIPAccount(payable(derivativeIpId)).owner();
-        (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseConfigIds) = LICENSE_NFT
+        (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds) = LICENSE_NFT
             .validateLicenseTokensForDerivative(derivativeIpId, derivativeIpOwner, licenseTokenIds);
 
         _verifyIpNotDisputed(derivativeIpId);
 
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!lct.verifyRegisterDerivativeForAll(derivativeIpId, originalIpIds, licenseConfigIds, derivativeIpOwner)) {
+        if (!lct.verifyRegisterDerivativeForAll(derivativeIpId, originalIpIds, licenseTermsIds, derivativeIpOwner)) {
             revert Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative(derivativeIpId, licenseTokenIds);
         }
 
-        LICENSE_REGISTRY.registerDerivativeIp(derivativeIpId, originalIpIds, licenseTemplate, licenseConfigIds);
+        LICENSE_REGISTRY.registerDerivativeIp(derivativeIpId, originalIpIds, licenseTemplate, licenseTermsIds);
 
         address commonRoyaltyPolicy = address(0);
         bytes[] memory royaltyDatas = new bytes[](originalIpIds.length);
         for (uint256 i = 0; i < originalIpIds.length; i++) {
-            (address royaltyPolicy, bytes memory royaltyData, , ) = lct.getRoyaltyPolicy(licenseConfigIds[i]);
+            (address royaltyPolicy, bytes memory royaltyData, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
             royaltyDatas[i] = royaltyData;
             if (i == 0) {
                 commonRoyaltyPolicy = royaltyPolicy;
@@ -259,23 +259,23 @@ contract LicensingModuleV2 is
             derivativeIpId,
             licenseTokenIds,
             originalIpIds,
-            licenseConfigIds,
+            licenseTermsIds,
             licenseTemplate
         );
     }
 
     function _payMintingFeeForAll(
         address[] calldata originalIpIds,
-        uint256[] calldata licenseConfigIds,
+        uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         address derivativeIpOwner,
         bytes calldata royaltyContext
     ) private returns (address commonRoyaltyPolicy, bytes[] memory royaltyDatas) {
         commonRoyaltyPolicy = address(0);
-        royaltyDatas = new bytes[](licenseConfigIds.length);
+        royaltyDatas = new bytes[](licenseTermsIds.length);
 
         for (uint256 i = 0; i < originalIpIds.length; i++) {
-            uint256 lcId = licenseConfigIds[i];
+            uint256 lcId = licenseTermsIds[i];
             Licensing.MintingLicenseSpec memory mlc = LICENSE_REGISTRY.getMintingLicenseSpec(
                 originalIpIds[i],
                 licenseTemplate,
@@ -307,7 +307,7 @@ contract LicensingModuleV2 is
     function _payMintingFee(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         uint256 amount,
         bytes calldata royaltyContext,
         Licensing.MintingLicenseSpec memory mlc
@@ -315,11 +315,11 @@ contract LicensingModuleV2 is
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         uint256 mintingFee = 0;
         address currencyToken = address(0);
-        (royaltyPolicy, royaltyData, mintingFee, currencyToken) = lct.getRoyaltyPolicy(licenseConfigId);
+        (royaltyPolicy, royaltyData, mintingFee, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
 
         if (royaltyPolicy != address(0)) {
             ROYALTY_MODULE.onLicenseMinting(originalIpId, royaltyPolicy, royaltyData, royaltyContext);
-            uint256 tmf = _getTotalMintingFee(mlc, originalIpId, licenseTemplate, licenseConfigId, mintingFee, amount);
+            uint256 tmf = _getTotalMintingFee(mlc, originalIpId, licenseTemplate, licenseTermsId, mintingFee, amount);
             // pay minting fee
             if (tmf > 0) {
                 ROYALTY_MODULE.payLicenseMintingFee(originalIpId, msg.sender, royaltyPolicy, currencyToken, tmf);
@@ -331,17 +331,17 @@ contract LicensingModuleV2 is
         Licensing.MintingLicenseSpec memory mintingLicenseSpec,
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
-        uint256 mintingFeeFromLicenseConfig,
+        uint256 licenseTermsId,
+        uint256 mintingFeeSetByLicenseTerms,
         uint256 amount
     ) private view returns (uint256) {
-        if (!mintingLicenseSpec.isSet) return mintingFeeFromLicenseConfig * amount;
+        if (!mintingLicenseSpec.isSet) return mintingFeeSetByLicenseTerms * amount;
         if (mintingLicenseSpec.mintingFeeModule == address(0)) return mintingLicenseSpec.mintingFee * amount;
         return
             IMintingFeeModule(mintingLicenseSpec.mintingFeeModule).getTotalMintingFee(
                 licensorIpId,
                 licenseTemplate,
-                licenseConfigId,
+                licenseTermsId,
                 amount
             );
     }

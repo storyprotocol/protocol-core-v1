@@ -5,27 +5,20 @@ import { Licensing } from "../../lib/Licensing.sol";
 
 /// @title ILicenseRegistry
 interface ILicenseRegistryV2 {
-    struct LicenseStatus {
-        bool attached;
-        bool active;
-        address licenseTemplate;
-        uint256 expireTime;
-    }
-
     event LicenseTemplateRegistered(address indexed licenseTemplate);
     event RoyaltyPolicyRegistered(address indexed royaltyPolicy);
     event CurrencyTokenRegistered(address indexed token);
     event MintingLicenseSpecSet(
         address indexed ipId,
         address indexed licenseTemplate,
-        uint256 indexed licenseConfigId,
+        uint256 indexed licenseTermsId,
         Licensing.MintingLicenseSpec mintingLicenseSpec
     );
     event MintingLicenseSpecSetForAll(address indexed ipId, Licensing.MintingLicenseSpec mintingLicenseSpec);
     event ExpireTimeSet(address indexed ipId, uint256 expireTime);
 
-    function setDefaultLicenseConfig(address newLicenseTemplate, uint256 newLicenseConfigId) external;
-    function getDefaultLicenseConfig() external view returns (address licenseTemplate, uint256 licenseConfigId);
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external;
+    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);
 
     function registerLicenseTemplate(address licenseTemplate) external;
     function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool);
@@ -40,7 +33,7 @@ interface ILicenseRegistryV2 {
         address ipId,
         address[] calldata originalIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseConfigIds
+        uint256[] calldata licenseTermsIds
     ) external;
     function isDerivativeIp(address ipId) external view returns (bool);
     function hasDerivativeIps(address ipId) external view returns (bool);
@@ -48,33 +41,33 @@ interface ILicenseRegistryV2 {
     function verifyMintLicenseToken(
         address originalIpId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.MintingLicenseSpec memory);
 
-    function attachLicenseConfigToIp(address ipId, address licenseTemplate, uint256 licenseConfigIds) external;
-    function existsLicenseConfig(address licenseTemplate, uint256 licenseConfigId) external view returns (bool);
-    function hasIpAttachedLicenseConfig(
+    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint256 licenseTermsIds) external;
+    function existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
+    function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external view returns (bool);
-    function getAttachedLicenseConfig(
+    function getAttachedLicenseTerms(
         address ipId,
         uint256 index
-    ) external view returns (address licenseTemplate, uint256 licenseConfigId);
-    function getAttachedLicenseConfigCount(address ipId) external view returns (uint256);
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId);
+    function getAttachedLicenseTermsCount(address ipId) external view returns (uint256);
 
     function getMintingLicenseSpec(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     ) external view returns (Licensing.MintingLicenseSpec memory);
 
     function setMintingLicenseSpec(
         address ipId,
         address licenseTemplate,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         Licensing.MintingLicenseSpec calldata mintingLicenseSpec
     ) external;
 

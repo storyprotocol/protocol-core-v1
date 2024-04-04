@@ -18,7 +18,7 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
     // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
     // & ~bytes32(uint256(0xff));
     bytes32 private constant BaseLicenseTemplateStorageLocation =
-        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+    0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -26,19 +26,19 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
     }
 
     /// @notice initializer for this implementation contract
-    /// @param _name The name of the policy framework manager
-    /// @param _metadataURI The URL to the off chain legal agreement template text
+    /// @param _name The name of the license template
+    /// @param _metadataURI The URL to the off chain metadata
     function __BaseLicenseTemplate_init(string memory _name, string memory _metadataURI) internal onlyInitializing {
         _getBaseLicenseTemplateStorage().name = _name;
         _getBaseLicenseTemplateStorage().metadataURI = _metadataURI;
     }
 
-    /// @notice Returns the name of the policy framework manager
+    /// @notice Returns the name of the license template
     function name() public view override returns (string memory) {
         return _getBaseLicenseTemplateStorage().name;
     }
 
-    /// @notice Returns the URL to the off chain legal agreement template text
+    /// @notice Returns the URL to the off chain metadata
     function getMetadataURI() public view override returns (string memory) {
         return _getBaseLicenseTemplateStorage().metadataURI;
     }

@@ -133,8 +133,8 @@ library Errors {
     error LicenseRegistry__NotLicenseTemplate(address licenseTemplate);
     error LicenseRegistry__IpExpired(address ipId);
     error LicenseRegistry__OriginalIpExpired(address ipId);
-    error LicenseRegistry__LicenseConfigNotExists(address licenseTemplate, uint256 licenseConfigId);
-    error LicenseRegistry__OriginalIpHasNoLicenseConfig(address ipId, uint256 licenseConfigId);
+    error LicenseRegistry__LicenseTermsNotExists(address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__OriginalIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
     error LicenseRegistry__NoOriginalIp();
     error LicenseRegistry__DerivativeIpAlreadyHasLicense(address derivativeIpId);
     error LicenseRegistry__DerivativeAlreadyRegistered(address derivativeIpId);
@@ -197,21 +197,21 @@ library Errors {
     error LicensingModule__DisputedIpId();
     /// @notice emitted when linking a license from a licensor that has been disputed in the DisputeModule
     error LicensingModule__LinkingRevokedLicense();
-    error LicensingModule__LicenseConfigNotFound(address licenseTemplate, uint256 licenseConfigId);
-    error LicensingModule__DerivativesCannotAddLicenseConfig();
-    error LicensingModule__CallerNotLicensorAndIpHasNotAttachedLicenseConfig(
+    error LicensingModule__LicenseTermsNotFound(address licenseTemplate, uint256 licenseTermsId);
+    error LicensingModule__DerivativesCannotAddLicenseTerms();
+    error LicensingModule__CallerNotLicensorAndIpHasNotAttachedLicenseTerms(
         address caller,
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseConfigId
+        uint256 licenseTermsId
     );
     error LicensingModule__ReceiverCheckFailed(address receiver);
     error LicensingModule__DerivativeAlreadyRegistered();
-    error LicensingModule__LicenseConfigLengthMismatch(uint256 ipLength, uint256 licenseConfigLength);
+    error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);
     error LicensingModule__NoOriginalIp();
     error LicensingModule__DerivativeIsOriginal();
-    error LicensingModule__OriginalIpHasNoLicenseConfig(address ipId);
-    error LicensingModule__DerivativeAlreadyHasLicenseConfig(address ipId);
+    error LicensingModule__OriginalIpHasNoLicenseTerms(address ipId);
+    error LicensingModule__DerivativeAlreadyHasLicenseTerms(address ipId);
     error LicensingModule__IncompatibleRoyaltyPolicy(address royaltyPolicy, address anotherRoyaltyPolicy);
     error LicensingModule__LicenseNotCompatibleForDerivative(address derivativeIpId);
     error LicensingModule__NoLicenseToken();

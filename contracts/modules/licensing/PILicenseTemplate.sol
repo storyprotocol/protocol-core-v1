@@ -28,9 +28,9 @@ contract PILicenseTemplate is
 
     /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
     struct PILicenseTemplateStorage {
-        mapping(uint256 licenseConfigId => PILTerms) licenseConfigs;
-        mapping(bytes32 licenseConfigHash => uint256 licenseConfigId) hashedLicenseConfigs;
-        uint256 licenseConfigCounter;
+        mapping(uint256 licenseTermsId => PILTerms) licenseTerms;
+        mapping(bytes32 licenseTermsHash => uint256 licenseTermsId) hashedLicenseTerms;
+        uint256 licenseTermsCounter;
     }
 
     ILicenseRegistryV2 public immutable LICENSE_REGISTRY;
@@ -75,34 +75,34 @@ contract PILicenseTemplate is
 
         bytes32 hashedLicense = keccak256(abi.encode(terms));
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        id = $.hashedLicenseConfigs[hashedLicense];
+        id = $.hashedLicenseTerms[hashedLicense];
         if (id != 0) {
             return id;
         }
-        id = ++$.licenseConfigCounter;
-        $.licenseConfigs[id] = terms;
-        $.hashedLicenseConfigs[hashedLicense] = id;
+        id = ++$.licenseTermsCounter;
+        $.licenseTerms[id] = terms;
+        $.hashedLicenseTerms[hashedLicense] = id;
 
-        emit LicenseConfigRegistered(id, address(this), abi.encode(terms));
+        emit LicenseTermsRegistered(id, address(this), abi.encode(terms));
     }
 
-    function exists(uint256 licenseConfigId) external view override returns (bool) {
+    function exists(uint256 licenseTermsId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        return licenseConfigId < $.licenseConfigCounter;
+        return licenseTermsId < $.licenseTermsCounter;
     }
 
     function verifyMintLicenseToken(
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         address licensee,
         address licensorIpId,
         uint256 mintAmount
     ) external override nonReentrant returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+        PILTerms memory terms = $.licenseTerms[licenseTermsId];
         // If the policy defines no reciprocal derivatives are allowed (no derivatives of derivatives),
         // and we are mintingFromADerivative we don't allow minting
         if (LICENSE_REGISTRY.isDerivativeIp(licensorIpId)) {
-            if (!LICENSE_REGISTRY.hasIpAttachedLicenseConfig(licensorIpId, address(this), licenseConfigId)) {
+            if (!LICENSE_REGISTRY.hasIpAttachedLicenseTerms(licensorIpId, address(this), licenseTermsId)) {
                 return false;
             }
             if (!terms.derivativesReciprocal) {
@@ -124,27 +124,27 @@ contract PILicenseTemplate is
     function verifyRegisterDerivative(
         address derivativeIpId,
         address originalIpId,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         address licensee
     ) external override returns (bool) {
-        return _verifyRegisterDerivative(derivativeIpId, originalIpId, licenseConfigId, licensee);
+        return _verifyRegisterDerivative(derivativeIpId, originalIpId, licenseTermsId, licensee);
     }
 
-    function verifyCompatibleLicenses(uint256[] calldata licenseConfigIds) external view override returns (bool) {
-        return _verifyCompatibleLicenseTerms(licenseConfigIds);
+    function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view override returns (bool) {
+        return _verifyCompatibleLicenseTerms(licenseTermsIds);
     }
 
     function verifyRegisterDerivativeForAll(
         address derivativeIpId,
         address[] calldata originalIpIds,
-        uint256[] calldata licenseConfigIds,
+        uint256[] calldata licenseTermsIds,
         address derivativeIpOwner
     ) external override returns (bool) {
-        if (!_verifyCompatibleLicenseTerms(licenseConfigIds)) {
+        if (!_verifyCompatibleLicenseTerms(licenseTermsIds)) {
             return false;
         }
-        for (uint256 i = 0; i < licenseConfigIds.length; i++) {
-            if (!_verifyRegisterDerivative(derivativeIpId, originalIpIds[i], licenseConfigIds[i], derivativeIpOwner)) {
+        for (uint256 i = 0; i < licenseTermsIds.length; i++) {
+            if (!_verifyRegisterDerivative(derivativeIpId, originalIpIds[i], licenseTermsIds[i], derivativeIpOwner)) {
                 return false;
             }
         }
@@ -155,25 +155,25 @@ contract PILicenseTemplate is
         uint256 licenseId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        PILTerms memory terms = $.licenseConfigs[licenseId];
+        PILTerms memory terms = $.licenseTerms[licenseId];
         return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
     }
 
     function isTransferable(uint256 licenseId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        return $.licenseConfigs[licenseId].transferable;
+        return $.licenseTerms[licenseId].transferable;
     }
 
     function getEarlierExpireTime(
         uint256 start,
-        uint256[] calldata licenseConfigIds
+        uint256[] calldata licenseTermsIds
     ) external view override returns (uint) {
-        if (licenseConfigIds.length == 0) {
+        if (licenseTermsIds.length == 0) {
             return 0;
         }
-        uint expireTime = _getExpireTime(start, licenseConfigIds[0]);
-        for (uint i = 1; i < licenseConfigIds.length; i++) {
-            uint newExpireTime = _getExpireTime(start, licenseConfigIds[i]);
+        uint expireTime = _getExpireTime(start, licenseTermsIds[0]);
+        for (uint i = 1; i < licenseTermsIds.length; i++) {
+            uint newExpireTime = _getExpireTime(start, licenseTermsIds[i]);
             if (newExpireTime < expireTime) {
                 expireTime = newExpireTime;
             }
@@ -181,19 +181,19 @@ contract PILicenseTemplate is
         return expireTime;
     }
 
-    function getExpireTime(uint256 start, uint256 licenseConfigId) external view returns (uint) {
-        return _getExpireTime(start, licenseConfigId);
+    function getExpireTime(uint256 start, uint256 licenseTermsId) external view returns (uint) {
+        return _getExpireTime(start, licenseTermsId);
     }
 
     function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 licenseTermsId) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         bytes32 licenseTermsHash = keccak256(abi.encode(terms));
-        return $.hashedLicenseConfigs[licenseTermsHash];
+        return $.hashedLicenseTerms[licenseTermsHash];
     }
 
-    function totalRegisteredLicenseConfigs() external view returns (uint256) {
+    function totalRegisteredLicenseTerms() external view returns (uint256) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        return $.licenseConfigCounter;
+        return $.licenseTermsCounter;
     }
 
     function supportsInterface(
@@ -204,9 +204,9 @@ contract PILicenseTemplate is
 
     /// @notice Returns the stringified JSON policy data for the LicenseRegistry.uri(uint256) method.
     /// @dev Must return OpenSea standard compliant metadata.
-    function toJson(uint256 licenseConfigId) public view returns (string memory) {
+    function toJson(uint256 licenseTermsId) public view returns (string memory) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+        PILTerms memory terms = $.licenseTerms[licenseTermsId];
 
         /* solhint-disable */
         // Follows the OpenSea standard for JSON metadata.
@@ -339,11 +339,11 @@ contract PILicenseTemplate is
     function _verifyRegisterDerivative(
         address derivativeIpId,
         address originalIpId,
-        uint256 licenseConfigId,
+        uint256 licenseTermsId,
         address licensee
     ) internal returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+        PILTerms memory terms = $.licenseTerms[licenseTermsId];
 
         if (!terms.derivativesAllowed) {
             return false;
@@ -351,7 +351,7 @@ contract PILicenseTemplate is
 
         // If the policy defines the licensor must approve derivatives, check if the
         // derivative is approved by the licensor
-        if (terms.derivativesApproval && !isDerivativeApproved(licenseConfigId, derivativeIpId)) {
+        if (terms.derivativesApproval && !isDerivativeApproved(licenseTermsId, derivativeIpId)) {
             return false;
         }
         // Check if the commercializerChecker allows the link
@@ -365,16 +365,15 @@ contract PILicenseTemplate is
         return true;
     }
 
-    function _verifyCompatibleLicenseTerms(uint256[] calldata licenseConfigIds) internal view returns (bool) {
-        if (licenseConfigIds.length < 2) {
+    function _verifyCompatibleLicenseTerms(uint256[] calldata licenseTermsIds) internal view returns (bool) {
+        if (licenseTermsIds.length < 2) {
             return true;
         }
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        bool commercial = $.licenseConfigs[licenseConfigIds[0]].commercialUse;
-        bool derivativesReciprocal = $.licenseConfigs[licenseConfigIds[0]].derivativesReciprocal;
-        //TODO: check royalty policy
-        for (uint256 i = 1; i < licenseConfigIds.length; i++) {
-            PILTerms memory terms = $.licenseConfigs[licenseConfigIds[i]];
+        bool commercial = $.licenseTerms[licenseTermsIds[0]].commercialUse;
+        bool derivativesReciprocal = $.licenseTerms[licenseTermsIds[0]].derivativesReciprocal;
+        for (uint256 i = 1; i < licenseTermsIds.length; i++) {
+            PILTerms memory terms = $.licenseTerms[licenseTermsIds[i]];
             if (terms.commercialUse != commercial) {
                 return false;
             }
@@ -385,9 +384,9 @@ contract PILicenseTemplate is
         return true;
     }
 
-    function _getExpireTime(uint256 start, uint256 licenseConfigId) internal view returns (uint) {
+    function _getExpireTime(uint256 start, uint256 licenseTermsId) internal view returns (uint) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+        PILTerms memory terms = $.licenseTerms[licenseTermsId];
         if (terms.expiration == 0) {
             return 0;
         }

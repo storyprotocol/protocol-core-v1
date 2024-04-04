@@ -7,7 +7,7 @@ interface IMintingFeeModule is IModule {
     function getTotalMintingFee(
         address ipId,
         address licenseTemplate,
-        uint256 licenseId,
+        uint256 licenseTermsId,
         uint256 amount
     ) external view returns (uint256);
 }

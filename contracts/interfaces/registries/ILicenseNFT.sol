@@ -42,8 +42,5 @@ interface ILicenseNFT {
         address derivativeIpId,
         address derivativeIpOwner,
         uint256[] calldata tokenIds
-    )
-    external
-    view
-    returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds);
+    ) external view returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds);
 }

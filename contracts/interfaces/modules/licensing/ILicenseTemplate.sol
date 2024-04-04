@@ -60,9 +60,9 @@ interface ILicenseTemplate is IERC165 {
     function getRoyaltyPolicy(
         uint256 licenseTermsId
     )
-    external
-    view
-    returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingLicenseFee, address currencyToken);
+        external
+        view
+        returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingLicenseFee, address currencyToken);
 
     /// @notice Verifies the minting of a license token.
     /// @param licenseTermsId The ID of the license terms.

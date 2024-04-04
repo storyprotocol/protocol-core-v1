@@ -90,46 +90,46 @@ library PILFlavorsV2 {
     function _defaultPIL() private pure returns (PILTerms memory) {
         return
             PILTerms({
-            transferable: true,
-            royaltyPolicy: address(0),
-            mintingFee: 0,
-            expiration: 0,
-            commercialUse: false,
-            commercialAttribution: false,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: 0,
-            commercialRevCelling: 0,
-            derivativesAllowed: false,
-            derivativesAttribution: false,
-            derivativesApproval: false,
-            derivativesReciprocal: false,
-            derivativeRevCelling: 0,
-            currency: address(0)
-        });
+                transferable: true,
+                royaltyPolicy: address(0),
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: false,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCelling: 0,
+                currency: address(0)
+            });
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor
     function _nonComSocialRemixingPIL() private pure returns (PILTerms memory) {
         return
             PILTerms({
-            transferable: true,
-            royaltyPolicy: address(0),
-            mintingFee: 0,
-            expiration: 0,
-            commercialUse: false,
-            commercialAttribution: false,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: 0,
-            commercialRevCelling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: true,
-            derivativeRevCelling: 0,
-            currency: address(0)
-        });
+                transferable: true,
+                royaltyPolicy: address(0),
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCelling: 0,
+                currency: address(0)
+            });
     }
 
     /// @notice Gets the values to create a Commercial Use licenseTerms flavor
@@ -140,23 +140,23 @@ library PILFlavorsV2 {
     ) private pure returns (PILTerms memory) {
         return
             PILTerms({
-            transferable: true,
-            royaltyPolicy: royaltyPolicy,
-            mintingFee: mintingFee,
-            expiration: 0,
-            commercialUse: true,
-            commercialAttribution: true,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: 0,
-            commercialRevCelling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: false,
-            derivativeRevCelling: 0,
-            currency: currencyToken
-        });
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                mintingFee: mintingFee,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCelling: 0,
+                currency: currencyToken
+            });
     }
 
     /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor
@@ -166,22 +166,22 @@ library PILFlavorsV2 {
     ) private pure returns (PILTerms memory) {
         return
             PILTerms({
-            transferable: true,
-            royaltyPolicy: royaltyPolicy,
-            mintingFee: 0,
-            expiration: 0,
-            commercialUse: true,
-            commercialAttribution: true,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: commercialRevShare,
-            commercialRevCelling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: true,
-            derivativeRevCelling: 0,
-            currency: address(0)
-        });
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: commercialRevShare,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCelling: 0,
+                currency: address(0)
+            });
     }
 }

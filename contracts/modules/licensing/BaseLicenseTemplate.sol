@@ -18,7 +18,7 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
     // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
     // & ~bytes32(uint256(0xff));
     bytes32 private constant BaseLicenseTemplateStorageLocation =
-    0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {

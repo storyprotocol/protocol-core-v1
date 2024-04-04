@@ -34,4 +34,12 @@ library Licensing {
         bool transferable;
         // TODO: support for transfer hooks
     }
+
+    struct MintingLicenseSpec {
+        bool isSet;
+        uint256 mintingFee;
+        address mintingFeeModule;
+        address receiverCheckModule;
+        bytes receiverCheckData;
+    }
 }

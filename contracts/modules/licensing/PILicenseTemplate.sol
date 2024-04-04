@@ -4,47 +4,51 @@ pragma solidity 0.8.23;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
-import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
-import { Licensing } from "../../lib/Licensing.sol";
-import { Errors } from "../../lib/Errors.sol";
-import { PILFrameworkErrors } from "../../lib/PILFrameworkErrors.sol";
-import { IPILicenseTemplate, License } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { ILicenseRegistryV2 } from "../../interfaces/registries/ILicenseRegistryV2.sol";
+import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
+import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplate } from "../../modules/licensing/BaseLicenseTemplate.sol";
-import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
-import {ISupportRoyalty} from "../../interfaces/modules/licensing/ISupportRoyaltyPolicy.sol";
+import { LicensorApprovalCheckerV2 } from "../../modules/licensing/parameter-helpers/LicensorApprovalCheckerV2.sol";
 
 /// @title PILicenseTemplate
-/// @notice PIL Policy Framework Manager implements the PIL Policy Framework logic for encoding and decoding PIL
-/// policies into the LicenseRegistry and verifying the licensing parameters for linking, minting, and transferring.
 contract PILicenseTemplate is
     BaseLicenseTemplate,
     IPILicenseTemplate,
-ISupportRoyalty,
-    LicensorApprovalChecker,
+    LicensorApprovalCheckerV2,
     ReentrancyGuardUpgradeable
 {
     using ERC165Checker for address;
     using Strings for *;
 
-    mapping(uint256 licenseId => License) public licenses;
-    mapping(bytes32 licenseHash => uint256 licenseId) public hashedLicenses;
-    uint256 public licenseCounter;
+    /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
+    struct PILicenseTemplateStorage {
+        mapping(uint256 licenseConfigId => PILTerms) licenseConfigs;
+        mapping(bytes32 licenseConfigHash => uint256 licenseConfigId) hashedLicenseConfigs;
+        uint256 licenseConfigCounter;
+    }
 
-    /// Constructor
-    /// @param accessController the address of the AccessController
-    /// @param ipAccountRegistry the address of the IPAccountRegistry
-    /// @param licensing the address of the LicensingModule
+    ILicenseRegistryV2 public immutable LICENSE_REGISTRY;
+
+    // TODO: update storage location
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
+    // & ~bytes32(uint256(0xff));
+    bytes32 private constant PILicenseTemplateStorageLocation =
+        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAccountRegistry,
-        address licenseRegistry
-    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseRegistry) {
+        address licenseRegistry,
+        address licenseNFT
+    ) LicensorApprovalCheckerV2(accessController, ipAccountRegistry, licenseNFT) {
+        LICENSE_REGISTRY = ILicenseRegistryV2(licenseRegistry);
         _disableInitializers();
     }
 
@@ -53,64 +57,63 @@ ISupportRoyalty,
         __ReentrancyGuard_init();
     }
 
-    function registerLicense(License calldata license) external nonReentrant returns (uint256 licenseId) {
-        if (
-            license.royaltyPolicy != address(0) && !LICENSE_REGISTRY.isWhitelistedRoyaltyPolicy(license.royaltyPolicy)
-        ) {
-            revert Errors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
+    function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint256 id) {
+        if (terms.royaltyPolicy != address(0) && !LICENSE_REGISTRY.isRegisteredRoyaltyPolicy(terms.royaltyPolicy)) {
+            revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
         }
 
-        if (license.currency != address(0) && !LICENSE_REGISTRY.isWhitelistedToken(license.currency)) {
-            revert Errors.PILicenseTemplate__CurrencyTokenNotWhitelisted();
+        if (terms.currency != address(0) && !LICENSE_REGISTRY.isRegisteredCurrencyToken(terms.currency)) {
+            revert PILicenseTemplateErrors.PILicenseTemplate__CurrencyTokenNotWhitelisted();
         }
 
-        if (license.royaltyPolicy != address(0) && license.currency == address(0)) {
-            revert Errors.PILicenseTemplate__RoyaltyPolicyRequiresCurrency();
+        if (terms.royaltyPolicy != address(0) && terms.currency == address(0)) {
+            revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyRequiresCurrencyToken();
         }
 
-        _verifyCommercialUse(license);
-        _verifyDerivatives(license);
-        bytes32 hashedLicense = keccak256(abi.encode(license));
-        licenseId = hashedLicenses[hashedLicense];
-        if (licenseId != 0) {
-            return licenseId;
-        }
-        licenseId = licenseCounter++;
-        licenses[licenseId] = license;
-        hashedLicenses[hashedLicense] = licenseId;
+        _verifyCommercialUse(terms);
+        _verifyDerivatives(terms);
 
-        emit LicenseRegistered(licenseId, address(this), abi.encode(license));
+        bytes32 hashedLicense = keccak256(abi.encode(terms));
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        id = $.hashedLicenseConfigs[hashedLicense];
+        if (id != 0) {
+            return id;
+        }
+        id = ++$.licenseConfigCounter;
+        $.licenseConfigs[id] = terms;
+        $.hashedLicenseConfigs[hashedLicense] = id;
+
+        emit LicenseConfigRegistered(id, address(this), abi.encode(terms));
     }
 
-    function exists(uint256 licenseId) external view override returns (bool) {
-        return licenseId < licenseCounter;
+    function exists(uint256 licenseConfigId) external view override returns (bool) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        return licenseConfigId < $.licenseConfigCounter;
     }
 
     function verifyMintLicenseToken(
-        uint256 licenseId,
+        uint256 licenseConfigId,
         address licensee,
         address licensorIpId,
         uint256 mintAmount
-    ) external view override nonReentrant returns (bool) {
-        License memory license = licenses[licenseId];
+    ) external override nonReentrant returns (bool) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
         // If the policy defines no reciprocal derivatives are allowed (no derivatives of derivatives),
         // and we are mintingFromADerivative we don't allow minting
         if (LICENSE_REGISTRY.isDerivativeIp(licensorIpId)) {
-            if (!LICENSE_REGISTRY.hasIpAttachedLicense(licensorIpId, address(this), licenseId)) {
+            if (!LICENSE_REGISTRY.hasIpAttachedLicenseConfig(licensorIpId, address(this), licenseConfigId)) {
                 return false;
             }
-            if (!license.derivativesReciprocal) {
+            if (!terms.derivativesReciprocal) {
                 return false;
             }
-        }
-        if (!license.derivativesReciprocal && ) {
-            return false;
         }
 
-        if (license.commercializerChecker != address(0)) {
+        if (terms.commercializerChecker != address(0)) {
             // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
             // when the policy was registered.
-            if (!IHookModule(license.commercializerChecker).verify(licensee, license.commercializerCheckerData)) {
+            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
                 return false;
             }
         }
@@ -119,47 +122,29 @@ ISupportRoyalty,
     }
 
     function verifyRegisterDerivative(
-        uint256 licenseId,
-        address licensee,
         address derivativeIpId,
-        address originalIpId
-    ) external view override returns (bool) {
-        License memory license = licenses[licenseId];
-
-        // Trying to burn a license to create a derivative, when the license doesn't allow derivatives.
-        if (!license.derivativesAllowed) {
-            return false;
-        }
-
-        // If the policy defines the licensor must approve derivatives, check if the
-        // derivative is approved by the licensor
-        if (license.derivativesApproval && !isDerivativeApproved(licenseId, derivativeIpId)) {
-            return false;
-        }
-        // Check if the commercializerChecker allows the link
-        if (license.commercializerChecker != address(0)) {
-            // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
-            // when the policy was registered.
-            if (!IHookModule(license.commercializerChecker).verify(licensee, license.commercializerCheckerData)) {
-                return false;
-            }
-        }
-        return true;
+        address originalIpId,
+        uint256 licenseConfigId,
+        address licensee
+    ) external override returns (bool) {
+        return _verifyRegisterDerivative(derivativeIpId, originalIpId, licenseConfigId, licensee);
     }
 
-    function verifyCompatibleLicenses(uint256[] calldata licenseIds) external view override returns (bool) {
-        if (licenseIds.length < 2) {
-            return true;
+    function verifyCompatibleLicenses(uint256[] calldata licenseConfigIds) external view override returns (bool) {
+        return _verifyCompatibleLicenseTerms(licenseConfigIds);
+    }
+
+    function verifyRegisterDerivativeForAll(
+        address derivativeIpId,
+        address[] calldata originalIpIds,
+        uint256[] calldata licenseConfigIds,
+        address derivativeIpOwner
+    ) external override returns (bool) {
+        if (!_verifyCompatibleLicenseTerms(licenseConfigIds)) {
+            return false;
         }
-        bool commercial = licenses[licenseIds[0]].commercial;
-        bool derivativesReciprocal = licenses[licenseIds[0]].derivativesReciprocal;
-        //TODO: check royalty policy
-        for (uint256 i = 1; i < licenseIds.length; i++) {
-            License memory license = licenses[licenseIds[i]];
-            if (license.commercial != commercial) {
-                return false;
-            }
-            if (license.derivativesReciprocal != derivativesReciprocal) {
+        for (uint256 i = 0; i < licenseConfigIds.length; i++) {
+            if (!_verifyRegisterDerivative(derivativeIpId, originalIpIds[i], licenseConfigIds[i], derivativeIpOwner)) {
                 return false;
             }
         }
@@ -168,25 +153,60 @@ ISupportRoyalty,
 
     function getRoyaltyPolicy(
         uint256 licenseId
-    ) external view returns (address royaltyPolicy, bytes memory royaltyData, address currency) {
-        License memory license = licenses[licenseId];
-        return (license.royaltyPolicy, abi.encode(license.commercialRevShare), license.mintingFee, license.currency);
-    }
-    function isTransferable(uint256 licenseId) external view override returns (bool) {
-        return licenses[licenseId].transferable;
+    ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        PILTerms memory terms = $.licenseConfigs[licenseId];
+        return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(ISupportRoyalty).interfaceId ||
-            interfaceId == type(IPILicenseTemplate).interfaceId ||
-            super.supportsInterface(interfaceId);
+    function isTransferable(uint256 licenseId) external view override returns (bool) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        return $.licenseConfigs[licenseId].transferable;
+    }
+
+    function getEarlierExpireTime(
+        uint256 start,
+        uint256[] calldata licenseConfigIds
+    ) external view override returns (uint) {
+        if (licenseConfigIds.length == 0) {
+            return 0;
+        }
+        uint expireTime = _getExpireTime(start, licenseConfigIds[0]);
+        for (uint i = 1; i < licenseConfigIds.length; i++) {
+            uint newExpireTime = _getExpireTime(start, licenseConfigIds[i]);
+            if (newExpireTime < expireTime) {
+                expireTime = newExpireTime;
+            }
+        }
+        return expireTime;
+    }
+
+    function getExpireTime(uint256 start, uint256 licenseConfigId) external view returns (uint) {
+        return _getExpireTime(start, licenseConfigId);
+    }
+
+    function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 licenseTermsId) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        bytes32 licenseTermsHash = keccak256(abi.encode(terms));
+        return $.hashedLicenseConfigs[licenseTermsHash];
+    }
+
+    function totalRegisteredLicenseConfigs() external view returns (uint256) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        return $.licenseConfigCounter;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(BaseLicenseTemplate, IERC165) returns (bool) {
+        return interfaceId == type(IPILicenseTemplate).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @notice Returns the stringified JSON policy data for the LicenseRegistry.uri(uint256) method.
     /// @dev Must return OpenSea standard compliant metadata.
-    function getLicenseString(uint256 licenseId) public view returns (string memory) {
-        License memory license = licenses[licenseId];
+    function toJson(uint256 licenseConfigId) public view returns (string memory) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
 
         /* solhint-disable */
         // Follows the OpenSea standard for JSON metadata.
@@ -194,15 +214,15 @@ ISupportRoyalty,
         string memory json = string(
             abi.encodePacked(
                 '{"trait_type": "Expiration", "value": "',
-                license.expiration == 0 ? "never" : license.expiration.toString(),
+                terms.expiration == 0 ? "never" : terms.expiration.toString(),
                 '"},',
                 '{"trait_type": "Currency", "value": "',
-                license.currency == address(0) ? "Native Token" : license.currency.toHexString(),
+                terms.currency == address(0) ? "Native Token" : terms.currency.toHexString(),
                 '"},',
                 // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
                 // Should be managed by the LicenseRegistry, not the PFM.
-                _policyCommercialTraitsToJson(license),
-                _policyDerivativeTraitsToJson(license)
+                _policyCommercialTraitsToJson(terms),
+                _policyDerivativeTraitsToJson(terms)
             )
         );
 
@@ -214,8 +234,7 @@ ISupportRoyalty,
     }
 
     /// @dev Encodes the commercial traits of PIL policy into a JSON string for OpenSea
-    /// @param policy The policy to encode
-    function _policyCommercialTraitsToJson(License memory license) internal pure returns (string memory) {
+    function _policyCommercialTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
         /* solhint-disable */
         // NOTE: TOTAL_RNFT_SUPPLY = 1000 in trait with max_value. For numbers, don't add any display_type, so that
         // they will show up in the "Ranking" section of the OpenSea UI.
@@ -223,19 +242,19 @@ ISupportRoyalty,
             string(
                 abi.encodePacked(
                     '{"trait_type": "Commercial Use", "value": "',
-                    license.commercialUse ? "true" : "false",
+                    terms.commercialUse ? "true" : "false",
                     '"},',
                     '{"trait_type": "Commercial Attribution", "value": "',
-                    license.commercialAttribution ? "true" : "false",
+                    terms.commercialAttribution ? "true" : "false",
                     '"},',
                     '{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": ',
-                    license.commercialRevShare.toString(),
+                    terms.commercialRevShare.toString(),
                     "},",
                     '{"trait_type": "Commercial Revenue Celling", "value": ',
-                    license.commercialRevCelling.toString(),
+                    terms.commercialRevCelling.toString(),
                     "},",
                     '{"trait_type": "Commercializer Check", "value": "',
-                    license.commercializerChecker.toHexString(),
+                    terms.commercializerChecker.toHexString(),
                     // Skip on commercializerCheckerData as it's bytes as irrelevant for the user metadata
                     '"},'
                 )
@@ -244,8 +263,7 @@ ISupportRoyalty,
     }
 
     /// @dev Encodes the derivative traits of PIL policy into a JSON string for OpenSea
-    /// @param policy The policy to encode
-    function _policyDerivativeTraitsToJson(License memory license) internal pure returns (string memory) {
+    function _policyDerivativeTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
         /* solhint-disable */
         // NOTE: TOTAL_RNFT_SUPPLY = 1000 in trait with max_value. For numbers, don't add any display_type, so that
         // they will show up in the "Ranking" section of the OpenSea UI.
@@ -253,19 +271,19 @@ ISupportRoyalty,
             string(
                 abi.encodePacked(
                     '{"trait_type": "Derivatives Allowed", "value": "',
-                    license.derivativesAllowed ? "true" : "false",
+                    terms.derivativesAllowed ? "true" : "false",
                     '"},',
                     '{"trait_type": "Derivatives Attribution", "value": "',
-                    license.derivativesAttribution ? "true" : "false",
+                    terms.derivativesAttribution ? "true" : "false",
                     '"},',
                     '{"trait_type": "Derivatives Revenue Celling", "value": ',
-                    license.derivativeRevCelling.toString(),
+                    terms.derivativeRevCelling.toString(),
                     "},",
                     '{"trait_type": "Derivatives Approval", "value": "',
-                    license.derivativesApproval ? "true" : "false",
+                    terms.derivativesApproval ? "true" : "false",
                     '"},',
                     '{"trait_type": "Derivatives Reciprocal", "value": "',
-                    license.derivativesReciprocal ? "true" : "false",
+                    terms.derivativesReciprocal ? "true" : "false",
                     '"},'
                 )
             );
@@ -273,51 +291,113 @@ ISupportRoyalty,
     }
 
     /// @dev Checks the configuration of commercial use and throws if the policy is not compliant
-    /// @param policy The policy to verify
-    /// @param royaltyPolicy The address of the royalty policy
     // solhint-disable-next-line code-complexity
-    function _verifyCommercialUse(License calldata license) internal view {
-        if (!license.commercialUse) {
-            if (license.commercialAttribution) {
-                revert PILFrameworkErrors.PILicenseTemplate__CommercialDisabled_CantAddAttribution();
+    function _verifyCommercialUse(PILTerms calldata terms) internal view {
+        if (!terms.commercialUse) {
+            if (terms.commercialAttribution) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddAttribution();
             }
-            if (license.commercializerChecker != address(0)) {
-                revert PILFrameworkErrors.PILicenseTemplate__CommercialDisabled_CantAddCommercializers();
+            if (terms.commercializerChecker != address(0)) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddCommercializers();
             }
-            if (license.commercialRevShare > 0) {
-                revert PILFrameworkErrors.PILicenseTemplate__CommercialDisabled_CantAddRevShare();
+            if (terms.commercialRevShare > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevShare();
             }
-            if (royaltyPolicy != address(0)) {
-                revert PILFrameworkErrors.PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
+            if (terms.royaltyPolicy != address(0)) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
             }
         } else {
-            if (royaltyPolicy == address(0)) {
-                revert PILFrameworkErrors.PILicenseTemplate__CommercialEnabled_RoyaltyPolicyRequired();
+            if (terms.royaltyPolicy == address(0)) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialEnabled_RoyaltyPolicyRequired();
             }
-            if (license.commercializerChecker != address(0)) {
-                if (!license.commercializerChecker.supportsInterface(type(IHookModule).interfaceId)) {
-                    revert Errors.PolicyFrameworkManager__CommercializerCheckerDoesNotSupportHook(
-                        license.commercializerChecker
+            if (terms.commercializerChecker != address(0)) {
+                if (!terms.commercializerChecker.supportsInterface(type(IHookModule).interfaceId)) {
+                    revert PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerDoesNotSupportHook(
+                        terms.commercializerChecker
                     );
                 }
-                IHookModule(license.commercializerChecker).validateConfig(license.commercializerCheckerData);
+                IHookModule(terms.commercializerChecker).validateConfig(terms.commercializerCheckerData);
             }
         }
     }
 
     /// @notice Checks the configuration of derivative parameters and throws if the policy is not compliant
-    /// @param policy The policy to verify
-    function _verifyDerivatives(License calldata license) internal pure {
-        if (!license.derivativesAllowed) {
-            if (license.derivativesAttribution) {
-                revert PILFrameworkErrors.PILicenseTemplate__DerivativesDisabled_CantAddAttribution();
+    function _verifyDerivatives(PILTerms calldata terms) internal pure {
+        if (!terms.derivativesAllowed) {
+            if (terms.derivativesAttribution) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddAttribution();
             }
-            if (license.derivativesApproval) {
-                revert PILFrameworkErrors.PILicenseTemplate__DerivativesDisabled_CantAddApproval();
+            if (terms.derivativesApproval) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddApproval();
             }
-            if (license.derivativesReciprocal) {
-                revert PILFrameworkErrors.PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
+            if (terms.derivativesReciprocal) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
             }
+        }
+    }
+
+    function _verifyRegisterDerivative(
+        address derivativeIpId,
+        address originalIpId,
+        uint256 licenseConfigId,
+        address licensee
+    ) internal returns (bool) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+
+        if (!terms.derivativesAllowed) {
+            return false;
+        }
+
+        // If the policy defines the licensor must approve derivatives, check if the
+        // derivative is approved by the licensor
+        if (terms.derivativesApproval && !isDerivativeApproved(licenseConfigId, derivativeIpId)) {
+            return false;
+        }
+        // Check if the commercializerChecker allows the link
+        if (terms.commercializerChecker != address(0)) {
+            // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
+            // when the policy was registered.
+            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _verifyCompatibleLicenseTerms(uint256[] calldata licenseConfigIds) internal view returns (bool) {
+        if (licenseConfigIds.length < 2) {
+            return true;
+        }
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        bool commercial = $.licenseConfigs[licenseConfigIds[0]].commercialUse;
+        bool derivativesReciprocal = $.licenseConfigs[licenseConfigIds[0]].derivativesReciprocal;
+        //TODO: check royalty policy
+        for (uint256 i = 1; i < licenseConfigIds.length; i++) {
+            PILTerms memory terms = $.licenseConfigs[licenseConfigIds[i]];
+            if (terms.commercialUse != commercial) {
+                return false;
+            }
+            if (terms.derivativesReciprocal != derivativesReciprocal) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _getExpireTime(uint256 start, uint256 licenseConfigId) internal view returns (uint) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        PILTerms memory terms = $.licenseConfigs[licenseConfigId];
+        if (terms.expiration == 0) {
+            return 0;
+        }
+        return start + terms.expiration;
+    }
+
+    /// @dev Returns the storage struct of PILicenseTemplate.
+    function _getPILicenseTemplateStorage() private pure returns (PILicenseTemplateStorage storage $) {
+        assembly {
+            $.slot := PILicenseTemplateStorageLocation
         }
     }
 }

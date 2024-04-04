@@ -7,7 +7,6 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 // contracts
 import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
-import { Errors } from "../../lib/Errors.sol";
 
 abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable {
     /// @custom:storage-location erc7201:story-protocol.BaseLicenseTemplate
@@ -29,10 +28,7 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
     /// @notice initializer for this implementation contract
     /// @param _name The name of the policy framework manager
     /// @param _metadataURI The URL to the off chain legal agreement template text
-    function __BaseLicenseTemplate_init(
-        string memory _name,
-        string memory _metadataURI
-    ) internal onlyInitializing {
+    function __BaseLicenseTemplate_init(string memory _name, string memory _metadataURI) internal onlyInitializing {
         _getBaseLicenseTemplateStorage().name = _name;
         _getBaseLicenseTemplateStorage().metadataURI = _metadataURI;
     }
@@ -43,7 +39,7 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
     }
 
     /// @notice Returns the URL to the off chain legal agreement template text
-    function metadataURI() public view override returns (string memory) {
+    function getMetadataURI() public view override returns (string memory) {
         return _getBaseLicenseTemplateStorage().metadataURI;
     }
 
@@ -52,11 +48,7 @@ abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable
         return interfaceId == type(ILicenseTemplate).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _getBaseLicenseTemplateStorage()
-        internal
-        pure
-        returns (BaseLicenseTemplateStorage storage $)
-    {
+    function _getBaseLicenseTemplateStorage() internal pure returns (BaseLicenseTemplateStorage storage $) {
         assembly {
             $.slot := BaseLicenseTemplateStorageLocation
         }

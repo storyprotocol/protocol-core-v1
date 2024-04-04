@@ -128,7 +128,34 @@ library Errors {
     error LicenseRegistry__NotTransferable();
     /// @notice emitted on constructor if dispute module is not set
     error LicenseRegistry__ZeroDisputeModule();
+    error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index);
+    error LicenseRegistry__UnregisteredLicenseTemplate(address licenseTemplate);
+    error LicenseRegistry__NotLicenseTemplate(address licenseTemplate);
+    error LicenseRegistry__IpExpired(address ipId);
+    error LicenseRegistry__OriginalIpExpired(address ipId);
+    error LicenseRegistry__LicenseConfigNotExists(address licenseTemplate, uint256 licenseConfigId);
+    error LicenseRegistry__OriginalIpHasNoLicenseConfig(address ipId, uint256 licenseConfigId);
+    error LicenseRegistry__NoOriginalIp();
+    error LicenseRegistry__DerivativeIpAlreadyHasLicense(address derivativeIpId);
+    error LicenseRegistry__DerivativeAlreadyRegistered(address derivativeIpId);
+    error LicenseRegistry__OriginalIpTagged(address ipId);
+    error LicenseRegistry__DerivativeIsOriginal(address ipId);
+    error LicenseRegistry__OriginalIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
 
+    ////////////////////////////////////////////////////////////////////////////
+    //                            LicenseNFT                                  //
+    ////////////////////////////////////////////////////////////////////////////
+    error LicenseNFT__CallerNotLicensingModule();
+    error LicenseNFT__ZeroLicensingModule();
+    error LicenseNFT__ZeroDisputeModule();
+    error LicenseNFT__RevokedLicense(uint256 tokenId);
+    error LicenseNFT__NotTransferable();
+    error LicenseNFT__LicenseTokenExpired(uint256 tokenId, uint256 expiredAt, uint256 currentTimestamp);
+    error LicenseNFT__NotLicenseTokenOwner(uint256 tokenId, address iPowner, address tokenOwner);
+    error LicenseNFT__AllLicenseTokensMustFromSameLicenseTemplate(
+        address licenseTemplate,
+        address anotherLicenseTemplate
+    );
     ////////////////////////////////////////////////////////////////////////////
     //                            LicensingModule                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -170,6 +197,25 @@ library Errors {
     error LicensingModule__DisputedIpId();
     /// @notice emitted when linking a license from a licensor that has been disputed in the DisputeModule
     error LicensingModule__LinkingRevokedLicense();
+    error LicensingModule__LicenseConfigNotFound(address licenseTemplate, uint256 licenseConfigId);
+    error LicensingModule__DerivativesCannotAddLicenseConfig();
+    error LicensingModule__CallerNotLicensorAndIpHasNotAttachedLicenseConfig(
+        address caller,
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseConfigId
+    );
+    error LicensingModule__ReceiverCheckFailed(address receiver);
+    error LicensingModule__DerivativeAlreadyRegistered();
+    error LicensingModule__LicenseConfigLengthMismatch(uint256 ipLength, uint256 licenseConfigLength);
+    error LicensingModule__NoOriginalIp();
+    error LicensingModule__DerivativeIsOriginal();
+    error LicensingModule__OriginalIpHasNoLicenseConfig(address ipId);
+    error LicensingModule__DerivativeAlreadyHasLicenseConfig(address ipId);
+    error LicensingModule__IncompatibleRoyaltyPolicy(address royaltyPolicy, address anotherRoyaltyPolicy);
+    error LicensingModule__LicenseNotCompatibleForDerivative(address derivativeIpId);
+    error LicensingModule__NoLicenseToken();
+    error LicensingModule__LicenseTokenNotCompatibleForDerivative(address derivativeIpId, uint256[] licenseTokenIds);
 
     ////////////////////////////////////////////////////////////////////////////
     //                      BasePolicyFrameworkManager                        //

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+import { Licensing } from "../../lib/Licensing.sol";
+
 /// @title ILicenseRegistry
 interface ILicenseRegistryV2 {
     struct LicenseStatus {

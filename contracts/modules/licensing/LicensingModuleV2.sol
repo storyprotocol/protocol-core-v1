@@ -15,6 +15,7 @@ import { IIPAccountRegistry } from "../../interfaces/registries/IIPAccountRegist
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistryV2 } from "../../interfaces/registries/ILicenseRegistryV2.sol";
 import { Errors } from "../../lib/Errors.sol";
+import { Licensing } from "../../lib/Licensing.sol";
 import { IPAccountChecker } from "../../lib/registries/IPAccountChecker.sol";
 import { RoyaltyModule } from "../../modules/royalty/RoyaltyModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";

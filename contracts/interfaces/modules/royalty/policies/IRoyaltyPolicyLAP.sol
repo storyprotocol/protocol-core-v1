@@ -19,6 +19,20 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
         uint32[] targetRoyaltyAmount
     );
 
+    /// @notice The state data of the LAP royalty policy
+    /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
+    /// @param ipRoyaltyVault The ip royalty vault address
+    /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
+    /// @param ancestorsAddresses The ancestors addresses array
+    /// @param ancestorsRoyalties The ancestors royalties array
+    struct LAPRoyaltyData {
+        bool isUnlinkableToParents;
+        address ipRoyaltyVault;
+        uint32 royaltyStack;
+        address[] ancestorsAddresses;
+        uint32[] ancestorsRoyalties;
+    }
+
     /// @notice Returns the percentage scale - represents 100% of royalty tokens for an ip
     function TOTAL_RT_SUPPLY() external view returns (uint32);
 

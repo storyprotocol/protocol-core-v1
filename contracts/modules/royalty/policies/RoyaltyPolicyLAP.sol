@@ -18,20 +18,6 @@ import { Errors } from "../../../lib/Errors.sol";
 contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    /// @notice The state data of the LAP royalty policy
-    /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
-    /// @param ipRoyaltyVault The ip royalty vault address
-    /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    /// @param ancestorsAddresses The ancestors addresses array
-    /// @param ancestorsRoyalties The ancestors royalties array
-    struct LAPRoyaltyData {
-        bool isUnlinkableToParents;
-        address ipRoyaltyVault;
-        uint32 royaltyStack;
-        address[] ancestorsAddresses;
-        uint32[] ancestorsRoyalties;
-    }
-
     /// @dev Storage structure for the RoyaltyPolicyLAP
     /// @param ipRoyaltyVaultBeacon The ip royalty vault beacon address
     /// @param snapshotInterval The minimum timestamp interval between snapshots
@@ -118,7 +104,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
         address ipId,
         bytes calldata licenseData,
         bytes calldata externalData
-    ) external onlyRoyaltyModule {
+    ) external onlyRoyaltyModule nonReentrant {
         uint32 newLicenseRoyalty = abi.decode(licenseData, (uint32));
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
 
@@ -153,7 +139,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
         address[] calldata parentIpIds,
         bytes[] memory licenseData,
         bytes calldata externalData
-    ) external onlyRoyaltyModule {
+    ) external onlyRoyaltyModule nonReentrant {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         if ($.royaltyData[ipId].isUnlinkableToParents) revert Errors.RoyaltyPolicyLAP__UnlinkableToParents();
 

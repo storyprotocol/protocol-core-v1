@@ -2,8 +2,9 @@
 pragma solidity 0.8.23;
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-
-import { ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { ERC721EnumerableUpgradeable, ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { ILicenseNFT } from "../interfaces/registries/ILicenseNFT.sol";
@@ -14,7 +15,7 @@ import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
 import { ILicenseTemplate } from "../interfaces/modules/licensing/ILicenseTemplate.sol";
 
 /// @title LicenseNFT aka LNFT
-contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable, ILicenseNFT {
+contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSUpgradeable, ILicenseNFT {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
@@ -186,7 +187,9 @@ contract LicenseNFT is ERC721Upgradeable, GovernableUpgradeable, UUPSUpgradeable
     /// @notice ERC721 OpenSea metadata JSON representation of the LNFT parameters
     /// @dev Expect LicenseTemplate.toJson to return {'trait_type: 'value'},{'trait_type': 'value'},...,{...}
     /// (last attribute must not have a comma at the end)
-    function tokenURI(uint256 id) public view virtual override returns (string memory) {
+    function tokenURI(
+        uint256 id
+    ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
 
         LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[id];

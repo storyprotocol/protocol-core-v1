@@ -24,7 +24,7 @@ contract TestRoyaltyModule is BaseTest {
     address internal ipAccount2 = address(0x111000bbb);
     address internal ipAddr;
     address internal arbitrationRelayer;
-    
+
     struct InitParams {
         address[] targetAncestors;
         uint32[] targetRoyaltyAmount;

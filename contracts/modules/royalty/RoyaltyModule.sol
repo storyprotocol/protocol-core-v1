@@ -187,7 +187,8 @@ contract RoyaltyModule is
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
 
         IDisputeModule dispute = IDisputeModule($.disputeModule);
-        if (dispute.isIpTagged(receiverIpId) || dispute.isIpTagged(payerIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (dispute.isIpTagged(receiverIpId) || dispute.isIpTagged(payerIpId))
+            revert Errors.RoyaltyModule__IpIsTagged();
 
         address payerRoyaltyPolicy = $.royaltyPolicies[payerIpId];
         // if the payer does not have a royalty policy set, then the payer is not a derivative ip and does not pay

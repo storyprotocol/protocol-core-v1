@@ -11,7 +11,6 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestIpRoyaltyVault is BaseTest {
-
     IpRoyaltyVault ipRoyaltyVault;
 
     function setUp() public override {
@@ -257,7 +256,7 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
 
         uint256 expectedAmount = royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
-        
+
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), expectedAmount);
 

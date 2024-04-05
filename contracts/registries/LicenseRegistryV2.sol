@@ -26,6 +26,18 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
     /// @dev Storage of the LicenseRegistry
     /// @param licensingModule Returns the canonical protocol-wide LicensingModule
     /// @param disputeModule Returns the canonical protocol-wide DisputeModule
+    /// @param defaultLicenseTemplate The default license template address
+    /// @param defaultLicenseTermsId The default license terms ID
+    /// @param registeredLicenseTemplates Registered license templates
+    /// @param registeredRoyaltyPolicies Registered royalty policies
+    /// @param registeredCurrencyTokens Registered currency tokens
+    /// @param originalIps Mapping of original IPs to derivative IPs
+    /// @param derivativeIps Mapping of derivative IPs to original IPs
+    /// @param attachedLicenseTerms Mapping of attached license terms to IP IDs
+    /// @param licenseTemplates Mapping of license templates to IP IDs
+    /// @param expireTimes Mapping of IP IDs to expire times
+    /// @param mintingLicenseConfigs Mapping of minting license configs to IP IDs
+    /// @param mintingLicenseConfigsForAll Mapping of minting license configs for all
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         ILicensingModule licensingModule;
@@ -90,12 +102,17 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
+    /// @notice Sets the default license terms that are attached to all IPs by default.
+    /// @param newLicenseTemplate The address of the new default license template.
+    /// @param newLicenseTermsId The ID of the new default license terms.
     function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external onlyProtocolAdmin {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
         $.defaultLicenseTermsId = newLicenseTermsId;
     }
 
+    /// @notice Registers a new license template in the Story Protocol.
+    /// @param licenseTemplate The address of the license template to register.
     function registerLicenseTemplate(address licenseTemplate) external onlyProtocolAdmin {
         if (licenseTemplate.supportsInterface(type(ILicenseTemplate).interfaceId)) {
             revert Errors.LicenseRegistry__NotLicenseTemplate(licenseTemplate);
@@ -104,21 +121,34 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         emit LicenseTemplateRegistered(licenseTemplate);
     }
 
+    /// @notice Registers a new royalty policy in the Story Protocol.
+    /// @param royaltyPolicy The address of the royalty policy to register.
     function registerRoyaltyPolicy(address royaltyPolicy) external onlyProtocolAdmin {
         _getLicenseRegistryStorage().registeredRoyaltyPolicies[royaltyPolicy] = true;
         emit RoyaltyPolicyRegistered(royaltyPolicy);
     }
 
+    /// @notice Registers a new currency token used for paying license token minting fees and royalties.
+    /// @param token The address of the currency token to register.
     function registerCurrencyToken(address token) external onlyProtocolAdmin {
         _getLicenseRegistryStorage().registeredCurrencyTokens[token] = true;
         emit CurrencyTokenRegistered(token);
     }
 
+    /// @notice Sets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @param expireTime The new expiration time, 0 means never expired.
     function setExpireTime(address ipId, uint256 expireTime) external onlyLicensingModule {
         _setExpireTime(ipId, expireTime);
     }
 
-    function setMintingLicenseConfig(
+    /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
+    /// @dev This function can only be called by the LicensingModule.
+    /// @param ipId The address of the IP for which the configuration is being set.
+    /// @param licenseTemplate The address of the license template used.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// @param mintingLicenseConfig The configuration for minting the license.
+    function setMintingLicenseConfigForLicense(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
@@ -139,7 +169,12 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         emit MintingLicenseConfigSet(ipId, licenseTemplate, licenseTermsId, mintingLicenseConfig);
     }
 
-    function setMintingLicenseConfigForAll(
+    /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
+    /// @dev This function will set a global configuration for all licenses under a specific IP.
+    /// However, this global configuration can be overridden by a configuration set at a specific license level.
+    /// @param ipId The IP ID for which the configuration is being set.
+    /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
+    function setMintingLicenseConfigForIp(
         address ipId,
         Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
@@ -154,6 +189,10 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         emit MintingLicenseConfigSetForAll(ipId, mintingLicenseConfig);
     }
 
+    /// @notice Attaches license terms to an IP.
+    /// @param ipId The address of the IP to which the license terms are attached.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
     function attachLicenseTermsToIp(
         address ipId,
         address licenseTemplate,
@@ -174,6 +213,11 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         $.attachedLicenseTerms[ipId].add(licenseTermsId);
     }
 
+    /// @notice Registers a derivative IP and its relationship to original IPs.
+    /// @param derivativeIpId The address of the derivative IP.
+    /// @param originalIpIds An array of addresses of the original IPs.
+    /// @param licenseTemplate The address of the license template used.
+    /// @param licenseTermsIds An array of IDs of the license terms.
     // solhint-disable-next-line code-complexity
     function registerDerivativeIp(
         address derivativeIpId,
@@ -309,6 +353,9 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _getLicenseRegistryStorage().disputeModule;
     }
 
+    /// @notice Gets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @return The expiration time, 0 means never expired.
     function getExpireTime(address ipId) external view returns (uint256) {
         return _getLicenseRegistryStorage().expireTimes[ipId];
     }

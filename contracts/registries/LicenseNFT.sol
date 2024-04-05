@@ -48,6 +48,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         _disableInitializers();
     }
 
+    /// @dev Initializes the LicenseNFT contract
     function initialize(address governance, string memory imageUrl) public initializer {
         __ERC721_init("Programmable IP License NFT", "PILNFT");
         __GovernableUpgradeable_init(governance);
@@ -55,7 +56,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         _getLicenseNFTStorage().imageUrl = imageUrl;
     }
 
-    /// @dev Sets the LicensingModule address.
+    /// @notice Sets the LicensingModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newLicensingModule The address of the LicensingModule
     function setLicensingModule(address newLicensingModule) external onlyProtocolAdmin {
@@ -66,6 +67,9 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
+    /// @notice Sets the DisputeModule address.
+    /// @dev Enforced to be only callable by the protocol admin
+    /// @param newDisputeModule The address of the DisputeModule
     function setDisputeModule(address newDisputeModule) external onlyProtocolAdmin {
         if (newDisputeModule == address(0)) {
             revert Errors.LicenseNFT__ZeroDisputeModule();
@@ -83,6 +87,15 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         emit BatchMetadataUpdate(1, $.totalMintedTokens);
     }
 
+    /// @notice Mints a specified amount of License Tokens (LNFTs).
+    /// @param originalIpId The ID of the original IP for which the License Tokens are minted.
+    /// @param licenseTemplate The address of the License Template.
+    /// @param licenseTermsId The ID of the License Terms.
+    /// @param amount The amount of License Tokens to mint.
+    /// @param minter The address of the minter.
+    /// @param receiver The address of the receiver of the minted License Tokens.
+    /// @return startLicenseTokenId The start ID of the minted License Tokens.
+    /// @return endLicenseTokenId The end ID of the minted License Tokens.
     function mintLicenseTokens(
         address originalIpId,
         address licenseTemplate,
@@ -111,12 +124,26 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         endLicenseTokenId = $.totalMintedTokens - 1;
     }
 
+    /// @notice Burns the License Tokens (LNFTs) for the given token IDs.
+    /// @param holder The address of the holder of the License Tokens.
+    /// @param tokenIds An array of IDs of the License Tokens to be burned.
     function burnLicenseTokens(address holder, uint256[] calldata tokenIds) external onlyLicensingModule {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             _burn(tokenIds[i]);
         }
     }
 
+    /// @notice Validates License Tokens for registering a derivative IP.
+    /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
+    /// for example, whether token is expired.
+    /// The function will be called by LicensingModule when registering a derivative IP with license tokens.
+    /// @param derivativeIpId The ID of the derivative IP.
+    /// @param derivativeIpOwner The address of the owner of the derivative IP.
+    /// @param tokenIds An array of IDs of the License Tokens to validate for the derivative
+    /// IP to register as derivative of the original IPs which minted the license tokens.
+    /// @return licenseTemplate The address of the License Template associated with the License Tokens.
+    /// @return originalIpIds An array of original IPs associated with each License Token.
+    /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
     function validateLicenseTokensForDerivative(
         address derivativeIpId,
         address derivativeIpOwner,
@@ -154,6 +181,9 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         }
     }
 
+    /// @notice Returns the total number of minted License Tokens since beginning,
+    /// the number won't decrease when license tokens are burned.
+    /// @return The total number of minted License Tokens.
     function totalMintedTokens() external view returns (uint256) {
         return _getLicenseNFTStorage().totalMintedTokens;
     }

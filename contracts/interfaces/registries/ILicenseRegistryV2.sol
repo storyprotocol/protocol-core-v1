@@ -119,23 +119,36 @@ interface ILicenseRegistryV2 {
         uint256 licenseTermsId
     ) external view returns (Licensing.MintingLicenseConfig memory);
 
-    /// @notice Sets the minting license configuration for a given IP, license template, and license terms ID.
-    function setMintingLicenseConfig(
+    /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
+    /// @dev This function can only be called by the LicensingModule.
+    /// @param ipId The address of the IP for which the configuration is being set.
+    /// @param licenseTemplate The address of the license template used.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// @param mintingLicenseConfig The configuration for minting the license.
+    function setMintingLicenseConfigForLicense(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
         Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
-    /// @notice Sets the minting license configuration for all licenser terms of given IP.
-    function setMintingLicenseConfigForAll(
+    /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
+    /// @dev This function will set a global configuration for all licenses under a specific IP.
+    /// However, this global configuration can be overridden by a configuration set at a specific license level.
+    /// @param ipId The IP ID for which the configuration is being set.
+    /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
+    function setMintingLicenseConfigForIp(
         address ipId,
         Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
     /// @notice Sets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @param expireTime The new expiration time, 0 means never expired.
     function setExpireTime(address ipId, uint256 expireTime) external;
 
     /// @notice Gets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @return The expiration time, 0 means never expired.
     function getExpireTime(address ipId) external view returns (uint256);
 }

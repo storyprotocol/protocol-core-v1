@@ -66,7 +66,8 @@ interface ILicenseNFT is IERC721Metadata, IERC721Enumerable {
     /// @param tokenIds An array of IDs of the License Tokens to be burned.
     function burnLicenseTokens(address holder, uint256[] calldata tokenIds) external;
 
-    /// @notice Returns the total number of minted License Tokens.
+    /// @notice Returns the total number of minted License Tokens since beginning,
+    /// the number won't decrease when license tokens are burned.
     /// @return The total number of minted License Tokens.
     function totalMintedTokens() external view returns (uint256);
 

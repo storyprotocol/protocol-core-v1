@@ -22,7 +22,9 @@ interface ILicenseTemplate is IERC165 {
     /// @return The name of the license template.
     function name() external view returns (string memory);
 
-    /// @notice Converts the license terms to a JSON string.
+    /// @notice Converts the license terms to a JSON string which will be part of the metadata of license token.
+    /// @dev the json will be part of metadata as attributes return by tokenURI() license token,
+    /// hence the json format should follow the common NFT metadata standard.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The JSON string of the license terms.
     function toJson(uint256 licenseTermsId) external view returns (string memory);

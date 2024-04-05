@@ -20,7 +20,7 @@ interface IMintingFeeModule is IModule {
     /// @param licenseTermsId The ID of the license terms within the license template.
     /// @param amount The amount of license tokens to mint.
     /// @return The total minting fee.
-    function getTotalMintingFee(
+    function getMintingFee(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,

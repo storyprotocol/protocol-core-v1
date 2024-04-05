@@ -30,8 +30,17 @@ interface IRoyaltyModule is IModule {
     /// @param amount The amount paid
     event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
 
+    /// @notice Sets the license registry
+    /// @dev Enforced to be only callable by the protocol admin
+    /// @param licensing The address of the license registry
+    /// @param dispute The address of the dispute module
+    function setLicensingAndDisputeModules(address licensing, address dispute) external;
+
     /// @notice Returns the licensing module address
     function licensingModule() external view returns (address);
+
+    /// @notice Returns the dispute module address
+    function disputeModule() external view returns (address);
 
     /// @notice Indicates if a royalty policy is whitelisted
     /// @param royaltyPolicy The address of the royalty policy

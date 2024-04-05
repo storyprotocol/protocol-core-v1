@@ -10,6 +10,7 @@ import { BaseModule } from "../BaseModule.sol";
 import { GovernableUpgradeable } from "../../governance/GovernableUpgradeable.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
+import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
@@ -27,12 +28,14 @@ contract RoyaltyModule is
     using ERC165Checker for address;
 
     /// @dev Storage structure for the RoyaltyModule
+    /// @param disputeModule The address of the dispute module
     /// @param licensingModule The address of the licensing module
     /// @param isWhitelistedRoyaltyPolicy Indicates if a royalty policy is whitelisted
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param royaltyPolicies Indicates the royalty policy for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
+        address disputeModule;
         address licensingModule;
         mapping(address royaltyPolicy => bool isWhitelisted) isWhitelistedRoyaltyPolicy;
         mapping(address token => bool) isWhitelistedRoyaltyToken;
@@ -69,9 +72,13 @@ contract RoyaltyModule is
     /// @notice Sets the license registry
     /// @dev Enforced to be only callable by the protocol admin
     /// @param licensing The address of the license registry
-    function setLicensingModule(address licensing) external onlyProtocolAdmin {
+    /// @param dispute The address of the dispute module
+    function setLicensingAndDisputeModules(address licensing, address dispute) external onlyProtocolAdmin {
         if (licensing == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
+        if (dispute == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
+
         _getRoyaltyModuleStorage().licensingModule = licensing;
+        _getRoyaltyModuleStorage().disputeModule = dispute;
     }
 
     /// @notice Whitelist a royalty policy
@@ -175,6 +182,10 @@ contract RoyaltyModule is
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
 
+        IDisputeModule dispute = IDisputeModule($.disputeModule);
+        if (dispute.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (dispute.isIpTagged(payerIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+
         address payerRoyaltyPolicy = $.royaltyPolicies[payerIpId];
         // if the payer does not have a royalty policy set, then the payer is not a derivative ip and does not pay
         // royalties while the receiver ip can have a zero royalty policy since that could mean it is an ip a root
@@ -202,7 +213,7 @@ contract RoyaltyModule is
     ) external onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
-
+        if (IDisputeModule($.disputeModule).isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
         if (licenseRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[licenseRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
@@ -215,6 +226,11 @@ contract RoyaltyModule is
     /// @notice Returns the licensing module address
     function licensingModule() external view returns (address) {
         return _getRoyaltyModuleStorage().licensingModule;
+    }
+
+    /// @notice Returns the dispute module address
+    function disputeModule() external view returns (address) {
+        return _getRoyaltyModuleStorage().disputeModule;
     }
 
     /// @notice Indicates if a royalty policy is whitelisted

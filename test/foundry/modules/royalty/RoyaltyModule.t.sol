@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
+
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
 import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
+import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 // tests
@@ -19,6 +22,9 @@ contract TestRoyaltyModule is BaseTest {
 
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
+    address internal ipAddr;
+    address internal arbitrationRelayer;
+    
     struct InitParams {
         address[] targetAncestors;
         uint32[] targetRoyaltyAmount;
@@ -39,9 +45,9 @@ contract TestRoyaltyModule is BaseTest {
     function setUp() public override {
         super.setUp();
         buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: true, licensingModule: false })
+            DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: false })
         );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
+        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
         deployConditionally();
         postDeploymentSetup();
 
@@ -51,6 +57,8 @@ contract TestRoyaltyModule is BaseTest {
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
         );
+
+        arbitrationRelayer = u.admin;
 
         vm.startPrank(u.admin);
         // whitelist royalty policy
@@ -63,6 +71,51 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
         // split made to avoid stack too deep error
         _setupTree();
+        vm.stopPrank();
+
+        USDC.mint(ipAccount1, 1000 * 10 ** 6);
+
+        _setPILPolicyFrameworkManager();
+        _addPILPolicy(
+            "cheap_flexible",
+            true,
+            address(royaltyPolicyLAP),
+            PILPolicy({
+                attribution: false,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 10,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                territories: new string[](0),
+                distributionChannels: new string[](0),
+                contentRestrictions: new string[](0)
+            })
+        );
+
+        mockNFT.mintId(u.alice, 0);
+
+        address expectedAddr = ERC6551AccountLib.computeAddress(
+            address(erc6551Registry),
+            address(ipAccountImpl),
+            ipAccountRegistry.IP_ACCOUNT_SALT(),
+            block.chainid,
+            address(mockNFT),
+            0
+        );
+        vm.label(expectedAddr, "IPAccount0");
+
+        vm.startPrank(u.alice);
+        ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
+        licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
+
+        // set arbitration policy
+        vm.startPrank(ipAddr);
+        disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP));
         vm.stopPrank();
     }
 
@@ -119,24 +172,35 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, encodedBytes);
     }
 
-    function test_RoyaltyModule_setLicensingModule_revert_ZeroLicensingModule() public {
+    function test_RoyaltyModule_setLicensingAndDisputeModules_revert_ZeroLicensingModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroLicensingModule.selector);
         vm.prank(u.admin);
-        testRoyaltyModule.setLicensingModule(address(0));
+        testRoyaltyModule.setLicensingAndDisputeModules(address(0), address(1));
     }
 
-    function test_RoyaltyModule_setLicensingModule() public {
+    function test_RoyaltyModule_setLicensingAndDisputeModules_revert_ZeroDisputeModule() public {
+        address impl = address(new RoyaltyModule());
+        RoyaltyModule testRoyaltyModule = RoyaltyModule(
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+        );
+        vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
+        vm.prank(u.admin);
+        testRoyaltyModule.setLicensingAndDisputeModules(address(1), address(0));
+    }
+
+    function test_RoyaltyModule_setLicensingAndDisputeModules() public {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
         );
-        testRoyaltyModule.setLicensingModule(address(licensingModule));
+        testRoyaltyModule.setLicensingAndDisputeModules(address(licensingModule), address(disputeModule));
         assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));
+        assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));
     }
 
     function test_RoyaltyModule_whitelistRoyaltyPolicy_revert_ZeroRoyaltyToken() public {
@@ -449,6 +513,24 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(1), royaltyAmount);
     }
 
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsTagged() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+
+        vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
+        royaltyModule.payRoyaltyOnBehalf(ipAddr, ipAccount1, address(USDC), 100);
+
+        vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
+        royaltyModule.payRoyaltyOnBehalf(ipAccount1, ipAddr, address(USDC), 100);
+    }
+
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_NotWhitelistedRoyaltyPolicy() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
         address receiverIpId = address(7);
@@ -485,6 +567,23 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, royaltyAmount);
         assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+
+        vm.startPrank(address(licensingModule));
+
+        vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
+        royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(royaltyPolicyLAP), address(USDC), 100);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {

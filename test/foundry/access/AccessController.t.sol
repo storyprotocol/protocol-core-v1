@@ -4,8 +4,6 @@ pragma solidity 0.8.23;
 import { IIPAccount } from "../../../contracts/interfaces/IIPAccount.sol";
 import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";
 import { Errors } from "../../../contracts/lib/Errors.sol";
-import { TOKEN_WITHDRAWAL_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
-import { TokenWithdrawalModule } from "../../../contracts/modules/external/TokenWithdrawalModule.sol";
 
 import { MockModule } from "../mocks/module/MockModule.sol";
 import { MockOrchestratorModule } from "../mocks/module/MockOrchestratorModule.sol";
@@ -24,15 +22,15 @@ contract AccessControllerTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         mockNFT.mintId(owner, tokenId);
         address deployedAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
         ipAccount = IIPAccount(payable(deployedAccount));
 
         mockModule = new MockModule(address(ipAccountRegistry), address(moduleRegistry), "MockModule");
+
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockModule", address(mockModule));
     }
 
     // test owner can set permission
@@ -46,7 +44,6 @@ contract AccessControllerTest is BaseTest {
     // mock orchestration?
 
     function test_AccessController_ipAccountOwnerSetPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -79,7 +76,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_NonOwnerCannotSetPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         address nonOwner = vm.addr(3);
         vm.prank(nonOwner);
@@ -107,7 +103,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_directSetPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         vm.prank(address(ipAccount));
@@ -165,7 +160,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_checkPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -204,7 +198,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_functionPermissionWildcardAllow() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -242,7 +235,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_functionPermissionWildcardDeny() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -288,7 +280,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_toAddressPermissionWildcardAllow() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -325,7 +316,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_toAddressPermissionWildcardDeny() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -371,7 +361,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_overrideFunctionWildcard_allowOverrideDeny() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -423,7 +412,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_overrideFunctionWildcard_DenyOverrideAllow() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -483,7 +471,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_overrideToAddressWildcard_allowOverrideDeny() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -535,7 +522,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_overrideToAddressWildcard_DenyOverrideAllow() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -595,7 +581,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_functionWildcardOverrideToAddressWildcard_allowOverrideDeny() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -652,7 +637,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_functionWildcardOverrideToAddressWildcard_denyOverrideAllow() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -717,8 +701,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_ipAccountOwnerCanCallAnyModuleWithoutPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
-
         vm.prank(owner);
         bytes memory result = ipAccount.execute(
             address(mockModule),
@@ -729,12 +711,12 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_moduleCallAnotherModuleViaIpAccount() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         MockModule anotherModule = new MockModule(
             address(ipAccountRegistry),
             address(moduleRegistry),
             "AnotherMockModule"
         );
+        vm.prank(u.admin);
         moduleRegistry.registerModule("AnotherMockModule", address(anotherModule));
 
         vm.prank(owner);
@@ -761,6 +743,7 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_OrchestratorModuleCallIpAccount() public {
+        vm.startPrank(u.admin);
         MockOrchestratorModule mockOrchestratorModule = new MockOrchestratorModule(
             address(ipAccountRegistry),
             address(moduleRegistry)
@@ -787,6 +770,7 @@ contract AccessControllerTest is BaseTest {
             "Module3WithoutPermission"
         );
         moduleRegistry.registerModule("Module3WithoutPermission", address(module3WithoutPermission));
+        vm.stopPrank();
 
         vm.prank(owner);
         // orchestrator can call any modules through ipAccount
@@ -808,6 +792,7 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_OrchestratorModuleCallIpAccountLackSomeModulePermission() public {
+        vm.startPrank(u.admin);
         MockOrchestratorModule mockOrchestratorModule = new MockOrchestratorModule(
             address(ipAccountRegistry),
             address(moduleRegistry)
@@ -834,6 +819,7 @@ contract AccessControllerTest is BaseTest {
             "Module3WithoutPermission"
         );
         moduleRegistry.registerModule("Module3WithoutPermission", address(module3WithoutPermission));
+        vm.stopPrank();
 
         vm.prank(owner);
         // orchestrator can call any modules through ipAccount
@@ -879,6 +865,7 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_OrchestratorModuleWithGlobalPermission() public {
+        vm.startPrank(u.admin);
         MockOrchestratorModule mockOrchestratorModule = new MockOrchestratorModule(
             address(ipAccountRegistry),
             address(moduleRegistry)
@@ -898,6 +885,7 @@ contract AccessControllerTest is BaseTest {
             "Module2WithPermission"
         );
         moduleRegistry.registerModule("Module2WithPermission", address(module2WithPermission));
+        vm.stopPrank();
 
         vm.prank(u.admin);
         accessController.setGlobalPermission(
@@ -942,7 +930,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_ipAccountOwnerSetBatchPermissions() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1036,7 +1023,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_NonIpAccountOwnerSetBatchPermissions() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1081,7 +1067,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_setBatchPermissionsWithZeroIPAccountAddress() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1117,7 +1102,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_setBatchPermissionsWithZeroSignerAddress() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1153,7 +1137,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_setBatchPermissionsWithInvalidIPAccount() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1192,7 +1175,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_setBatchPermissionsWithInvalidPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1229,7 +1211,6 @@ contract AccessControllerTest is BaseTest {
     }
 
     function test_AccessController_revert_setBatchPermissionsButCallerisNotIPAccount() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
@@ -1262,7 +1243,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission was unset after transfer NFT to another account
     function test_AccessController_NFTTransfer() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1301,7 +1281,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission check failure after transfer NFT to another account
     function test_AccessController_revert_NFTTransferCheckPermissionFailure() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1344,7 +1323,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission still exist after transfer NFT back
     function test_AccessController_NFTTransferBack() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1397,7 +1375,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission check still pass after transfer NFT back
     function test_AccessController_NFTTransferBackCheckPermission() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1450,7 +1427,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission was unset after burn NFT
     function test_AccessController_NFTBurn() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1487,7 +1463,6 @@ contract AccessControllerTest is BaseTest {
 
     // test permission check failed after burn NFT
     function test_AccessController_revert_NFTBurnCheckPermissionFailure() public {
-        moduleRegistry.registerModule("MockModule", address(mockModule));
         address signer = vm.addr(2);
         vm.prank(owner);
         ipAccount.execute(
@@ -1527,11 +1502,6 @@ contract AccessControllerTest is BaseTest {
 
         address anotherAccount = vm.addr(3);
 
-        TokenWithdrawalModule tokenWithdrawalModule = new TokenWithdrawalModule(
-            address(accessController),
-            address(ipAccountRegistry)
-        );
-        moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
         vm.prank(owner);
         ipAccount.execute(
             address(accessController),
@@ -1567,11 +1537,6 @@ contract AccessControllerTest is BaseTest {
 
         address anotherAccount = vm.addr(3);
 
-        TokenWithdrawalModule tokenWithdrawalModule = new TokenWithdrawalModule(
-            address(accessController),
-            address(ipAccountRegistry)
-        );
-        moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
         vm.prank(owner);
         ipAccount.execute(
             address(accessController),
@@ -1605,11 +1570,6 @@ contract AccessControllerTest is BaseTest {
 
         address anotherAccount = vm.addr(3);
 
-        TokenWithdrawalModule tokenWithdrawalModule = new TokenWithdrawalModule(
-            address(accessController),
-            address(ipAccountRegistry)
-        );
-        moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
         vm.prank(owner);
         ipAccount.execute(
             address(accessController),

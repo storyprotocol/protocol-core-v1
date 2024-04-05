@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IAccessController } from "contracts/interfaces/access/IAccessController.sol";
-import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
@@ -30,20 +27,6 @@ contract PILPolicyFrameworkCompatibilityTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ royaltyPolicyLAP: true, arbitrationPolicySP: false }));
-        deployConditionally();
-        postDeploymentSetup();
-
-        // Call `getXXX` here to either deploy mock or use real contracted deploy via the
-        // deployConditionally() call above.
-        // TODO: three options, auto/mock/real in deploy condition, so no need to call getXXX
-        accessController = IAccessController(getAccessController());
-        licensingModule = ILicensingModule(getLicensingModule());
-        royaltyModule = IRoyaltyModule(getRoyaltyModule());
 
         _setPILPolicyFrameworkManager();
 
@@ -53,6 +36,8 @@ contract PILPolicyFrameworkCompatibilityTest is BaseTest {
         ipId2 = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), 2);
         vm.label(ipId1, "IP1");
         vm.label(ipId2, "IP2");
+
+        useMock_RoyaltyPolicyLAP();
     }
 
     /////////////////////////////////////////////////////////////
@@ -83,9 +68,11 @@ contract PILPolicyFrameworkCompatibilityTest is BaseTest {
 
         // Others can mint licenses to make derivatives of IP1 from each different policy,
         // as long as they pass the verifications
+        vm.startPrank(alice);
         uint256 licenseId1 = licensingModule.mintLicense(_getPilPolicyId("comm_deriv"), ipId1, 1, dan, "");
         assertEq(licenseRegistry.balanceOf(dan, licenseId1), 1, "dan doesn't have license1");
 
+        vm.startPrank(dan);
         uint256 licenseId2 = licensingModule.mintLicense(_getPilPolicyId("comm_non_deriv"), ipId1, 1, dan, "");
         assertEq(licenseRegistry.balanceOf(dan, licenseId2), 1, "dan doesn't have license2");
     }

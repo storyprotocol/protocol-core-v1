@@ -20,16 +20,6 @@ contract BaseIntegration is BaseTest {
     using Strings for *;
     function setUp() public virtual override(BaseTest) {
         super.setUp();
-        // deploy everything as real contracts
-        buildDeployAccessCondition(DeployAccessCondition({ governance: true, accessController: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: true }));
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: true })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-
-        deployConditionally();
-        postDeploymentSetup();
 
         dealMockAssets();
 

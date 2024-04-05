@@ -5,20 +5,22 @@ pragma solidity 0.8.23;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { AccessPermission } from "contracts/lib/AccessPermission.sol";
-import { Errors } from "contracts/lib/Errors.sol";
-import { Licensing } from "contracts/lib/Licensing.sol";
-import { RegisterPILPolicyParams } from "contracts/interfaces/modules/licensing/IPILPolicyFrameworkManager.sol";
-import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
+import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
+import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
+import { Errors } from "../../../../contracts/lib/Errors.sol";
+import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+// solhint-disable-next-line max-line-length
+import { RegisterPILPolicyParams } from "../../../../contracts/interfaces/modules/licensing/IPILPolicyFrameworkManager.sol";
+import { PILPolicy } from "../../../../contracts/modules/licensing/PILPolicyFrameworkManager.sol";
+import { IRoyaltyPolicyLAP } from "../../../../contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 
 // test
 // solhint-disable-next-line max-line-length
-import { MockPolicyFrameworkManager, MockPolicyFrameworkConfig, MockPolicy } from "test/foundry/mocks/licensing/MockPolicyFrameworkManager.sol";
-import { MockAccessController } from "test/foundry/mocks/access/MockAccessController.sol";
-import { MockTokenGatedHook } from "test/foundry/mocks/MockTokenGatedHook.sol";
-import { MockERC721 } from "test/foundry/mocks/token/MockERC721.sol";
-import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
+import { MockPolicyFrameworkManager, MockPolicyFrameworkConfig, MockPolicy } from "../../mocks/licensing/MockPolicyFrameworkManager.sol";
+import { MockAccessController } from "../../mocks/access/MockAccessController.sol";
+import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
+import { MockERC721 } from "../../mocks/token/MockERC721.sol";
+import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract LicensingModuleTest is BaseTest {
     using Strings for *;
@@ -38,6 +40,8 @@ contract LicensingModuleTest is BaseTest {
     address public ipOwner = address(0x100); // use static address, otherwise uri check fails because licensor changes
     address public licenseHolder = address(0x101);
 
+    IRoyaltyPolicyLAP public mockRoyaltyPolicyLAP;
+
     modifier withPolicyFrameworkManager() {
         licensingModule.registerPolicyFrameworkManager(address(mockPFM));
         _;
@@ -45,13 +49,6 @@ contract LicensingModuleTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));
-        deployConditionally();
-        postDeploymentSetup();
 
         // TODO: Mock this
         mockRoyaltyPolicyLAP = royaltyPolicyLAP;
@@ -78,6 +75,8 @@ contract LicensingModuleTest is BaseTest {
         vm.label(ipId1, "IPAccount1");
         vm.label(ipId2, "IPAccount2");
         vm.label(ipId3, "IPAccount3");
+
+        useMock_RoyaltyPolicyLAP();
     }
 
     function _createMockPolicy() internal pure returns (bytes memory) {

@@ -12,8 +12,6 @@ contract IPAccountStorageTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        deployConditionally();
-        postDeploymentSetup();
 
         module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
 

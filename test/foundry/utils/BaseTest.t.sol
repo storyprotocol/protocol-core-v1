@@ -3,17 +3,8 @@
 pragma solidity 0.8.23;
 
 // external
-import { console2 } from "forge-std/console2.sol"; // console to indicate mock deployment calls.
 import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-
-// contracts
-import { AccessController } from "../../../contracts/access/AccessController.sol";
-// solhint-disable-next-line max-line-length
-import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY } from "../../../contracts/lib/modules/Module.sol";
-import { AccessPermission } from "../../../contracts/lib/AccessPermission.sol";
-import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
-import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
 
 // test
 import { DeployHelper } from "../../../script/foundry/utils/DeployHelper.sol";
@@ -22,7 +13,6 @@ import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
-import { TestProxyHelper } from "./TestProxyHelper.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities

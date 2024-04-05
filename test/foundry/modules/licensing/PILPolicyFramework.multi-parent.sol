@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IAccessController } from "contracts/interfaces/access/IAccessController.sol";
-import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { Licensing } from "contracts/lib/Licensing.sol";
 import { PILFrameworkErrors } from "contracts/lib/PILFrameworkErrors.sol";
@@ -40,20 +37,6 @@ contract PILPolicyFrameworkMultiParentTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ royaltyPolicyLAP: true, arbitrationPolicySP: false }));
-        deployConditionally();
-        postDeploymentSetup();
-
-        // Call `getXXX` here to either deploy mock or use real contracted deploy via the
-        // deployConditionally() call above.
-        // TODO: three options, auto/mock/real in deploy condition, so no need to call getXXX
-        accessController = IAccessController(getAccessController());
-        licensingModule = ILicensingModule(getLicensingModule());
-        royaltyModule = IRoyaltyModule(getRoyaltyModule());
 
         _setPILPolicyFrameworkManager();
 
@@ -76,6 +59,8 @@ contract PILPolicyFrameworkMultiParentTest is BaseTest {
         vm.label(ipId2, "IP2");
         vm.label(ipId3, "IP3");
         vm.label(ipId4, "IP4");
+
+        useMock_RoyaltyPolicyLAP();
     }
 
     function test_PILPolicyFramework_multiParent_AliceSets3Parents_SamePolicyReciprocal()
@@ -404,11 +389,11 @@ contract PILPolicyFrameworkMultiParentTest is BaseTest {
         RegisterPILPolicyParams memory inputB
     ) internal returns (uint256 polAId, uint256 polBId) {
         polAId = _pilFramework().registerPolicy(inputA);
-        vm.prank(ipId1);
+        vm.prank(ipIdToOwner[ipId1]);
         licenses.push(licensingModule.mintLicense(polAId, ipId1, 1, alice, ""));
 
         polBId = _pilFramework().registerPolicy(inputB);
-        vm.prank(ipId2);
+        vm.prank(ipIdToOwner[ipId2]);
         licenses.push(licensingModule.mintLicense(polBId, ipId2, 2, alice, ""));
     }
 

@@ -44,18 +44,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: false })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         USDC.mint(ipAccount2, 1000 * 10 ** 6); // 1000 USDC
 
-        address impl = address(new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule()));
+        address impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, address(governance)))
         );
 
         arbitrationRelayer = u.admin;
@@ -175,7 +169,7 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
         vm.prank(u.admin);
@@ -202,7 +196,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         testRoyaltyModule.setLicensingModule(address(licensingModule));
         assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));

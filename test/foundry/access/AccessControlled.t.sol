@@ -17,9 +17,6 @@ contract AccessControlledTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         mockNFT.mintId(owner, tokenId);
         address deployedAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
@@ -31,6 +28,8 @@ contract AccessControlledTest is BaseTest {
             address(moduleRegistry),
             "MockAccessControlledModule"
         );
+
+        vm.prank(u.admin);
         moduleRegistry.registerModule("MockAccessControlledModule", address(mockModule));
     }
 

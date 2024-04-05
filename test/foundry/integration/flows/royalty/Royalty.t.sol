@@ -54,7 +54,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.alice);
 
-            ipAcct[1] = _getIpId(mockNFT, 1);
+            ipAcct[1] = ipAccountRegistry.ipAccount(block.chainid, address(mockNFT), 1);
             vm.label(ipAcct[1], "IPAccount1");
 
             registerIpAccount(mockNFT, 1, u.alice);
@@ -67,7 +67,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.bob);
 
-            ipAcct[2] = _getIpId(mockNFT, 2);
+            ipAcct[2] = ipAccountRegistry.ipAccount(block.chainid, address(mockNFT), 2);
             vm.label(ipAcct[2], "IPAccount2");
 
             uint256 mintAmount = 3;
@@ -98,7 +98,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.carl);
 
-            ipAcct[3] = _getIpId(mockNFT, 3);
+            ipAcct[3] = ipAccountRegistry.ipAccount(block.chainid, address(mockNFT), 3);
             vm.label(ipAcct[3], "IPAccount3");
 
             uint256 mintAmount = 1;

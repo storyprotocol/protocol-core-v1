@@ -17,7 +17,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
     using Strings for *;
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
-    uint256 policyId;
+    uint256 internal policyId;
 
     function setUp() public override {
         super.setUp();

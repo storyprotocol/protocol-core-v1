@@ -15,12 +15,6 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: true, licensingModule: false })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         vm.startPrank(u.admin);
         // whitelist royalty policy

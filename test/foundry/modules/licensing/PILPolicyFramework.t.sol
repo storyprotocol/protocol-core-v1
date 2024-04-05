@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IAccessController } from "contracts/interfaces/access/IAccessController.sol";
-import { ILicensingModule } from "contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { PILFrameworkErrors } from "contracts/lib/PILFrameworkErrors.sol";
 // solhint-disable-next-line max-line-length
@@ -22,24 +20,6 @@ contract PILPolicyFrameworkTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: true, moduleRegistry: false }));
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: false, licensingModule: true })
-        );
-        buildDeployPolicyCondition(
-            DeployPolicyCondition({
-                arbitrationPolicySP: false,
-                royaltyPolicyLAP: true // deploy to set address for commercial licenses
-            })
-        );
-        deployConditionally();
-        postDeploymentSetup();
-
-        // Call `getXXX` here to either deploy mock or use real contracted deploy via the
-        // deployConditionally() call above.
-        // TODO: three options, auto/mock/real in deploy condition, so no need to call getXXX
-        accessController = IAccessController(getAccessController());
-        licensingModule = ILicensingModule(getLicensingModule());
 
         _setPILPolicyFrameworkManager();
 

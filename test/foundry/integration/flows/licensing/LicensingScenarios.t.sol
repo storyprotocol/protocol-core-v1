@@ -17,7 +17,7 @@ contract Licensing_Scenarios is BaseIntegration {
     using Strings for *;
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
-    uint256 nonCommRemixPoliciyId;
+    uint256 internal nonCommRemixPoliciyId;
 
     function setUp() public override {
         super.setUp();

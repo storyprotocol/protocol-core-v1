@@ -35,14 +35,6 @@ contract IPAssetRegistryTest is BaseTest {
     /// @notice Initializes the IP asset registry testing contract.
     function setUp() public virtual override {
         super.setUp();
-        buildDeployRegistryCondition(
-            DeployRegistryCondition({
-                licenseRegistry: false, // don't use
-                moduleRegistry: false // use mock
-            })
-        );
-        deployConditionally();
-        postDeploymentSetup();
 
         registry = ipAssetRegistry;
 

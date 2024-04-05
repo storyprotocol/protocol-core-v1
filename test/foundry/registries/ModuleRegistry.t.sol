@@ -19,9 +19,6 @@ contract ModuleRegistryTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: false, moduleRegistry: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         module = new MockModule(address(ipAccountRegistry), address(moduleRegistry), "MockModule");
         customModule = new CustomModule();

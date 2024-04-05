@@ -2,36 +2,24 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
-import { CoreMetadataModule } from "../../../../contracts/modules/metadata/CoreMetadataModule.sol";
 import { ICoreMetadataModule } from "../../../../contracts/interfaces/modules/metadata/ICoreMetadataModule.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
-import { CORE_METADATA_MODULE_KEY } from "../../../../contracts/lib/modules/Module.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { IPAccountStorageOps } from "../../../../contracts/lib/IPAccountStorageOps.sol";
 
 contract CoreMetadataModuleTest is BaseTest {
     using IPAccountStorageOps for IIPAccount;
 
-    CoreMetadataModule public coreMetadataModule;
     IIPAccount private ipAccount;
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: false, moduleRegistry: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         mockNFT.mintId(alice, 1);
 
         ipAccount = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 1)));
 
         vm.label(address(ipAccount), "IPAccount1");
-
-        coreMetadataModule = new CoreMetadataModule(address(accessController), address(ipAssetRegistry));
-
-        vm.prank(u.admin);
-        moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
     }
 
     function test_CoreMetadata_NftTokenURI() public {

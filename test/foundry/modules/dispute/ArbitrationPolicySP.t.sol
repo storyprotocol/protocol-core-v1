@@ -21,12 +21,6 @@ contract TestArbitrationPolicySP is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: true, royaltyModule: false, licensingModule: false })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         arbitrationRelayer = u.admin;
 

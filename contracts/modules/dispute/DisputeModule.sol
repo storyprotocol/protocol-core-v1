@@ -64,11 +64,11 @@ contract DisputeModule is
     IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
 
     /// Constructor
-    /// @param _controller The address of the access controller
-    /// @param _assetRegistry The address of the asset registry
+    /// @param controller The address of the access controller
+    /// @param assetRegistry The address of the asset registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _controller, address _assetRegistry) AccessControlled(_controller, _assetRegistry) {
-        IP_ASSET_REGISTRY = IIPAssetRegistry(_assetRegistry);
+    constructor(address controller, address assetRegistry) AccessControlled(controller, assetRegistry) {
+        IP_ASSET_REGISTRY = IIPAssetRegistry(assetRegistry);
         _disableInitializers();
     }
 
@@ -169,9 +169,9 @@ contract DisputeModule is
         address arbitrationPolicy = $.arbitrationPolicies[targetIpId];
         if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
 
-        uint256 disputeId_ = ++$.disputeCounter;
+        uint256 disputeId = ++$.disputeCounter;
 
-        $.disputes[disputeId_] = Dispute({
+        $.disputes[disputeId] = Dispute({
             targetIpId: targetIpId,
             disputeInitiator: msg.sender,
             arbitrationPolicy: arbitrationPolicy,
@@ -183,7 +183,7 @@ contract DisputeModule is
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(msg.sender, data);
 
         emit DisputeRaised(
-            disputeId_,
+            disputeId,
             targetIpId,
             msg.sender,
             arbitrationPolicy,
@@ -192,7 +192,7 @@ contract DisputeModule is
             data
         );
 
-        return disputeId_;
+        return disputeId;
     }
 
     /// @notice Sets the dispute judgement on a given dispute. Only whitelisted arbitration relayers can call to judge.

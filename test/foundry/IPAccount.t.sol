@@ -54,6 +54,12 @@ contract IPAccountTest is BaseTest {
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
+        // Register vm.addr(2) as a valid module to test isValidSigner
+        bytes32 moduleNameHash = keccak256(abi.encodePacked("MockModuleAddr2"));
+        bytes32 moduleRegistryStorageLocation = 0xa17d78ae7aee011aefa3f1388acb36741284b44eb3fcffe23ecc3a736eaa2700;
+        bytes32 entrySlot = keccak256(abi.encodePacked(moduleRegistryStorageLocation, moduleNameHash));
+        vm.store(address(moduleRegistry), entrySlot, bytes32(uint256(uint160(vm.addr(2)))));
+
         // Check token and owner functions
         (uint256 chainId_, address tokenAddress_, uint256 tokenId_) = ipAccount.token();
         assertEq(chainId_, block.chainid);

@@ -223,6 +223,8 @@ library Errors {
     error RoyaltyModule__ZeroLicensingModule();
     error RoyaltyModule__CanOnlyMintSelectedPolicy();
     error RoyaltyModule__NoParentsOnLinking();
+    error RoyaltyModule__ZeroDisputeModule();
+    error RoyaltyModule__IpIsTagged();
 
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
     error RoyaltyPolicyLAP__ZeroLiquidSplitFactory();
@@ -246,6 +248,8 @@ library Errors {
     error IpRoyaltyVault__SnapshotIntervalTooShort();
     error IpRoyaltyVault__AlreadyClaimed();
     error IpRoyaltyVault__ClaimerNotAnAncestor();
+    error IpRoyaltyVault__IpTagged();
+    error IpRoyaltyVault__ZeroDisputeModule();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             ModuleRegistry                             //

@@ -22,8 +22,7 @@ contract BroadcastManager is Script {
             multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 31337) {
-            multisig = address(0x456);
-            deployer = address(0x999);
+            require(deployer != address(0), "Deployer not set");
             vm.startPrank(deployer);
         } else {
             revert("Unsupported chain");

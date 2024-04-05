@@ -2,115 +2,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-// external
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { console2 } from "forge-std/console2.sol";
-import { Script } from "forge-std/Script.sol";
-import { stdJson } from "forge-std/StdJson.sol";
-// TODO: fix the install of this plugin for safer deployments
-// import { Upgrades } from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
-
-// contracts
-import { AccessController } from "contracts/access/AccessController.sol";
-import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-import { Governance } from "contracts/governance/Governance.sol";
-import { AccessPermission } from "contracts/lib/AccessPermission.sol";
-import { Errors } from "contracts/lib/Errors.sol";
-import { PILFlavors } from "contracts/lib/PILFlavors.sol";
-// solhint-disable-next-line max-line-length
-import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY } from "contracts/lib/modules/Module.sol";
-import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
-import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
-import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
-import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
-import {LicenseToken} from "contracts/LicenseToken.sol";
-import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
-import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
-import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
-import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
-import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
-import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { TokenWithdrawalModule } from "contracts/modules/external/TokenWithdrawalModule.sol";
-// solhint-disable-next-line max-line-length
-import { PILicenseTemplate, PILTerms} from "contracts/modules/licensing/PILicenseTemplate.sol";
-import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
-import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
-import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 
 // script
-import { StringUtil } from "../../../script/foundry/utils/StringUtil.sol";
-import { BroadcastManager } from "../../../script/foundry/utils/BroadcastManager.s.sol";
-import { JsonDeploymentHandler } from "../../../script/foundry/utils/JsonDeploymentHandler.s.sol";
-import { StorageLayoutChecker } from "../../../script/foundry/utils/upgrades/StorageLayoutCheck.s.sol";
+import { DeployHelper } from "../utils/DeployHelper.sol";
 
-// test
-import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
-import { MockERC721 } from "test/foundry/mocks/token/MockERC721.sol";
-import { MockTokenGatedHook } from "test/foundry/mocks/MockTokenGatedHook.sol";
-
-contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
-    using StringUtil for uint256;
-    using stdJson for string;
-
+contract Main is DeployHelper {
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
-    IPAccountImpl internal ipAccountImpl;
-
-    // Registry
-    IPAccountRegistry internal ipAccountRegistry;
-    IPAssetRegistry internal ipAssetRegistry;
-    LicenseRegistry internal licenseRegistry;
-    LicenseToken internal licenseToken;
-    ModuleRegistry internal moduleRegistry;
-
-    // Core Module
-    CoreMetadataModule internal coreMetadataModule;
-    CoreMetadataViewModule internal coreMetadataViewModule;
-    LicensingModule internal licensingModule;
-    DisputeModule internal disputeModule;
-    RoyaltyModule internal royaltyModule;
-
-    // External Module
-    TokenWithdrawalModule internal tokenWithdrawalModule;
-
-    // Policy
-    ArbitrationPolicySP internal arbitrationPolicySP;
-    RoyaltyPolicyLAP internal royaltyPolicyLAP;
-    PILicenseTemplate internal piLt;
-
-    // Misc.
-    Governance internal governance;
-    AccessController internal accessController;
-
-    // Mocks
-    MockERC20 internal erc20;
-    MockERC721 internal erc721;
-
-    // Hooks
-    MockTokenGatedHook internal mockTokenGatedHook;
-
-    mapping(uint256 tokenId => address ipAccountAddress) internal ipAcct;
-
-    mapping(string policyName => uint256 policyId) internal policyIds;
-
-    mapping(string frameworkName => address frameworkAddr) internal templateAddrs;
-
-    uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken
+    // ERC20 to whitelist for arbitration policy and royalty policy
+    address internal ERC20 = 0x0000000000000000000000000000000000000001;
+    // For arbitration policy
+    uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 18; // 1000 MockToken
+    // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
-    constructor() JsonDeploymentHandler("main") {}
+    constructor()
+        DeployHelper(
+            ERC6551_REGISTRY,
+            ERC20,
+            ARBITRATION_PRICE,
+            MAX_ROYALTY_APPROVAL
+        )
+    {}
 
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run() public virtual override {
-        // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        super.run();
-        _beginBroadcast(); // BroadcastManager.s.sol
-
         bool configByMultisig;
         try vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG") returns (bool mult) {
             configByMultisig = mult;
@@ -119,13 +37,13 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         }
         console2.log("configByMultisig:", configByMultisig);
 
-        if (configByMultisig) {
-            _deployProtocolContracts(multisig);
-        } else {
-            _deployProtocolContracts(deployer);
-            _configureDeployment();
-        }
-
+        // deploy all contracts via DeployHelper
+        super.run(
+            configByMultisig ? address(multisig) : address(deployer), // deployer
+            configByMultisig,
+            true, // runStorageLayoutCheck
+            true // writeDeploys
+        );
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol
     }

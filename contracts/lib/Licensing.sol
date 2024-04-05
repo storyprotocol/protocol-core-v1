@@ -13,6 +13,7 @@ library Licensing {
     /// @param royaltyData Data to be used by the royalty policy (for example, encoding of the royalty percentage)
     /// @param mintingFee Fee to be paid when minting a license
     /// @param mintingFeeToken Token to be used to pay the minting fee
+    // TODO: the struct will not be used in mainnet.  will remove.
     struct Policy {
         bool isLicenseTransferable;
         address policyFramework;
@@ -28,6 +29,7 @@ library Licensing {
     /// license is burnt for linking
     /// @param licensorIpId Id of the IP this license is for
     /// @param transferable Whether or not the license is transferable
+    // TODO: the struct will not be used in mainnet.  will remove.
     struct License {
         uint256 policyId;
         address licensorIpId;
@@ -35,7 +37,7 @@ library Licensing {
         // TODO: support for transfer hooks
     }
 
-    struct MintingLicenseSpec {
+    struct MintingLicenseConfig {
         bool isSet;
         uint256 mintingFee;
         address mintingFeeModule;

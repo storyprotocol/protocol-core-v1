@@ -18,16 +18,16 @@ interface ILicenseRegistryV2 {
     /// @notice Emitted when a new currency token is registered.
     event CurrencyTokenRegistered(address indexed token);
 
-    /// @notice Emitted when a minting license specification is set.
-    event MintingLicenseSpecSet(
+    /// @notice Emitted when a minting license configuration is set.
+    event MintingLicenseConfigSet(
         address indexed ipId,
         address indexed licenseTemplate,
         uint256 indexed licenseTermsId,
-        Licensing.MintingLicenseSpec mintingLicenseSpec
+        Licensing.MintingLicenseConfig mintingLicenseConfig
     );
 
-    /// @notice Emitted when a minting license specification is set for all licenses of an IP.
-    event MintingLicenseSpecSetForAll(address indexed ipId, Licensing.MintingLicenseSpec mintingLicenseSpec);
+    /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
+    event MintingLicenseConfigSetForAll(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
 
     /// @notice Emitted when an expiration time is set for an IP.
     event ExpireTimeSet(address indexed ipId, uint256 expireTime);
@@ -85,7 +85,7 @@ interface ILicenseRegistryV2 {
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseSpec memory);
+    ) external view returns (Licensing.MintingLicenseConfig memory);
 
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
@@ -112,25 +112,25 @@ interface ILicenseRegistryV2 {
     /// @notice Gets the count of attached license terms of an IP.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256);
 
-    /// @notice Retrieves the minting license specification for a given IP, license template, and license terms ID.
-    function getMintingLicenseSpec(
+    /// @notice Retrieves the minting license configuration for a given IP, license template, and license terms ID.
+    function getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseSpec memory);
+    ) external view returns (Licensing.MintingLicenseConfig memory);
 
-    /// @notice Sets the minting license specification for a given IP, license template, and license terms ID.
-    function setMintingLicenseSpec(
+    /// @notice Sets the minting license configuration for a given IP, license template, and license terms ID.
+    function setMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseSpec calldata mintingLicenseSpec
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
-    /// @notice Sets the minting license specification for all licenser terms of given IP.
-    function setMintingLicenseSpecForAll(
+    /// @notice Sets the minting license configuration for all licenser terms of given IP.
+    function setMintingLicenseConfigForAll(
         address ipId,
-        Licensing.MintingLicenseSpec calldata mintingLicenseSpec
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
     /// @notice Sets the expiration time for an IP.

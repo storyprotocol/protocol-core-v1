@@ -127,7 +127,7 @@ contract LicensingModuleV2 is
 
         _verifyIpNotDisputed(originalIpId);
 
-        Licensing.MintingLicenseSpec memory mlc = LICENSE_REGISTRY.verifyMintLicenseToken(
+        Licensing.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.verifyMintLicenseToken(
             originalIpId,
             licenseTemplate,
             licenseTermsId,
@@ -276,7 +276,7 @@ contract LicensingModuleV2 is
 
         for (uint256 i = 0; i < originalIpIds.length; i++) {
             uint256 lcId = licenseTermsIds[i];
-            Licensing.MintingLicenseSpec memory mlc = LICENSE_REGISTRY.getMintingLicenseSpec(
+            Licensing.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.getMintingLicenseConfig(
                 originalIpIds[i],
                 licenseTemplate,
                 lcId
@@ -310,7 +310,7 @@ contract LicensingModuleV2 is
         uint256 licenseTermsId,
         uint256 amount,
         bytes calldata royaltyContext,
-        Licensing.MintingLicenseSpec memory mlc
+        Licensing.MintingLicenseConfig memory mlc
     ) private returns (address royaltyPolicy, bytes memory royaltyData) {
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         uint256 mintingFee = 0;
@@ -328,17 +328,17 @@ contract LicensingModuleV2 is
     }
 
     function _getTotalMintingFee(
-        Licensing.MintingLicenseSpec memory mintingLicenseSpec,
+        Licensing.MintingLicenseConfig memory mintingLicenseConfig,
         address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
         uint256 mintingFeeSetByLicenseTerms,
         uint256 amount
     ) private view returns (uint256) {
-        if (!mintingLicenseSpec.isSet) return mintingFeeSetByLicenseTerms * amount;
-        if (mintingLicenseSpec.mintingFeeModule == address(0)) return mintingLicenseSpec.mintingFee * amount;
+        if (!mintingLicenseConfig.isSet) return mintingFeeSetByLicenseTerms * amount;
+        if (mintingLicenseConfig.mintingFeeModule == address(0)) return mintingLicenseConfig.mintingFee * amount;
         return
-            IMintingFeeModule(mintingLicenseSpec.mintingFeeModule).getTotalMintingFee(
+            IMintingFeeModule(mintingLicenseConfig.mintingFeeModule).getTotalMintingFee(
                 licensorIpId,
                 licenseTemplate,
                 licenseTermsId,

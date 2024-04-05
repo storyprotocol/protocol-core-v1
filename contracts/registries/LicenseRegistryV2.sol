@@ -40,8 +40,8 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
         mapping(address ipId => uint256) expireTimes;
-        mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseSpec mintingLicenseSpec) mintingLicenseSpecs;
-        mapping(address ipId => Licensing.MintingLicenseSpec mintingLicenseSpec) mintingLicenseSpecsForAll;
+        mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigs;
+        mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForAll;
     }
 
     // TODO: update the storage location
@@ -118,40 +118,40 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         _setExpireTime(ipId, expireTime);
     }
 
-    function setMintingLicenseSpec(
+    function setMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseSpec calldata mintingLicenseSpec
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.MintingLicenseSpec({
+        $.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.MintingLicenseConfig({
             isSet: true,
-            mintingFee: mintingLicenseSpec.mintingFee,
-            mintingFeeModule: mintingLicenseSpec.mintingFeeModule,
-            receiverCheckModule: mintingLicenseSpec.receiverCheckModule,
-            receiverCheckData: mintingLicenseSpec.receiverCheckData
+            mintingFee: mintingLicenseConfig.mintingFee,
+            mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
+            receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
+            receiverCheckData: mintingLicenseConfig.receiverCheckData
         });
 
-        emit MintingLicenseSpecSet(ipId, licenseTemplate, licenseTermsId, mintingLicenseSpec);
+        emit MintingLicenseConfigSet(ipId, licenseTemplate, licenseTermsId, mintingLicenseConfig);
     }
 
-    function setMintingLicenseSpecForAll(
+    function setMintingLicenseConfigForAll(
         address ipId,
-        Licensing.MintingLicenseSpec calldata mintingLicenseSpec
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.mintingLicenseSpecsForAll[ipId] = Licensing.MintingLicenseSpec({
+        $.mintingLicenseConfigsForAll[ipId] = Licensing.MintingLicenseConfig({
             isSet: true,
-            mintingFee: mintingLicenseSpec.mintingFee,
-            mintingFeeModule: mintingLicenseSpec.mintingFeeModule,
-            receiverCheckModule: mintingLicenseSpec.receiverCheckModule,
-            receiverCheckData: mintingLicenseSpec.receiverCheckData
+            mintingFee: mintingLicenseConfig.mintingFee,
+            mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
+            receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
+            receiverCheckData: mintingLicenseConfig.receiverCheckData
         });
-        emit MintingLicenseSpecSetForAll(ipId, mintingLicenseSpec);
+        emit MintingLicenseConfigSetForAll(ipId, mintingLicenseConfig);
     }
 
     function attachLicenseTermsToIp(
@@ -228,7 +228,7 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseSpec memory) {
+    ) external view returns (Licensing.MintingLicenseConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.expireTimes[originalIpId] < block.timestamp) {
             revert Errors.LicenseRegistry__OriginalIpExpired(originalIpId);
@@ -240,7 +240,7 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         } else if (!_hasIpAttachedLicenseTerms(originalIpId, licenseTemplate, licenseTermsId)) {
             revert Errors.LicenseRegistry__OriginalIpHasNoLicenseTerms(originalIpId, licenseTermsId);
         }
-        return _getMintingLicenseSpec(originalIpId, licenseTemplate, licenseTermsId);
+        return _getMintingLicenseConfig(originalIpId, licenseTemplate, licenseTermsId);
     }
 
     function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool) {
@@ -291,12 +291,12 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
     }
 
-    function getMintingLicenseSpec(
+    function getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseSpec memory) {
-        return _getMintingLicenseSpec(ipId, licenseTemplate, licenseTermsId);
+    ) external view returns (Licensing.MintingLicenseConfig memory) {
+        return _getMintingLicenseConfig(ipId, licenseTemplate, licenseTermsId);
     }
 
     /// @notice Returns the canonical protocol-wide LicensingModule
@@ -327,19 +327,19 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _getLicenseRegistryStorage().originalIps[derivativeIpId].length() > 0;
     }
 
-    function _getMintingLicenseSpec(
+    function _getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) internal view returns (Licensing.MintingLicenseSpec memory) {
+    ) internal view returns (Licensing.MintingLicenseConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        if ($.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
-            return $.mintingLicenseSpecs[_getHash(ipId, licenseTemplate, licenseTermsId)];
+        if ($.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
+            return $.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)];
         }
-        return $.mintingLicenseSpecsForAll[ipId];
+        return $.mintingLicenseConfigsForAll[ipId];
     }
 
     function _getHash(address ipId, address licenseTemplate, uint256 licenseTermsId) internal pure returns (bytes32) {

@@ -13,6 +13,7 @@ import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
+import { TestProxyHelper } from "./TestProxyHelper.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities

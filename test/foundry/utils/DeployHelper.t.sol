@@ -299,7 +299,9 @@ contract DeployHelper is Test {
 
             // deploy ip royalty vault implementation and beacon
             vm.startPrank(governanceAdmin);
-            address ipRoyaltyVaultImplementation = address(new IpRoyaltyVault(address(royaltyPolicyLAP)));
+            address ipRoyaltyVaultImplementation = address(
+                new IpRoyaltyVault(address(royaltyPolicyLAP), address(disputeModule))
+            );
             address ipRoyaltyVaultBeacon = address(
                 new UpgradeableBeacon(ipRoyaltyVaultImplementation, getGovernance())
             );

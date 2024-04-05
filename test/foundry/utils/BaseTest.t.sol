@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 // external
 import { console2 } from "forge-std/console2.sol"; // console to indicate mock deployment calls.
 import { Test } from "forge-std/Test.sol";
+import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 
 // contracts
 import { AccessController } from "../../../contracts/access/AccessController.sol";
@@ -15,11 +16,13 @@ import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.s
 import { RoyaltyModule } from "../../../contracts/modules/royalty/RoyaltyModule.sol";
 
 // test
-import { DeployHelper } from "./DeployHelper.t.sol";
+import { DeployHelper } from "../../../script/foundry/utils/DeployHelper.sol";
 import { LicensingHelper } from "./LicensingHelper.t.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
+import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
+import { TestProxyHelper } from "./TestProxyHelper.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities
@@ -35,44 +38,46 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     address internal carl;
     address internal dan;
 
+    ERC6551Registry internal ERC6551_REGISTRY = new ERC6551Registry();
+
+    MockERC20 internal erc20 = new MockERC20();
+    MockERC20 internal erc20bb = new MockERC20();
+
     /// @dev Aliases for mock assets.
-    /// NOTE: Must call `postDeploymentSetup` after `deployConditionally` to set these.
     MockERC20 internal mockToken; // alias for erc20
     MockERC20 internal USDC; // alias for mockToken/erc20
     MockERC20 internal LINK; // alias for erc20bb
-    MockERC721 internal mockNFT; // alias for erc721.ape
+    MockERC721 internal mockNFT;
+
+    uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
+    uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
+
+    constructor() DeployHelper(address(ERC6551_REGISTRY), address(erc20), ARBITRATION_PRICE, MAX_ROYALTY_APPROVAL) {}
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {
         u = UsersLib.createMockUsers(vm);
-        setGovernanceAdmin(u.admin);
 
         admin = u.admin;
         alice = u.alice;
         bob = u.bob;
         carl = u.carl;
         dan = u.dan;
-    }
 
-    function postDeploymentSetup() public {
-        if (postDeployConditions.accessController_init) initAccessController();
-        if (postDeployConditions.moduleRegistry_registerModules) registerModules();
-        if (postDeployConditions.royaltyModule_configure) configureRoyaltyModule();
-        if (postDeployConditions.disputeModule_configure) configureDisputeModule();
-        if (deployConditions.registry.licenseRegistry) configureLicenseRegistry();
-        if (deployConditions.policy.royaltyPolicyLAP) configureRoyaltyPolicyLAP();
+        // deploy all contracts via DeployHelper
+        super.run(
+            address(u.admin),
+            false, // configByMultisig
+            false, // runStorageLayoutCheck
+            false // writeDeploys
+        );
 
-        bool isMockRoyaltyPolicyLAP = address(royaltyPolicyLAP) == address(0) &&
-            address(mockRoyaltyPolicyLAP) != address(0);
-
-        // Initialize licensing helper
-        // TODO: conditionally init and use LicensingHelper.
         initLicensingHelper(
-            getAccessController(),
+            address(accessController),
             address(ipAccountRegistry),
-            getLicensingModule(),
-            getRoyaltyModule(),
-            isMockRoyaltyPolicyLAP ? address(mockRoyaltyPolicyLAP) : address(royaltyPolicyLAP),
+            address(licensingModule),
+            address(royaltyModule),
+            address(royaltyPolicyLAP),
             address(erc20)
         );
 
@@ -80,7 +85,9 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         mockToken = erc20;
         USDC = erc20;
         LINK = erc20bb;
-        mockNFT = erc721.ape;
+        mockNFT = new MockERC721("Ape");
+
+        dealMockAssets();
     }
 
     function dealMockAssets() public {
@@ -95,113 +102,8 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         erc20bb.mint(u.dan, 1000 * 10 ** erc20bb.decimals());
     }
 
-    /// @dev Initialize the access controller to abstract away access controller initialization when testing
-    function initAccessController() public {
-        console2.log("BaseTest PostDeploymentSetup: Init Access Controller");
-        require(address(ipAccountRegistry) != address(0), "ipAccountRegistry not set");
-        vm.startPrank(u.admin);
-
-        // NOTE: accessController is IAccessController, which doesn't expose `initialize` function.
-        AccessController(address(accessController)).setAddresses(address(ipAccountRegistry), getModuleRegistry());
-
-        accessController.setGlobalPermission(
-            address(ipAssetRegistry),
-            address(licensingModule),
-            bytes4(licensingModule.linkIpToParents.selector),
-            AccessPermission.ALLOW
-        );
-
-        // If REAL IPAssetRegistry and LicensingModule are deployed, set global permissions
-        // (NOTE: for now, IPAssetRegistry is always deployed with real contract)
-        if (deployConditions.module.licensingModule) {
-            accessController.setGlobalPermission(
-                address(ipAssetRegistry),
-                address(licensingModule),
-                bytes4(licensingModule.linkIpToParents.selector),
-                AccessPermission.ALLOW
-            );
-
-            accessController.setGlobalPermission(
-                address(ipAssetRegistry),
-                address(licensingModule),
-                bytes4(licensingModule.addPolicyToIp.selector),
-                AccessPermission.ALLOW
-            );
-        }
-
-        vm.stopPrank();
-    }
-
-    /// @dev Register modules to abstract away module registration when testing
-    function registerModules() public {
-        console2.log("BaseTest PostDeploymentSetup: Register Modules");
-        vm.startPrank(u.admin);
-        // TODO: option to register "hookmodule", which will trigger the call below:
-        //       moduleRegistry.registerModuleType(MODULE_TYPE_HOOK, type(IHookModule).interfaceId);
-
-        if (address(disputeModule) != address(0)) {
-            moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
-        }
-        if (address(licensingModule) != address(0)) {
-            moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));
-        }
-        if (address(royaltyModule) != address(0)) {
-            moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
-        }
-        vm.stopPrank();
-    }
-
-    /// @dev Pre-set configs to abstract away configs when testing with royalty module
-    function configureRoyaltyModule() public {
-        console2.log("BaseTest PostDeploymentSetup: Configure Royalty Module");
-        require(address(royaltyModule) != address(0), "royaltyModule not set");
-
-        vm.startPrank(u.admin);
-        RoyaltyModule(address(royaltyModule)).setLicensingModule(getLicensingModule());
-        RoyaltyModule(address(royaltyModule)).setDisputeModule(getDisputeModule());
-        royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-        if (address(royaltyPolicyLAP) != address(0)) {
-            royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
-        }
-        vm.stopPrank();
-    }
-
-    /// @dev Pre-set configs to abstract away configs when testing with dispute module
-    function configureDisputeModule() public {
-        console2.log("BaseTest PostDeploymentSetup: Configure Dispute Module");
-        require(address(disputeModule) != address(0), "disputeModule not set");
-
-        vm.startPrank(u.admin);
-        disputeModule.whitelistDisputeTag("PLAGIARISM", true);
-        if (address(arbitrationPolicySP) != address(0)) {
-            disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
-            disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), u.admin, true);
-            disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicySP));
-        }
-        vm.stopPrank();
-    }
-
-    function configureLicenseRegistry() public {
-        console2.log("BaseTest PostDeploymentSetup: Configure License Registry");
-        require(address(licenseRegistry) != address(0), "licenseRegistry not set");
-
-        vm.startPrank(u.admin);
-        // Need to cast to LicenseRegistry to set dispute and licensing module, as interface doesn't expose those fns.
-        LicenseRegistry(address(licenseRegistry)).setDisputeModule(getDisputeModule());
-        LicenseRegistry(address(licenseRegistry)).setLicensingModule(getLicensingModule());
-        vm.stopPrank();
-    }
-
-    function configureRoyaltyPolicyLAP() public {
-        console2.log("BaseTest PostDeploymentSetup: Configure Royalty Policy LAP");
-        require(address(royaltyPolicyLAP) != address(0), "royaltyPolicyLAP not set");
-    }
-
-    function _getIpId(MockERC721 mnft, uint256 tokenId) internal view returns (address ipId) {
-        return _getIpId(address(mnft), tokenId);
-    }
-
-    function _getIpId(address mnft, uint256 tokenId) internal view returns (address ipId) {
-        return ipAccountRegistry.ipAccount(block.chainid, mnft, tokenId);
+    function useMock_RoyaltyPolicyLAP() internal {
+        address impl = address(new MockRoyaltyPolicyLAP());
+        vm.etch(address(royaltyPolicyLAP), impl.code);
     }
 }

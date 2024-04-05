@@ -11,6 +11,7 @@ import { SafeERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/tok
 import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/IERC20Upgradeable.sol";
 
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
+import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
@@ -24,6 +25,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice LAP royalty policy address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyPolicyLAP public immutable ROYALTY_POLICY_LAP;
+
+    /// @notice Dispute module address
+    IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @notice Ip id to whom this royalty vault belongs to
     address public ipId;
@@ -58,10 +62,15 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Constructor
     /// @param royaltyPolicyLAP The address of the royalty policy LAP
+    /// @param disputeModule The address of the dispute module
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyPolicyLAP) {
+    constructor(address royaltyPolicyLAP, address disputeModule) {
         if (royaltyPolicyLAP == address(0)) revert Errors.IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
+        if (disputeModule == address(0)) revert Errors.IpRoyaltyVault__ZeroDisputeModule();
+
         ROYALTY_POLICY_LAP = IRoyaltyPolicyLAP(royaltyPolicyLAP);
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
+
         _disableInitializers();
     }
 
@@ -186,6 +195,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             ipId
         );
 
+        if (DISPUTE_MODULE.isIpTagged(ipId)) revert Errors.IpRoyaltyVault__IpTagged();
         if (isClaimedByAncestor[ancestorIpId]) revert Errors.IpRoyaltyVault__AlreadyClaimed();
 
         // check if the address being claimed to is an ancestor
@@ -216,6 +226,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param token The revenue token to claim
     /// @return The amount of revenue token claimable
     function _claimableRevenue(address account, uint256 snapshotId, address token) internal view returns (uint256) {
+        // if the ip is tagged, then the unclaimed royalties are lost
+        if (DISPUTE_MODULE.isIpTagged(ipId)) return 0;
+
         uint256 balance = balanceOfAt(account, snapshotId);
         uint256 totalSupply = totalSupplyAt(snapshotId) - unclaimedAtSnapshot[snapshotId];
         uint256 claimableToken = claimableAtSnapshot[snapshotId][token];

@@ -21,9 +21,12 @@ contract MockRoyaltyModule is BaseModule, IRoyaltyModule {
 
     constructor() {}
 
-    function setLicensingAndDisputeModules(address _licensingModule, address _disputeModule) external {
-        LICENSING_MODULE = _licensingModule;
+    function setDisputeModule(address _disputeModule) external {
         DISPUTE_MODULE = _disputeModule;
+    }
+
+    function setLicensingModule(address _licensingModule) external {
+        LICENSING_MODULE = _licensingModule;
     }
 
     function licensingModule() external view override returns (address) {

@@ -69,15 +69,19 @@ contract RoyaltyModule is
         _;
     }
 
-    /// @notice Sets the license registry
+    /// @notice Sets the licensing module
     /// @dev Enforced to be only callable by the protocol admin
-    /// @param licensing The address of the license registry
-    /// @param dispute The address of the dispute module
-    function setLicensingAndDisputeModules(address licensing, address dispute) external onlyProtocolAdmin {
+    /// @param licensing The address of the license module
+    function setLicensingModule(address licensing) external onlyProtocolAdmin {
         if (licensing == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
-        if (dispute == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
-
         _getRoyaltyModuleStorage().licensingModule = licensing;
+    }
+
+    /// @notice Sets the dispute module
+    /// @dev Enforced to be only callable by the protocol admin
+    /// @param dispute The address of the dispute module
+    function setDisputeModule(address dispute) external onlyProtocolAdmin {
+        if (dispute == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
         _getRoyaltyModuleStorage().disputeModule = dispute;
     }
 
@@ -183,8 +187,7 @@ contract RoyaltyModule is
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
 
         IDisputeModule dispute = IDisputeModule($.disputeModule);
-        if (dispute.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
-        if (dispute.isIpTagged(payerIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (dispute.isIpTagged(receiverIpId) || dispute.isIpTagged(payerIpId)) revert Errors.RoyaltyModule__IpIsTagged();
 
         address payerRoyaltyPolicy = $.royaltyPolicies[payerIpId];
         // if the payer does not have a royalty policy set, then the payer is not a derivative ip and does not pay

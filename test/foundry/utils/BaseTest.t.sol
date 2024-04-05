@@ -157,7 +157,8 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         require(address(royaltyModule) != address(0), "royaltyModule not set");
 
         vm.startPrank(u.admin);
-        RoyaltyModule(address(royaltyModule)).setLicensingAndDisputeModules(getLicensingModule(), getDisputeModule());
+        RoyaltyModule(address(royaltyModule)).setLicensingModule(getLicensingModule());
+        RoyaltyModule(address(royaltyModule)).setDisputeModule(getDisputeModule());
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         if (address(royaltyPolicyLAP) != address(0)) {
             royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);

@@ -172,35 +172,40 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, encodedBytes);
     }
 
-    function test_RoyaltyModule_setLicensingAndDisputeModules_revert_ZeroLicensingModule() public {
-        address impl = address(new RoyaltyModule());
-        RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
-        );
-        vm.expectRevert(Errors.RoyaltyModule__ZeroLicensingModule.selector);
-        vm.prank(u.admin);
-        testRoyaltyModule.setLicensingAndDisputeModules(address(0), address(1));
-    }
-
-    function test_RoyaltyModule_setLicensingAndDisputeModules_revert_ZeroDisputeModule() public {
+    function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
         vm.prank(u.admin);
-        testRoyaltyModule.setLicensingAndDisputeModules(address(1), address(0));
+        testRoyaltyModule.setDisputeModule(address(0));
     }
 
-    function test_RoyaltyModule_setLicensingAndDisputeModules() public {
+    function test_RoyaltyModule_setDisputeModule() public {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
         );
-        testRoyaltyModule.setLicensingAndDisputeModules(address(licensingModule), address(disputeModule));
-        assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));
+        testRoyaltyModule.setDisputeModule(address(disputeModule));
         assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));
+    }
+
+    function test_RoyaltyModule_setLicensingModule_revert_ZeroLicensingModule() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.RoyaltyModule__ZeroLicensingModule.selector);
+        royaltyModule.setLicensingModule(address(0));
+    }
+
+    function test_RoyaltyModule_setLicensingModule() public {
+        vm.startPrank(u.admin);
+        address impl = address(new RoyaltyModule());
+        RoyaltyModule testRoyaltyModule = RoyaltyModule(
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+        );
+        testRoyaltyModule.setLicensingModule(address(licensingModule));
+        assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));
     }
 
     function test_RoyaltyModule_whitelistRoyaltyPolicy_revert_ZeroRoyaltyToken() public {

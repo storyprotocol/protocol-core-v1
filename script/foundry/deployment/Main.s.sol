@@ -345,7 +345,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     }
 
     function _configureRoyaltyRelated() private {
-        royaltyModule.setLicensingAndDisputeModules(address(licensingModule), address(disputeModule));
+        royaltyModule.setLicensingModule(address(licensingModule));
+        royaltyModule.setDisputeModule(address(disputeModule));
         // whitelist
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);

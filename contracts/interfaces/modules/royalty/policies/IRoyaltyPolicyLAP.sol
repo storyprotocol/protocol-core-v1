@@ -24,7 +24,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param ipRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
     /// @param ancestorsAddresses The ancestors addresses array
-    /// @param ancestorsRoyalties The ancestors royalties array
+    /// @param ancestorsRoyalties Contains royalty token amounts for each ancestor in the same index as ancestorsAddresses
     struct LAPRoyaltyData {
         bool isUnlinkableToParents;
         address ipRoyaltyVault;

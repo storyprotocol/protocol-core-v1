@@ -70,10 +70,23 @@ interface ILicenseNFT is IERC721Metadata, IERC721Enumerable {
     /// @return The licensor IP ID associated with the License Token.
     function getLicensorIpId(uint256 tokenId) external view returns (address);
 
+    /// @notice Returns the ID of the license terms that are used for the given license ID
+    /// @param tokenId The ID of the license token
+    function getLicenseTermsId(uint256 tokenId) external view returns (uint256);
+
+    /// @notice Returns the address of the license template that is used for the given license ID
+    /// @param tokenId The ID of the license token
+    function getLicenseTemplate(uint256 tokenId) external view returns (address);
+
     /// @notice Checks if a License Token has been revoked.
     /// @param tokenId The ID of the License Token to check.
     /// @return True if the License Token has been revoked, false otherwise.
     function isLicenseTokenRevoked(uint256 tokenId) external view returns (bool);
+
+    /// @notice Gets the expiration time of a License Token.
+    /// @param tokenId The ID of the License Token.
+    /// @return The expiration time of the License Token.
+    function getExpirationTime(uint256 tokenId) external view returns (uint256);
 
     /// @notice Retrieves the metadata associated with a License Token.
     /// @param tokenId The ID of the License Token.

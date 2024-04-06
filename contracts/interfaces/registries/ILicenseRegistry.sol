@@ -1,89 +1,193 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
 import { Licensing } from "../../lib/Licensing.sol";
-import { IDisputeModule } from "../modules/dispute/IDisputeModule.sol";
-import { ILicensingModule } from "../modules/licensing/ILicensingModule.sol";
 
 /// @title ILicenseRegistry
-interface ILicenseRegistry is IERC1155 {
-    /// @notice Emitted when a license is minted
-    /// @param creator The address that created the license
-    /// @param receiver The address that received the license
-    /// @param licenseId The ID of the license
-    /// @param amount The amount of licenses minted
-    /// @param licenseData The license data
-    event LicenseMinted(
-        address indexed creator,
-        address indexed receiver,
-        uint256 indexed licenseId,
-        uint256 amount,
-        Licensing.License licenseData
+/// @notice This contract is responsible for maintaining relationships between IPs and their licenses,
+/// parent and derivative IPs, registering License Templates, setting default licenses,
+/// and managing royalty policies and currency tokens.
+/// It serves as a central point for managing the licensing states within the Story Protocol ecosystem.
+interface ILicenseRegistry {
+    /// @notice Emitted when a new license template is registered.
+    event LicenseTemplateRegistered(address indexed licenseTemplate);
+
+    /// @notice Emitted when a new royalty policy is registered.
+    event RoyaltyPolicyRegistered(address indexed royaltyPolicy);
+
+    /// @notice Emitted when a new currency token is registered.
+    event CurrencyTokenRegistered(address indexed token);
+
+    /// @notice Emitted when a minting license configuration is set.
+    event MintingLicenseConfigSetLicense(
+        address indexed ipId,
+        address indexed licenseTemplate,
+        uint256 indexed licenseTermsId
     );
 
-    /// @notice Returns the canonical protocol-wide LicensingModule
-    function licensingModule() external view returns (ILicensingModule);
+    /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
+    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
 
-    /// @notice Returns the canonical protocol-wide DisputeModule
-    function disputeModule() external view returns (IDisputeModule);
+    /// @notice Emitted when an expiration time is set for an IP.
+    event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
 
-    /// @notice Mints license NFTs representing a policy granted by a set of ipIds (licensors). This NFT needs to be
-    /// burned in order to link a derivative IP with its parents. If this is the first combination of policy and
-    /// licensors, a new licenseId will be created. If not, the license is fungible and an id will be reused.
-    /// @dev Only callable by the licensing module.
-    /// @param policyId The ID of the policy to be minted
-    /// @param licensorIpId_ The ID of the IP granting the license (ie. licensor)
-    /// @param transferable True if the license is transferable
-    /// @param amount Number of licenses to mint. License NFT is fungible for same policy and same licensors
-    /// @param receiver Receiver address of the minted license NFT(s).
-    /// @return licenseId The ID of the minted license NFT(s).
-    function mintLicense(
-        uint256 policyId,
-        address licensorIpId_,
-        bool transferable,
-        uint256 amount,
-        address receiver
-    ) external returns (uint256 licenseId);
+    /// @notice Sets the default license terms that are attached to all IPs by default.
+    /// @param newLicenseTemplate The address of the new default license template.
+    /// @param newLicenseTermsId The ID of the new default license terms.
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external;
 
-    /// @notice Burns licenses
-    /// @param holder The address that holds the licenses
-    /// @param licenseIds The ids of the licenses to burn
-    function burnLicenses(address holder, uint256[] calldata licenseIds) external;
+    /// @notice Returns the default license terms.
+    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);
 
-    ///
-    /// Getters
-    ///
+    /// @notice Registers a new license template in the Story Protocol.
+    /// @param licenseTemplate The address of the license template to register.
+    function registerLicenseTemplate(address licenseTemplate) external;
 
-    /// @notice Returns the number of licenses registered in the protocol.
-    /// @dev Token ID counter total count.
-    /// @return mintedLicenses The number of minted licenses
-    function mintedLicenses() external view returns (uint256);
+    /// @notice Checks if a license template is registered.
+    /// @param licenseTemplate The address of the license template to check.
+    /// @return Whether the license template is registered.
+    function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool);
 
-    /// @notice Returns true if holder has positive balance for the given license ID.
-    /// @return isLicensee True if holder is the licensee for the license (owner of the license NFT), or derivative IP
-    /// owner if the license was added to the IP by linking (burning a license).
-    function isLicensee(uint256 licenseId, address holder) external view returns (bool);
+    /// @notice Registers a derivative IP and its relationship to parent IPs.
+    /// @param ipId The address of the derivative IP.
+    /// @param parentIpIds An array of addresses of the parent IPs.
+    /// @param licenseTemplate The address of the license template used.
+    /// @param licenseTermsIds An array of IDs of the license terms.
+    function registerDerivativeIp(
+        address ipId,
+        address[] calldata parentIpIds,
+        address licenseTemplate,
+        uint256[] calldata licenseTermsIds
+    ) external;
 
-    /// @notice Returns the license data for the given license ID
-    /// @param licenseId The ID of the license
-    /// @return licenseData The license data
-    function license(uint256 licenseId) external view returns (Licensing.License memory);
+    /// @notice Checks if an IP is a derivative IP.
+    /// @param ipId The address of the IP to check.
+    /// @return Whether the IP is a derivative IP.
+    function isDerivativeIp(address ipId) external view returns (bool);
 
-    /// @notice Returns the ID of the IP asset that is the licensor of the given license ID
-    /// @param licenseId The ID of the license
-    /// @return licensorIpId The ID of the licensor
-    function licensorIpId(uint256 licenseId) external view returns (address);
+    /// @notice Checks if an IP has derivative IPs.
+    /// @param ipId The address of the IP to check.
+    /// @return Whether the IP has derivative IPs.
+    function hasDerivativeIps(address ipId) external view returns (bool);
 
-    /// @notice Returns the policy ID for the given license ID
-    /// @param licenseId The ID of the license
-    /// @return policyId The ID of the policy
-    function policyIdForLicense(uint256 licenseId) external view returns (uint256);
 
-    /// @notice Returns true if the license has been revoked (licensor tagged after a dispute in
-    /// the dispute module). If the tag is removed, the license is not revoked anymore.
-    /// @param licenseId The id of the license to check
-    /// @return isRevoked True if the license is revoked
-    function isLicenseRevoked(uint256 licenseId) external view returns (bool);
+    // TODO: getDerivativeIpCount
+
+    /// @notice Verifies the minting of a license token.
+    /// @param licensorIpId The address of the licensor IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms will mint the license token.
+    /// @param isMintedByIpOwner Whether the license token is minted by the IP owner.
+    /// @return The configuration for minting the license.
+    function verifyMintLicenseToken(
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        bool isMintedByIpOwner
+    ) external view returns (Licensing.MintingLicenseConfig memory);
+
+    /// @notice Attaches license terms to an IP.
+    /// @param ipId The address of the IP to which the license terms are attached.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
+    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint256 licenseTermsId) external;
+
+    /// @notice Checks if license terms exist.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the license terms exist.
+    function exists(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
+
+    /// @notice Checks if an IP has attached any license terms.
+    /// @param ipId The address of the IP to check.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the IP has attached any license terms.
+    function hasIpAttachedLicenseTerms(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) external view returns (bool);
+
+    /// @notice Gets the attached license terms of an IP by its index.
+    /// @param ipId The address of the IP.
+    /// @param index The index of the attached license terms within the array of all attached license terms of the IP.
+    /// @return licenseTemplate The address of the license template where the license terms are defined.
+    /// @return licenseTermsId The ID of the license terms.
+    function getAttachedLicenseTerms(
+        address ipId,
+        uint256 index
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice Gets the count of attached license terms of an IP.
+    /// @param ipId The address of the IP.
+    /// @return The count of attached license terms.
+    function getAttachedLicenseTermsCount(address ipId) external view returns (uint256);
+
+    /// @notice got the derivative IP of an IP by its index.
+    /// @param parentIpId The address of the IP.
+    /// @param index The index of the derivative IP within the array of all derivative IPs of the IP.
+    /// @return childIpId The address of the derivative IP.
+    function getDerivativeIp(address parentIpId, uint256 index) external view returns (address childIpId);
+
+    /// @notice Gets the count of derivative IPs of an IP.
+    /// @param parentIpId The address of the IP.
+    /// @return The count of derivative IPs.
+    function getDerivativeIpCount(address parentIpId) external view returns (uint256);
+
+    /// @notice got the parent IP of an IP by its index.
+    /// @param childIpId The address of the IP.
+    /// @param index The index of the parent IP within the array of all parent IPs of the IP.
+    /// @return parentIpId The address of the parent IP.
+    function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId);
+
+    /// @notice Gets the count of parent IPs.
+    /// @param childIpId The address of the childIP.
+    /// @return The count o parent IPs.
+    function getParentIpCount(address childIpId) external view returns (uint256);
+
+    /// @notice Retrieves the minting license configuration for a given license terms of the IP.
+    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The configuration for minting the license.
+    function getMintingLicenseConfig(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) external view returns (Licensing.MintingLicenseConfig memory);
+
+    /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
+    /// @dev This function can only be called by the LicensingModule.
+    /// @param ipId The address of the IP for which the configuration is being set.
+    /// @param licenseTemplate The address of the license template used.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// @param mintingLicenseConfig The configuration for minting the license.
+    function setMintingLicenseConfigForLicense(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+    ) external;
+
+    /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
+    /// @dev This function will set a global configuration for all licenses under a specific IP.
+    /// However, this global configuration can be overridden by a configuration set at a specific license level.
+    /// @param ipId The IP ID for which the configuration is being set.
+    /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
+    function setMintingLicenseConfigForIp(
+        address ipId,
+        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+    ) external;
+
+    /// @notice Sets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @param expireTime The new expiration time, 0 means never expired.
+    function setExpireTime(address ipId, uint256 expireTime) external;
+
+    /// @notice Gets the expiration time for an IP.
+    /// @param ipId The address of the IP.
+    /// @return The expiration time, 0 means never expired.
+    function getExpireTime(address ipId) external view returns (uint256);
 }

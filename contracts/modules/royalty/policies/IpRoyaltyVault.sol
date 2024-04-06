@@ -27,6 +27,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     IRoyaltyPolicyLAP public immutable ROYALTY_POLICY_LAP;
 
     /// @notice Dispute module address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @notice Ip id to whom this royalty vault belongs to

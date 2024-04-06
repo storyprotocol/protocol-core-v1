@@ -128,7 +128,6 @@ library Errors {
     error LicenseRegistry__NotTransferable();
     /// @notice emitted on constructor if dispute module is not set
     error LicenseRegistry__ZeroDisputeModule();
-    error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index);
     error LicenseRegistry__UnregisteredLicenseTemplate(address licenseTemplate);
     error LicenseRegistry__NotLicenseTemplate(address licenseTemplate);
     error LicenseRegistry__IpExpired(address ipId);
@@ -141,6 +140,7 @@ library Errors {
     error LicenseRegistry__ParentIpTagged(address ipId);
     error LicenseRegistry__DerivativeIsParent(address ipId);
     error LicenseRegistry__ParentIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
+    error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index, uint256 length);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            LicenseNFT                                  //

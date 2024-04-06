@@ -10,18 +10,18 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
-import { ILicenseRegistryV2 } from "../../interfaces/registries/ILicenseRegistryV2.sol";
+import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
-import { LicensorApprovalCheckerV2 } from "../../modules/licensing/parameter-helpers/LicensorApprovalCheckerV2.sol";
+import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
 
 /// @title PILicenseTemplate
 contract PILicenseTemplate is
     BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,
-    LicensorApprovalCheckerV2,
+    LicensorApprovalChecker,
     ReentrancyGuardUpgradeable
 {
     using ERC165Checker for address;
@@ -34,7 +34,9 @@ contract PILicenseTemplate is
         uint256 licenseTermsCounter;
     }
 
-    ILicenseRegistryV2 public immutable LICENSE_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
 
     // TODO: update storage location
@@ -50,8 +52,8 @@ contract PILicenseTemplate is
         address licenseRegistry,
         address royaltyModule,
         address licenseNFT
-    ) LicensorApprovalCheckerV2(accessController, ipAccountRegistry, licenseNFT) {
-        LICENSE_REGISTRY = ILicenseRegistryV2(licenseRegistry);
+    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseNFT) {
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();
     }
@@ -100,7 +102,7 @@ contract PILicenseTemplate is
     /// @return True if the license terms exists, false otherwise.
     function isLicenseTermsPresent(uint256 licenseTermsId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
-        return licenseTermsId < $.licenseTermsCounter;
+        return licenseTermsId <= $.licenseTermsCounter;
     }
 
     /// @notice Verifies the minting of a license token.

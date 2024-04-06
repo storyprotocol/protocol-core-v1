@@ -9,17 +9,8 @@ import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/Upgradea
 // contracts
 import { AccessController } from "../../../../contracts/access/AccessController.sol";
 import { Governance } from "../../../../contracts/governance/Governance.sol";
-import { IAccessController } from "../../../../contracts/interfaces/access/IAccessController.sol";
-import { IGovernance } from "../../../../contracts/interfaces/governance/IGovernance.sol";
-import { IDisputeModule } from "../../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";
-import { ILicensingModule } from "../../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { IRoyaltyModule } from "../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
-import { ILicenseRegistry } from "../../../../contracts/interfaces/registries/ILicenseRegistry.sol";
-import { IModuleRegistry } from "../../../../contracts/interfaces/registries/IModuleRegistry.sol";
 import { IPAccountImpl } from "../../../../contracts/IPAccountImpl.sol";
-import { IPAccountRegistry } from "../../../../contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "../../../../contracts/registries/IPAssetRegistry.sol";
-import { ILicenseNFT } from "../../../../contracts/interfaces/ILicenseNFT.sol";
 import { ModuleRegistry } from "../../../../contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "../../../../contracts/registries/LicenseRegistry.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
@@ -27,7 +18,6 @@ import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies
 import { DisputeModule } from "../../../../contracts/modules/dispute/DisputeModule.sol";
 import { LicensingModule } from "../../../../contracts/modules/licensing/LicensingModule.sol";
 import { ArbitrationPolicySP } from "../../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { IPILicenseTemplate, PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { LicenseNFT } from "../../../../contracts/LicenseNFT.sol";
 import { DISPUTE_MODULE_KEY, LICENSING_MODULE_KEY, ROYALTY_MODULE_KEY } from "contracts/lib/modules/Module.sol";
@@ -117,7 +107,6 @@ contract e2e is Test {
         );
         vm.label(address(royaltyModule), "RoyaltyModule");
 
-
         impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(DisputeModule.initialize, (address(governance))))
@@ -166,7 +155,6 @@ contract e2e is Test {
                 abi.encodeCall(PILicenseTemplate.initialize, ("PIL", "PIL-metadata-url"))
             )
         );
-
 
         // Configure protocol
         vm.startPrank(admin);
@@ -219,7 +207,6 @@ contract e2e is Test {
         ipId3 = ipAssetRegistry.register(address(mockNft), tokenId3);
         ipId6 = ipAssetRegistry.register(address(mockNft), tokenId6);
         ipId7 = ipAssetRegistry.register(address(mockNft), tokenId7);
-
 
         // register license terms
         uint256 lcId1 = piLicenseTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
@@ -320,19 +307,11 @@ contract e2e is Test {
         assertEq(licenseNFT.totalMintedTokens(), 1);
         vm.stopPrank();
 
-
         // mint license token with payments
         vm.startPrank(dave);
         erc20.mint(dave, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
-        (lcTokenId, ) = licensingModule.mintLicenseTokens(
-            ipId1,
-            address(piLicenseTemplate),
-            2,
-            1,
-            address(dave),
-            ""
-        );
+        (lcTokenId, ) = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
         assertEq(licenseNFT.ownerOf(lcTokenId), dave);
         assertEq(licenseNFT.getLicenseTermsId(lcTokenId), 2);
         assertEq(licenseNFT.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
@@ -390,5 +369,4 @@ contract e2e is Test {
         assertEq(erc20.balanceOf(dave), 900);
         vm.stopPrank();
     }
-
 }

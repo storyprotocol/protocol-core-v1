@@ -440,7 +440,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
     }
 
     function _isExpiredNow(address ipId) internal view returns (bool) {
-        uint256 expireTime =  IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
+        uint256 expireTime = IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
         return expireTime != 0 && expireTime < block.timestamp;
     }
 

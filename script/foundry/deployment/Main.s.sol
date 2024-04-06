@@ -39,7 +39,7 @@ contract Main is DeployHelper {
 
         // deploy all contracts via DeployHelper
         super.run(
-            configByMultisig ? address(multisig) : address(deployer), // deployer
+            configByMultisig ? multisig : deployer, // deployer
             configByMultisig,
             true, // runStorageLayoutCheck
             true // writeDeploys

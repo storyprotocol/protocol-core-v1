@@ -13,16 +13,17 @@ contract BroadcastManager is Script {
         uint256 deployerPrivateKey;
         if (block.chainid == 1) { // Tenderly mainnet fork
             deployerPrivateKey = vm.envUint("MAINNET_PRIVATEKEY");
-            deployer = vm.envAddress("MAINNET_DEPLOYER_ADDRESS");
+            deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("MAINNET_MULTISIG_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 11155111) {
             deployerPrivateKey = vm.envUint("SEPOLIA_PRIVATEKEY");
-            deployer = vm.envAddress("SEPOLIA_DEPLOYER_ADDRESS");
+            deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 31337) {
             require(deployer != address(0), "Deployer not set");
+            multisig = vm.addr(0x987321);
             vm.startPrank(deployer);
         } else {
             revert("Unsupported chain");

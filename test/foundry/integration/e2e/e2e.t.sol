@@ -235,9 +235,9 @@ contract e2e is Test {
             ),
             2
         );
-        assertTrue(piLicenseTemplate.isLicenseTermsPresent(2));
+        assertTrue(piLicenseTemplate.exists(2));
 
-        assertTrue(piLicenseTemplate.isLicenseTermsPresent(lcId2));
+        assertTrue(piLicenseTemplate.exists(lcId2));
 
         // attach licenses
         vm.startPrank(alice);

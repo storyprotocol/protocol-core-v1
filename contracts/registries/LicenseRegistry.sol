@@ -492,7 +492,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
         if (!_getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate]) {
             return false;
         }
-        return ILicenseTemplate(licenseTemplate).isLicenseTermsPresent(licenseTermsId);
+        return ILicenseTemplate(licenseTemplate).exists(licenseTermsId);
     }
 
     ////////////////////////////////////////////////////////////////////////////

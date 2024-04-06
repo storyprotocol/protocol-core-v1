@@ -40,7 +40,7 @@ interface ILicenseTemplate is IERC165 {
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function isLicenseTermsPresent(uint256 licenseTermsId) external view returns (bool);
+    function exists(uint256 licenseTermsId) external view returns (bool);
 
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.

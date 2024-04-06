@@ -100,7 +100,7 @@ contract PILicenseTemplate is
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function isLicenseTermsPresent(uint256 licenseTermsId) external view override returns (bool) {
+    function exists(uint256 licenseTermsId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         return licenseTermsId <= $.licenseTermsCounter;
     }

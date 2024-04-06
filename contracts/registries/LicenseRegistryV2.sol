@@ -31,13 +31,14 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
     /// @param registeredLicenseTemplates Registered license templates
     /// @param registeredRoyaltyPolicies Registered royalty policies
     /// @param registeredCurrencyTokens Registered currency tokens
-    /// @param originalIps Mapping of original IPs to derivative IPs
-    /// @param derivativeIps Mapping of derivative IPs to original IPs
+    /// @param parentIps Mapping of parent IPs to derivative IPs
+    /// @param childIps Mapping of derivative IPs to parent IPs
     /// @param attachedLicenseTerms Mapping of attached license terms to IP IDs
     /// @param licenseTemplates Mapping of license templates to IP IDs
     /// @param expireTimes Mapping of IP IDs to expire times
-    /// @param mintingLicenseConfigs Mapping of minting license configs to IP IDs
-    /// @param mintingLicenseConfigsForAll Mapping of minting license configs for all
+    /// @param mintingLicenseConfigs Mapping of minting license configs to a licenseTerms of an IP
+    /// @param mintingLicenseConfigsForIp Mapping of minting license configs to an IP,
+    /// the config will apply to all licenses under the IP
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         ILicensingModule licensingModule;
@@ -47,13 +48,13 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         mapping(address => bool) registeredLicenseTemplates;
         mapping(address => bool) registeredRoyaltyPolicies;
         mapping(address => bool) registeredCurrencyTokens;
-        mapping(address derivativeIpId => EnumerableSet.AddressSet originalIpIds) originalIps;
-        mapping(address originalIpId => EnumerableSet.AddressSet derivativeIpIds) derivativeIps;
+        mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
+        mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
-        mapping(address ipId => uint256) expireTimes;
+        mapping(address ipId => uint256) expirationTimes;
         mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigs;
-        mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForAll;
+        mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
     }
 
     // TODO: update the storage location
@@ -121,25 +122,11 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         emit LicenseTemplateRegistered(licenseTemplate);
     }
 
-    /// @notice Registers a new royalty policy in the Story Protocol.
-    /// @param royaltyPolicy The address of the royalty policy to register.
-    function registerRoyaltyPolicy(address royaltyPolicy) external onlyProtocolAdmin {
-        _getLicenseRegistryStorage().registeredRoyaltyPolicies[royaltyPolicy] = true;
-        emit RoyaltyPolicyRegistered(royaltyPolicy);
-    }
-
-    /// @notice Registers a new currency token used for paying license token minting fees and royalties.
-    /// @param token The address of the currency token to register.
-    function registerCurrencyToken(address token) external onlyProtocolAdmin {
-        _getLicenseRegistryStorage().registeredCurrencyTokens[token] = true;
-        emit CurrencyTokenRegistered(token);
-    }
-
     /// @notice Sets the expiration time for an IP.
     /// @param ipId The address of the IP.
     /// @param expireTime The new expiration time, 0 means never expired.
     function setExpireTime(address ipId, uint256 expireTime) external onlyLicensingModule {
-        _setExpireTime(ipId, expireTime);
+        _setExpirationTime(ipId, expireTime);
     }
 
     /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
@@ -158,15 +145,16 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.MintingLicenseConfig({
-            isSet: true,
-            mintingFee: mintingLicenseConfig.mintingFee,
-            mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
-            receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
-            receiverCheckData: mintingLicenseConfig.receiverCheckData
-        });
+        $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing
+            .MintingLicenseConfig({
+                isSet: true,
+                mintingFee: mintingLicenseConfig.mintingFee,
+                mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
+                receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
+                receiverCheckData: mintingLicenseConfig.receiverCheckData
+            });
 
-        emit MintingLicenseConfigSet(ipId, licenseTemplate, licenseTermsId, mintingLicenseConfig);
+        emit MintingLicenseConfigSetLicense(ipId, licenseTemplate, licenseTermsId);
     }
 
     /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
@@ -179,14 +167,14 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         Licensing.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.mintingLicenseConfigsForAll[ipId] = Licensing.MintingLicenseConfig({
+        $.mintingLicenseConfigsForIp[ipId] = Licensing.MintingLicenseConfig({
             isSet: true,
             mintingFee: mintingLicenseConfig.mintingFee,
             mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
             receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
             receiverCheckData: mintingLicenseConfig.receiverCheckData
         });
-        emit MintingLicenseConfigSetForAll(ipId, mintingLicenseConfig);
+        emit MintingLicenseConfigSetForIP(ipId, mintingLicenseConfig);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -198,7 +186,7 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         address licenseTemplate,
         uint256 licenseTermsId
     ) external onlyLicensingModule {
-        if (!_existsLicenseTerms(licenseTemplate, licenseTermsId)) {
+        if (!_exists(licenseTemplate, licenseTermsId)) {
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
 
@@ -207,110 +195,108 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         }
 
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.expireTimes[ipId] < block.timestamp) {
+        if ($.expirationTimes[ipId] < block.timestamp) {
             revert Errors.LicenseRegistry__IpExpired(ipId);
         }
         $.attachedLicenseTerms[ipId].add(licenseTermsId);
     }
 
-    /// @notice Registers a derivative IP and its relationship to original IPs.
-    /// @param derivativeIpId The address of the derivative IP.
-    /// @param originalIpIds An array of addresses of the original IPs.
+    /// @notice Registers a derivative IP and its relationship to parent IPs.
+    /// @param childIpId The address of the derivative IP.
+    /// @param parentIpIds An array of addresses of the parent IPs.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
-    // solhint-disable-next-line code-complexity
     function registerDerivativeIp(
-        address derivativeIpId,
-        address[] calldata originalIpIds,
+        address childIpId,
+        address[] calldata parentIpIds,
         address licenseTemplate,
         uint256[] calldata licenseTermsIds
     ) external onlyLicensingModule {
-        if (originalIpIds.length == 0) {
-            revert Errors.LicenseRegistry__NoOriginalIp();
+        if (parentIpIds.length == 0) {
+            revert Errors.LicenseRegistry__NoParentIp();
         }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.attachedLicenseTerms[derivativeIpId].length() > 0) {
-            revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(derivativeIpId);
+        if ($.attachedLicenseTerms[childIpId].length() > 0) {
+            revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(childIpId);
         }
-        if ($.originalIps[derivativeIpId].length() > 0) {
-            revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(derivativeIpId);
-        }
-
-        for (uint256 i = 0; i < originalIpIds.length; i++) {
-            if ($.disputeModule.isIpTagged(originalIpIds[i])) {
-                revert Errors.LicenseRegistry__OriginalIpTagged(originalIpIds[i]);
-            }
-            if (derivativeIpId == originalIpIds[i]) {
-                revert Errors.LicenseRegistry__DerivativeIsOriginal(derivativeIpId);
-            }
-            if ($.expireTimes[originalIpIds[i]] < block.timestamp) {
-                revert Errors.LicenseRegistry__OriginalIpExpired(originalIpIds[i]);
-            }
-            // derivativeIp can only register with default license terms or the same license terms as the original IP
-            if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsIds[i]) {
-                if ($.licenseTemplates[originalIpIds[i]] != licenseTemplate) {
-                    revert Errors.LicenseRegistry__OriginalIpUnmachedLicenseTemplate(originalIpIds[i], licenseTemplate);
-                }
-                if (!$.attachedLicenseTerms[originalIpIds[i]].contains(licenseTermsIds[i])) {
-                    revert Errors.LicenseRegistry__OriginalIpHasNoLicenseTerms(originalIpIds[i], licenseTermsIds[i]);
-                }
-            }
-            $.originalIps[derivativeIpId].add(originalIpIds[i]);
-            $.derivativeIps[originalIpIds[i]].add(derivativeIpId);
-            $.attachedLicenseTerms[derivativeIpId].add(licenseTermsIds[i]);
+        if ($.parentIps[childIpId].length() > 0) {
+            revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);
         }
 
-        $.licenseTemplates[derivativeIpId] = licenseTemplate;
-        _setExpireTime(
-            derivativeIpId,
+        for (uint256 i = 0; i < parentIpIds.length; i++) {
+            _verifyDerivativeFromParent(parentIpIds[i], childIpId, licenseTemplate, licenseTermsIds[i]);
+            $.parentIps[childIpId].add(parentIpIds[i]);
+            $.childIps[parentIpIds[i]].add(childIpId);
+            $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
+        }
+
+        $.licenseTemplates[childIpId] = licenseTemplate;
+        _setExpirationTime(
+            childIpId,
             ILicenseTemplate(licenseTemplate).getEarlierExpireTime(block.timestamp, licenseTermsIds)
         );
     }
 
+    /// @notice Verifies the minting of a license token.
+    /// @param licensorIpId The address of the licensor IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms will mint the license token.
+    /// @param isMintedByIpOwner Whether the license token is minted by the IP owner.
+    /// @return The configuration for minting the license.
     function verifyMintLicenseToken(
-        address originalIpId,
+        address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.MintingLicenseConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.expireTimes[originalIpId] < block.timestamp) {
-            revert Errors.LicenseRegistry__OriginalIpExpired(originalIpId);
+        if ($.expirationTimes[licensorIpId] < block.timestamp) {
+            revert Errors.LicenseRegistry__ParentIpExpired(licensorIpId);
         }
         if (isMintedByIpOwner) {
-            if (!_existsLicenseTerms(licenseTemplate, licenseTermsId)) {
+            if (!_exists(licenseTemplate, licenseTermsId)) {
                 revert Errors.LicenseRegistry__LicenseTermsNotExists(licenseTemplate, licenseTermsId);
             }
-        } else if (!_hasIpAttachedLicenseTerms(originalIpId, licenseTemplate, licenseTermsId)) {
-            revert Errors.LicenseRegistry__OriginalIpHasNoLicenseTerms(originalIpId, licenseTermsId);
+        } else if (!_hasIpAttachedLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId)) {
+            revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(licensorIpId, licenseTermsId);
         }
-        return _getMintingLicenseConfig(originalIpId, licenseTemplate, licenseTermsId);
+        return _getMintingLicenseConfig(licensorIpId, licenseTemplate, licenseTermsId);
     }
 
+    /// @notice Checks if a license template is registered.
+    /// @param licenseTemplate The address of the license template to check.
+    /// @return Whether the license template is registered.
     function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool) {
         return _getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate];
     }
 
-    function isRegisteredRoyaltyPolicy(address royaltyPolicy) external view returns (bool) {
-        return _getLicenseRegistryStorage().registeredRoyaltyPolicies[royaltyPolicy];
+    /// @notice Checks if an IP is a derivative IP.
+    /// @param childIpId The address of the IP to check.
+    /// @return Whether the IP is a derivative IP.
+    function isDerivativeIp(address childIpId) external view returns (bool) {
+        return _isDerivativeIp(childIpId);
     }
 
-    function isRegisteredCurrencyToken(address token) external view returns (bool) {
-        return _getLicenseRegistryStorage().registeredCurrencyTokens[token];
+    /// @notice Checks if an IP has derivative IPs.
+    /// @param parentIpId The address of the IP to check.
+    /// @return Whether the IP has derivative IPs.
+    function hasDerivativeIps(address parentIpId) external view returns (bool) {
+        return _getLicenseRegistryStorage().childIps[parentIpId].length() > 0;
     }
 
-    function isDerivativeIp(address derivativeIpId) external view returns (bool) {
-        return _isDerivativeIp(derivativeIpId);
+    /// @notice Checks if license terms exist.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the license terms exist.
+    function exists(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
+        return _exists(licenseTemplate, licenseTermsId);
     }
 
-    function hasDerivativeIps(address originalIpId) external view returns (bool) {
-        return _getLicenseRegistryStorage().derivativeIps[originalIpId].length() > 0;
-    }
-
-    function existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
-        return _existsLicenseTerms(licenseTemplate, licenseTermsId);
-    }
-
+    /// @notice Checks if an IP has attached any license terms.
+    /// @param ipId The address of the IP to check.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the IP has attached any license terms.
     function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
@@ -319,6 +305,11 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return _hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId);
     }
 
+    /// @notice Gets the attached license terms of an IP by its index.
+    /// @param ipId The address of the IP.
+    /// @param index The index of the attached license terms within the array of all attached license terms of the IP.
+    /// @return licenseTemplate The address of the license template where the license terms are defined.
+    /// @return licenseTermsId The ID of the license terms.
     function getAttachedLicenseTerms(
         address ipId,
         uint256 index
@@ -331,10 +322,19 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
     }
 
+    /// @notice Gets the count of attached license terms of an IP.
+    /// @param ipId The address of the IP.
+    /// @return The count of attached license terms.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256) {
         return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
     }
 
+    /// @notice Retrieves the minting license configuration for a given license terms of the IP.
+    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The configuration for minting the license.
     function getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
@@ -357,23 +357,58 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.
     function getExpireTime(address ipId) external view returns (uint256) {
-        return _getLicenseRegistryStorage().expireTimes[ipId];
+        return _getLicenseRegistryStorage().expirationTimes[ipId];
     }
 
+    /// @notice Returns the default license terms.
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
     }
 
-    function _setExpireTime(address ipId, uint256 expireTime) internal {
-        _getLicenseRegistryStorage().expireTimes[ipId] = expireTime;
-        emit ExpireTimeSet(ipId, expireTime);
+    /// @dev verify the child IP can be registered as a derivative of the parent IP
+    /// @param parentIpId The address of the parent IP
+    /// @param childIpId The address of the child IP
+    /// @param licenseTemplate The address of the license template where the license terms are created
+    /// @param licenseTermsId The license terms the child IP is registered with
+    function _verifyDerivativeFromParent(
+        address parentIpId,
+        address childIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) internal view {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        if ($.disputeModule.isIpTagged(parentIpId)) {
+            revert Errors.LicenseRegistry__ParentIpTagged(parentIpId);
+        }
+        if (childIpId == parentIpId) {
+            revert Errors.LicenseRegistry__DerivativeIsParent(childIpId);
+        }
+        if ($.expirationTimes[parentIpId] < block.timestamp) {
+            revert Errors.LicenseRegistry__ParentIpExpired(parentIpId);
+        }
+        // childIp can only register with default license terms or the license terms attached to the parent IP
+        if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsId) {
+            if ($.licenseTemplates[parentIpId] != licenseTemplate) {
+                revert Errors.LicenseRegistry__ParentIpUnmachedLicenseTemplate(parentIpId, licenseTemplate);
+            }
+            if (!$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
+                revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
+            }
+        }
     }
 
-    function _isDerivativeIp(address derivativeIpId) internal view returns (bool) {
-        return _getLicenseRegistryStorage().originalIps[derivativeIpId].length() > 0;
+    function _setExpirationTime(address ipId, uint256 expireTime) internal {
+        _getLicenseRegistryStorage().expirationTimes[ipId] = expireTime;
+        emit ExpirationTimeSet(ipId, expireTime);
     }
 
+    function _isDerivativeIp(address childIpId) internal view returns (bool) {
+        return _getLicenseRegistryStorage().parentIps[childIpId].length() > 0;
+    }
+
+    /// @dev Retrieves the minting license configuration for a given license terms of the IP.
+    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
     function _getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
@@ -383,14 +418,18 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        if ($.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
-            return $.mintingLicenseConfigs[_getHash(ipId, licenseTemplate, licenseTermsId)];
+        if ($.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
+            return $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
         }
-        return $.mintingLicenseConfigsForAll[ipId];
+        return $.mintingLicenseConfigsForIp[ipId];
     }
 
-    function _getHash(address ipId, address licenseTemplate, uint256 licenseTermsId) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(ipId, licenseTemplate, licenseTermsId));
+    function _getIpLicenseHash(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encode(ipId, licenseTemplate, licenseTermsId));
     }
 
     function _hasIpAttachedLicenseTerms(
@@ -403,11 +442,11 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseTerms[ipId].contains(licenseTermsId);
     }
 
-    function _existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) internal view returns (bool) {
+    function _exists(address licenseTemplate, uint256 licenseTermsId) internal view returns (bool) {
         if (!_getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate]) {
             return false;
         }
-        return ILicenseTemplate(licenseTemplate).exists(licenseTermsId);
+        return ILicenseTemplate(licenseTemplate).isLicenseTermsPresent(licenseTermsId);
     }
 
     ////////////////////////////////////////////////////////////////////////////

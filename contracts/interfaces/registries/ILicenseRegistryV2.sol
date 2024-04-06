@@ -5,7 +5,7 @@ import { Licensing } from "../../lib/Licensing.sol";
 
 /// @title ILicenseRegistry
 /// @notice This contract is responsible for maintaining relationships between IPs and their licenses,
-/// original and derivative IPs, registering License Templates, setting default licenses,
+/// parent and derivative IPs, registering License Templates, setting default licenses,
 /// and managing royalty policies and currency tokens.
 /// It serves as a central point for managing the licensing states within the Story Protocol ecosystem.
 interface ILicenseRegistryV2 {
@@ -19,18 +19,17 @@ interface ILicenseRegistryV2 {
     event CurrencyTokenRegistered(address indexed token);
 
     /// @notice Emitted when a minting license configuration is set.
-    event MintingLicenseConfigSet(
+    event MintingLicenseConfigSetLicense(
         address indexed ipId,
         address indexed licenseTemplate,
-        uint256 indexed licenseTermsId,
-        Licensing.MintingLicenseConfig mintingLicenseConfig
+        uint256 indexed licenseTermsId
     );
 
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
-    event MintingLicenseConfigSetForAll(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
+    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
 
     /// @notice Emitted when an expiration time is set for an IP.
-    event ExpireTimeSet(address indexed ipId, uint256 expireTime);
+    event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
 
     /// @notice Sets the default license terms that are attached to all IPs by default.
     /// @param newLicenseTemplate The address of the new default license template.
@@ -45,43 +44,40 @@ interface ILicenseRegistryV2 {
     function registerLicenseTemplate(address licenseTemplate) external;
 
     /// @notice Checks if a license template is registered.
+    /// @param licenseTemplate The address of the license template to check.
+    /// @return Whether the license template is registered.
     function isRegisteredLicenseTemplate(address licenseTemplate) external view returns (bool);
 
-    /// @notice Registers a new royalty policy in the Story Protocol.
-    /// @param royaltyPolicy The address of the royalty policy to register.
-    function registerRoyaltyPolicy(address royaltyPolicy) external;
-
-    /// @notice Checks if a royalty policy is registered.
-    function isRegisteredRoyaltyPolicy(address royaltyPolicy) external view returns (bool);
-
-    /// @notice Registers a new currency token used for paying license token minting fees and royalties.
-    /// @param token The address of the currency token to register.
-    function registerCurrencyToken(address token) external;
-
-    /// @notice Checks if a currency token is registered.
-    function isRegisteredCurrencyToken(address token) external view returns (bool);
-
-    /// @notice Registers a derivative IP and its relationship to original IPs.
+    /// @notice Registers a derivative IP and its relationship to parent IPs.
     /// @param ipId The address of the derivative IP.
-    /// @param originalIpIds An array of addresses of the original IPs.
+    /// @param parentIpIds An array of addresses of the parent IPs.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
     function registerDerivativeIp(
         address ipId,
-        address[] calldata originalIpIds,
+        address[] calldata parentIpIds,
         address licenseTemplate,
         uint256[] calldata licenseTermsIds
     ) external;
 
     /// @notice Checks if an IP is a derivative IP.
+    /// @param ipId The address of the IP to check.
+    /// @return Whether the IP is a derivative IP.
     function isDerivativeIp(address ipId) external view returns (bool);
 
     /// @notice Checks if an IP has derivative IPs.
+    /// @param ipId The address of the IP to check.
+    /// @return Whether the IP has derivative IPs.
     function hasDerivativeIps(address ipId) external view returns (bool);
 
     /// @notice Verifies the minting of a license token.
+    /// @param licensorIpId The address of the licensor IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms will mint the license token.
+    /// @param isMintedByIpOwner Whether the license token is minted by the IP owner.
+    /// @return The configuration for minting the license.
     function verifyMintLicenseToken(
-        address originalIpId,
+        address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
@@ -90,29 +86,47 @@ interface ILicenseRegistryV2 {
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
     /// @param licenseTemplate The address of the license template.
-    /// @param licenseTermsIds The ID of the license terms.
-    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint256 licenseTermsIds) external;
+    /// @param licenseTermsId The ID of the license terms.
+    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint256 licenseTermsId) external;
 
     /// @notice Checks if license terms exist.
-    function existsLicenseTerms(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the license terms exist.
+    function exists(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
 
-    /// @notice Checks if an IP has attached license terms.
+    /// @notice Checks if an IP has attached any license terms.
+    /// @param ipId The address of the IP to check.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return Whether the IP has attached any license terms.
     function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
     ) external view returns (bool);
 
-    /// @notice Gets the attached license terms of an IP.
+    /// @notice Gets the attached license terms of an IP by its index.
+    /// @param ipId The address of the IP.
+    /// @param index The index of the attached license terms within the array of all attached license terms of the IP.
+    /// @return licenseTemplate The address of the license template where the license terms are defined.
+    /// @return licenseTermsId The ID of the license terms.
     function getAttachedLicenseTerms(
         address ipId,
         uint256 index
     ) external view returns (address licenseTemplate, uint256 licenseTermsId);
 
     /// @notice Gets the count of attached license terms of an IP.
+    /// @param ipId The address of the IP.
+    /// @return The count of attached license terms.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256);
 
-    /// @notice Retrieves the minting license configuration for a given IP, license template, and license terms ID.
+    /// @notice Retrieves the minting license configuration for a given license terms of the IP.
+    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The configuration for minting the license.
     function getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,

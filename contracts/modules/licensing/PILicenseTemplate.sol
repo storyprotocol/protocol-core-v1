@@ -11,6 +11,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseRegistryV2 } from "../../interfaces/registries/ILicenseRegistryV2.sol";
+import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplate } from "../../modules/licensing/BaseLicenseTemplate.sol";
@@ -34,6 +35,7 @@ contract PILicenseTemplate is
     }
 
     ILicenseRegistryV2 public immutable LICENSE_REGISTRY;
+    IRoyaltyModule public immutable ROYALTY_MODULE;
 
     // TODO: update storage location
     // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
@@ -46,9 +48,11 @@ contract PILicenseTemplate is
         address accessController,
         address ipAccountRegistry,
         address licenseRegistry,
+        address royaltyModule,
         address licenseNFT
     ) LicensorApprovalCheckerV2(accessController, ipAccountRegistry, licenseNFT) {
         LICENSE_REGISTRY = ILicenseRegistryV2(licenseRegistry);
+        ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();
     }
 
@@ -63,11 +67,11 @@ contract PILicenseTemplate is
     /// @param terms The PILTerms to register.
     /// @return id The ID of the newly registered license terms.
     function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint256 id) {
-        if (terms.royaltyPolicy != address(0) && !LICENSE_REGISTRY.isRegisteredRoyaltyPolicy(terms.royaltyPolicy)) {
+        if (terms.royaltyPolicy != address(0) && !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(terms.royaltyPolicy)) {
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
         }
 
-        if (terms.currency != address(0) && !LICENSE_REGISTRY.isRegisteredCurrencyToken(terms.currency)) {
+        if (terms.currency != address(0) && !ROYALTY_MODULE.isWhitelistedRoyaltyToken(terms.currency)) {
             revert PILicenseTemplateErrors.PILicenseTemplate__CurrencyTokenNotWhitelisted();
         }
 
@@ -94,7 +98,7 @@ contract PILicenseTemplate is
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function exists(uint256 licenseTermsId) external view override returns (bool) {
+    function isLicenseTermsPresent(uint256 licenseTermsId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         return licenseTermsId < $.licenseTermsCounter;
     }
@@ -138,53 +142,53 @@ contract PILicenseTemplate is
 
     /// @notice Verifies the registration of a derivative.
     /// @dev This function is invoked by the LicensingModule during the registration of a derivative work
-    //// to ensure compliance with the original intellectual property's licensing terms.
+    //// to ensure compliance with the parent IP's licensing terms.
     /// It verifies whether the derivative's registration is permitted under those terms.
-    /// @param derivativeIpId The IP ID of the derivative.
-    /// @param originalIpId The IP ID of the original.
+    /// @param childIpId The IP ID of the derivative.
+    /// @param parentIpId The IP ID of the parent.
     /// @param licenseTermsId The ID of the license terms.
     /// @param licensee The address of the licensee.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivative(
-        address derivativeIpId,
-        address originalIpId,
+        address childIpId,
+        address parentIpId,
         uint256 licenseTermsId,
         address licensee
     ) external override returns (bool) {
-        return _verifyRegisterDerivative(derivativeIpId, originalIpId, licenseTermsId, licensee);
+        return _verifyRegisterDerivative(childIpId, parentIpId, licenseTermsId, licensee);
     }
 
     /// @notice Verifies if the licenses are compatible.
     /// @dev This function is called by the LicensingModule to verify license compatibility
-    /// when registering a derivative IP to multiple original IPs.
-    /// It ensures that the licenses of all original IPs are compatible with each other during the registration process.
+    /// when registering a derivative IP to multiple parent IPs.
+    /// It ensures that the licenses of all parent IPs are compatible with each other during the registration process.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return True if the licenses are compatible, false otherwise.
     function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view override returns (bool) {
         return _verifyCompatibleLicenseTerms(licenseTermsIds);
     }
 
-    /// @notice Verifies the registration of a derivative for all original IPs.
+    /// @notice Verifies the registration of a derivative for all parent IPs.
     /// @dev This function is called by the LicensingModule to verify licenses for registering a derivative IP
-    /// to multiple original IPs.
-    /// the function will verify the derivative for each original IP's license and
+    /// to multiple parent IPs.
+    /// the function will verify the derivative for each parent IP's license and
     /// also verify all licenses are compatible.
-    /// @param derivativeIpId The IP ID of the derivative.
-    /// @param originalIpIds The IP IDs of the originals.
+    /// @param childIpId The IP ID of the derivative.
+    /// @param parentIpIds The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param derivativeIpOwner The address of the derivative IP owner.
+    /// @param childIpOwner The address of the derivative IP owner.
     /// @return True if the registration is verified, false otherwise.
-    function verifyRegisterDerivativeForAll(
-        address derivativeIpId,
-        address[] calldata originalIpIds,
+    function verifyRegisterDerivativeForAllParents(
+        address childIpId,
+        address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
-        address derivativeIpOwner
+        address childIpOwner
     ) external override returns (bool) {
         if (!_verifyCompatibleLicenseTerms(licenseTermsIds)) {
             return false;
         }
         for (uint256 i = 0; i < licenseTermsIds.length; i++) {
-            if (!_verifyRegisterDerivative(derivativeIpId, originalIpIds[i], licenseTermsIds[i], derivativeIpOwner)) {
+            if (!_verifyRegisterDerivative(childIpId, parentIpIds[i], licenseTermsIds[i], childIpOwner)) {
                 return false;
             }
         }
@@ -209,7 +213,7 @@ contract PILicenseTemplate is
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms is transferable, false otherwise.
-    function isTransferable(uint256 licenseTermsId) external view override returns (bool) {
+    function isLicenseTransferable(uint256 licenseTermsId) external view override returns (bool) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         return $.licenseTerms[licenseTermsId].transferable;
     }
@@ -225,9 +229,9 @@ contract PILicenseTemplate is
         if (licenseTermsIds.length == 0) {
             return 0;
         }
-        uint expireTime = _getExpireTime(start, licenseTermsIds[0]);
+        uint expireTime = _getExpireTime(licenseTermsIds[0], start);
         for (uint i = 1; i < licenseTermsIds.length; i++) {
-            uint newExpireTime = _getExpireTime(start, licenseTermsIds[i]);
+            uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
             if (newExpireTime < expireTime) {
                 expireTime = newExpireTime;
             }
@@ -239,8 +243,8 @@ contract PILicenseTemplate is
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 start, uint256 licenseTermsId) external view returns (uint) {
-        return _getExpireTime(start, licenseTermsId);
+    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint) {
+        return _getExpireTime(licenseTermsId, start);
     }
 
     /// @notice Gets the ID of the given license terms.
@@ -399,8 +403,8 @@ contract PILicenseTemplate is
 
     /// @dev Verifies derivative IP permitted by license terms during process of the registration of a derivative.
     function _verifyRegisterDerivative(
-        address derivativeIpId,
-        address originalIpId,
+        address childIpId,
+        address parentIpId,
         uint256 licenseTermsId,
         address licensee
     ) internal returns (bool) {
@@ -413,7 +417,7 @@ contract PILicenseTemplate is
 
         // If the policy defines the licensor must approve derivatives, check if the
         // derivative is approved by the licensor
-        if (terms.derivativesApproval && !isDerivativeApproved(licenseTermsId, derivativeIpId)) {
+        if (terms.derivativesApproval && !isDerivativeApproved(licenseTermsId, childIpId)) {
             return false;
         }
         // Check if the commercializerChecker allows the link
@@ -448,7 +452,7 @@ contract PILicenseTemplate is
     }
 
     /// @dev Calculate and returns the expiration time based given start time and license terms.
-    function _getExpireTime(uint256 start, uint256 licenseTermsId) internal view returns (uint) {
+    function _getExpireTime(uint256 licenseTermsId, uint256 start) internal view returns (uint) {
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         PILTerms memory terms = $.licenseTerms[licenseTermsId];
         if (terms.expiration == 0) {

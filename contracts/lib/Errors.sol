@@ -132,15 +132,15 @@ library Errors {
     error LicenseRegistry__UnregisteredLicenseTemplate(address licenseTemplate);
     error LicenseRegistry__NotLicenseTemplate(address licenseTemplate);
     error LicenseRegistry__IpExpired(address ipId);
-    error LicenseRegistry__OriginalIpExpired(address ipId);
+    error LicenseRegistry__ParentIpExpired(address ipId);
     error LicenseRegistry__LicenseTermsNotExists(address licenseTemplate, uint256 licenseTermsId);
-    error LicenseRegistry__OriginalIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
-    error LicenseRegistry__NoOriginalIp();
-    error LicenseRegistry__DerivativeIpAlreadyHasLicense(address derivativeIpId);
-    error LicenseRegistry__DerivativeAlreadyRegistered(address derivativeIpId);
-    error LicenseRegistry__OriginalIpTagged(address ipId);
-    error LicenseRegistry__DerivativeIsOriginal(address ipId);
-    error LicenseRegistry__OriginalIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
+    error LicenseRegistry__ParentIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
+    error LicenseRegistry__NoParentIp();
+    error LicenseRegistry__DerivativeIpAlreadyHasLicense(address childIpId);
+    error LicenseRegistry__DerivativeAlreadyRegistered(address childIpId);
+    error LicenseRegistry__ParentIpTagged(address ipId);
+    error LicenseRegistry__DerivativeIsParent(address ipId);
+    error LicenseRegistry__ParentIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            LicenseNFT                                  //
@@ -208,14 +208,14 @@ library Errors {
     error LicensingModule__ReceiverCheckFailed(address receiver);
     error LicensingModule__DerivativeAlreadyRegistered();
     error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);
-    error LicensingModule__NoOriginalIp();
-    error LicensingModule__DerivativeIsOriginal();
-    error LicensingModule__OriginalIpHasNoLicenseTerms(address ipId);
+    error LicensingModule__NoParentIp();
+    error LicensingModule__DerivativeIsParent();
+    error LicensingModule__ParentIpHasNoLicenseTerms(address ipId);
     error LicensingModule__DerivativeAlreadyHasLicenseTerms(address ipId);
     error LicensingModule__IncompatibleRoyaltyPolicy(address royaltyPolicy, address anotherRoyaltyPolicy);
-    error LicensingModule__LicenseNotCompatibleForDerivative(address derivativeIpId);
+    error LicensingModule__LicenseNotCompatibleForDerivative(address childIpId);
     error LicensingModule__NoLicenseToken();
-    error LicensingModule__LicenseTokenNotCompatibleForDerivative(address derivativeIpId, uint256[] licenseTokenIds);
+    error LicensingModule__LicenseTokenNotCompatibleForDerivative(address childIpId, uint256[] licenseTokenIds);
 
     ////////////////////////////////////////////////////////////////////////////
     //                      BasePolicyFrameworkManager                        //

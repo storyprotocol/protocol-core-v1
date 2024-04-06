@@ -40,12 +40,12 @@ interface ILicenseTemplate is IERC165 {
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function exists(uint256 licenseTermsId) external view returns (bool);
+    function isLicenseTermsPresent(uint256 licenseTermsId) external view returns (bool);
 
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms is transferable, false otherwise.
-    function isTransferable(uint256 licenseTermsId) external view returns (bool);
+    function isLicenseTransferable(uint256 licenseTermsId) external view returns (bool);
 
     /// @notice Returns the earliest expiration time among the given license terms.
     /// @param start The start time.
@@ -57,7 +57,7 @@ interface ILicenseTemplate is IERC165 {
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 start, uint256 licenseTermsId) external view returns (uint);
+    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint);
 
     /// @notice Returns the royalty policy of a license terms.
     /// @dev All License Templates should implement this method.
@@ -94,42 +94,42 @@ interface ILicenseTemplate is IERC165 {
 
     /// @notice Verifies the registration of a derivative.
     /// @dev This function is invoked by the LicensingModule during the registration of a derivative work
-    //// to ensure compliance with the original intellectual property's licensing terms.
+    //// to ensure compliance with the parent intellectual property's licensing terms.
     /// It verifies whether the derivative's registration is permitted under those terms.
-    /// @param derivativeIpId The IP ID of the derivative.
-    /// @param originalIpId The IP ID of the original.
+    /// @param childIpId The IP ID of the derivative.
+    /// @param parentIpId The IP ID of the parent.
     /// @param licenseTermsId The ID of the license terms.
     /// @param licensee The address of the licensee.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivative(
-        address derivativeIpId,
-        address originalIpId,
+        address childIpId,
+        address parentIpId,
         uint256 licenseTermsId,
         address licensee
     ) external returns (bool);
 
     /// @notice Verifies if the licenses are compatible.
     /// @dev This function is called by the LicensingModule to verify license compatibility
-    /// when registering a derivative IP to multiple original IPs.
-    /// It ensures that the licenses of all original IPs are compatible with each other during the registration process.
+    /// when registering a derivative IP to multiple parent IPs.
+    /// It ensures that the licenses of all parent IPs are compatible with each other during the registration process.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return True if the licenses are compatible, false otherwise.
     function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view returns (bool);
 
-    /// @notice Verifies the registration of a derivative for all original IPs.
+    /// @notice Verifies the registration of a derivative for all parent IPs.
     /// @dev This function is called by the LicensingModule to verify licenses for registering a derivative IP
-    /// to multiple original IPs.
-    /// the function will verify the derivative for each original IP's license and
+    /// to multiple parent IPs.
+    /// the function will verify the derivative for each parent IP's license and
     /// also verify all licenses are compatible.
-    /// @param derivativeIpId The IP ID of the derivative.
-    /// @param originalIpId The IP IDs of the originals.
+    /// @param childIpId The IP ID of the derivative.
+    /// @param parentIpId The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param derivativeIpOwner The address of the derivative IP owner.
+    /// @param childIpOwner The address of the derivative IP owner.
     /// @return True if the registration is verified, false otherwise.
-    function verifyRegisterDerivativeForAll(
-        address derivativeIpId,
-        address[] calldata originalIpId,
+    function verifyRegisterDerivativeForAllParents(
+        address childIpId,
+        address[] calldata parentIpId,
         uint256[] calldata licenseTermsIds,
-        address derivativeIpOwner
+        address childIpOwner
     ) external returns (bool);
 }

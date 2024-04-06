@@ -10,13 +10,13 @@ library PILFlavorsV2 {
     bytes public constant EMPTY_BYTES = "";
 
     /// @notice Gets the default values of PIL terms
-    function defaultValuesPolicy() internal pure returns (PILTerms memory) {
+    function defaultValuesLicenseTerms() internal pure returns (PILTerms memory) {
         return _defaultPIL();
     }
 
-    /// @notice Helper method to get licenseTermsId for the defaultValuesPolicy() configuration
+    /// @notice Helper method to get licenseTermsId for the defaultValuesLicenseTerms() configuration
     /// @param pilTemplate The address of the PILicenseTemplate
-    /// @return The licenseTermsId for the defaultValuesPolicy() configuration, 0 if not registered
+    /// @return The licenseTermsId for the defaultValuesLicenseTerms() configuration, 0 if not registered
     function getDefaultValuesLicenseTermsId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
         return pilTemplate.getLicenseTermsId(_defaultPIL());
     }
@@ -65,7 +65,7 @@ library PILFlavorsV2 {
     /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor, as described in:
     /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-3-commercial-remix
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share
-    /// with the original creator, with 1 decimal (e.g. 10 means 1%)
+    /// with the parent creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
     /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
     function commercialRemix(uint32 commercialRevShare, address royaltyPolicy) internal pure returns (PILTerms memory) {
@@ -75,7 +75,7 @@ library PILFlavorsV2 {
     /// @notice Helper method to get the licenseTermsId for the commercialRemix() configuration from LicensingModule
     /// @param pilTemplate The address of the PILicenseTemplate
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share with the
-    /// original creator, with 1 decimal (e.g. 10 means 1%)
+    /// parent creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
     /// @return The licenseTermsId for the commercialRemix() configuration, 0 if not registered
     function getCommercialRemixId(

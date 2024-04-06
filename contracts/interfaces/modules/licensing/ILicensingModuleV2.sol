@@ -24,50 +24,34 @@ interface ILicensingModuleV2 is IModule {
 
     /// @notice Emitted when license tokens are minted.
     /// @param caller The address of the caller.
-    /// @param originalIpId The original IP ID.
+    /// @param licensorIpId The parent IP ID.
     /// @param licenseTemplate The address of the license template.
     /// @param licenseTermsId The ID of the license terms.
     /// @param amount The amount of license tokens minted.
     /// @param receiver The address of the receiver.
     /// @param startLicenseTokenId The start ID of the minted license tokens.
-    /// @param endLicenseTokenId The end ID of the minted license tokens.
     event LicenseTokensMinted(
         address indexed caller,
-        address indexed originalIpId,
+        address indexed licensorIpId,
         address licenseTemplate,
         uint256 indexed licenseTermsId,
         uint256 amount,
         address receiver,
-        uint256 startLicenseTokenId,
-        uint256 endLicenseTokenId
+        uint256 startLicenseTokenId
     );
 
-    /// @notice Emitted when a derivative IP is registered directly without license tokens.
+    /// @notice Emitted when a derivative IP is registered.
     /// @param caller The address of the caller.
-    /// @param derivativeIpId The derivative IP ID.
-    /// @param originalIpIds The original IP IDs.
+    /// @param childIpId The derivative IP ID.
+    /// @param licenseTokenIds The IDs of the license tokens.
+    /// @param parentIpIds The parent IP IDs.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @param licenseTemplate The address of the license template.
     event DerivativeRegistered(
         address indexed caller,
-        address indexed derivativeIpId,
-        address[] originalIpIds,
-        uint256[] licenseTermsIds,
-        address licenseTemplate
-    );
-
-    /// @notice Emitted when a derivative IP is registered with license tokens.
-    /// @param caller The address of the caller.
-    /// @param derivativeIpId The derivative IP ID.
-    /// @param licenseTokenIds The IDs of the license tokens.
-    /// @param originalIpIds The original IP IDs.
-    /// @param licenseTermsIds The IDs of the license terms.
-    /// @param licenseTemplate The address of the license template.
-    event DerivativeRegisteredWithLicenseTokens(
-        address indexed caller,
-        address indexed derivativeIpId,
+        address indexed childIpId,
         uint256[] licenseTokenIds,
-        address[] originalIpIds,
+        address[] parentIpIds,
         uint256[] licenseTermsIds,
         address licenseTemplate
     );
@@ -108,33 +92,33 @@ interface ILicensingModuleV2 is IModule {
         bytes calldata royaltyContext
     ) external returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId);
 
-    /// @notice Registers a derivative directly with original IP's license terms, without needing license tokens,
-    /// and attaches the license terms of the original IPs to the derivative IP.
-    /// The license terms must be attached to the original IP before calling this function.
+    /// @notice Registers a derivative directly with parent IP's license terms, without needing license tokens,
+    /// and attaches the license terms of the parent IPs to the derivative IP.
+    /// The license terms must be attached to the parent IP before calling this function.
     /// All IPs attached default license terms by default.
     /// The derivative IP owner must be the caller or an authorized operator.
-    /// @param derivativeIpId The derivative IP ID.
-    /// @param originalIpIds The original IP IDs.
-    /// @param licenseTermsIds The IDs of the license terms that the original IP supports.
+    /// @param childIpId The derivative IP ID.
+    /// @param parentIpIds The parent IP IDs.
+    /// @param licenseTermsIds The IDs of the license terms that the parent IP supports.
     /// @param licenseTemplate The address of the license template of the license terms Ids.
     /// @param royaltyContext The context of the royalty.
     function registerDerivative(
-        address derivativeIpId,
-        address[] calldata originalIpIds,
+        address childIpId,
+        address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
     ) external;
 
     /// @notice Registers a derivative with license tokens.
-    /// the derivative IP is registered with license tokens minted from the original IP's license terms.
-    /// the license terms of the original IPs issued with license tokens are attached to the derivative IP.
+    /// the derivative IP is registered with license tokens minted from the parent IP's license terms.
+    /// the license terms of the parent IPs issued with license tokens are attached to the derivative IP.
     /// the caller must be the derivative IP owner or an authorized operator.
-    /// @param derivativeIpId The derivative IP ID.
+    /// @param childIpId The derivative IP ID.
     /// @param licenseTokenIds The IDs of the license tokens.
     /// @param royaltyContext The context of the royalty.
     function registerDerivativeWithLicenseTokens(
-        address derivativeIpId,
+        address childIpId,
         uint256[] calldata licenseTokenIds,
         bytes calldata royaltyContext
     ) external;

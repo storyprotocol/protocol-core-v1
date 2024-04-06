@@ -88,7 +88,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
     }
 
     /// @notice Mints a specified amount of License Tokens (LNFTs).
-    /// @param originalIpId The ID of the original IP for which the License Tokens are minted.
+    /// @param licensorIpId The ID of the licensor IP for which the License Tokens are minted.
     /// @param licenseTemplate The address of the License Template.
     /// @param licenseTermsId The ID of the License Terms.
     /// @param amount The amount of License Tokens to mint.
@@ -97,29 +97,29 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
     /// @return endLicenseTokenId The end ID of the minted License Tokens.
     function mintLicenseTokens(
-        address originalIpId,
+        address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
     ) external onlyLicensingModule returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId) {
-        LicenseTokenMetadata memory licenseTokenMetadata = LicenseTokenMetadata({
-            originalIpId: originalIpId,
+        LicenseTokenMetadata memory ltm = LicenseTokenMetadata({
+            licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
             licenseTermsId: licenseTermsId,
-            transferable: ILicenseTemplate(licenseTemplate).isTransferable(licenseTermsId),
+            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
             mintedAt: block.timestamp,
-            expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(block.timestamp, licenseTermsId)
+            expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(licenseTermsId, block.timestamp)
         });
 
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
         startLicenseTokenId = $.totalMintedTokens;
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = $.totalMintedTokens++;
-            $.licenseTokenMetadatas[tokenId] = licenseTokenMetadata;
+            $.licenseTokenMetadatas[tokenId] = ltm;
             _mint(receiver, tokenId);
-            emit LicenseTokenMinted(minter, receiver, tokenId, licenseTokenMetadata);
+            emit LicenseTokenMinted(minter, receiver, tokenId);
         }
         endLicenseTokenId = $.totalMintedTokens - 1;
     }
@@ -137,25 +137,25 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
     /// for example, whether token is expired.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.
-    /// @param derivativeIpId The ID of the derivative IP.
-    /// @param derivativeIpOwner The address of the owner of the derivative IP.
+    /// @param childIpId The ID of the derivative IP.
+    /// @param childIpOwner The address of the owner of the derivative IP.
     /// @param tokenIds An array of IDs of the License Tokens to validate for the derivative
-    /// IP to register as derivative of the original IPs which minted the license tokens.
+    /// IP to register as derivative of the licensor IPs which minted the license tokens.
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
-    /// @return originalIpIds An array of original IPs associated with each License Token.
+    /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
     function validateLicenseTokensForDerivative(
-        address derivativeIpId,
-        address derivativeIpOwner,
+        address childIpId,
+        address childIpOwner,
         uint256[] calldata tokenIds
     )
         external
         view
-        returns (address licenseTemplate, address[] memory originalIpIds, uint256[] memory licenseTermsIds)
+        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds)
     {
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
-        originalIpIds = new address[](tokenIds.length);
+        licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -163,8 +163,8 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
             if (ltm.expiresAt < block.timestamp) {
                 revert Errors.LicenseNFT__LicenseTokenExpired(tokenIds[i], ltm.expiresAt, block.timestamp);
             }
-            if (ownerOf(tokenIds[i]) != derivativeIpOwner) {
-                revert Errors.LicenseNFT__NotLicenseTokenOwner(tokenIds[i], derivativeIpOwner, ownerOf(tokenIds[i]));
+            if (ownerOf(tokenIds[i]) != childIpOwner) {
+                revert Errors.LicenseNFT__NotLicenseTokenOwner(tokenIds[i], childIpOwner, ownerOf(tokenIds[i]));
             }
             if (licenseTemplate != ltm.licenseTemplate) {
                 revert Errors.LicenseNFT__AllLicenseTokensMustFromSameLicenseTemplate(
@@ -176,7 +176,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
                 revert Errors.LicenseNFT__RevokedLicense(tokenIds[i]);
             }
 
-            originalIpIds[i] = ltm.originalIpId;
+            licensorIpIds[i] = ltm.licensorIpId;
             licenseTermsIds[i] = ltm.licenseTermsId;
         }
     }
@@ -191,14 +191,14 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
     /// @notice Returns the license data for the given license ID
     /// @param licenseTermsId The ID of the license
     /// @return licenseData The license data
-    function licenseTokenMetadata(uint256 licenseTermsId) external view returns (LicenseTokenMetadata memory) {
+    function getLicenseTokenMetadata(uint256 licenseTermsId) external view returns (LicenseTokenMetadata memory) {
         return _getLicenseNFTStorage().licenseTokenMetadatas[licenseTermsId];
     }
 
     /// @notice Returns the ID of the IP asset that is the licensor of the given license ID
     /// @param licenseTermsId The ID of the license
-    function originalIpId(uint256 licenseTermsId) external view returns (address) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseTermsId].originalIpId;
+    function getLicensorIpId(uint256 licenseTermsId) external view returns (address) {
+        return _getLicenseNFTStorage().licenseTokenMetadatas[licenseTermsId].licensorIpId;
     }
 
     /// @notice Returns the canonical protocol-wide LicensingModule
@@ -206,12 +206,12 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         return _getLicenseNFTStorage().licensingModule;
     }
 
-    /// @notice Returns true if the license has been revoked (original IP tagged after a dispute in
+    /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in
     /// the dispute module). If the tag is removed, the license is not revoked anymore.
     /// @return isRevoked True if the license is revoked
     function isLicenseTokenRevoked(uint256 tokenId) public view returns (bool) {
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
-        return $.disputeModule.isIpTagged($.licenseTokenMetadatas[tokenId].originalIpId);
+        return $.disputeModule.isIpTagged($.licenseTokenMetadatas[tokenId].licensorIpId);
     }
 
     /// @notice ERC721 OpenSea metadata JSON representation of the LNFT parameters
@@ -223,7 +223,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
         LicenseNFTStorage storage $ = _getLicenseNFTStorage();
 
         LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[id];
-        string memory originalIpIdHex = ltm.originalIpId.toHexString();
+        string memory licensorIpIdHex = ltm.licensorIpId.toHexString();
 
         /* solhint-disable */
         // Follows the OpenSea standard for JSON metadata
@@ -237,7 +237,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
                 '",',
                 '"description": "License agreement stating the terms of a Story Protocol IPAsset",',
                 '"external_url": "https://protocol.storyprotocol.xyz/ipa/',
-                originalIpIdHex,
+                licensorIpIdHex,
                 '",',
                 // solhint-disable-next-line max-length
                 '"image": "',
@@ -254,7 +254,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
             abi.encodePacked(
                 json,
                 '{"trait_type": "Licensor", "value": "',
-                originalIpIdHex,
+                licensorIpIdHex,
                 '"},',
                 '{"trait_type": "License Template", "value": "',
                 ltm.licenseTemplate.toHexString(),
@@ -286,7 +286,7 @@ contract LicenseNFT is ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSU
             }
             if (!ltm.transferable) {
                 // True if from == licensor
-                if (from != ltm.originalIpId) {
+                if (from != ltm.licensorIpId) {
                     revert Errors.LicenseNFT__NotTransferable();
                 }
             }

@@ -7,10 +7,10 @@ import { ILicenseNFT } from "../../../interfaces/registries/ILicenseNFT.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LicensorApprovalChecker
-/// @notice Manages the approval of derivative IP accounts by the originalIp. Used to verify
+/// @notice Manages the approval of derivative IP accounts by the parentIp. Used to verify
 /// licensing terms like "Derivatives With Approval" in PIL.
 abstract contract LicensorApprovalCheckerV2 is AccessControlled, Initializable {
-    /// @notice Emits when a derivative IP account is approved by the originalIp.
+    /// @notice Emits when a derivative IP account is approved by the parentIp.
     /// @param licenseTokenId The ID of the license waiting for approval
     /// @param ipId The ID of the derivative IP to be approved
     /// @param caller The executor of the approval
@@ -24,7 +24,7 @@ abstract contract LicensorApprovalCheckerV2 is AccessControlled, Initializable {
 
     /// @notice Storage for derivative IP approvals.
     /// @param approvals Approvals for derivative IP.
-    /// @dev License Id => originalIpId => childIpId => approved
+    /// @dev License Id => parentIpId => childIpId => approved
     /// @custom:storage-location erc7201:story-protocol.LicensorApprovalChecker
     struct LicensorApprovalCheckerStorage {
         mapping(uint256 => mapping(address => mapping(address => bool))) approvals;
@@ -57,35 +57,35 @@ abstract contract LicensorApprovalCheckerV2 is AccessControlled, Initializable {
     /// @param childIpId The ID of the derivative IP to be approved
     /// @param approved Result of the approval
     function setApproval(uint256 licenseTokenId, address childIpId, bool approved) external {
-        address originalIpId = LICENSE_NFT.originalIpId(licenseTokenId);
-        _setApproval(originalIpId, licenseTokenId, childIpId, approved);
+        address parentIpId = LICENSE_NFT.getLicensorIpId(licenseTokenId);
+        _setApproval(parentIpId, licenseTokenId, childIpId, approved);
     }
 
-    /// @notice Checks if a derivative IP account is approved by the original.
-    /// @param licenseTokenId The ID of the license NFT issued from a policy of the original
+    /// @notice Checks if a derivative IP account is approved by the parent.
+    /// @param licenseTokenId The ID of the license NFT issued from a policy of the parent
     /// @param childIpId The ID of the derivative IP to be approved
     /// @return approved True if the derivative IP account using the license is approved
     function isDerivativeApproved(uint256 licenseTokenId, address childIpId) public view returns (bool) {
-        address originalIpId = LICENSE_NFT.originalIpId(licenseTokenId);
+        address parentIpId = LICENSE_NFT.getLicensorIpId(licenseTokenId);
         LicensorApprovalCheckerStorage storage $ = _getLicensorApprovalCheckerStorage();
-        return $.approvals[licenseTokenId][originalIpId][childIpId];
+        return $.approvals[licenseTokenId][parentIpId][childIpId];
     }
 
     /// @notice Sets the approval for a derivative IP account.
-    /// @dev This function is only callable by the original IP account.
-    /// @param originalIpId The ID of the original IP account
+    /// @dev This function is only callable by the parent IP account.
+    /// @param parentIpId The ID of the parent IP account
     /// @param licenseTokenId The ID of the license waiting for approval
     /// @param childIpId The ID of the derivative IP to be approved
     /// @param approved Result of the approval
     function _setApproval(
-        address originalIpId,
+        address parentIpId,
         uint256 licenseTokenId,
         address childIpId,
         bool approved
-    ) internal verifyPermission(originalIpId) {
+    ) internal verifyPermission(parentIpId) {
         LicensorApprovalCheckerStorage storage $ = _getLicensorApprovalCheckerStorage();
-        $.approvals[licenseTokenId][originalIpId][childIpId] = approved;
-        emit DerivativeApproved(licenseTokenId, originalIpId, msg.sender, approved);
+        $.approvals[licenseTokenId][parentIpId][childIpId] = approved;
+        emit DerivativeApproved(licenseTokenId, parentIpId, msg.sender, approved);
     }
 
     /// @dev Returns the storage struct of LicensorApprovalChecker.

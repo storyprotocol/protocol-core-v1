@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
-import { GovernableUpgradeable } from "../../../../contracts/governance/GovernableUpgradeable.sol";
-import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { IRoyaltyPolicyLAP } from "../../../../contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-import { Errors } from "../../../../contracts/lib/Errors.sol";
 
-contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
+contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP {
     struct RoyaltyPolicyLAPStorage {
         address ipRoyaltyVaultBeacon;
         uint256 snapshotInterval;
-        mapping(address ipId => RoyaltyPolicyLAP.LAPRoyaltyData) royaltyData;
+        mapping(address ipId => IRoyaltyPolicyLAP.LAPRoyaltyData) royaltyData;
     }
 
     bytes32 private constant RoyaltyPolicyLAPStorageLocation =
@@ -25,23 +19,14 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reent
     address public constant LICENSING_MODULE = address(0);
     address public constant ROYALTY_MODULE = address(0);
 
-    constructor() {
-        _disableInitializers();
-    }
+    constructor() {}
 
-    function initialize() external initializer {
-        __GovernableUpgradeable_init(address(0x1));
-        __ReentrancyGuard_init();
-        __UUPSUpgradeable_init();
-    }
-
-    function setSnapshotInterval(uint256 timestampInterval) public onlyProtocolAdmin {
+    function setSnapshotInterval(uint256 timestampInterval) public {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.snapshotInterval = timestampInterval;
     }
 
-    function setIpRoyaltyVaultBeacon(address beacon) public onlyProtocolAdmin {
-        if (beacon == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
+    function setIpRoyaltyVaultBeacon(address beacon) public {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.ipRoyaltyVaultBeacon = beacon;
     }
@@ -61,7 +46,7 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reent
         address ipId
     ) external view returns (bool, address, uint32, address[] memory, uint32[] memory) {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-        RoyaltyPolicyLAP.LAPRoyaltyData memory data = $.royaltyData[ipId];
+        IRoyaltyPolicyLAP.LAPRoyaltyData memory data = $.royaltyData[ipId];
         return (
             data.isUnlinkableToParents,
             data.ipRoyaltyVault,
@@ -86,8 +71,4 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reent
             $.slot := RoyaltyPolicyLAPStorageLocation
         }
     }
-
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
-    /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override {}
 }

@@ -281,7 +281,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("PILPolicyFrameworkManager", address(pilPfm));
 
         _predeploy("IpRoyaltyVaultImpl");
-        ipRoyaltyVaultImpl = new IpRoyaltyVault(address(royaltyPolicyLAP));
+        ipRoyaltyVaultImpl = new IpRoyaltyVault(address(royaltyPolicyLAP), address(disputeModule));
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
@@ -338,6 +338,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.setLicensingModule(address(licensingModule));
+        royaltyModule.setDisputeModule(address(disputeModule));
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyPolicyLAP.setSnapshotInterval(7 days);

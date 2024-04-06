@@ -180,7 +180,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         testRoyaltyModule.setDisputeModule(address(disputeModule));
         assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));

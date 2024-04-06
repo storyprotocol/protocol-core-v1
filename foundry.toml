@@ -6,7 +6,7 @@ cache_path  = 'forge-cache'
 gas_reports = ["*"]
 optimizer = true
 optimizer_runs = 20000
-test = 'test'
+test = 'test/foundry/integration/e2e'
 solc = '0.8.23'
 fs_permissions = [{ access = 'read-write', path = './deploy-out' }, { access = 'read', path = './out' }]
 build_info = true

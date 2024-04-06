@@ -45,9 +45,7 @@ contract LicenseRegistryV2 is ILicenseRegistryV2, GovernableUpgradeable, UUPSUpg
         IDisputeModule disputeModule;
         address defaultLicenseTemplate;
         uint256 defaultLicenseTermsId;
-        mapping(address => bool) registeredLicenseTemplates;
-        mapping(address => bool) registeredRoyaltyPolicies;
-        mapping(address => bool) registeredCurrencyTokens;
+        mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;
         mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;

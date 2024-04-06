@@ -14,12 +14,12 @@ import { ILicenseRegistryV2 } from "../../interfaces/registries/ILicenseRegistry
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
-import { BaseLicenseTemplate } from "../../modules/licensing/BaseLicenseTemplate.sol";
+import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 import { LicensorApprovalCheckerV2 } from "../../modules/licensing/parameter-helpers/LicensorApprovalCheckerV2.sol";
 
 /// @title PILicenseTemplate
 contract PILicenseTemplate is
-    BaseLicenseTemplate,
+    BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,
     LicensorApprovalCheckerV2,
     ReentrancyGuardUpgradeable
@@ -266,7 +266,7 @@ contract PILicenseTemplate is
     /// @notice checks the contract whether supports the given interface.
     function supportsInterface(
         bytes4 interfaceId
-    ) public view virtual override(BaseLicenseTemplate, IERC165) returns (bool) {
+    ) public view virtual override(BaseLicenseTemplateUpgradeable, IERC165) returns (bool) {
         return interfaceId == type(IPILicenseTemplate).interfaceId || super.supportsInterface(interfaceId);
     }
 

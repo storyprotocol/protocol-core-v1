@@ -63,6 +63,8 @@ contract LicensingModuleV2 is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 
+    /// @notice Returns the License NFT
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseNFT public immutable LICENSE_NFT;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensingModule")) - 1)) & ~bytes32(uint256(0xff));

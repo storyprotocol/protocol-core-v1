@@ -8,7 +8,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 // contracts
 import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
 
-abstract contract BaseLicenseTemplate is ILicenseTemplate, ERC165, Initializable {
+abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, Initializable {
     /// @custom:storage-location erc7201:story-protocol.BaseLicenseTemplate
     struct BaseLicenseTemplateStorage {
         string name;

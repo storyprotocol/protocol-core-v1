@@ -4,7 +4,7 @@ pragma solidity 0.8.23;
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-/// @title ILicenseNFT
+/// @title ILicenseToken
 /// @notice Interface for the License Token (ERC721) NFT collection that manages License Tokens representing
 /// License Terms.
 /// Each License Token may represent a set of License Terms and could have an expiration time.
@@ -13,7 +13,7 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 /// the License Token was minted.
 /// This interface includes functionalities for minting, burning, and querying License Tokens and their associated
 /// metadata.
-interface ILicenseNFT is IERC721Metadata, IERC721Enumerable {
+interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @notice Metadata struct for License Tokens.
     /// @param licensorIpId The ID of the licensor IP for which the License Token was minted.
     /// @param licenseTemplate The address of the License Template associated with the License Token.

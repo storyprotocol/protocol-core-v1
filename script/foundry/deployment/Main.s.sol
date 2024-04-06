@@ -26,7 +26,7 @@ import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
-import { LicenseNFT } from "contracts/LicenseNFT.sol";
+import {LicenseToken} from "contracts/LicenseToken.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
@@ -61,7 +61,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     IPAccountRegistry internal ipAccountRegistry;
     IPAssetRegistry internal ipAssetRegistry;
     LicenseRegistry internal licenseRegistry;
-    LicenseNFT internal licenseNFT;
+    LicenseToken internal licenseToken;
     ModuleRegistry internal moduleRegistry;
 
     // Core Module
@@ -221,14 +221,14 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
 
-        contractKey = "LicenseNFT";
+        contractKey = "LicenseToken";
         _predeploy(contractKey);
-        impl = address(new LicenseNFT());
-        licenseNFT = LicenseNFT(
+        impl = address(new LicenseToken());
+        licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
                 impl,
                 abi.encodeCall(
-                    LicenseNFT.initialize,
+                    LicenseToken.initialize,
                     (
                         address(governance),
                         "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
@@ -237,7 +237,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
-        _postdeploy(contractKey, address(licenseNFT));
+        _postdeploy(contractKey, address(licenseToken));
 
         contractKey = "LicensingModule";
         _predeploy(contractKey);
@@ -249,7 +249,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                address(licenseNFT)
+                address(licenseToken)
             )
         );
         licensingModule = LicensingModule(
@@ -293,7 +293,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
                 address(ipAccountRegistry),
                 address(licenseRegistry),
                 address(royaltyModule),
-                address(licenseNFT)
+                address(licenseToken)
             )
         );
         piLt = PILicenseTemplate(

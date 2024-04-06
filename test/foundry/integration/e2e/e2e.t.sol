@@ -19,7 +19,7 @@ import { DisputeModule } from "../../../../contracts/modules/dispute/DisputeModu
 import { LicensingModule } from "../../../../contracts/modules/licensing/LicensingModule.sol";
 import { ArbitrationPolicySP } from "../../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
-import { LicenseNFT } from "../../../../contracts/LicenseNFT.sol";
+import { LicenseToken } from "../../../../contracts/LicenseToken.sol";
 import { DISPUTE_MODULE_KEY, LICENSING_MODULE_KEY, ROYALTY_MODULE_KEY } from "contracts/lib/modules/Module.sol";
 import { PILicenseTemplate } from "../../../../contracts/modules/licensing/PILicenseTemplate.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
@@ -46,7 +46,7 @@ contract e2e is Test {
     IPAccountImpl ipAccountImpl;
     IPAssetRegistry ipAssetRegistry;
     LicenseRegistry licenseRegistry;
-    LicenseNFT licenseNFT;
+    LicenseToken licenseToken;
     RoyaltyModule royaltyModule;
     DisputeModule disputeModule;
     LicensingModule licensingModule;
@@ -93,11 +93,11 @@ contract e2e is Test {
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(LicenseRegistry.initialize, (address(governance))))
         );
 
-        impl = address(new LicenseNFT());
-        licenseNFT = LicenseNFT(
+        impl = address(new LicenseToken());
+        licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(LicenseNFT.initialize, (address(governance), "image_url"))
+                abi.encodeCall(LicenseToken.initialize, (address(governance), "image_url"))
             )
         );
 
@@ -119,7 +119,7 @@ contract e2e is Test {
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                address(licenseNFT)
+                address(licenseToken)
             )
         );
 
@@ -146,7 +146,7 @@ contract e2e is Test {
                 address(ipAssetRegistry),
                 address(licenseRegistry),
                 address(royaltyModule),
-                address(licenseNFT)
+                address(licenseToken)
             )
         );
         piLicenseTemplate = PILicenseTemplate(
@@ -189,8 +189,8 @@ contract e2e is Test {
         licenseRegistry.setLicensingModule(address(licensingModule));
         licenseRegistry.registerLicenseTemplate(address(piLicenseTemplate));
 
-        licenseNFT.setDisputeModule(address(disputeModule));
-        licenseNFT.setLicensingModule(address(licensingModule));
+        licenseToken.setDisputeModule(address(disputeModule));
+        licenseToken.setLicensingModule(address(licensingModule));
 
         vm.stopPrank();
     }
@@ -278,12 +278,12 @@ contract e2e is Test {
             address(charlie),
             ""
         );
-        assertEq(licenseNFT.ownerOf(lcTokenId), charlie);
-        assertEq(licenseNFT.getLicenseTermsId(lcTokenId), 1);
-        assertEq(licenseNFT.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
-        assertEq(licenseNFT.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseNFT.getExpirationTime(lcTokenId), 0);
-        assertEq(licenseNFT.totalMintedTokens(), 1);
+        assertEq(licenseToken.ownerOf(lcTokenId), charlie);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), 1);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
+        assertEq(licenseToken.totalMintedTokens(), 1);
 
         // register derivative with license tokens
         uint256[] memory licenseTokens = new uint256[](1);
@@ -303,8 +303,8 @@ contract e2e is Test {
         assertEq(licenseRegistry.getParentIpCount(ipId3), 1);
 
         vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
-        assertEq(licenseNFT.ownerOf(lcTokenId), address(0));
-        assertEq(licenseNFT.totalMintedTokens(), 1);
+        assertEq(licenseToken.ownerOf(lcTokenId), address(0));
+        assertEq(licenseToken.totalMintedTokens(), 1);
         vm.stopPrank();
 
         // mint license token with payments
@@ -312,12 +312,12 @@ contract e2e is Test {
         erc20.mint(dave, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
         (lcTokenId, ) = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
-        assertEq(licenseNFT.ownerOf(lcTokenId), dave);
-        assertEq(licenseNFT.getLicenseTermsId(lcTokenId), 2);
-        assertEq(licenseNFT.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
-        assertEq(licenseNFT.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseNFT.getExpirationTime(lcTokenId), 0);
-        assertEq(licenseNFT.totalMintedTokens(), 2);
+        assertEq(licenseToken.ownerOf(lcTokenId), dave);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
+        assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(erc20.balanceOf(dave), 900);
 
         // register derivative with license tokens
@@ -339,8 +339,8 @@ contract e2e is Test {
         assertEq(licenseRegistry.getParentIpCount(ipId6), 1);
 
         vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
-        assertEq(licenseNFT.ownerOf(lcTokenId), address(0));
-        assertEq(licenseNFT.totalMintedTokens(), 2);
+        assertEq(licenseToken.ownerOf(lcTokenId), address(0));
+        assertEq(licenseToken.totalMintedTokens(), 2);
         vm.stopPrank();
 
         // register derivative directly with payments
@@ -365,7 +365,7 @@ contract e2e is Test {
         assertEq(licenseRegistry.getDerivativeIp(ipId1, 3), ipId7);
         assertEq(licenseRegistry.getParentIp(ipId7, 0), ipId1);
         assertEq(licenseRegistry.getParentIpCount(ipId7), 1);
-        assertEq(licenseNFT.totalMintedTokens(), 2);
+        assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(erc20.balanceOf(dave), 900);
         vm.stopPrank();
     }

@@ -7,23 +7,23 @@ import { ERC721EnumerableUpgradeable, ERC721Upgradeable } from "@openzeppelin/co
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import { ILicenseNFT } from "./interfaces/ILicenseNFT.sol";
+import { ILicenseToken } from "./interfaces/ILicenseToken.sol";
 import { ILicensingModule } from "./interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "./interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "./lib/Errors.sol";
 import { GovernableUpgradeable } from "./governance/GovernableUpgradeable.sol";
 import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplate.sol";
 
-/// @title LicenseNFT aka LNFT
-contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSUpgradeable {
+/// @title LicenseToken aka LNFT
+contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
-    /// @dev Storage of the LicenseNFT
-    /// @custom:storage-location erc7201:story-protocol.LicenseNFT
-    struct LicenseNFTStorage {
+    /// @dev Storage of the LicenseToken
+    /// @custom:storage-location erc7201:story-protocol.LicenseToken
+    struct LicenseTokenStorage {
         string imageUrl;
         ILicensingModule licensingModule;
         IDisputeModule disputeModule;
@@ -32,13 +32,13 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     }
 
     // TODO: update the storage location
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseNFT")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant LicenseNFTStorageLocation =
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseToken")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant LicenseTokenStorageLocation =
         0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
 
     modifier onlyLicensingModule() {
-        if (msg.sender != address(_getLicenseNFTStorage().licensingModule)) {
-            revert Errors.LicenseNFT__CallerNotLicensingModule();
+        if (msg.sender != address(_getLicenseTokenStorage().licensingModule)) {
+            revert Errors.LicenseToken__CallerNotLicensingModule();
         }
         _;
     }
@@ -48,12 +48,12 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
         _disableInitializers();
     }
 
-    /// @dev Initializes the LicenseNFT contract
+    /// @dev Initializes the LicenseToken contract
     function initialize(address governance, string memory imageUrl) public initializer {
         __ERC721_init("Programmable IP License NFT", "PILNFT");
         __GovernableUpgradeable_init(governance);
         __UUPSUpgradeable_init();
-        _getLicenseNFTStorage().imageUrl = imageUrl;
+        _getLicenseTokenStorage().imageUrl = imageUrl;
     }
 
     /// @notice Sets the LicensingModule address.
@@ -61,9 +61,9 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     /// @param newLicensingModule The address of the LicensingModule
     function setLicensingModule(address newLicensingModule) external onlyProtocolAdmin {
         if (newLicensingModule == address(0)) {
-            revert Errors.LicenseNFT__ZeroLicensingModule();
+            revert Errors.LicenseToken__ZeroLicensingModule();
         }
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
@@ -72,9 +72,9 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     /// @param newDisputeModule The address of the DisputeModule
     function setDisputeModule(address newDisputeModule) external onlyProtocolAdmin {
         if (newDisputeModule == address(0)) {
-            revert Errors.LicenseNFT__ZeroDisputeModule();
+            revert Errors.LicenseToken__ZeroDisputeModule();
         }
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         $.disputeModule = IDisputeModule(newDisputeModule);
     }
 
@@ -82,7 +82,7 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     /// @dev Enforced to be only callable by the protocol admin
     /// @param url The URL of the Licensing Image
     function setLicensingImageUrl(string calldata url) external onlyProtocolAdmin {
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         $.imageUrl = url;
         emit BatchMetadataUpdate(1, $.totalMintedTokens);
     }
@@ -113,7 +113,7 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
             expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(licenseTermsId, block.timestamp)
         });
 
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = $.totalMintedTokens++;
@@ -153,7 +153,7 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
         view
         returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds)
     {
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);
@@ -161,19 +161,19 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
             if (_isExpiredNow(tokenIds[i])) {
-                revert Errors.LicenseNFT__LicenseTokenExpired(tokenIds[i], ltm.expiresAt, block.timestamp);
+                revert Errors.LicenseToken__LicenseTokenExpired(tokenIds[i], ltm.expiresAt, block.timestamp);
             }
             if (ownerOf(tokenIds[i]) != childIpOwner) {
-                revert Errors.LicenseNFT__NotLicenseTokenOwner(tokenIds[i], childIpOwner, ownerOf(tokenIds[i]));
+                revert Errors.LicenseToken__NotLicenseTokenOwner(tokenIds[i], childIpOwner, ownerOf(tokenIds[i]));
             }
             if (licenseTemplate != ltm.licenseTemplate) {
-                revert Errors.LicenseNFT__AllLicenseTokensMustFromSameLicenseTemplate(
+                revert Errors.LicenseToken__AllLicenseTokensMustFromSameLicenseTemplate(
                     licenseTemplate,
                     ltm.licenseTemplate
                 );
             }
             if (isLicenseTokenRevoked(tokenIds[i])) {
-                revert Errors.LicenseNFT__RevokedLicense(tokenIds[i]);
+                revert Errors.LicenseToken__RevokedLicense(tokenIds[i]);
             }
 
             licensorIpIds[i] = ltm.licensorIpId;
@@ -185,50 +185,50 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     /// the number won't decrease when license tokens are burned.
     /// @return The total number of minted License Tokens.
     function totalMintedTokens() external view returns (uint256) {
-        return _getLicenseNFTStorage().totalMintedTokens;
+        return _getLicenseTokenStorage().totalMintedTokens;
     }
 
     /// @notice Returns the license data for the given license ID
     /// @param tokenId The ID of the license token
     function getLicenseTokenMetadata(uint256 tokenId) external view returns (LicenseTokenMetadata memory) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[tokenId];
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId];
     }
 
     /// @notice Returns the ID of the IP asset that is the licensor of the given license ID
     /// @param tokenId The ID of the license token
     function getLicensorIpId(uint256 tokenId) external view returns (address) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[tokenId].licensorIpId;
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licensorIpId;
     }
 
     /// @notice Returns the ID of the license terms that are used for the given license ID
     /// @param tokenId The ID of the license token
     function getLicenseTermsId(uint256 tokenId) external view returns (uint256) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[tokenId].licenseTermsId;
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTermsId;
     }
 
     /// @notice Returns the address of the license template that is used for the given license ID
     /// @param tokenId The ID of the license token
     function getLicenseTemplate(uint256 tokenId) external view returns (address) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[tokenId].licenseTemplate;
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTemplate;
     }
 
     /// @notice Gets the expiration time of a License Token.
     /// @param tokenId The ID of the License Token.
     /// @return The expiration time of the License Token.
     function getExpirationTime(uint256 tokenId) external view returns (uint256) {
-        return _getLicenseNFTStorage().licenseTokenMetadatas[tokenId].expiresAt;
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
     }
 
     /// @notice Returns the canonical protocol-wide LicensingModule
     function licensingModule() external view returns (ILicensingModule) {
-        return _getLicenseNFTStorage().licensingModule;
+        return _getLicenseTokenStorage().licensingModule;
     }
 
     /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in
     /// the dispute module). If the tag is removed, the license is not revoked anymore.
     /// @return isRevoked True if the license is revoked
     function isLicenseTokenRevoked(uint256 tokenId) public view returns (bool) {
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         return $.disputeModule.isIpTagged($.licenseTokenMetadatas[tokenId].licensorIpId);
     }
 
@@ -238,7 +238,7 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
 
         LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[id];
         string memory licensorIpIdHex = ltm.licensorIpId.toHexString();
@@ -295,17 +295,17 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     }
 
     function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
-        LicenseNFTStorage storage $ = _getLicenseNFTStorage();
+        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         address from = _ownerOf(tokenId);
         if (from != address(0) && to != address(0)) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenId];
             if (isLicenseTokenRevoked(tokenId)) {
-                revert Errors.LicenseNFT__RevokedLicense(tokenId);
+                revert Errors.LicenseToken__RevokedLicense(tokenId);
             }
             if (!ltm.transferable) {
                 // True if from == licensor
                 if (from != ltm.licensorIpId) {
-                    revert Errors.LicenseNFT__NotTransferable();
+                    revert Errors.LicenseToken__NotTransferable();
                 }
             }
         }
@@ -313,7 +313,7 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     }
 
     function _isExpiredNow(uint256 tokenId) internal view returns (bool) {
-        uint256 expireTime = _getLicenseNFTStorage().licenseTokenMetadatas[tokenId].expiresAt;
+        uint256 expireTime = _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
         return expireTime != 0 && expireTime < block.timestamp;
     }
 
@@ -321,9 +321,9 @@ contract LicenseNFT is ILicenseNFT, ERC721EnumerableUpgradeable, GovernableUpgra
     //                         Upgrades related                               //
     ////////////////////////////////////////////////////////////////////////////
 
-    function _getLicenseNFTStorage() internal pure returns (LicenseNFTStorage storage $) {
+    function _getLicenseTokenStorage() internal pure returns (LicenseTokenStorage storage $) {
         assembly {
-            $.slot := LicenseNFTStorageLocation
+            $.slot := LicenseTokenStorageLocation
         }
     }
 

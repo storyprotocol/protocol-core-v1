@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { AccessControlled } from "../../../access/AccessControlled.sol";
-import { ILicenseNFT } from "../../../interfaces/ILicenseNFT.sol";
+import { ILicenseToken } from "../../../interfaces/ILicenseToken.sol";
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
@@ -30,9 +30,9 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
         mapping(uint256 => mapping(address => mapping(address => bool))) approvals;
     }
 
-    /// @notice Returns the licenseNFT  address
+    /// @notice Returns the licenseToken  address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    ILicenseNFT public immutable LICENSE_NFT;
+    ILicenseToken public immutable LICENSE_NFT;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensorApprovalChecker")) - 1))
     // & ~bytes32(uint256(0xff));
@@ -42,14 +42,14 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
     /// @notice Constructor function
     /// @param accessController The address of the AccessController contract
     /// @param ipAccountRegistry The address of the IPAccountRegistry contract
-    /// @param licenseNFT The address of the LicenseRegistry contract
+    /// @param licenseToken The address of the LicenseRegistry contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAccountRegistry,
-        address licenseNFT
+        address licenseToken
     ) AccessControlled(accessController, ipAccountRegistry) {
-        LICENSE_NFT = ILicenseNFT(licenseNFT);
+        LICENSE_NFT = ILicenseToken(licenseToken);
     }
 
     /// @notice Approves or disapproves a derivative IP account.

@@ -26,7 +26,7 @@ import { ILicenseTemplate } from "contracts/interfaces/modules/licensing/ILicens
 import { IMintingFeeModule } from "contracts/interfaces/modules/licensing/IMintingFeeModule.sol";
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
-import { ILicenseNFT } from "../../interfaces/ILicenseNFT.sol";
+import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 
 /// @title Licensing Module
 /// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
@@ -65,7 +65,7 @@ contract LicensingModule is
 
     /// @notice Returns the License NFT
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    ILicenseNFT public immutable LICENSE_NFT;
+    ILicenseToken public immutable LICENSE_NFT;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicensingModuleStorageLocation =
@@ -84,12 +84,12 @@ contract LicensingModule is
         address royaltyModule,
         address registry,
         address disputeModule,
-        address licenseNFT
+        address licenseToken
     ) AccessControlled(accessController, ipAccountRegistry) {
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
         LICENSE_REGISTRY = ILicenseRegistry(registry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
-        LICENSE_NFT = ILicenseNFT(licenseNFT);
+        LICENSE_NFT = ILicenseToken(licenseToken);
         _disableInitializers();
     }
 

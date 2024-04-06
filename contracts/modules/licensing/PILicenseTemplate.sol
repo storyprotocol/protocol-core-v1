@@ -51,8 +51,8 @@ contract PILicenseTemplate is
         address ipAccountRegistry,
         address licenseRegistry,
         address royaltyModule,
-        address licenseNFT
-    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseNFT) {
+        address licenseToken
+    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseToken) {
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();

@@ -143,16 +143,16 @@ library Errors {
     error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index, uint256 length);
 
     ////////////////////////////////////////////////////////////////////////////
-    //                            LicenseNFT                                  //
+    //                            LicenseToken                                  //
     ////////////////////////////////////////////////////////////////////////////
-    error LicenseNFT__CallerNotLicensingModule();
-    error LicenseNFT__ZeroLicensingModule();
-    error LicenseNFT__ZeroDisputeModule();
-    error LicenseNFT__RevokedLicense(uint256 tokenId);
-    error LicenseNFT__NotTransferable();
-    error LicenseNFT__LicenseTokenExpired(uint256 tokenId, uint256 expiredAt, uint256 currentTimestamp);
-    error LicenseNFT__NotLicenseTokenOwner(uint256 tokenId, address iPowner, address tokenOwner);
-    error LicenseNFT__AllLicenseTokensMustFromSameLicenseTemplate(
+    error LicenseToken__CallerNotLicensingModule();
+    error LicenseToken__ZeroLicensingModule();
+    error LicenseToken__ZeroDisputeModule();
+    error LicenseToken__RevokedLicense(uint256 tokenId);
+    error LicenseToken__NotTransferable();
+    error LicenseToken__LicenseTokenExpired(uint256 tokenId, uint256 expiredAt, uint256 currentTimestamp);
+    error LicenseToken__NotLicenseTokenOwner(uint256 tokenId, address iPowner, address tokenOwner);
+    error LicenseToken__AllLicenseTokensMustFromSameLicenseTemplate(
         address licenseTemplate,
         address anotherLicenseTemplate
     );

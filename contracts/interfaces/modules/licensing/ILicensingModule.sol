@@ -82,7 +82,6 @@ interface ILicensingModule is IModule {
     /// @param receiver The address of the receiver.
     /// @param royaltyContext The context of the royalty.
     /// @return startLicenseTokenId The start ID of the minted license tokens.
-    /// @return endLicenseTokenId The end ID of the minted license tokens.
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
@@ -90,7 +89,7 @@ interface ILicensingModule is IModule {
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
-    ) external returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId);
+    ) external returns (uint256 startLicenseTokenId);
 
     /// @notice Registers a derivative directly with parent IP's license terms, without needing license tokens,
     /// and attaches the license terms of the parent IPs to the derivative IP.

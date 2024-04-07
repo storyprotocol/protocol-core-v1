@@ -45,7 +45,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted License Tokens.
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
-    /// @return endLicenseTokenId The end ID of the minted License Tokens.
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
@@ -53,7 +52,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         uint256 amount, // mint amount
         address minter,
         address receiver
-    ) external returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId);
+    ) external returns (uint256 startLicenseTokenId);
 
     /// @notice Burns specified License Tokens.
     /// @param holder The address of the holder of the License Tokens.

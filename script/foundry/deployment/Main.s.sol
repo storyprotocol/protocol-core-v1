@@ -506,7 +506,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         // Register derivative IP for NFT tokenId 3
         {
             uint256[] memory licenseIds = new uint256[](1);
-            (licenseIds[0],) = licensingModule.mintLicenseTokens(
+            licenseIds[0] = licensingModule.mintLicenseTokens(
                 ipAcct[1],
                 address(piLt),
                 policyIds["pil_com_deriv_expensive"],
@@ -526,7 +526,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         // Register derivative IP for NFT tokenId 4
         {
             uint256[] memory licenseIds = new uint256[](1);
-            (licenseIds[0],) = licensingModule.mintLicenseTokens(
+            licenseIds[0] = licensingModule.mintLicenseTokens(
                 ipAcct[2],
                 address(piLt),
                 policyIds["pil_noncom_deriv_reciprocal"],
@@ -549,7 +549,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
             vm.label(ipAcct[5], "IPAccount5");
 
             uint256[] memory licenseIds = new uint256[](2);
-            (licenseIds[0],) = licensingModule.mintLicenseTokens(
+            licenseIds[0] = licensingModule.mintLicenseTokens(
                 ipAcct[1],
                 address(piLt),
                 policyIds["pil_com_deriv_expensive"],
@@ -558,7 +558,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
                 ""
             );
 
-            (licenseIds[1],) = licensingModule.mintLicenseTokens(
+            licenseIds[1] = licensingModule.mintLicenseTokens(
                 ipAcct[3], // is child of ipAcct[1]
                 address(piLt),
                 policyIds["pil_com_deriv_expensive"],

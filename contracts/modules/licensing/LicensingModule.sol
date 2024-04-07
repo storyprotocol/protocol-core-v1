@@ -135,7 +135,6 @@ contract LicensingModule is
     /// @param receiver The address of the receiver.
     /// @param royaltyContext The context of the royalty.
     /// @return startLicenseTokenId The start ID of the minted license tokens.
-    /// @return endLicenseTokenId The end ID of the minted license tokens.
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
@@ -143,7 +142,7 @@ contract LicensingModule is
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
-    ) external returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId) {
+    ) external returns (uint256 startLicenseTokenId) {
         if (amount == 0) {
             revert Errors.LicensingModule__MintAmountZero();
         }
@@ -169,7 +168,7 @@ contract LicensingModule is
 
         ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, licensorIpId, amount);
 
-        (startLicenseTokenId, ) = LICENSE_NFT.mintLicenseTokens(
+        startLicenseTokenId = LICENSE_NFT.mintLicenseTokens(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,

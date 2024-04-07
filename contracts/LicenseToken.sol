@@ -95,7 +95,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted License Tokens.
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
-    /// @return endLicenseTokenId The end ID of the minted License Tokens.
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
@@ -103,7 +102,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
         uint256 amount, // mint amount
         address minter,
         address receiver
-    ) external onlyLicensingModule returns (uint256 startLicenseTokenId, uint256 endLicenseTokenId) {
+    ) external onlyLicensingModule returns (uint256 startLicenseTokenId) {
         LicenseTokenMetadata memory ltm = LicenseTokenMetadata({
             licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
@@ -121,7 +120,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
             _mint(receiver, tokenId);
             emit LicenseTokenMinted(minter, receiver, tokenId);
         }
-        endLicenseTokenId = $.totalMintedTokens - 1;
     }
 
     /// @notice Burns the License Tokens (LNFTs) for the given token IDs.

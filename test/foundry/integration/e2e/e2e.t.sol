@@ -270,7 +270,7 @@ contract e2e is Test {
 
         // mint license token
         vm.startPrank(charlie);
-        (uint256 lcTokenId, ) = licensingModule.mintLicenseTokens(
+        uint256 lcTokenId = licensingModule.mintLicenseTokens(
             ipId1,
             address(piLicenseTemplate),
             1,
@@ -311,7 +311,7 @@ contract e2e is Test {
         vm.startPrank(dave);
         erc20.mint(dave, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
-        (lcTokenId, ) = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
+        lcTokenId = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
         assertEq(licenseToken.ownerOf(lcTokenId), dave);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));

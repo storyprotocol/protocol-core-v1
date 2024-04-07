@@ -48,16 +48,16 @@ interface ILicenseTemplate is IERC165 {
     function isLicenseTransferable(uint256 licenseTermsId) external view returns (bool);
 
     /// @notice Returns the earliest expiration time among the given license terms.
-    /// @param start The start time.
+    /// @param start The start time to calculate the expiration time.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return The earliest expiration time.
-    function getEarlierExpireTime(uint256 start, uint256[] calldata licenseTermsIds) external view returns (uint);
+    function getEarlierExpireTime(uint256[] calldata licenseTermsIds, uint256 start) external view returns (uint256);
 
     /// @notice Returns the expiration time of a license terms.
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint);
+    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint256);
 
     /// @notice Returns the royalty policy of a license terms.
     /// @dev All License Templates should implement this method.

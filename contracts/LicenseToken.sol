@@ -50,7 +50,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
 
     /// @dev Initializes the LicenseToken contract
     function initialize(address governance, string memory imageUrl) public initializer {
-        __ERC721_init("Programmable IP License NFT", "PILNFT");
+        __ERC721_init("Programmable IP License Token", "PILicenseToken");
         __GovernableUpgradeable_init(governance);
         __UUPSUpgradeable_init();
         _getLicenseTokenStorage().imageUrl = imageUrl;
@@ -122,7 +122,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
         }
     }
 
-    /// @notice Burns the License Tokens (LNFTs) for the given token IDs.
+    /// @notice Burns the License Tokens (LTs) for the given token IDs.
     /// @param holder The address of the holder of the License Tokens.
     /// @param tokenIds An array of IDs of the License Tokens to be burned.
     function burnLicenseTokens(address holder, uint256[] calldata tokenIds) external onlyLicensingModule {
@@ -255,7 +255,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
                 '"external_url": "https://protocol.storyprotocol.xyz/ipa/',
                 licensorIpIdHex,
                 '",',
-                // solhint-disable-next-line max-length
                 '"image": "',
                 $.imageUrl,
                 '",',

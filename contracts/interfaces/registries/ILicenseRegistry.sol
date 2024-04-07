@@ -12,12 +12,6 @@ interface ILicenseRegistry {
     /// @notice Emitted when a new license template is registered.
     event LicenseTemplateRegistered(address indexed licenseTemplate);
 
-    /// @notice Emitted when a new royalty policy is registered.
-    event RoyaltyPolicyRegistered(address indexed royaltyPolicy);
-
-    /// @notice Emitted when a new currency token is registered.
-    event CurrencyTokenRegistered(address indexed token);
-
     /// @notice Emitted when a minting license configuration is set.
     event MintingLicenseConfigSetLicense(
         address indexed ipId,

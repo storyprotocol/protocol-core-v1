@@ -236,7 +236,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
         $.licenseTemplates[childIpId] = licenseTemplate;
         _setExpirationTime(
             childIpId,
-            ILicenseTemplate(licenseTemplate).getEarlierExpireTime(block.timestamp, licenseTermsIds)
+            ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp)
         );
     }
 

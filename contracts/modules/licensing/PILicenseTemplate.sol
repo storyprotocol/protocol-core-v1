@@ -11,7 +11,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
-import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
@@ -225,9 +225,9 @@ contract PILicenseTemplate is
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return The earliest expiration time.
     function getEarlierExpireTime(
-        uint256 start,
-        uint256[] calldata licenseTermsIds
-    ) external view override returns (uint) {
+        uint256[] calldata licenseTermsIds,
+        uint256 start
+    ) external view override returns (uint256) {
         if (licenseTermsIds.length == 0) {
             return 0;
         }
@@ -245,7 +245,7 @@ contract PILicenseTemplate is
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint) {
+    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint256) {
         return _getExpireTime(licenseTermsId, start);
     }
 

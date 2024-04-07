@@ -250,11 +250,12 @@ contract e2e is Test {
         // register derivative directly
         vm.startPrank(bob);
         address[] memory parentIpIds = new address[](1);
-        uint256[] memory licenseTerms = new uint256[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
         parentIpIds[0] = ipId1;
-        licenseTerms[0] = 1;
+        licenseTermsIds[0] = 1;
 
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTerms, address(piLicenseTemplate), "");
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(piLicenseTemplate), "");
+
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(piLicenseTemplate), 1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
@@ -288,7 +289,9 @@ contract e2e is Test {
         // register derivative with license tokens
         uint256[] memory licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
+
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(piLicenseTemplate), 1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
@@ -311,7 +314,9 @@ contract e2e is Test {
         vm.startPrank(dave);
         erc20.mint(dave, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
+
         lcTokenId = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
+
         assertEq(licenseToken.ownerOf(lcTokenId), dave);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
@@ -323,7 +328,9 @@ contract e2e is Test {
         // register derivative with license tokens
         licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
+
         licensingModule.registerDerivativeWithLicenseTokens(ipId6, licenseTokens, "");
+
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId6, address(piLicenseTemplate), 2), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId6), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipId6), true);
@@ -348,11 +355,11 @@ contract e2e is Test {
         erc20.mint(eve, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
         parentIpIds = new address[](1);
-        licenseTerms = new uint256[](1);
+        licenseTermsIds = new uint256[](1);
         parentIpIds[0] = ipId1;
-        licenseTerms[0] = 2;
+        licenseTermsIds[0] = 2;
 
-        licensingModule.registerDerivative(ipId7, parentIpIds, licenseTerms, address(piLicenseTemplate), "");
+        licensingModule.registerDerivative(ipId7, parentIpIds, licenseTermsIds, address(piLicenseTemplate), "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId7, address(piLicenseTemplate), 2), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId7), 1);
@@ -366,7 +373,7 @@ contract e2e is Test {
         assertEq(licenseRegistry.getParentIp(ipId7, 0), ipId1);
         assertEq(licenseRegistry.getParentIpCount(ipId7), 1);
         assertEq(licenseToken.totalMintedTokens(), 2);
-        assertEq(erc20.balanceOf(dave), 900);
+        assertEq(erc20.balanceOf(eve), 900);
         vm.stopPrank();
     }
 }

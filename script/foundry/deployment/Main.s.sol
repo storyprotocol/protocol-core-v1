@@ -21,7 +21,7 @@ import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
-import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY } from "contracts/lib/modules/Module.sol";
+import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY } from "contracts/lib/modules/Module.sol";
 import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
@@ -29,6 +29,8 @@ import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
 import {LicenseToken} from "contracts/LicenseToken.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
+import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
+import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
@@ -65,6 +67,8 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
     ModuleRegistry internal moduleRegistry;
 
     // Core Module
+    CoreMetadataModule internal coreMetadataModule;
+    CoreMetadataViewModule internal coreMetadataViewModule;
     LicensingModule internal licensingModule;
     DisputeModule internal disputeModule;
     RoyaltyModule internal royaltyModule;
@@ -263,6 +267,17 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
         _postdeploy(contractKey, address(tokenWithdrawalModule));
 
+        contractKey = "CoreMetadataModule";
+        _predeploy(contractKey);
+        coreMetadataModule = new CoreMetadataModule(address(accessController), address(ipAccountRegistry));
+        _postdeploy(contractKey, address(coreMetadataModule));
+
+        contractKey = "CoreMetadataViewModule";
+        _predeploy(contractKey);
+        coreMetadataViewModule = new CoreMetadataViewModule(address(ipAssetRegistry), address(moduleRegistry));
+        _postdeploy(contractKey, address(coreMetadataModule));
+
+
         //
         // Story-specific Contracts
         //
@@ -334,6 +349,7 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         _configureRoyaltyRelated();
         _configureDisputeModule();
         _executeInteractions();
+        coreMetadataViewModule.updateCoreMetadataModule();
     }
 
     function _configureMisc() private {
@@ -350,6 +366,9 @@ contract Main is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutC
         moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));
         moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
         moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
+        moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
+        moduleRegistry.registerModule(CORE_METADATA_VIEW_MODULE_KEY, address(coreMetadataViewModule));
+
     }
 
     function _configureRoyaltyRelated() private {

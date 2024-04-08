@@ -123,7 +123,6 @@ library Errors {
     error LicenseRegistry__CallerNotLicensingModule();
     error LicenseRegistry__ZeroLicensingModule();
     error LicensingModule__CallerNotLicenseRegistry();
-    error LicenseRegistry__RevokedLicense();
     /// @notice emitted when trying to transfer a license that is not transferable (by policy)
     error LicenseRegistry__NotTransferable();
     /// @notice emitted on constructor if dispute module is not set
@@ -184,7 +183,6 @@ library Errors {
     error LicensingModule__DerivativesCannotAddPolicy();
     error LicensingModule__IncompatibleRoyaltyPolicyAddress();
     error LicensingModule__IncompatibleRoyaltyPolicyDerivativeRevShare();
-    error LicensingModule__IncompatibleLicensorCommercialPolicy();
     error LicensingModule__IncompatibleLicensorRoyaltyDerivativeRevShare();
     error LicensingModule__DerivativeRevShareSumExceedsMaxRNFTSupply();
     error LicensingModule__MismatchBetweenRoyaltyPolicy();

@@ -338,6 +338,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry.setDisputeModule(address(disputeModule));
         licenseRegistry.setLicensingModule(address(licensingModule));
 
+        // License Token
+        licenseToken.setDisputeModule(address(disputeModule));
+        licenseToken.setLicensingModule(address(licensingModule));
+
         // Access Controller
         accessController.setAddresses(address(ipAccountRegistry), address(moduleRegistry));
 

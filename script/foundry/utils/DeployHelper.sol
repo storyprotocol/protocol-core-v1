@@ -31,14 +31,14 @@ import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPoli
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { TokenWithdrawalModule } from "contracts/modules/external/TokenWithdrawalModule.sol";
-// solhint-disable-next-line max-line-length
-import { PILPolicyFrameworkManager, PILPolicy, RegisterPILPolicyParams } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
+import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
+import { LicenseToken } from "contracts/LicenseToken.sol";
 
 // script
 import { StringUtil } from "./StringUtil.sol";
@@ -77,11 +77,14 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
     IpRoyaltyVault internal ipRoyaltyVaultImpl;
-    PILPolicyFrameworkManager internal pilPfm;
 
-    // Misc.
+    // Access Control
     Governance internal governance;
     AccessController internal accessController;
+
+    // License system
+    LicenseToken internal licenseToken;
+    PILicenseTemplate internal pilTemplate;
 
     // Token
     ERC20 private immutable erc20; // keep private to avoid conflict with inheriting contracts
@@ -204,8 +207,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(
                     LicenseRegistry.initialize,
                     (
-                        address(governance),
-                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                        address(governance)
                     )
                 )
             )
@@ -213,16 +215,34 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
 
+        contractKey = "LicenseToken";
+        _predeploy(contractKey);
+        impl = address(new LicenseToken());
+        licenseToken = LicenseToken(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(
+                    LicenseToken.initialize,
+                    (
+                        address(governance),
+                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                    )
+                )
+            )
+        );
+        impl = address(0);
+        _postdeploy(contractKey, address(licenseToken));
+
         contractKey = "LicensingModule";
         _predeploy(contractKey);
-
         impl = address(
             new LicensingModule(
                 address(accessController),
                 address(ipAccountRegistry),
                 address(royaltyModule),
                 address(licenseRegistry),
-                address(disputeModule)
+                address(disputeModule),
+                address(licenseToken)
             )
         );
         licensingModule = LicensingModule(
@@ -231,52 +251,47 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
 
-        contractKey = "TokenWithdrawalModule";
-        _predeploy(contractKey);
-        tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
-        _postdeploy(contractKey, address(tokenWithdrawalModule));
-
         //
-        // Story-specific Contracts
+        // Story-specific Non-Core Contracts
         //
 
-        contractKey = "ArbitrationPolicySP";
-        _predeploy(contractKey);
+        _predeploy("ArbitrationPolicySP");
         impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
         arbitrationPolicySP = ArbitrationPolicySP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, address(governance)))
         );
         impl = address(0);
-        _postdeploy(contractKey, address(arbitrationPolicySP));
+        _postdeploy("ArbitrationPolicySP", address(arbitrationPolicySP));
 
-        contractKey = "RoyaltyPolicyLAP";
-        _predeploy(contractKey);
+        _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, address(governance)))
         );
         impl = address(0);
-        _postdeploy(contractKey, address(royaltyPolicyLAP));
+        _postdeploy("RoyaltyPolicyLAP", address(royaltyPolicyLAP));
 
-        _predeploy("PILPolicyFrameworkManager");
+        _predeploy("PILicenseTemplate");
         impl = address(
-            new PILPolicyFrameworkManager(
+            new PILicenseTemplate(
                 address(accessController),
                 address(ipAccountRegistry),
-                address(licensingModule)
+                address(licenseRegistry),
+                address(royaltyModule),
+                address(licenseToken)
             )
         );
-        pilPfm = PILPolicyFrameworkManager(
+        pilTemplate = PILicenseTemplate(
             TestProxyHelper.deployUUPSProxy(
                 impl,
                 abi.encodeCall(
-                    PILPolicyFrameworkManager.initialize,
+                    PILicenseTemplate.initialize,
                     ("pil", "https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf")
                 )
             )
         );
-        impl = address(0); // Make sure we don't deploy wrong impl
-        _postdeploy("PILPolicyFrameworkManager", address(pilPfm));
+        impl = address(0);
+        _postdeploy("PILicenseTemplate", address(pilTemplate));
 
         _predeploy("IpRoyaltyVaultImpl");
         ipRoyaltyVaultImpl = new IpRoyaltyVault(address(royaltyPolicyLAP), address(disputeModule));
@@ -293,6 +308,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("CoreMetadataViewModule");
         coreMetadataViewModule = new CoreMetadataViewModule(address(ipAssetRegistry), address(moduleRegistry));
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
+
+        _predeploy("TokenWithdrawalModule");
+        tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
+        _postdeploy("TokenWithdrawalModule", address(tokenWithdrawalModule));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -321,18 +340,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Access Controller
         accessController.setAddresses(address(ipAccountRegistry), address(moduleRegistry));
-        accessController.setGlobalPermission(
-            address(ipAssetRegistry),
-            address(licensingModule),
-            bytes4(licensingModule.linkIpToParents.selector),
-            AccessPermission.ALLOW
-        );
-        accessController.setGlobalPermission(
-            address(ipAssetRegistry),
-            address(licensingModule),
-            bytes4(licensingModule.addPolicyToIp.selector),
-            AccessPermission.ALLOW
-        );
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.setLicensingModule(address(licensingModule));
@@ -351,5 +358,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
+
+        // License Template
+        licenseRegistry.registerLicenseTemplate(address(pilTemplate));
     }
 }

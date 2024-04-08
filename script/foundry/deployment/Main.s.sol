@@ -9,17 +9,15 @@ import { DeployHelper } from "../utils/DeployHelper.sol";
 
 contract Main is DeployHelper {
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
-    // ERC20 to whitelist for arbitration policy and royalty policy
-    address internal ERC20 = 0x0000000000000000000000000000000000000001;
     // For arbitration policy
-    uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 18; // 1000 MockToken
+    uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC
     // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
     constructor()
         DeployHelper(
             ERC6551_REGISTRY,
-            ERC20,
+            USDC,
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL
         )

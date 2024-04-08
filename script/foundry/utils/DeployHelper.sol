@@ -57,7 +57,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     IPAccountImpl internal ipAccountImpl;
 
     // Registry
-    IPAccountRegistry internal ipAccountRegistry;
     IPAssetRegistry internal ipAssetRegistry;
     LicenseRegistry internal licenseRegistry;
     ModuleRegistry internal moduleRegistry;
@@ -170,15 +169,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(moduleRegistry));
 
-        contractKey = "IPAccountRegistry";
-        _predeploy(contractKey);
-        ipAccountRegistry = new IPAccountRegistry(address(erc6551Registry), address(ipAccountImpl));
-        _postdeploy(contractKey, address(ipAccountRegistry));
-
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
         ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl), address(governance));
         _postdeploy(contractKey, address(ipAssetRegistry));
+
+        IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
@@ -326,6 +322,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     }
 
     function _configureDeployment() private {
+        IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
+
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
         moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));

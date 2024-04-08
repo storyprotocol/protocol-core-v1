@@ -7,11 +7,10 @@ import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
 import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
-import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
 
 contract TestRoyaltyModule is BaseTest {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
@@ -69,27 +68,14 @@ contract TestRoyaltyModule is BaseTest {
 
         USDC.mint(ipAccount1, 1000 * 10 ** 6);
 
-        _setPILPolicyFrameworkManager();
-        _addPILPolicy(
-            "cheap_flexible",
-            true,
-            address(royaltyPolicyLAP),
-            PILPolicy({
-                attribution: false,
-                commercialUse: true,
-                commercialAttribution: true,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: 10,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                territories: new string[](0),
-                distributionChannels: new string[](0),
-                contentRestrictions: new string[](0)
-            })
-        );
+        registerSelectedPILicenseTerms_Commercial({
+            selectionName: "cheap_flexible",
+            transferable: true,
+            derivatives: true,
+            reciprocal: false,
+            commercialRevShare: 10,
+            mintingFee: 0
+        });
 
         mockNFT.mintId(u.alice, 0);
 
@@ -105,7 +91,8 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.startPrank(u.alice);
         ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
-        licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
+
+        licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 
         // set arbitration policy
         vm.startPrank(ipAddr);

@@ -7,7 +7,6 @@ import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 // contracts
 import { Errors } from "contracts/lib/Errors.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 
@@ -26,27 +25,14 @@ contract TestArbitrationPolicySP is BaseTest {
 
         USDC.mint(ipAccount1, 10000 * 10 ** 6);
 
-        _setPILPolicyFrameworkManager();
-        _addPILPolicy(
-            "cheap_flexible",
-            true,
-            address(royaltyPolicyLAP),
-            PILPolicy({
-                attribution: false,
-                commercialUse: true,
-                commercialAttribution: true,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: 10,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                territories: new string[](0),
-                distributionChannels: new string[](0),
-                contentRestrictions: new string[](0)
-            })
-        );
+        registerSelectedPILicenseTerms_Commercial({
+            selectionName: "cheap_flexible",
+            transferable: true,
+            derivatives: true,
+            reciprocal: false,
+            commercialRevShare: 10,
+            mintingFee: 0
+        });
 
         mockNFT.mintId(u.admin, 0);
 
@@ -62,7 +48,8 @@ contract TestArbitrationPolicySP is BaseTest {
 
         vm.startPrank(u.admin);
         ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
-        licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
+
+        licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 
         // set arbitration policy
         vm.startPrank(ipAddr);

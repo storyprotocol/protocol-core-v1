@@ -62,14 +62,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
             false // writeDeploys
         );
 
-        initLicensingHelper(
-            address(accessController),
-            address(ipAccountRegistry),
-            address(licensingModule),
-            address(royaltyModule),
-            address(royaltyPolicyLAP),
-            address(erc20)
-        );
+        initLicensingHelper(address(pilTemplate), address(royaltyPolicyLAP), address(erc20));
 
         // Set aliases
         mockToken = erc20;

@@ -7,23 +7,19 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contract
-import { PILFlavors } from "contracts/lib/PILFlavors.sol";
+import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 
 // test
-import { BaseIntegration } from "test/foundry/integration/BaseIntegration.t.sol";
+import { BaseIntegration } from "../..//BaseIntegration.t.sol";
 
 contract Licensing_Scenarios is BaseIntegration {
     using EnumerableSet for EnumerableSet.UintSet;
     using Strings for *;
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
-    uint256 internal nonCommRemixPoliciyId;
 
     function setUp() public override {
         super.setUp();
-
-        // Register PIL Framework
-        _setPILicenseTemplate();
 
         // Register an original work with both policies set
         mockNFT.mintId(u.alice, 1);
@@ -31,79 +27,135 @@ contract Licensing_Scenarios is BaseIntegration {
 
         ipAcct[1] = registerIpAccount(mockNFT, 1, u.alice);
         ipAcct[2] = registerIpAccount(mockNFT, 2, u.bob);
-
-        nonCommRemixPoliciyId = _pilFramework().registerPolicy(PILFlavors.nonCommercialSocialRemixing());
     }
 
-    function test_flavors_getId() public {
-        uint256 id = PILFlavors.getNonCommercialSocialRemixingId(licensingModule, address(_pilFramework()));
-        assertEq(id, nonCommRemixPoliciyId);
+    function test_Integration_LicensingScenarios_PILFlavors_getId() public {
+        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+        assertEq(ncSocialRemixTermsId, PILFlavors.getNonCommercialSocialRemixingId(pilTemplate));
+
         uint32 commercialRevShare = 10;
-        uint256 commRemixPolicyId = _pilFramework().registerPolicy(
-            PILFlavors.commercialRemix(commercialRevShare, address(royaltyPolicyLAP))
+        uint256 mintingFee = 100;
+
+        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+            "commercial_remix",
+            PILFlavors.commercialRemix({
+                commercialRevShare: commercialRevShare,
+                mintingFee: mintingFee,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(USDC)
+            })
         );
         assertEq(
-            commRemixPolicyId,
-            PILFlavors.getcommercialRemixId(
-                licensingModule,
-                address(_pilFramework()),
-                commercialRevShare,
-                address(royaltyPolicyLAP)
-            )
+            commRemixTermsId,
+            PILFlavors.getCommercialRemixId({
+                pilTemplate: pilTemplate,
+                commercialRevShare: commercialRevShare,
+                mintingFee: mintingFee,
+                currencyToken: address(USDC),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
         );
 
-        uint256 mintFee = 100;
-        uint256 commPolicyId = _pilFramework().registerPolicy(
-            PILFlavors.commercialUse(mintFee, address(USDC), address(royaltyPolicyLAP))
+        uint256 commTermsId = registerSelectedPILicenseTerms(
+            "commercial_use",
+            PILFlavors.commercialUse({
+                mintingFee: mintingFee,
+                currencyToken: address(USDC),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
         );
         assertEq(
-            commPolicyId,
-            PILFlavors.getCommercialUseId(
-                licensingModule,
-                address(_pilFramework()),
-                mintFee,
-                address(USDC),
-                address(royaltyPolicyLAP)
-            )
+            commTermsId,
+            PILFlavors.getCommercialUseId({
+                pilTemplate: pilTemplate,
+                mintingFee: mintingFee,
+                currencyToken: address(USDC),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
         );
     }
 
-    function test_ipaHasNonCommercialAndCommercialPolicy_mintingLicenseFromCommercial() public {
+    // solhint-disable-next-line max-line-length
+    function test_Integration_LicensingScenarios_ipaHasNonCommercialAndCommercialPolicy_mintingLicenseFromCommercial()
+        public
+    {
+        uint32 commercialRevShare = 10;
+        uint256 mintingFee = 100;
+
+        // Register non-commercial social remixing policy
+        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+
         // Register commercial remixing policy
-        uint32 commercialRevShare = 10;
-        uint256 commRemixPolicyId = _pilFramework().registerPolicy(
-            PILFlavors.commercialRemix(commercialRevShare, address(royaltyPolicyLAP))
+        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+            "commercial_remix",
+            PILFlavors.commercialRemix({
+                commercialRevShare: commercialRevShare,
+                mintingFee: mintingFee,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(USDC)
+            })
         );
 
         // Register commercial use policy
-        uint256 mintFee = 100;
-        uint256 commPolicyId = _pilFramework().registerPolicy(
-            PILFlavors.commercialUse(mintFee, address(USDC), address(royaltyPolicyLAP))
+        uint256 commTermsId = registerSelectedPILicenseTerms(
+            "commercial_use",
+            PILFlavors.commercialUse({
+                mintingFee: mintingFee,
+                currencyToken: address(USDC),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
         );
+
         uint256[] memory licenseIds = new uint256[](1);
 
         // Add policies to IP account
         vm.startPrank(u.alice);
-        licensingModule.addPolicyToIp(ipAcct[1], commRemixPolicyId);
-        licensingModule.addPolicyToIp(ipAcct[1], nonCommRemixPoliciyId);
-        licensingModule.addPolicyToIp(ipAcct[1], commPolicyId);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commTermsId);
         vm.stopPrank();
+
         // Register new IPAs
         mockNFT.mintId(u.bob, 3);
         ipAcct[3] = registerIpAccount(mockNFT, 3, u.bob);
         mockNFT.mintId(u.bob, 4);
         ipAcct[4] = registerIpAccount(mockNFT, 4, u.bob);
+
         // Mint license for Non-commercial remixing, then link to new IPA to make it a derivative
         vm.startPrank(u.bob);
-        licenseIds[0] = licensingModule.mintLicense(nonCommRemixPoliciyId, ipAcct[1], 1, u.bob, "");
-        licensingModule.linkIpToParents(licenseIds, ipAcct[2], "");
+        licenseIds[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.bob,
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
+
         // Mint license for commercial use, then link to new IPA to make it a derivative
-        IERC20(USDC).approve(address(royaltyPolicyLAP), mintFee);
-        licenseIds[0] = licensingModule.mintLicense(commPolicyId, ipAcct[1], 1, u.bob, "");
-        licensingModule.linkIpToParents(licenseIds, ipAcct[3], "");
+        IERC20(USDC).approve(address(royaltyPolicyLAP), mintingFee);
+        licenseIds[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commTermsId,
+            amount: 1,
+            receiver: u.bob,
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
+
         // Mint license for commercial remixing, then link to new IPA to make it a derivative
-        licenseIds[0] = licensingModule.mintLicense(commRemixPolicyId, ipAcct[1], 1, u.bob, "");
-        licensingModule.linkIpToParents(licenseIds, ipAcct[4], "");
+        IERC20(USDC).approve(address(royaltyPolicyLAP), mintingFee);
+        licenseIds[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commRemixTermsId,
+            amount: 1,
+            receiver: u.bob,
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "");
 
         vm.stopPrank();
     }

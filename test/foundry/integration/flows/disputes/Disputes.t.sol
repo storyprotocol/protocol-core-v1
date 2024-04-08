@@ -7,33 +7,22 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contract
-import { Errors } from "contracts/lib/Errors.sol";
+import { Errors } from "../../../../../contracts/lib/Errors.sol";
 
 // test
-import { BaseIntegration } from "test/foundry/integration/BaseIntegration.t.sol";
+import { BaseIntegration } from "../../BaseIntegration.t.sol";
 
 contract Flows_Integration_Disputes is BaseIntegration {
     using EnumerableSet for EnumerableSet.UintSet;
     using Strings for *;
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
-    uint256 internal policyId;
+    uint256 internal ncSocialRemixTermsId;
 
     function setUp() public override {
         super.setUp();
 
-        // Register PIL Framework
-        _setPILPolicyFrameworkManager();
-
-        // Register a License
-        _mapPILPolicySimple({
-            name: "non-commercial-remix",
-            commercial: false,
-            derivatives: true,
-            reciprocal: true,
-            commercialRevShare: 0
-        });
-        policyId = _registerPILPolicyFromMapping("non-commercial-remix");
+        ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
 
         // Register an original work with both policies set
         mockNFT.mintId(u.alice, 1);
@@ -45,28 +34,51 @@ contract Flows_Integration_Disputes is BaseIntegration {
         ipAcct[3] = registerIpAccount(mockNFT, 3, u.carl);
 
         vm.startPrank(u.alice);
-        licensingModule.addPolicyToIp(ipAcct[1], _getPilPolicyId("non-commercial-remix"));
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         vm.stopPrank();
     }
 
     function test_Integration_Disputes_revert_cannotMintFromDisputedIp() public {
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 0);
+        assertEq(licenseToken.balanceOf(u.carl), 0);
+
         vm.prank(u.carl);
-        licensingModule.mintLicense(policyId, ipAcct[1], 1, u.carl, "");
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 1);
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.carl,
+            royaltyContext: ""
+        });
+        assertEq(licenseToken.balanceOf(u.carl), 1);
 
         _disputeIp(u.bob, ipAcct[1]);
 
         vm.prank(u.carl);
         vm.expectRevert(Errors.LicensingModule__DisputedIpId.selector);
-        licensingModule.mintLicense(policyId, ipAcct[1], 1, u.carl, "");
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.carl,
+            royaltyContext: ""
+        });
     }
 
-    function test_Integration_Disputes_revert_cannotLinkDisputedIp() public {
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 0);
+    function test_Integration_Disputes_revert_cannotRegisterDerivativeFromDisputedIpParent() public {
+        assertEq(licenseToken.balanceOf(u.carl), 0);
+
         vm.prank(u.carl);
-        uint256 licenseId = licensingModule.mintLicense(policyId, ipAcct[1], 1, u.carl, "");
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 1);
+        uint256 licenseId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.carl,
+            royaltyContext: ""
+        });
+        assertEq(licenseToken.balanceOf(u.carl), 1);
 
         _disputeIp(u.bob, ipAcct[1]);
 
@@ -74,22 +86,30 @@ contract Flows_Integration_Disputes is BaseIntegration {
         licenseIds[0] = licenseId;
 
         vm.prank(u.carl);
-        vm.expectRevert(Errors.LicensingModule__LinkingRevokedLicense.selector);
-        licensingModule.linkIpToParents(licenseIds, ipAcct[3], "");
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseToken__RevokedLicense.selector, licenseId));
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
     }
 
     function test_Integration_Disputes_transferLicenseAfterIpDispute() public {
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 0);
+        assertEq(licenseToken.balanceOf(u.carl), 0);
+
         vm.prank(u.carl);
-        uint256 licenseId = licensingModule.mintLicense(policyId, ipAcct[1], 1, u.carl, "");
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 1);
+        uint256 licenseId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.carl,
+            royaltyContext: ""
+        });
+        assertEq(licenseToken.balanceOf(u.carl), 1);
 
         _disputeIp(u.bob, ipAcct[1]);
 
         // If the IP asset is disputed, license owners won't be able to transfer license NFTs
         vm.prank(u.carl);
-        vm.expectRevert(Errors.LicenseRegistry__RevokedLicense.selector);
-        licenseRegistry.safeTransferFrom(u.carl, u.bob, licenseId, 1, "");
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseToken__RevokedLicense.selector, licenseId));
+        licenseToken.transferFrom(u.carl, u.bob, licenseId);
     }
 
     function test_Integration_Disputes_mintLicenseAfterDisputeIsResolved() public {
@@ -98,10 +118,18 @@ contract Flows_Integration_Disputes is BaseIntegration {
         vm.prank(u.bob);
         disputeModule.resolveDispute(disputeId);
 
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 0);
+        assertEq(licenseToken.balanceOf(u.carl), 0);
+
         vm.prank(u.carl);
-        licensingModule.mintLicense(policyId, ipAcct[1], 1, u.carl, "");
-        assertEq(licenseRegistry.balanceOf(u.carl, policyId), 1);
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: ncSocialRemixTermsId,
+            amount: 1,
+            receiver: u.carl,
+            royaltyContext: ""
+        });
+        assertEq(licenseToken.balanceOf(u.carl), 1);
     }
 
     function _disputeIp(address disputeInitiator, address ipAddrToDispute) internal returns (uint256 disputeId) {

@@ -31,7 +31,6 @@ contract LicensingHelper {
         PILTerms memory selectedPILicenseTerms_
     ) public returns (uint256 pilSelectedLicenseTermsId) {
         string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
-        
         pilSelectedLicenseTermsId = pilTemplate.registerLicenseTerms(selectedPILicenseTerms_);
         // pilSelectedLicenseTermsId = pilTemplate.getLicenseTermsId(selectedPILicenseTerms_);
 

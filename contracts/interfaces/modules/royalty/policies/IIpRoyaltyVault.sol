@@ -64,7 +64,7 @@ interface IIpRoyaltyVault {
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
     function collectRoyaltyTokens(address ancestorIpId) external;
 
-        /// @notice The ip id to whom this royalty vault belongs to
+    /// @notice The ip id to whom this royalty vault belongs to
     /// @return The ip id address
     function ipId() external view returns (address);
 

@@ -141,7 +141,7 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.startPrank(address(royaltyPolicyLAP));
         ipRoyaltyVault.addIpRoyaltyVaultTokens(address(1));
 
-        address[] memory tokens = ipRoyaltyVault.getVaultTokens();
+        address[] memory tokens = ipRoyaltyVault.tokens();
 
         assertEq(tokens.length, 1);
         assertEq(tokens[0], address(1));
@@ -350,7 +350,7 @@ contract TestIpRoyaltyVault is BaseTest {
         ipRoyaltyVault.snapshot();
 
         // all USDC was claimed but LINK was not
-        assertEq(ipRoyaltyVault.getVaultTokens().length, 1);
+        assertEq(ipRoyaltyVault.tokens().length, 1);
     }
 
     function test_IpRoyaltyVault_CollectRoyaltyTokens_AlreadyClaimed() public {
@@ -397,7 +397,7 @@ contract TestIpRoyaltyVault is BaseTest {
 
         assertEq(USDC.balanceOf(address(5)) - userUsdcBalanceBefore, accruedCollectableRevenue);
         assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), accruedCollectableRevenue);
-        assertEq(ipRoyaltyVault.isClaimedByAncestor(address(5)), true);
+        assertEq(ipRoyaltyVault.isCollectedByAncestor(address(5)), true);
         assertEq(
             contractRTBalBefore - IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault)),
             parentRoyalty

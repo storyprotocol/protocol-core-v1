@@ -39,7 +39,7 @@ contract Main is DeployHelper {
         super.run(
             configByMultisig ? multisig : deployer, // deployer
             configByMultisig,
-            false, // runStorageLayoutCheck
+            true, // runStorageLayoutCheck
             true // writeDeploys
         );
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json

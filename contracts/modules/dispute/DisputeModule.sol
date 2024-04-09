@@ -240,7 +240,8 @@ contract DisputeModule is
 
     /// @notice Resolves a dispute after it has been judged
     /// @param disputeId The dispute id
-    function resolveDispute(uint256 disputeId) external {
+    /// @param data The data to resolve the dispute
+    function resolveDispute(uint256 disputeId, bytes calldata data) external {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 
@@ -250,6 +251,8 @@ contract DisputeModule is
 
         $.successfulDisputesPerIp[dispute.targetIpId]--;
         $.disputes[disputeId].currentTag = bytes32(0);
+
+        IArbitrationPolicy(dispute.arbitrationPolicy).onResolveDispute(msg.sender, disputeId, data);
 
         emit DisputeResolved(disputeId);
     }

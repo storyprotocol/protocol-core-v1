@@ -104,7 +104,7 @@ contract MockDisputeModule is BaseModule, IDisputeModule {
         IArbitrationPolicy(dispute.arbitrationPolicy).onDisputeCancel(msg.sender, _disputeId, _data);
     }
 
-    function resolveDispute(uint256 _disputeId) external {
+    function resolveDispute(uint256 _disputeId, bytes calldata _data) external {
         disputes[_disputeId].currentTag = bytes32(0);
     }
 

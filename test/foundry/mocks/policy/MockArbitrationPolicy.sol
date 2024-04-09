@@ -42,6 +42,8 @@ contract MockArbitrationPolicy is IArbitrationPolicy {
 
     function onDisputeCancel(address caller, uint256 disputeId, bytes calldata data) external {}
 
+    function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external {}
+
     function governanceWithdraw() external {
         uint256 balance = IERC20(PAYMENT_TOKEN).balanceOf(address(this));
         IERC20(PAYMENT_TOKEN).transfer(msg.sender, balance);

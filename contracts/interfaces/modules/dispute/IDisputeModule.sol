@@ -182,8 +182,9 @@ interface IDisputeModule {
     function cancelDispute(uint256 disputeId, bytes calldata data) external;
 
     /// @notice Resolves a dispute after it has been judged
-    /// @param disputeId The dispute id
-    function resolveDispute(uint256 disputeId) external;
+    /// @param disputeId The dispute 
+    /// @param data The data to resolve the dispute
+    function resolveDispute(uint256 disputeId, bytes calldata data) external;
 
     /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)
     /// @param ipId The ipId

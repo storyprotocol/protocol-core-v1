@@ -420,7 +420,7 @@ contract DisputeModuleTest is BaseTest {
 
     function test_DisputeModule_resolveDispute_revert_NotDisputeInitiator() public {
         vm.expectRevert(Errors.DisputeModule__NotDisputeInitiator.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
     }
 
     function test_DisputeModule_resolveDispute_revert_NotAbleToResolve() public {
@@ -432,7 +432,7 @@ contract DisputeModuleTest is BaseTest {
 
         vm.startPrank(ipAccount1);
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
     }
 
     function test_DisputeModule_resolveDispute() public {
@@ -454,7 +454,7 @@ contract DisputeModuleTest is BaseTest {
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit DisputeResolved(1);
 
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
 
         (, , , , , bytes32 currentTagAfterResolve) = disputeModule.disputes(1);
 
@@ -464,7 +464,7 @@ contract DisputeModuleTest is BaseTest {
 
         // Cant resolve again
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
         vm.stopPrank();
     }
 

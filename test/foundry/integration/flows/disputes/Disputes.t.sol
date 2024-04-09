@@ -116,7 +116,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         uint256 disputeId = _disputeIp(u.bob, ipAcct[1]);
 
         vm.prank(u.bob);
-        disputeModule.resolveDispute(disputeId);
+        disputeModule.resolveDispute(disputeId, "");
 
         assertEq(licenseToken.balanceOf(u.carl), 0);
 

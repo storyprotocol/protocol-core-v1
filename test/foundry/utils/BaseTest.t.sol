@@ -6,6 +6,9 @@ pragma solidity 0.8.23;
 import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 
+// contract
+import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
+
 // test
 import { DeployHelper } from "../../../script/foundry/utils/DeployHelper.sol";
 import { LicensingHelper } from "./LicensingHelper.t.sol";
@@ -29,6 +32,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     address internal dan;
 
     ERC6551Registry internal ERC6551_REGISTRY = new ERC6551Registry();
+    IPAccountRegistry internal ipAccountRegistry;
 
     MockERC20 internal erc20 = new MockERC20();
     MockERC20 internal erc20bb = new MockERC20();
@@ -71,6 +75,8 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         mockNFT = new MockERC721("Ape");
 
         dealMockAssets();
+
+        ipAccountRegistry = IPAccountRegistry(ipAssetRegistry);
     }
 
     function dealMockAssets() public {

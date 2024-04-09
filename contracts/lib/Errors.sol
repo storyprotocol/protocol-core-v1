@@ -206,19 +206,6 @@ library Errors {
     error LicensingModule__LicenseTokenNotCompatibleForDerivative(address childIpId, uint256[] licenseTokenIds);
 
     ////////////////////////////////////////////////////////////////////////////
-    //                      BasePolicyFrameworkManager                        //
-    ////////////////////////////////////////////////////////////////////////////
-
-    error BasePolicyFrameworkManager__CallerNotLicensingModule();
-
-    ////////////////////////////////////////////////////////////////////////////
-    //                         PolicyFrameworkManager                         //
-    ////////////////////////////////////////////////////////////////////////////
-
-    error PolicyFrameworkManager__GettingPolicyWrongFramework();
-    error PolicyFrameworkManager__CommercializerCheckerDoesNotSupportHook(address commercializer);
-
-    ////////////////////////////////////////////////////////////////////////////
     //                     LicensorApprovalChecker                            //
     ////////////////////////////////////////////////////////////////////////////
     error LicensorApprovalChecker__Unauthorized();

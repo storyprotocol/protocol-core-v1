@@ -7,9 +7,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 // contracts
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
-import { TokenWithdrawalModule } from "../../../../contracts/modules/external/TokenWithdrawalModule.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
-import { TOKEN_WITHDRAWAL_MODULE_KEY } from "../../../../contracts/lib/modules/Module.sol";
 
 // test
 import { MockERC20 } from "../../mocks/token/MockERC20.sol";
@@ -24,21 +22,15 @@ contract TokenWithdrawalModuleTest is BaseTest {
     MockERC721 private tErc721 = new MockERC721("MockERC721");
     MockERC1155 private tErc1155 = new MockERC1155("uri");
 
-    TokenWithdrawalModule private tokenWithdrawalModule;
-
     IIPAccount private ipAcct1;
     IIPAccount private ipAcct2;
 
-    uint256 mintAmount20 = 100 * 10 ** tErc20.decimals();
+    uint256 private mintAmount20 = 100 * 10 ** tErc20.decimals();
 
-    address randomFrontend = address(0x123);
+    address private randomFrontend = address(0x123);
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: false, moduleRegistry: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         // Create IPAccounts (Alice is the owner)
         mockNFT.mintId(alice, 1);
@@ -49,11 +41,6 @@ contract TokenWithdrawalModuleTest is BaseTest {
 
         vm.label(address(ipAcct1), "IPAccount1");
         vm.label(address(ipAcct2), "IPAccount2");
-
-        tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
-
-        vm.prank(u.admin);
-        moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
     }
 
     modifier testERC20_mintToIpAcct1() {

@@ -15,9 +15,6 @@ abstract contract ModuleBaseTest is BaseTest {
     function setUp() public virtual override(BaseTest) {
         super.setUp();
 
-        deployConditionally();
-        postDeploymentSetup();
-
         baseModule = IModule(_deployModule());
     }
 

@@ -10,11 +10,12 @@ contract JsonDeploymentHandler is Script {
     using StringUtil for uint256;
     using stdJson for string;
 
-    string output;
-    string readJson;
-    string chainId;
-    string key;
-    string internalKey = "key";
+    // keep all variables private to avoid conflicts
+    string private output;
+    string private readJson;
+    string private chainId;
+    string private key;
+    string private internalKey = "key";
 
     constructor(string memory _key) {
         chainId = (block.chainid).toString();

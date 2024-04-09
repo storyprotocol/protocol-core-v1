@@ -25,10 +25,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: false }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ moduleRegistry: true, licenseRegistry: false }));
-        deployConditionally();
-        postDeploymentSetup();
+
         ownerPrivateKey = 0xA11111;
         callerPrivateKey = 0xB22222;
         owner = vm.addr(ownerPrivateKey);

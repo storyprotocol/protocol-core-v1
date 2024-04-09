@@ -11,16 +11,10 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestIpRoyaltyVault is BaseTest {
-    IpRoyaltyVault ipRoyaltyVault;
+    IpRoyaltyVault private ipRoyaltyVault;
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: false, royaltyModule: true, licensingModule: false })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: false, royaltyPolicyLAP: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         vm.startPrank(u.admin);
         // whitelist royalty policy

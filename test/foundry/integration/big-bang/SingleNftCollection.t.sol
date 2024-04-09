@@ -7,7 +7,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 // contract
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
-import { PILPolicy } from "../../../../contracts/modules/licensing/PILPolicyFrameworkManager.sol";
+import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 // test
 import { BaseIntegration } from "../BaseIntegration.t.sol";
@@ -17,9 +17,9 @@ import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 contract BigBang_Integration_SingleNftCollection is BaseIntegration {
     using EnumerableSet for EnumerableSet.UintSet;
 
-    MockTokenGatedHook internal mockTokenGatedHook;
+    MockTokenGatedHook internal mockTokenGatedHook = new MockTokenGatedHook();
 
-    MockERC721 internal mockGatedNft;
+    MockERC721 internal mockGatedNft = new MockERC721("MockGatedNft");
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
 
@@ -29,57 +29,35 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
     uint256 internal constant mintingFee = 100 ether;
 
+    uint256 internal ncSocialRemixTermsId;
+
+    uint256 internal commDerivTermsId;
+
     function setUp() public override {
         super.setUp();
 
-        mockTokenGatedHook = new MockTokenGatedHook();
-        mockGatedNft = new MockERC721("MockGatedNft");
+        ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
 
-        // Add PIL PFM policies
-
-        _setPILPolicyFrameworkManager();
-
-        _addPILPolicyWihtMintPayment(
-            "com_deriv_cheap_flexible", // ==> policyIds["pil_com_deriv_cheap_flexible"]
-            true,
-            address(royaltyPolicyLAP),
-            mintingFee,
-            address(mockToken),
-            PILPolicy({
-                attribution: false,
+        commDerivTermsId = registerSelectedPILicenseTerms(
+            "commercial_flexible",
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                mintingFee: mintingFee,
+                expiration: 0,
                 commercialUse: true,
-                commercialAttribution: true,
+                commercialAttribution: false,
                 commercializerChecker: address(mockTokenGatedHook),
+                // Gated via balance > 1 of mockGatedNft
                 commercializerCheckerData: abi.encode(address(mockGatedNft)),
                 commercialRevShare: derivCheapFlexibleRevShare,
+                commercialRevCelling: 0,
                 derivativesAllowed: true,
-                derivativesAttribution: true,
+                derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: false,
-                territories: new string[](0),
-                distributionChannels: new string[](0),
-                contentRestrictions: new string[](0)
-            })
-        );
-
-        _addPILPolicy(
-            "noncom_deriv_reciprocal_derivative", // ==> policyIds["pil_noncom_deriv_reciprocal_derivative"]
-            false,
-            address(0),
-            PILPolicy({
-                attribution: false,
-                commercialUse: false,
-                commercialAttribution: false,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: 0,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: true,
-                territories: new string[](0),
-                distributionChannels: new string[](0),
-                contentRestrictions: new string[](0)
+                derivativeRevCelling: 0,
+                currency: address(erc20)
             })
         );
     }
@@ -113,23 +91,24 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
         ///////////////////////////////////////////////////////////////*/
 
         vm.startPrank(u.alice);
-        licensingModule.addPolicyToIp(ipAcct[1], policyIds["pil_com_deriv_cheap_flexible"]);
-        licensingModule.addPolicyToIp(ipAcct[100], policyIds["pil_noncom_deriv_reciprocal_derivative"]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commDerivTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[100], address(pilTemplate), ncSocialRemixTermsId);
 
         vm.startPrank(u.bob);
-        licensingModule.addPolicyToIp(ipAcct[3], policyIds["pil_com_deriv_cheap_flexible"]);
-        licensingModule.addPolicyToIp(ipAcct[300], policyIds["pil_com_deriv_cheap_flexible"]);
+        licensingModule.attachLicenseTerms(ipAcct[3], address(pilTemplate), commDerivTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[300], address(pilTemplate), commDerivTermsId);
 
         vm.startPrank(u.bob);
         // NOTE: the two calls below achieve the same functionality
-        // licensingModule.addPolicyToIp(ipAcct[3], policyIds["pil_noncom_deriv_reciprocal_derivative"]);
+        // licensingModule.attachLicenseTerms(ipAcct[3], address(pilTemplate), ncSocialRemixTermsId);
         IIPAccount(payable(ipAcct[3])).execute(
             address(licensingModule),
             0,
             abi.encodeWithSignature(
-                "addPolicyToIp(address,uint256)",
+                "attachLicenseTerms(address,address,uint256)",
                 ipAcct[3],
-                policyIds["pil_noncom_deriv_reciprocal_derivative"]
+                address(pilTemplate),
+                ncSocialRemixTermsId
             )
         );
 
@@ -151,17 +130,17 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             mockToken.approve(address(royaltyPolicyLAP), mintingFee);
 
             uint256[] memory carl_license_from_root_alice = new uint256[](1);
-            carl_license_from_root_alice[0] = licensingModule.mintLicense(
-                policyIds["pil_com_deriv_cheap_flexible"],
-                ipAcct[1],
-                1,
-                u.carl,
-                ""
-            );
+            carl_license_from_root_alice[0] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[1],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: commDerivTermsId,
+                amount: 1,
+                receiver: u.carl,
+                royaltyContext: ""
+            });
 
             ipAcct[6] = registerIpAccount(mockNFT, 6, u.carl);
-
-            linkIpToParents(carl_license_from_root_alice, ipAcct[6], u.carl, "");
+            registerDerivativeWithLicenseTokens(ipAcct[6], carl_license_from_root_alice, "", u.carl);
         }
 
         // Carl mints 2 license for policy "pil_noncom_deriv_reciprocal_derivative" on Bob's NFT 3 IPAccount
@@ -169,23 +148,24 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
         // Carl activates one of the two licenses on his NFT 7 IPAccount, linking as child to Bob's NFT 3 IPAccount
         {
             vm.startPrank(u.carl);
-            mockNFT.mintId(u.carl, 7); // NFT for Carl's IPAccount7
+            uint256 tokenId = 7;
+            mockNFT.mintId(u.carl, tokenId); // NFT for Carl's IPAccount7
 
             // Carl is minting license on non-commercial policy, so no commercializer checker is involved.
             // Thus, no need to mint anything (although Carl already has mockGatedNft from above)
 
             uint256[] memory carl_license_from_root_bob = new uint256[](1);
-            carl_license_from_root_bob[0] = licensingModule.mintLicense(
-                policyIds["pil_noncom_deriv_reciprocal_derivative"],
-                ipAcct[3],
-                1,
-                u.carl,
-                ""
-            );
+            carl_license_from_root_bob[0] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[3],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: ncSocialRemixTermsId,
+                amount: 1,
+                receiver: u.carl,
+                royaltyContext: ""
+            });
 
-            // TODO: events check
-            address ipId = ipAssetRegistry.register(address(mockNFT), 7);
-            licensingModule.linkIpToParents(carl_license_from_root_bob, ipId, "");
+            ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
+            registerDerivativeWithLicenseTokens(ipAcct[tokenId], carl_license_from_root_bob, "", u.carl);
         }
 
         // Alice mints 2 license for policy "pil_com_deriv_cheap_flexible" on Bob's NFT 3 IPAccount
@@ -204,27 +184,25 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             mockGatedNft.mint(u.alice);
 
             uint256[] memory alice_license_from_root_bob = new uint256[](1);
-            alice_license_from_root_bob[0] = licensingModule.mintLicense(
-                policyIds["pil_com_deriv_cheap_flexible"],
-                ipAcct[3],
-                mintAmount,
-                u.alice,
-                ""
-            );
+            alice_license_from_root_bob[0] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[3],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: commDerivTermsId,
+                amount: 2,
+                receiver: u.alice,
+                royaltyContext: ""
+            }); // ID 0 (first license)
 
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.alice);
-            linkIpToParents(alice_license_from_root_bob, ipAcct[2], u.alice, "");
+            registerDerivativeWithLicenseTokens(ipAcct[2], alice_license_from_root_bob, "", u.alice);
 
             uint256 tokenId = 99999999;
             mockNFT.mintId(u.alice, tokenId);
 
-            ipAcct[tokenId] = registerDerivativeIps(
-                alice_license_from_root_bob,
-                address(mockNFT),
-                tokenId,
-                u.alice, // caller
-                ""
-            );
+            alice_license_from_root_bob[0] = alice_license_from_root_bob[0] + 1; // ID 1 (second license)
+
+            ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.alice);
+            registerDerivativeWithLicenseTokens(ipAcct[tokenId], alice_license_from_root_bob, "", u.alice);
         }
 
         // Carl mints licenses and linkts to multiple parents
@@ -242,40 +220,50 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
             uint256[] memory carl_licenses = new uint256[](2);
             // Commercial license (Carl already has mockGatedNft from above, so he passes commercializer checker check)
-            carl_licenses[0] = licensingModule.mintLicense(
-                policyIds["pil_com_deriv_cheap_flexible"], // ipAcct[1] has this policy attached
-                ipAcct[1],
-                license0_mintAmount,
-                u.carl,
-                ""
-            );
+            carl_licenses[0] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[1],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: commDerivTermsId,
+                amount: license0_mintAmount,
+                receiver: u.carl,
+                royaltyContext: ""
+            });
 
-            // Non-commercial license
-            carl_licenses[1] = licensingModule.mintLicense(
-                policyIds["pil_noncom_deriv_reciprocal_derivative"], // ipAcct[3] has this policy attached
-                ipAcct[3],
-                1,
-                u.carl,
-                ""
-            );
+            // NC Social Remix license
+            carl_licenses[1] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[3],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: ncSocialRemixTermsId, // ipAcct[3] has this policy attached
+                amount: 1,
+                receiver: u.carl,
+                royaltyContext: ""
+            });
 
-            address ipId = ipAssetRegistry.register(address(mockNFT), tokenId);
+            ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
             // This should revert since license[0] is commercial but license[1] is non-commercial
-            vm.expectRevert(Errors.LicensingModule__IncompatibleLicensorCommercialPolicy.selector);
-            licensingModule.linkIpToParents(carl_licenses, ipId, "");
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative.selector,
+                    ipAcct[tokenId],
+                    carl_licenses
+                )
+            );
+            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[tokenId], carl_licenses, "");
 
             uint256 license1_mintAmount = 500;
             mockToken.mint(u.carl, mintingFee * license1_mintAmount);
             mockToken.approve(address(royaltyPolicyLAP), mintingFee * license1_mintAmount);
 
             // Modify license[1] to a Commercial license
-            carl_licenses[1] = licensingModule.mintLicense(
-                policyIds["pil_com_deriv_cheap_flexible"], // ipAcct[300] has this policy attached
-                ipAcct[300],
-                license1_mintAmount,
-                u.carl,
-                ""
-            );
+            carl_licenses[1] = licensingModule.mintLicenseTokens({
+                licensorIpId: ipAcct[300],
+                licenseTemplate: address(pilTemplate),
+                licenseTermsId: commDerivTermsId,
+                amount: license1_mintAmount,
+                receiver: u.carl,
+                royaltyContext: ""
+            });
+            carl_licenses[1] = carl_licenses[1] + license1_mintAmount - 1; // use last license ID minted from above
 
             // Linking 2 licenses, ID 1 and ID 4.
             // These licenses are from 2 different parents, ipAcct[1] and ipAcct[300], respectively.
@@ -283,13 +271,9 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             // This should succeed since both license[0] and license[1] are commercial
             tokenId = 70001;
             mockNFT.mintId(u.carl, tokenId);
-            registerDerivativeIps(
-                carl_licenses, // ipAcct[1] and ipAcct[3] licenses
-                address(mockNFT),
-                tokenId,
-                u.carl, // caller
-                ""
-            );
+
+            ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
+            registerDerivativeWithLicenseTokens(ipAcct[tokenId], carl_licenses, "", u.carl);
         }
     }
 }

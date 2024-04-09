@@ -9,19 +9,25 @@ import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract MetadataModuleTest is BaseTest {
     MockModule public module;
-    MockCoreMetadataViewModule public coreMetadataViewModule;
     MockAllMetadataViewModule public allMetadataViewModule;
     MockMetadataModule public metadataModule;
 
     function setUp() public override {
         super.setUp();
-        deployConditionally();
-        postDeploymentSetup();
 
         metadataModule = new MockMetadataModule(address(accessController), address(ipAssetRegistry));
         module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
-        coreMetadataViewModule = new MockCoreMetadataViewModule(address(ipAssetRegistry));
+
+        vm.etch(
+            address(coreMetadataViewModule),
+            address(new MockCoreMetadataViewModule(address(ipAssetRegistry))).code
+        );
         allMetadataViewModule = new MockAllMetadataViewModule(address(ipAssetRegistry), address(metadataModule));
+
+        vm.startPrank(u.admin);
+        moduleRegistry.registerModule("MockModule", address(module));
+        moduleRegistry.registerModule("MockMetadataModule", address(metadataModule));
+        vm.stopPrank();
     }
 
     function test_Metadata_OptionalMetadata() public {

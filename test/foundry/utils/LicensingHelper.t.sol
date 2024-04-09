@@ -3,226 +3,138 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-// contract
-import { IAccessController } from "../../../contracts/interfaces/access/IAccessController.sol";
-import { IIPAccountRegistry } from "../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
-import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { IRoyaltyModule } from "../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicyLAP } from "../../../contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-// solhint-disable-next-line max-line-length
-import { PILPolicyFrameworkManager, PILPolicy, RegisterPILPolicyParams } from "../../../contracts/modules/licensing/PILPolicyFrameworkManager.sol";
-import { TestProxyHelper } from "./TestProxyHelper.sol";
-// test
+import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { PILicenseTemplate } from "../../../contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";
 
 contract LicensingHelper {
-    IAccessController private ACCESS_CONTROLLER; // keep private to avoid collision with `BaseIntegration`
+    PILicenseTemplate private pilTemplate; // keep private to avoid collision with `BaseIntegration`
 
-    IIPAccountRegistry private IP_ACCOUNT_REGISTRY; // keep private to avoid collision with `BaseIntegration`
+    IRoyaltyPolicyLAP private royaltyPolicyLAP; // keep private to avoid collision with `BaseIntegration`
 
-    ILicensingModule private LICENSING_MODULE; // keep private to avoid collision with `BaseIntegration`
+    IERC20 private erc20; // keep private to avoid collision with `BaseIntegration`
 
-    IRoyaltyModule private ROYALTY_MODULE; // keep private to avoid collision with `BaseIntegration`
-
-    IRoyaltyPolicyLAP private ROYALTY_POLICY_LAP; // keep private to avoid collision with `BaseIntegration`
-
-    IERC20 private erc20;
-
-    mapping(string frameworkName => uint256 frameworkId) internal frameworkIds;
-
-    mapping(string policyName => uint256 globalPolicyId) internal policyIds;
-
-    mapping(string policyName => RegisterPILPolicyParams policy) internal policies;
-
-    mapping(string policyFrameworkManagerName => address policyFrameworkManagerAddr) internal pfm;
+    mapping(string selectionName => PILTerms) internal selectedPILicenseTerms;
+    mapping(string selectionName => uint256 licenseTermsId) internal selectedPILicenseTermsId;
 
     string[] internal emptyStringArray = new string[](0);
 
-    function initLicensingHelper(
-        address _accessController,
-        address _ipAccountRegistry,
-        address _licensingModule,
-        address _royaltyModule,
-        address _royaltyPolicy,
-        address _erc20
-    ) public {
-        ACCESS_CONTROLLER = IAccessController(_accessController);
-        IP_ACCOUNT_REGISTRY = IIPAccountRegistry(_ipAccountRegistry);
-        LICENSING_MODULE = ILicensingModule(_licensingModule);
-        ROYALTY_MODULE = IRoyaltyModule(_royaltyModule);
-        ROYALTY_POLICY_LAP = IRoyaltyPolicyLAP(_royaltyPolicy);
+    function initLicensingHelper(address _pilTemplate, address _royaltyPolicyLAP, address _erc20) public {
+        pilTemplate = PILicenseTemplate(_pilTemplate);
+        royaltyPolicyLAP = IRoyaltyPolicyLAP(_royaltyPolicyLAP);
         erc20 = IERC20(_erc20);
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                        MODIFIERS: LICENSE FRAMEWORK (MANAGERS)
-    //////////////////////////////////////////////////////////////////////////*/
+    function registerSelectedPILicenseTerms(
+        string memory selectionName,
+        PILTerms memory selectedPILicenseTerms_
+    ) public returns (uint256 pilSelectedLicenseTermsId) {
+        string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
+        pilSelectedLicenseTermsId = pilTemplate.registerLicenseTerms(selectedPILicenseTerms_);
+        // pilSelectedLicenseTermsId = pilTemplate.getLicenseTermsId(selectedPILicenseTerms_);
 
-    modifier withLFM_PIL() {
-        _setPILPolicyFrameworkManager();
-        _;
+        selectedPILicenseTerms[selectionName] = selectedPILicenseTerms_;
+        selectedPILicenseTermsId[selectionName] = pilSelectedLicenseTermsId;
     }
 
-    modifier withPILPolicySimple(
-        string memory name,
-        bool commercial,
-        bool derivatives,
-        bool reciprocal
-    ) {
-        _mapPILPolicySimple(name, commercial, derivatives, reciprocal, 100);
-        _addPILPolicyFromMapping(name, address(_pilFramework()));
-        _;
-    }
-
-    /*//////////////////////////////////////////////////////////////////////////
-                                HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////////////////*/
-
-    function _setPILPolicyFrameworkManager() internal {
-        _deployPILFramework("license Url");
-        LICENSING_MODULE.registerPolicyFrameworkManager(pfm["pil"]);
-    }
-
-    function _deployPILFramework(string memory licenseUrl) internal returns (address) {
-        PILPolicyFrameworkManager impl = new PILPolicyFrameworkManager(
-            address(ACCESS_CONTROLLER),
-            address(IP_ACCOUNT_REGISTRY),
-            address(LICENSING_MODULE)
-        );
-        pfm["pil"] = TestProxyHelper.deployUUPSProxy(
-            address(impl),
-            abi.encodeCall(PILPolicyFrameworkManager.initialize, ("PIL_MINT_PAYMENT", licenseUrl))
-        );
-        return pfm["pil"];
-    }
-
-    function _pilFramework() internal view returns (PILPolicyFrameworkManager) {
-        return PILPolicyFrameworkManager(pfm["pil"]);
-    }
-
-    function _addPILPolicy(
-        string memory policyName,
+    function registerSelectedPILicenseTerms_Commercial(
+        string memory selectionName,
         bool transferable,
-        address royaltyPolicy,
-        PILPolicy memory policy
-    ) internal {
-        string memory pName = string(abi.encodePacked("pil_", policyName));
-        policies[pName] = RegisterPILPolicyParams({
-            transferable: transferable,
-            royaltyPolicy: royaltyPolicy,
-            mintingFee: 0,
-            mintingFeeToken: address(0),
-            policy: policy
-        });
-        policyIds[pName] = PILPolicyFrameworkManager(pfm["pil"]).registerPolicy(policies[pName]);
-    }
-
-    function _addPILPolicyWihtMintPayment(
-        string memory policyName,
-        bool transferable,
-        address royaltyPolicy,
-        uint256 mintingFee,
-        address mintingFeeToken,
-        PILPolicy memory policy
-    ) internal {
-        string memory pName = string(abi.encodePacked("pil_", policyName));
-        policies[pName] = RegisterPILPolicyParams({
-            transferable: transferable,
-            royaltyPolicy: royaltyPolicy,
-            mintingFee: mintingFee,
-            mintingFeeToken: mintingFeeToken,
-            policy: policy
-        });
-        policyIds[pName] = PILPolicyFrameworkManager(pfm["pil"]).registerPolicy(policies[pName]);
-    }
-
-    function _mapPILPolicySimple(
-        string memory name,
-        bool commercial,
-        bool derivatives,
-        bool reciprocal,
-        uint32 commercialRevShare
-    ) internal {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        policies[pName] = RegisterPILPolicyParams({
-            transferable: true,
-            royaltyPolicy: commercial ? address(ROYALTY_POLICY_LAP) : address(0),
-            mintingFee: commercial ? 1 ether : 0,
-            mintingFeeToken: commercial ? address(erc20) : address(0),
-            policy: PILPolicy({
-                attribution: true,
-                commercialUse: commercial,
-                commercialAttribution: false,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: commercial ? commercialRevShare : 0,
-                derivativesAllowed: derivatives,
-                derivativesAttribution: false,
-                derivativesApproval: false,
-                derivativesReciprocal: reciprocal,
-                territories: emptyStringArray,
-                distributionChannels: emptyStringArray,
-                contentRestrictions: emptyStringArray
-            })
-        });
-    }
-
-    function _mapPILPolicyCommercial(
-        string memory name,
         bool derivatives,
         bool reciprocal,
         uint32 commercialRevShare,
-        address royaltyPolicy,
-        uint256 mintingFee,
-        address mintingFeeToken
-    ) internal {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        policies[pName] = RegisterPILPolicyParams({
-            transferable: true,
-            royaltyPolicy: royaltyPolicy,
-            mintingFee: mintingFee,
-            mintingFeeToken: mintingFeeToken,
-            policy: PILPolicy({
-                attribution: true,
+        uint256 mintingFee
+    ) public returns (uint256 pilSelectedLicenseTermsId) {
+        pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
+            selectionName,
+            mapSelectedPILicenseTerms_Commercial(transferable, derivatives, reciprocal, commercialRevShare, mintingFee)
+        );
+    }
+
+    function registerSelectedPILicenseTerms_NonCommercial(
+        string memory selectionName,
+        bool transferable,
+        bool derivatives,
+        bool reciprocal
+    ) public returns (uint256 pilSelectedLicenseTermsId) {
+        pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
+            selectionName,
+            mapSelectedPILicenseTerms_NonCommercial(transferable, derivatives, reciprocal)
+        );
+    }
+
+    function registerSelectedPILicenseTerms_NonCommercialSocialRemixing()
+        public
+        returns (uint256 pilSelectedLicenseTermsId)
+    {
+        pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
+            "nc_social_remix",
+            PILFlavors.nonCommercialSocialRemixing()
+        );
+    }
+
+    function mapSelectedPILicenseTerms_Commercial(
+        bool transferable,
+        bool derivatives,
+        bool reciprocal,
+        uint32 commercialRevShare,
+        uint256 mintingFeeToken
+    ) public returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: transferable,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                mintingFee: 1 ether,
+                expiration: 0,
                 commercialUse: true,
                 commercialAttribution: false,
                 commercializerChecker: address(0),
                 commercializerCheckerData: "",
                 commercialRevShare: commercialRevShare,
+                commercialRevCelling: 0,
                 derivativesAllowed: derivatives,
                 derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: reciprocal,
-                territories: emptyStringArray,
-                distributionChannels: emptyStringArray,
-                contentRestrictions: emptyStringArray
-            })
-        });
+                derivativeRevCelling: 0,
+                currency: address(erc20)
+            });
     }
 
-    function _addPILPolicyFromMapping(string memory name, address pilFramework) internal returns (uint256) {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        policyIds[pName] = PILPolicyFrameworkManager(pilFramework).registerPolicy(policies[pName]);
-        return policyIds[pName];
+    function mapSelectedPILicenseTerms_NonCommercial(
+        bool transferable,
+        bool derivatives,
+        bool reciprocal
+    ) public returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: transferable,
+                royaltyPolicy: address(0),
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: derivatives,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: reciprocal,
+                derivativeRevCelling: 0,
+                currency: address(0)
+            });
     }
 
-    function _registerPILPolicyFromMapping(string memory name) internal returns (uint256) {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        policyIds[pName] = PILPolicyFrameworkManager(pfm["pil"]).registerPolicy(policies[pName]);
-        return policyIds[pName];
+    function getSelectedPILicenseTerms(string memory selectionName) internal view returns (PILTerms memory) {
+        string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
+        return selectedPILicenseTerms[selectionName];
     }
 
-    function _getMappedPilPolicy(string memory name) internal view returns (PILPolicy storage) {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        return policies[pName].policy;
-    }
-
-    function _getMappedPilParams(string memory name) internal view returns (RegisterPILPolicyParams storage) {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        return policies[pName];
-    }
-
-    function _getPilPolicyId(string memory name) internal view returns (uint256) {
-        string memory pName = string(abi.encodePacked("pil_", name));
-        return policyIds[pName];
+    function getSelectedPILicenseTermsId(string memory selectionName) internal view returns (uint256) {
+        string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
+        return selectedPILicenseTermsId[selectionName];
     }
 }

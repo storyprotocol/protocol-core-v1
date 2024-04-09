@@ -7,11 +7,10 @@ import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
 import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { PILPolicy } from "contracts/modules/licensing/PILPolicyFrameworkManager.sol";
-import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
 
 contract TestRoyaltyModule is BaseTest {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
@@ -44,18 +43,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployModuleCondition(
-            DeployModuleCondition({ disputeModule: true, royaltyModule: true, licensingModule: false })
-        );
-        buildDeployPolicyCondition(DeployPolicyCondition({ arbitrationPolicySP: true, royaltyPolicyLAP: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         USDC.mint(ipAccount2, 1000 * 10 ** 6); // 1000 USDC
 
-        address impl = address(new RoyaltyPolicyLAP(getRoyaltyModule(), getLicensingModule()));
+        address impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (getGovernance())))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, address(governance)))
         );
 
         arbitrationRelayer = u.admin;
@@ -75,27 +68,14 @@ contract TestRoyaltyModule is BaseTest {
 
         USDC.mint(ipAccount1, 1000 * 10 ** 6);
 
-        _setPILPolicyFrameworkManager();
-        _addPILPolicy(
-            "cheap_flexible",
-            true,
-            address(royaltyPolicyLAP),
-            PILPolicy({
-                attribution: false,
-                commercialUse: true,
-                commercialAttribution: true,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: 10,
-                derivativesAllowed: true,
-                derivativesAttribution: true,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                territories: new string[](0),
-                distributionChannels: new string[](0),
-                contentRestrictions: new string[](0)
-            })
-        );
+        registerSelectedPILicenseTerms_Commercial({
+            selectionName: "cheap_flexible",
+            transferable: true,
+            derivatives: true,
+            reciprocal: false,
+            commercialRevShare: 10,
+            mintingFee: 0
+        });
 
         mockNFT.mintId(u.alice, 0);
 
@@ -111,7 +91,8 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.startPrank(u.alice);
         ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
-        licensingModule.addPolicyToIp(ipAddr, policyIds["pil_cheap_flexible"]);
+
+        licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 
         // set arbitration policy
         vm.startPrank(ipAddr);
@@ -175,7 +156,7 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
         vm.prank(u.admin);
@@ -186,7 +167,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         testRoyaltyModule.setDisputeModule(address(disputeModule));
         assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));
@@ -202,7 +183,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(getGovernance()))))
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
         );
         testRoyaltyModule.setLicensingModule(address(licensingModule));
         assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));

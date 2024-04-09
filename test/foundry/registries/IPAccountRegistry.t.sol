@@ -16,8 +16,6 @@ contract IPAccountRegistryTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        deployConditionally();
-        postDeploymentSetup();
     }
 
     function test_IPAccountRegistry_registerIpAccount() public {

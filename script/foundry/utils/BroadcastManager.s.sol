@@ -3,7 +3,8 @@ pragma solidity ^0.8.23;
 
 import { Script } from "forge-std/Script.sol";
 
-import { StringUtil } from "../../../script/foundry/utils/StringUtil.sol";
+import { StringUtil } from "./StringUtil.sol";
+import { MockERC20 } from "../../../test/foundry/mocks/token/MockERC20.sol";
 
 contract BroadcastManager is Script {
     address public multisig;
@@ -13,17 +14,17 @@ contract BroadcastManager is Script {
         uint256 deployerPrivateKey;
         if (block.chainid == 1) { // Tenderly mainnet fork
             deployerPrivateKey = vm.envUint("MAINNET_PRIVATEKEY");
-            deployer = vm.envAddress("MAINNET_DEPLOYER_ADDRESS");
+            deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("MAINNET_MULTISIG_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 11155111) {
             deployerPrivateKey = vm.envUint("SEPOLIA_PRIVATEKEY");
-            deployer = vm.envAddress("SEPOLIA_DEPLOYER_ADDRESS");
+            deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 31337) {
-            multisig = address(0x456);
-            deployer = address(0x999);
+            require(deployer != address(0), "Deployer not set");
+            multisig = vm.addr(0x987321);
             vm.startPrank(deployer);
         } else {
             revert("Unsupported chain");

@@ -21,10 +21,6 @@ contract GovernanceTest is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ moduleRegistry: true, licenseRegistry: false }));
-        deployConditionally();
-        postDeploymentSetup();
 
         mockNFT.mintId(owner, tokenId);
 

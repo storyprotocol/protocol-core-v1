@@ -4,10 +4,7 @@ pragma solidity ^0.8.23;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
-import { CoreMetadataModule } from "../../../../contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "../../../../contracts/modules/metadata/CoreMetadataViewModule.sol";
-import { CORE_METADATA_MODULE_KEY } from "../../../../contracts/lib/modules/Module.sol";
-import { CORE_METADATA_VIEW_MODULE_KEY } from "../../../../contracts/lib/modules/Module.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IPAccountStorageOps } from "../../../../contracts/lib/IPAccountStorageOps.sol";
@@ -16,32 +13,16 @@ contract CoreMetadataViewModuleTest is BaseTest {
     using IPAccountStorageOps for IIPAccount;
     using Strings for *;
 
-    CoreMetadataModule public coreMetadataModule;
-    CoreMetadataViewModule public coreMetadataViewModule;
     IIPAccount private ipAccount;
 
     function setUp() public override {
         super.setUp();
-        buildDeployAccessCondition(DeployAccessCondition({ accessController: true, governance: true }));
-        buildDeployRegistryCondition(DeployRegistryCondition({ licenseRegistry: false, moduleRegistry: true }));
-        deployConditionally();
-        postDeploymentSetup();
 
         mockNFT.mintId(alice, 99);
 
         ipAccount = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 99)));
 
         vm.label(address(ipAccount), "IPAccount1");
-
-        coreMetadataModule = new CoreMetadataModule(address(accessController), address(ipAssetRegistry));
-        coreMetadataViewModule = new CoreMetadataViewModule(address(ipAssetRegistry), address(moduleRegistry));
-
-        vm.startPrank(u.admin);
-        moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
-        moduleRegistry.registerModule(CORE_METADATA_VIEW_MODULE_KEY, address(coreMetadataViewModule));
-        vm.stopPrank();
-
-        coreMetadataViewModule.updateCoreMetadataModule();
     }
 
     function test_CoreMetadataViewModule_GetAllMetadata() public {

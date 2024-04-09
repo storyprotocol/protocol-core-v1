@@ -105,6 +105,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         erc20 = ERC20(erc20_);
         ARBITRATION_PRICE = arbitrationPrice_;
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
+
+        /// @dev USDC addresses are fetched from
+        /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
+        /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
+        if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -124,7 +130,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         if (block.chainid == 31337) deployer = runDeployer; // set for local before _beginBroadcast
         _beginBroadcast(); // BroadcastManager.s.sol
 
-        _deployProtocolContracts(runDeployer);
+        _deployProtocolContracts(deployer);
         if (!configByMultisig) {
             _configureDeployment();
         }

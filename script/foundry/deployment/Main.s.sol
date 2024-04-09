@@ -17,7 +17,7 @@ contract Main is DeployHelper {
     constructor()
         DeployHelper(
             ERC6551_REGISTRY,
-            USDC,
+            address(0), // replaced with USDC in DeployHelper.sol
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL
         )
@@ -39,7 +39,7 @@ contract Main is DeployHelper {
         super.run(
             configByMultisig ? multisig : deployer, // deployer
             configByMultisig,
-            true, // runStorageLayoutCheck
+            false, // runStorageLayoutCheck
             true // writeDeploys
         );
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json

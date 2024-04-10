@@ -9,7 +9,7 @@ all: clean install build
 define generate_abi
     $(eval $@_CONTRACT_NAME = $(1))
 		$(eval $@_CONTRACT_PATH = $(2))
-		forge inspect --optimize --optimizer-runs 2000 contracts/${$@_CONTRACT_PATH}/${$@_CONTRACT_NAME}.sol:${$@_CONTRACT_NAME} abi > abi/${$@_CONTRACT_NAME}.json
+		forge inspect --optimize --optimizer-runs 20000 contracts/${$@_CONTRACT_PATH}/${$@_CONTRACT_NAME}.sol:${$@_CONTRACT_NAME} abi > abi/${$@_CONTRACT_NAME}.json
 endef
 
 # Clean the repo
@@ -43,37 +43,34 @@ format:
 # generate html report from lcov.info (ignore "line ... has branchcov but no linecov data" error)
 coverage:
 	mkdir -p coverage
-	forge coverage --report lcov --fork-url https://rpc.ankr.com/eth_sepolia --fork-block-number 5196000
+	forge coverage --report lcov
 	lcov --remove lcov.info -o coverage/lcov.info 'test/*' 'script/*' --rc branch_coverage=1
 	genhtml coverage/lcov.info -o coverage --rc branch_coverage=1 --ignore-errors category
 
 abi:
+	rm -rf abi
 	mkdir -p abi
-	@$(call generate_abi,"AccessController",".")
 	@$(call generate_abi,"IPAccountImpl",".")
+	@$(call generate_abi,"LicenseToken",".")
+	@$(call generate_abi,"AccessController","./access")
 	@$(call generate_abi,"Governance","./governance")
-	@$(call generate_abi,"DisputeModule","./modules/dispute-module")
-	@$(call generate_abi,"ArbitrationPolicySP","./modules/dispute-module/policies")
+	@$(call generate_abi,"DisputeModule","./modules/dispute")
+	@$(call generate_abi,"ArbitrationPolicySP","./modules/dispute/policies")
+	@$(call generate_abi,"TokenWithdrawalModule","./modules/external")
 	@$(call generate_abi,"LicensingModule","./modules/licensing")
-	@$(call generate_abi,"PILPolicyFrameworkManager","./modules/licensing")
-	@$(call generate_abi,"RoyaltyModule","./modules/royalty-module")
-	@$(call generate_abi,"LSClaimer","./modules/royalty-module/policies")
-	@$(call generate_abi,"RoyaltyPolicyLS","./modules/royalty-module/policies")
-	@$(call generate_abi,"IPAssetRenderer","./registries/metadata")
-	@$(call generate_abi,"IPMetadataProvider","./registries/metadata")
-	@$(call generate_abi,"MetadataProviderV1","./registries/metadata")
-	@$(call generate_abi,"IPAccountRegistry","./registries")
+	@$(call generate_abi,"PILicenseTemplate","./modules/licensing")
+	@$(call generate_abi,"CoreMetadataModule","./modules/metadata")
+	@$(call generate_abi,"CoreMetadataViewModule","./modules/metadata")
+	@$(call generate_abi,"RoyaltyModule","./modules/royalty")
+	@$(call generate_abi,"IpRoyaltyVault","./modules/royalty/policies")
+	@$(call generate_abi,"RoyaltyPolicyLAP","./modules/royalty/policies")
 	@$(call generate_abi,"IPAssetRegistry","./registries")
 	@$(call generate_abi,"LicenseRegistry","./registries")
-	@$(call generate_abi,"IPResolver","./resolvers")
-	@$(call generate_abi,"KeyValueResolver","./resolvers")
+	@$(call generate_abi,"ModuleRegistry","./registries")
 
 typechain :; npx hardhat typechain
 
 # solhint should be installed globally
-lint :; npx solhint contracts/**/*.sol && npx solhint contracts/*.sol
-
-deploy-goerli :; npx hardhat run ./script/deploy-reveal-engine.js --network goerli
-verify-goerli :; npx hardhat verify --network goerli ${contract}
+lint :; npx solhint contracts/**/*.sol
 
 anvil :; anvil -m 'test test test test test test test test test test test junk'

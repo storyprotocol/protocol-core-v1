@@ -383,7 +383,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // Royalty Module and SP Royalty Policy
         royaltyModule.setLicensingModule(address(licensingModule));
         royaltyModule.setDisputeModule(address(disputeModule));
-        protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyPolicyLAP.setSnapshotInterval(7 days);

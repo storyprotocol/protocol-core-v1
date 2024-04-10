@@ -234,7 +234,7 @@ contract PILicenseTemplate is
         uint expireTime = _getExpireTime(licenseTermsIds[0], start);
         for (uint i = 1; i < licenseTermsIds.length; i++) {
             uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
-            if (newExpireTime < expireTime) {
+            if (newExpireTime < expireTime || expireTime == 0) {
                 expireTime = newExpireTime;
             }
         }
@@ -256,6 +256,14 @@ contract PILicenseTemplate is
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         bytes32 licenseTermsHash = keccak256(abi.encode(terms));
         return $.hashedLicenseTerms[licenseTermsHash];
+    }
+
+    /// @notice Gets license terms of the given ID.
+    /// @param selectedLicenseTermsId The ID of the license terms.
+    /// @return terms The PILTerms associate with the given ID.
+    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        return $.licenseTerms[selectedLicenseTermsId];
     }
 
     /// @notice Returns the total number of registered license terms.

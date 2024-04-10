@@ -5,7 +5,6 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
@@ -22,7 +21,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManaged {
+contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
@@ -32,9 +31,8 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManaged {
 
     constructor(
         address erc6551Registry,
-        address ipAccountImpl,
-        address accessManager
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) AccessManaged(accessManager) {}
+        address ipAccountImpl
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
 
     /// @notice Registers an NFT as an IP asset.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.

@@ -197,8 +197,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         ipAssetRegistry = new IPAssetRegistry(
             address(erc6551Registry),
-            address(ipAccountImpl),
-            address(protocolAccessManager)
+            address(ipAccountImpl)
         );
         _postdeploy(contractKey, address(ipAssetRegistry));
 

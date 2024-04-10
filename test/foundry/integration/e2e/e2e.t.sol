@@ -94,8 +94,7 @@ contract e2e is Test {
         ipAccountImpl = new IPAccountImpl(address(accessController));
         ipAssetRegistry = new IPAssetRegistry(
             address(erc6551Registry),
-            address(ipAccountImpl),
-            address(protocolAccessManager)
+            address(ipAccountImpl)
         );
 
         impl = address(new LicenseRegistry());

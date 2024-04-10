@@ -13,10 +13,7 @@ build_info = true
 extra_output = ["storageLayout"]
 
 [rpc_endpoints]
-# Comment out for local development (testing requires 0xSplit forks — will add Mock soon)
-# pin fork by using --fork-block-number 19042069 to reduce wait time
-mainnet = "https://rpc.ankr.com/eth"
+mainnet = "${MAINNET_RPC_URL}"
 sepolia = "${SEPOLIA_RPC_URL}"
-
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

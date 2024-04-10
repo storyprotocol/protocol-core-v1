@@ -2,6 +2,8 @@
 pragma solidity 0.8.23;
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
@@ -9,7 +11,6 @@ import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
-import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
 import { AccessPermission } from "../lib/AccessPermission.sol";
 import { Errors } from "../lib/Errors.sol";
 
@@ -28,7 +29,7 @@ import { Errors } from "../lib/Errors.sol";
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
-contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgradeable {
+contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 
     /// @dev The storage struct of AccessController.
@@ -54,16 +55,16 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
     }
 
     /// @notice initializer for this implementation contract
-    /// @param governance The address of the governance contract
-    function initialize(address governance) external initializer {
-        __GovernableUpgradeable_init(governance);
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) external initializer {
+        __AccessManaged_init(accessManager);
     }
 
     /// @notice Sets the addresses of the IP account registry and the module registry
     /// @dev TODO: figure out how to set these addresses in the constructor to make them immutable
     /// @param ipAccountRegistry address of the IP account registry
     /// @param moduleRegistry address of the module registry
-    function setAddresses(address ipAccountRegistry, address moduleRegistry) external onlyProtocolAdmin {
+    function setAddresses(address ipAccountRegistry, address moduleRegistry) external restricted {
         AccessControllerStorage storage $ = _getAccessControllerStorage();
         $.ipAccountRegistry = ipAccountRegistry;
         $.moduleRegistry = moduleRegistry;
@@ -72,7 +73,8 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
     /// @notice Sets a batch of permissions in a single transaction.
     /// @dev This function allows setting multiple permissions at once. Pausable.
     /// @param permissions An array of `Permission` structs, each representing the permission to be set.
-    function setBatchPermissions(AccessPermission.Permission[] memory permissions) external whenNotPaused {
+    function setBatchPermissions(AccessPermission.Permission[] memory permissions) external {
+        // TODO: removed pause.
         for (uint256 i = 0; i < permissions.length; ) {
             setPermission(
                 permissions[i].ipAccount,
@@ -93,7 +95,7 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @param permission The new permission level
-    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external onlyProtocolAdmin {
+    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external restricted {
         if (signer == address(0)) {
             revert Errors.AccessController__SignerIsZeroAddress();
         }
@@ -119,13 +121,8 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @param permission The new permission level
-    function setPermission(
-        address ipAccount,
-        address signer,
-        address to,
-        bytes4 func,
-        uint8 permission
-    ) public whenNotPaused {
+    function setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) public {
+        // TODO: Reintroduce pause
         // IPAccount and signer does not support wildcard permission
         if (ipAccount == address(0)) {
             revert Errors.AccessController__IPAccountIsZeroAddress();
@@ -159,7 +156,7 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     // solhint-disable code-complexity
-    function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view whenNotPaused {
+    function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
         // The ipAccount is restricted to interact exclusively with registered modules.
         // This includes initiating calls to these modules and receiving calls from them.
         // Additionally, it can modify Permissions settings.
@@ -246,7 +243,7 @@ contract AccessController is IAccessController, GovernableUpgradeable, UUPSUpgra
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

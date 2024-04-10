@@ -60,8 +60,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
         // deploy all contracts via DeployHelper
         super.run(
-            address(u.admin),
-            false, // configByMultisig
             false, // runStorageLayoutCheck
             false // writeDeploys
         );

@@ -10,7 +10,6 @@ import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
-import { Governable } from "../governance/Governable.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
 /// @title IP Asset Registry
@@ -22,7 +21,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
+contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
@@ -30,11 +29,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, Governable {
     /// @notice Tracks the total number of IP assets in existence.
     uint256 public totalSupply = 0;
 
-    constructor(
-        address erc6551Registry,
-        address ipAccountImpl,
-        address governance
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) Governable(governance) {}
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
 
     /// @notice Registers an NFT as an IP asset.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.

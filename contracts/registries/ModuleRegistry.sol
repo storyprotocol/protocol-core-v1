@@ -4,17 +4,17 @@ pragma solidity 0.8.23;
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
 import { IModule } from "../interfaces/modules/base/IModule.sol";
-import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
-
 import { MODULE_TYPE_DEFAULT } from "../lib/modules/Module.sol";
 
 /// @title ModuleRegistry
 /// @notice This contract is used to register and track modules in the protocol.
-contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeable {
+contract ModuleRegistry is IModuleRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;
 
@@ -39,9 +39,9 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
     }
 
     /// @notice initializer for this implementation contract
-    /// @param governance_ The address of the governance.
-    function initialize(address governance_) public initializer {
-        __GovernableUpgradeable_init(governance_);
+    /// @param accessManager The address of the governance.
+    function initialize(address accessManager) public initializer {
+        __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
 
         // Register the default module types
@@ -52,7 +52,7 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module type to be registered.
     /// @param interfaceId The interface ID associated with the module type.
-    function registerModuleType(string memory name, bytes4 interfaceId) external override onlyProtocolAdmin {
+    function registerModuleType(string memory name, bytes4 interfaceId) external override restricted {
         ModuleRegistryStorage storage $ = _getModuleRegistryStorage();
         if (interfaceId == 0) {
             revert Errors.ModuleRegistry__InterfaceIdZero();
@@ -69,7 +69,7 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
     /// @notice Removes a module type from the registry.
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module type to be removed.
-    function removeModuleType(string memory name) external override onlyProtocolAdmin {
+    function removeModuleType(string memory name) external override restricted {
         if (bytes(name).length == 0) {
             revert Errors.ModuleRegistry__NameEmptyString();
         }
@@ -84,7 +84,7 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module.
     /// @param moduleAddress The address of the module.
-    function registerModule(string memory name, address moduleAddress) external onlyProtocolAdmin {
+    function registerModule(string memory name, address moduleAddress) external restricted {
         _registerModule(name, moduleAddress, MODULE_TYPE_DEFAULT);
     }
 
@@ -92,18 +92,14 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
     /// @param name The name of the module to be registered.
     /// @param moduleAddress The address of the module.
     /// @param moduleType The type of the module being registered.
-    function registerModule(
-        string memory name,
-        address moduleAddress,
-        string memory moduleType
-    ) external onlyProtocolAdmin {
+    function registerModule(string memory name, address moduleAddress, string memory moduleType) external restricted {
         _registerModule(name, moduleAddress, moduleType);
     }
 
     /// @notice Removes a module from the registry.
     /// @dev Enforced to be only callable by the protocol admin in governance.
     /// @param name The name of the module.
-    function removeModule(string memory name) external onlyProtocolAdmin {
+    function removeModule(string memory name) external restricted {
         if (bytes(name).length == 0) {
             revert Errors.ModuleRegistry__NameEmptyString();
         }
@@ -193,7 +189,7 @@ contract ModuleRegistry is IModuleRegistry, GovernableUpgradeable, UUPSUpgradeab
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

@@ -9,14 +9,16 @@ import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
+import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
-import { Governance } from "contracts/governance/Governance.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
+import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
@@ -53,6 +55,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     using StringUtil for uint256;
     using stdJson for string;
 
+    error RoleConfigError(string message);
+
     ERC6551Registry internal immutable erc6551Registry;
     IPAccountImpl internal ipAccountImpl;
 
@@ -78,8 +82,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     IpRoyaltyVault internal ipRoyaltyVaultImpl;
 
     // Access Control
-    Governance internal governance;
-    AccessController internal accessController;
+    AccessManager internal protocolAccessManager; // protocol roles
+    AccessController internal accessController; // per IPA roles
 
     // License system
     LicenseToken internal licenseToken;
@@ -117,8 +121,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run(
-        address runDeployer,
-        bool configByMultisig,
         bool runStorageLayoutCheck,
         bool writeDeploys_
     ) public virtual {
@@ -126,37 +128,50 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         if (runStorageLayoutCheck) super.run();
-
-        if (block.chainid == 31337) deployer = runDeployer; // set for local before _beginBroadcast
+        
         _beginBroadcast(); // BroadcastManager.s.sol
 
-        _deployProtocolContracts(deployer);
-        if (!configByMultisig) {
-            _configureDeployment();
+        _deployProtocolContracts();
+        _configureDeployment();
+        _configureRoles();
+
+        // Check role assignment.
+        (bool deployerIsAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
+        if (deployerIsAdmin) {
+            revert RoleConfigError("Deployer did not renounce admin role");
+        }
+        (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
+        (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
+
+        if (!multisigAdmin || !multisigUpgrader) {
+            revert RoleConfigError("Multisig roles not granted");
         }
 
         if (writeDeploys) _writeDeployment();
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
-    function _deployProtocolContracts(address runDeployer) private {
+    function _deployProtocolContracts() private {
         require(address(erc20) != address(0), "Deploy: Asset Not Set");
 
         string memory contractKey;
 
         // Core Protocol Contracts
 
-        contractKey = "Governance";
+        contractKey = "ProtocolAccessManager";
         _predeploy(contractKey);
-        governance = new Governance(runDeployer);
-        _postdeploy(contractKey, address(governance));
+        protocolAccessManager = new AccessManager(deployer);
+        _postdeploy(contractKey, address(protocolAccessManager));
 
         contractKey = "AccessController";
         _predeploy(contractKey);
 
         address impl = address(new AccessController());
         accessController = AccessController(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(AccessController.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(accessController));
@@ -170,14 +185,20 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ModuleRegistry.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(ModuleRegistry.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(moduleRegistry));
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl), address(governance));
+        ipAssetRegistry = new IPAssetRegistry(
+            address(erc6551Registry),
+            address(ipAccountImpl)
+        );
         _postdeploy(contractKey, address(ipAssetRegistry));
 
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
@@ -186,7 +207,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         impl = address(new RoyaltyModule());
         royaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0);
         _postdeploy(contractKey, address(royaltyModule));
@@ -195,7 +219,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
         disputeModule = DisputeModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(DisputeModule.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0);
         _postdeploy(contractKey, address(disputeModule));
@@ -206,12 +233,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry = LicenseRegistry(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(
-                    LicenseRegistry.initialize,
-                    (
-                        address(governance)
-                    )
-                )
+                abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
             )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
@@ -226,7 +248,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(
                     LicenseToken.initialize,
                     (
-                        address(governance),
+                        address(protocolAccessManager),
                         "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
                     )
                 )
@@ -248,7 +270,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             )
         );
         licensingModule = LicensingModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(LicensingModule.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(LicensingModule.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
@@ -260,7 +285,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("ArbitrationPolicySP");
         impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
         arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(ArbitrationPolicySP.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0);
         _postdeploy("ArbitrationPolicySP", address(arbitrationPolicySP));
@@ -268,7 +296,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyPolicyLAP.initialize, address(protocolAccessManager))
+            )
         );
         impl = address(0);
         _postdeploy("RoyaltyPolicyLAP", address(royaltyPolicyLAP));
@@ -300,7 +331,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
-        ipRoyaltyVaultBeacon = new UpgradeableBeacon(address(ipRoyaltyVaultImpl), address(governance));
+        ipRoyaltyVaultBeacon = new UpgradeableBeacon(address(ipRoyaltyVaultImpl), address(protocolAccessManager));
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
 
         _predeploy("CoreMetadataModule");
@@ -358,7 +389,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
 
         // Dispute Module and SP Dispute Policy
-        address arbitrationRelayer = deployer;
+        address arbitrationRelayer = relayer;
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), arbitrationRelayer, true);
@@ -369,5 +400,32 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // License Template
         licenseRegistry.registerLicenseTemplate(address(pilTemplate));
+    }
+
+    function _configureRoles() private {        
+
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = UUPSUpgradeable.upgradeToAndCall.selector;
+
+        ///////// Role Configuration /////////
+        // Upgrades
+        protocolAccessManager.labelRole(ProtocolAdmin.UPGRADER_ROLE, ProtocolAdmin.UPGRADER_ROLE_LABEL);
+        // Note: upgraderExecDelay is set in BroadcastManager.sol
+        protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(arbitrationPolicySP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+
+        ///////// Role Granting /////////
+        protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);
+        protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, 0);
+
+        ///////// Renounce admin role /////////
+        protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
     }
 }

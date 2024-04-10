@@ -64,7 +64,43 @@ interface IIpRoyaltyVault {
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
     function collectRoyaltyTokens(address ancestorIpId) external;
 
-    /// @notice Returns the list of revenue tokens in the vault
-    /// @return The list of revenue tokens
-    function getVaultTokens() external view returns (address[] memory);
+    /// @notice The ip id to whom this royalty vault belongs to
+    /// @return The ip id address
+    function ipId() external view returns (address);
+
+    /// @notice The amount of unclaimed royalty tokens
+    function unclaimedRoyaltyTokens() external view returns (uint32);
+
+    /// @notice The last snapshotted timestamp
+    function lastSnapshotTimestamp() external view returns (uint256);
+
+    /// @notice The amount of revenue token in the ancestors vault
+    /// @param token The address of the revenue token
+    function ancestorsVaultAmount(address token) external view returns (uint256);
+
+    /// @notice Indicates whether the ancestor has collected the royalty tokens
+    /// @param ancestorIpId The ancestor ipId address
+    function isCollectedByAncestor(address ancestorIpId) external view returns (bool);
+
+    /// @notice Amount of revenue token in the claim vault
+    /// @param token The address of the revenue token
+    function claimVaultAmount(address token) external view returns (uint256);
+
+    /// @notice Amount of revenue token claimable at a given snapshot
+    /// @param snapshotId The snapshot id
+    /// @param token The address of the revenue token
+    function claimableAtSnapshot(uint256 snapshotId, address token) external view returns (uint256);
+
+    /// @notice Amount of unclaimed revenue tokens at the snapshot
+    /// @param snapshotId The snapshot id
+    function unclaimedAtSnapshot(uint256 snapshotId) external view returns (uint32);
+
+    /// @notice Indicates whether the claimer has claimed the revenue tokens at a given snapshot
+    /// @param snapshotId The snapshot id
+    /// @param claimer The address of the claimer
+    /// @param token The address of the revenue token
+    function isClaimedAtSnapshot(uint256 snapshotId, address claimer, address token) external view returns (bool);
+
+    /// @notice The list of revenue tokens in the vault
+    function tokens() external view returns (address[] memory);
 }

@@ -4,10 +4,11 @@ pragma solidity 0.8.23;
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../../modules/BaseModule.sol";
-import { GovernableUpgradeable } from "../../governance/GovernableUpgradeable.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
@@ -21,7 +22,7 @@ import { ShortStringOps } from "../../utils/ShortStringOps.sol";
 contract DisputeModule is
     IDisputeModule,
     BaseModule,
-    GovernableUpgradeable,
+    AccessManagedUpgradeable,
     ReentrancyGuardUpgradeable,
     AccessControlled,
     UUPSUpgradeable
@@ -73,9 +74,9 @@ contract DisputeModule is
     }
 
     /// @notice initializer for this implementation contract
-    /// @param _governance The address of the governance contract
-    function initialize(address _governance) external initializer {
-        __GovernableUpgradeable_init(_governance);
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) external initializer {
+        __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }
@@ -83,7 +84,7 @@ contract DisputeModule is
     /// @notice Whitelists a dispute tag
     /// @param tag The dispute tag
     /// @param allowed Indicates if the dispute tag is whitelisted or not
-    function whitelistDisputeTag(bytes32 tag, bool allowed) external onlyProtocolAdmin {
+    function whitelistDisputeTag(bytes32 tag, bool allowed) external restricted {
         if (tag == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeTag();
 
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
@@ -95,7 +96,7 @@ contract DisputeModule is
     /// @notice Whitelists an arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param allowed Indicates if the arbitration policy is whitelisted or not
-    function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external onlyProtocolAdmin {
+    function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external restricted {
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
 
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
@@ -112,7 +113,7 @@ contract DisputeModule is
         address arbitrationPolicy,
         address arbPolicyRelayer,
         bool allowed
-    ) external onlyProtocolAdmin {
+    ) external restricted {
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
         if (arbPolicyRelayer == address(0)) revert Errors.DisputeModule__ZeroArbitrationRelayer();
 
@@ -124,7 +125,7 @@ contract DisputeModule is
 
     /// @notice Sets the base arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
-    function setBaseArbitrationPolicy(address arbitrationPolicy) external onlyProtocolAdmin {
+    function setBaseArbitrationPolicy(address arbitrationPolicy) external restricted {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy])
             revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
@@ -343,9 +344,9 @@ contract DisputeModule is
         return $.arbitrationPolicies[ipId];
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 
     /// @dev Returns the storage struct of DisputeModule.
     function _getDisputeModuleStorage() private pure returns (DisputeModuleStorage storage $) {

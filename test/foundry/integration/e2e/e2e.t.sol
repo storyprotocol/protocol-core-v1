@@ -5,10 +5,10 @@ pragma solidity 0.8.23;
 import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 
 // contracts
 import { AccessController } from "../../../../contracts/access/AccessController.sol";
-import { Governance } from "../../../../contracts/governance/Governance.sol";
 import { IPAccountImpl } from "../../../../contracts/IPAccountImpl.sol";
 import { IPAssetRegistry } from "../../../../contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "../../../../contracts/registries/ModuleRegistry.sol";
@@ -39,7 +39,7 @@ contract e2e is Test {
     address dave;
     address eve;
 
-    Governance governance;
+    AccessManager protocolAccessManager;
     AccessController accessController;
     ModuleRegistry moduleRegistry;
     ERC6551Registry erc6551Registry;
@@ -71,45 +71,60 @@ contract e2e is Test {
 
         erc20 = new MockERC20();
         mockNft = new MockERC721("ape");
-        governance = new Governance(admin);
+        protocolAccessManager = new AccessManager(admin);
 
         // Deploy contracts
         address impl = address(new AccessController());
         accessController = AccessController(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(AccessController.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+            )
         );
 
         impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(AccessController.initialize, address(governance)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+            )
         );
 
         erc6551Registry = new ERC6551Registry();
         ipAccountImpl = new IPAccountImpl(address(accessController));
-        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl), address(governance));
+        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl));
 
         impl = address(new LicenseRegistry());
         licenseRegistry = LicenseRegistry(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(LicenseRegistry.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
+            )
         );
 
         impl = address(new LicenseToken());
         licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(LicenseToken.initialize, (address(governance), "image_url"))
+                abi.encodeCall(LicenseToken.initialize, (address(protocolAccessManager), "image_url"))
             )
         );
 
         impl = address(new RoyaltyModule());
         royaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager)))
+            )
         );
         vm.label(address(royaltyModule), "RoyaltyModule");
 
         impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
         disputeModule = DisputeModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(DisputeModule.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(DisputeModule.initialize, (address(protocolAccessManager)))
+            )
         );
 
         impl = address(
@@ -124,7 +139,10 @@ contract e2e is Test {
         );
 
         licensingModule = LicensingModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(LicensingModule.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(LicensingModule.initialize, (address(protocolAccessManager)))
+            )
         );
 
         erc20 = new MockERC20();
@@ -132,12 +150,18 @@ contract e2e is Test {
 
         impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
         ArbitrationPolicySP arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager)))
+            )
         );
 
         impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, (address(governance))))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyPolicyLAP.initialize, (address(protocolAccessManager)))
+            )
         );
 
         impl = address(
@@ -163,7 +187,7 @@ contract e2e is Test {
             new IpRoyaltyVault(address(royaltyPolicyLAP), address(disputeModule))
         );
         address ipRoyaltyVaultBeacon = address(
-            new UpgradeableBeacon(ipRoyaltyVaultImplementation, address(governance))
+            new UpgradeableBeacon(ipRoyaltyVaultImplementation, address(protocolAccessManager))
         );
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(ipRoyaltyVaultBeacon);
 

@@ -21,7 +21,7 @@ contract TestArbitrationPolicySP is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        arbitrationRelayer = u.admin;
+        arbitrationRelayer = u.relayer;
 
         USDC.mint(ipAccount1, 10000 * 10 ** 6);
 

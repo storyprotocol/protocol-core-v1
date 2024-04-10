@@ -6,20 +6,21 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { ILicenseRegistry } from "../interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "../interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "../lib/Errors.sol";
 import { Licensing } from "../lib/Licensing.sol";
-import { GovernableUpgradeable } from "../governance/GovernableUpgradeable.sol";
 import { ILicenseTemplate } from "../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
-contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgradeable {
+contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -77,16 +78,16 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
     }
 
     /// @notice initializer for this implementation contract
-    /// @param governance The address of the governance contract
-    function initialize(address governance) public initializer {
-        __GovernableUpgradeable_init(governance);
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) public initializer {
+        __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }
 
     /// @dev Sets the DisputeModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newDisputeModule The address of the DisputeModule
-    function setDisputeModule(address newDisputeModule) external onlyProtocolAdmin {
+    function setDisputeModule(address newDisputeModule) external restricted {
         if (newDisputeModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroDisputeModule();
         }
@@ -97,7 +98,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
     /// @dev Sets the LicensingModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newLicensingModule The address of the LicensingModule
-    function setLicensingModule(address newLicensingModule) external onlyProtocolAdmin {
+    function setLicensingModule(address newLicensingModule) external restricted {
         if (newLicensingModule == address(0)) {
             revert Errors.LicenseRegistry__ZeroLicensingModule();
         }
@@ -108,7 +109,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
     /// @notice Sets the default license terms that are attached to all IPs by default.
     /// @param newLicenseTemplate The address of the new default license template.
     /// @param newLicenseTermsId The ID of the new default license terms.
-    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external onlyProtocolAdmin {
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external restricted {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
         $.defaultLicenseTermsId = newLicenseTermsId;
@@ -116,7 +117,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
 
     /// @notice Registers a new license template in the Story Protocol.
     /// @param licenseTemplate The address of the license template to register.
-    function registerLicenseTemplate(address licenseTemplate) external onlyProtocolAdmin {
+    function registerLicenseTemplate(address licenseTemplate) external restricted {
         if (!licenseTemplate.supportsInterface(type(ILicenseTemplate).interfaceId)) {
             revert Errors.LicenseRegistry__NotLicenseTemplate(licenseTemplate);
         }
@@ -505,7 +506,7 @@ contract LicenseRegistry is ILicenseRegistry, GovernableUpgradeable, UUPSUpgrade
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

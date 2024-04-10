@@ -4,8 +4,9 @@ pragma solidity 0.8.23;
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
-import { GovernableUpgradeable } from "../../../governance/GovernableUpgradeable.sol";
 import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
 import { Errors } from "../../../lib/Errors.sol";
@@ -13,7 +14,7 @@ import { Errors } from "../../../lib/Errors.sol";
 /// @title Story Protocol Arbitration Policy
 /// @notice The Story Protocol arbitration policy is a simple policy that requires the dispute initiator to pay a fixed
 ///         amount of tokens to raise a dispute and refunds that amount if the dispute initiator wins the dispute.
-contract ArbitrationPolicySP is IArbitrationPolicy, GovernableUpgradeable, UUPSUpgradeable {
+contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice Returns the dispute module address
@@ -47,9 +48,9 @@ contract ArbitrationPolicySP is IArbitrationPolicy, GovernableUpgradeable, UUPSU
     }
 
     /// @notice initializer for this implementation contract
-    /// @param governance The address of the governance contract
-    function initialize(address governance) public initializer {
-        __GovernableUpgradeable_init(governance);
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) public initializer {
+        __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }
 
@@ -83,14 +84,14 @@ contract ArbitrationPolicySP is IArbitrationPolicy, GovernableUpgradeable, UUPSU
 
     /// @notice Allows governance address to withdraw
     /// @dev Enforced to be only callable by the governance protocol admin.
-    function governanceWithdraw() external onlyProtocolAdmin {
+    function governanceWithdraw() external restricted {
         uint256 balance = IERC20(PAYMENT_TOKEN).balanceOf(address(this));
         IERC20(PAYMENT_TOKEN).safeTransfer(msg.sender, balance);
 
         emit GovernanceWithdrew(balance);
     }
 
-    /// @notice Hook that is called before any upgrade
-    /// @param newImplementation Address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

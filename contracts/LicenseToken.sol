@@ -6,16 +6,17 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC721EnumerableUpgradeable, ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { ILicenseToken } from "./interfaces/ILicenseToken.sol";
 import { ILicensingModule } from "./interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "./interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "./lib/Errors.sol";
-import { GovernableUpgradeable } from "./governance/GovernableUpgradeable.sol";
 import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplate.sol";
 
 /// @title LicenseToken aka LNFT
-contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableUpgradeable, UUPSUpgradeable {
+contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
@@ -49,9 +50,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
     }
 
     /// @dev Initializes the LicenseToken contract
-    function initialize(address governance, string memory imageUrl) public initializer {
+    function initialize(address accessManager, string memory imageUrl) public initializer {
         __ERC721_init("Programmable IP License Token", "PILicenseToken");
-        __GovernableUpgradeable_init(governance);
+        __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
         _getLicenseTokenStorage().imageUrl = imageUrl;
     }
@@ -59,7 +60,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
     /// @notice Sets the LicensingModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newLicensingModule The address of the LicensingModule
-    function setLicensingModule(address newLicensingModule) external onlyProtocolAdmin {
+    function setLicensingModule(address newLicensingModule) external restricted {
         if (newLicensingModule == address(0)) {
             revert Errors.LicenseToken__ZeroLicensingModule();
         }
@@ -70,7 +71,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
     /// @notice Sets the DisputeModule address.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param newDisputeModule The address of the DisputeModule
-    function setDisputeModule(address newDisputeModule) external onlyProtocolAdmin {
+    function setDisputeModule(address newDisputeModule) external restricted {
         if (newDisputeModule == address(0)) {
             revert Errors.LicenseToken__ZeroDisputeModule();
         }
@@ -81,7 +82,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
     /// @dev Sets the Licensing Image URL.
     /// @dev Enforced to be only callable by the protocol admin
     /// @param url The URL of the Licensing Image
-    function setLicensingImageUrl(string calldata url) external onlyProtocolAdmin {
+    function setLicensingImageUrl(string calldata url) external restricted {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         $.imageUrl = url;
         emit BatchMetadataUpdate(1, $.totalMintedTokens);
@@ -326,5 +327,5 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, GovernableU
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

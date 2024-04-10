@@ -5,9 +5,10 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { BaseModule } from "../BaseModule.sol";
-import { GovernableUpgradeable } from "../../governance/GovernableUpgradeable.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
@@ -20,7 +21,7 @@ import { BaseModule } from "../BaseModule.sol";
 ///         derivative IP.
 contract RoyaltyModule is
     IRoyaltyModule,
-    GovernableUpgradeable,
+    AccessManagedUpgradeable,
     ReentrancyGuardUpgradeable,
     BaseModule,
     UUPSUpgradeable
@@ -55,9 +56,9 @@ contract RoyaltyModule is
     }
 
     /// @notice initializer for this implementation contract
-    /// @param _governance The address of the governance contract
-    function initialize(address _governance) external initializer {
-        __GovernableUpgradeable_init(_governance);
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) external initializer {
+        __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }
@@ -72,7 +73,7 @@ contract RoyaltyModule is
     /// @notice Sets the licensing module
     /// @dev Enforced to be only callable by the protocol admin
     /// @param licensing The address of the license module
-    function setLicensingModule(address licensing) external onlyProtocolAdmin {
+    function setLicensingModule(address licensing) external restricted {
         if (licensing == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
         _getRoyaltyModuleStorage().licensingModule = licensing;
     }
@@ -80,7 +81,7 @@ contract RoyaltyModule is
     /// @notice Sets the dispute module
     /// @dev Enforced to be only callable by the protocol admin
     /// @param dispute The address of the dispute module
-    function setDisputeModule(address dispute) external onlyProtocolAdmin {
+    function setDisputeModule(address dispute) external restricted {
         if (dispute == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
         _getRoyaltyModuleStorage().disputeModule = dispute;
     }
@@ -89,7 +90,7 @@ contract RoyaltyModule is
     /// @dev Enforced to be only callable by the protocol admin
     /// @param royaltyPolicy The address of the royalty policy
     /// @param allowed Indicates if the royalty policy is whitelisted or not
-    function whitelistRoyaltyPolicy(address royaltyPolicy, bool allowed) external onlyProtocolAdmin {
+    function whitelistRoyaltyPolicy(address royaltyPolicy, bool allowed) external restricted {
         if (royaltyPolicy == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
 
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
@@ -102,7 +103,7 @@ contract RoyaltyModule is
     /// @dev Enforced to be only callable by the protocol admin
     /// @param token The token address
     /// @param allowed Indicates if the token is whitelisted or not
-    function whitelistRoyaltyToken(address token, bool allowed) external onlyProtocolAdmin {
+    function whitelistRoyaltyToken(address token, bool allowed) external restricted {
         if (token == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyToken();
 
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
@@ -263,9 +264,9 @@ contract RoyaltyModule is
         return interfaceId == type(IRoyaltyModule).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @notice Hook that is called before any upgrade for authorization
-    /// @param newImplementation Address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 
     /// @dev Returns the storage struct of RoyaltyModule.
     function _getRoyaltyModuleStorage() private pure returns (RoyaltyModuleStorage storage $) {

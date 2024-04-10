@@ -5,16 +5,6 @@ pragma solidity 0.8.23;
 /// @notice Library for all Story Protocol contract errors.
 library Errors {
     ////////////////////////////////////////////////////////////////////////////
-    //                                Governance                              //
-    ////////////////////////////////////////////////////////////////////////////
-    error Governance__OnlyProtocolAdmin();
-    error Governance__ZeroAddress();
-    error Governance__ProtocolPaused();
-    error Governance__InconsistentState();
-    error Governance__NewStateIsTheSameWithOldState();
-    error Governance__UnsupportedInterface(string interfaceName);
-
-    ////////////////////////////////////////////////////////////////////////////
     //                                IPAccount                               //
     ////////////////////////////////////////////////////////////////////////////
     error IPAccount__InvalidSigner();

@@ -138,7 +138,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         disputeId = disputeModule.raiseDispute(ipAddrToDispute, string("urlExample"), "PLAGIARISM", "");
         vm.stopPrank();
 
-        vm.prank(u.admin); // admin is a judge
+        vm.prank(u.relayer); // admin is a judge
         disputeModule.setDisputeJudgement(disputeId, true, "");
     }
 }

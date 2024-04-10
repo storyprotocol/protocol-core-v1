@@ -7,6 +7,8 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { IModule } from "../../interfaces/modules/base/IModule.sol";
@@ -21,7 +23,6 @@ import { RoyaltyModule } from "../../modules/royalty/RoyaltyModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { LICENSING_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
-import { GovernableUpgradeable } from "../../governance/GovernableUpgradeable.sol";
 import { ILicenseTemplate } from "contracts/interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IMintingFeeModule } from "contracts/interfaces/modules/licensing/IMintingFeeModule.sol";
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
@@ -38,7 +39,7 @@ contract LicensingModule is
     ILicensingModule,
     BaseModule,
     ReentrancyGuardUpgradeable,
-    GovernableUpgradeable,
+    AccessManagedUpgradeable,
     UUPSUpgradeable
 {
     using ERC165Checker for address;
@@ -94,11 +95,11 @@ contract LicensingModule is
     }
 
     /// @notice initializer for this implementation contract
-    /// @param governance The address of the governance contract
-    function initialize(address governance) public initializer {
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) public initializer {
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        __GovernableUpgradeable_init(governance);
+        __AccessManaged_init(accessManager);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -448,7 +449,7 @@ contract LicensingModule is
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

@@ -24,6 +24,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         vm.startPrank(address(royaltyModule));
         _setupMaxUniqueTree();
+        vm.stopPrank();
     }
 
     function _setupMaxUniqueTree() internal {
@@ -150,7 +151,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessManaged.AccessManagedUnauthorized.selector,
-                address(royaltyModule) // How is this the caller??
+                address(this)
             )
         );
         royaltyPolicyLAP.setSnapshotInterval(100);
@@ -166,7 +167,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessManaged.AccessManagedUnauthorized.selector,
-                address(royaltyModule) // How is this the caller??
+                address(this)
             )
         );
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
@@ -185,13 +186,13 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_NotRoyaltyModule() public {
-        vm.stopPrank();
         vm.expectRevert(Errors.RoyaltyPolicyLAP__NotRoyaltyModule.selector);
         royaltyPolicyLAP.onLicenseMinting(address(1), abi.encode(uint32(0)), abi.encode(uint32(0)));
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_AboveRoyaltyStackLimit() public {
         uint256 excessPercent = royaltyPolicyLAP.TOTAL_RT_SUPPLY() + 1;
+        vm.prank(address(royaltyModule));
         vm.expectRevert(Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit.selector);
         royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(excessPercent), "");
     }
@@ -201,14 +202,16 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentsIpIds100.length; i++) {
             encodedLicenseData[i] = abi.encode(parentsIpIds100[i]);
         }
-
+        vm.startPrank(address(royaltyModule));
         royaltyPolicyLAP.onLinkToParents(address(100), parentsIpIds100, encodedLicenseData, "");
 
         vm.expectRevert(Errors.RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense.selector);
         royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(uint32(0)), "");
+        vm.stopPrank();
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting() public {
+        vm.prank(address(royaltyModule));
         royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(uint32(0)), "");
 
         (
@@ -231,7 +234,6 @@ contract TestRoyaltyPolicyLAP is BaseTest {
             encodedLicenseData[i] = abi.encode(parentsIpIds100[i]);
         }
 
-        vm.stopPrank();
         vm.expectRevert(Errors.RoyaltyPolicyLAP__NotRoyaltyModule.selector);
         royaltyPolicyLAP.onLinkToParents(address(100), parentsIpIds100, encodedLicenseData, "");
     }
@@ -247,6 +249,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         excessParents[1] = address(2);
         excessParents[2] = address(3);
 
+        vm.prank(address(royaltyModule));
         vm.expectRevert(Errors.RoyaltyPolicyLAP__AboveParentLimit.selector);
         royaltyPolicyLAP.onLinkToParents(address(100), excessParents, encodedLicenseData, "");
     }
@@ -256,7 +259,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentsIpIds100.length; i++) {
             encodedLicenseData[i] = abi.encode(parentsIpIds100[i]);
         }
-
+        vm.prank(address(royaltyModule));
         royaltyPolicyLAP.onLinkToParents(address(100), parentsIpIds100, encodedLicenseData, "");
 
         (

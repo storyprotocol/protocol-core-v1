@@ -1,10 +1,9 @@
 {
   "filter_paths": "lib",
   "solc_remaps": [
-    "ds-test/=lib/ds-test/src/",
-    "forge-std/=lib/forge-std/src/",
-    "@chainlink/=node_modules/@chainlink/",
+    "ds-test/=node_modules/ds-test/src/",
+    "forge-std/=node_modules/forge-std/src/",
     "@openzeppelin/=node_modules/@openzeppelin/",
-    "base64-sol/=node_modules/base64-sol/"
+    "@openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades"
   ]
 }

@@ -5,6 +5,7 @@ import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { IAccessManaged } from "@openzeppelin/contracts/access/manager/IAccessManaged.sol";
 
 contract TestRoyaltyPolicyLAP is BaseTest {
     RoyaltyPolicyLAP internal testRoyaltyPolicyLAP;
@@ -146,7 +147,12 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_setSnapshotInterval_revert_NotOwner() public {
-        vm.expectRevert(Errors.Governance__OnlyProtocolAdmin.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessManaged.AccessManagedUnauthorized.selector,
+                address(royaltyModule) // How is this the caller??
+            )
+        );
         royaltyPolicyLAP.setSnapshotInterval(100);
     }
 
@@ -157,7 +163,12 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_setIpRoyaltyVaultBeacon_revert_NotOwner() public {
-        vm.expectRevert(Errors.Governance__OnlyProtocolAdmin.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessManaged.AccessManagedUnauthorized.selector,
+                address(royaltyModule) // How is this the caller??
+            )
+        );
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
     }
 

@@ -6,16 +6,17 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
-import { GovernableUpgradeable } from "../../../../contracts/governance/GovernableUpgradeable.sol";
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
-contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
+contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @dev Storage structure for the RoyaltyPolicyLAP
@@ -73,7 +74,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
     /// @notice Initializer for this implementation contract
     /// @param governance The governance address
     function initialize(address governance) external initializer {
-        __GovernableUpgradeable_init(governance);
+        __AccessManaged_init(governance);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }
@@ -81,7 +82,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
     /// @dev Set the snapshot interval
     /// @dev Enforced to be only callable by the protocol admin in governance
     /// @param timestampInterval The minimum timestamp interval between snapshots
-    function setSnapshotInterval(uint256 timestampInterval) public onlyProtocolAdmin {
+    function setSnapshotInterval(uint256 timestampInterval) public restricted {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.snapshotInterval = timestampInterval;
     }
@@ -89,7 +90,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
     /// @dev Set the ip royalty vault beacon
     /// @dev Enforced to be only callable by the protocol admin in governance
     /// @param beacon The ip royalty vault beacon address
-    function setIpRoyaltyVaultBeacon(address beacon) public onlyProtocolAdmin {
+    function setIpRoyaltyVaultBeacon(address beacon) public restricted {
         if (beacon == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.ipRoyaltyVaultBeacon = beacon;
@@ -349,7 +350,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, GovernableUpgradeable, Reentranc
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override onlyProtocolAdmin {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

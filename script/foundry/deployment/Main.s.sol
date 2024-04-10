@@ -27,20 +27,10 @@ contract Main is DeployHelper {
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run() public virtual override {
-        bool configByMultisig;
-        try vm.envBool("DEPLOYMENT_CONFIG_BY_MULTISIG") returns (bool mult) {
-            configByMultisig = mult;
-        } catch {
-            configByMultisig = false;
-        }
-        console2.log("configByMultisig:", configByMultisig);
-
         // deploy all contracts via DeployHelper
         super.run(
-            configByMultisig ? multisig : deployer, // deployer
-            configByMultisig,
             true, // runStorageLayoutCheck
-            true // writeDeploys
+            true // writeDeployments
         );
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol

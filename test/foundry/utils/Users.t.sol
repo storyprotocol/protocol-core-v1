@@ -13,6 +13,8 @@ struct Users {
     address payable dan;
     // Malicious user
     address payable eve;
+    // Relayer
+    address payable relayer;
 }
 
 library UsersLib {
@@ -32,7 +34,8 @@ library UsersLib {
                 bob: createUser("Bob", vm),
                 carl: createUser("Carl", vm),
                 dan: createUser("Dan", vm),
-                eve: createUser("Eve", vm)
+                eve: createUser("Eve", vm),
+                relayer: createUser("Relayer", vm)
             });
     }
 }

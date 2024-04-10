@@ -29,10 +29,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
     /// @notice Tracks the total number of IP assets in existence.
     uint256 public totalSupply = 0;
 
-    constructor(
-        address erc6551Registry,
-        address ipAccountImpl
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
 
     /// @notice Registers an NFT as an IP asset.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.

@@ -56,7 +56,7 @@ contract RoyaltyModule is
     }
 
     /// @notice initializer for this implementation contract
-    /// @param accessManager The address of the governance contract
+    /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
         __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();

@@ -55,8 +55,8 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
     }
 
     /// @notice initializer for this implementation contract
-    /// @param accessManaged The address of the governance contract
-    function initialize(address accessManaged) external initializer {
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) external initializer {
         __AccessManaged_init(accessManaged);
     }
 

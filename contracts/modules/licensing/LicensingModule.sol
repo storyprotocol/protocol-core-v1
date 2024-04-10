@@ -95,7 +95,7 @@ contract LicensingModule is
     }
 
     /// @notice initializer for this implementation contract
-    /// @param accessManager The address of the governance contract
+    /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) public initializer {
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();

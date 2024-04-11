@@ -96,6 +96,21 @@ contract TestArbitrationPolicySP is BaseTest {
         assertEq(arbitrationPolicySP.ARBITRATION_PRICE(), arbitrationPrice);
     }
 
+    function test_ArbitrationPolicySP_revert_ZeroAccessManager() public {
+        address disputeModule = address(1);
+        address paymentToken = address(2);
+        uint256 arbitrationPrice = 1000;
+
+        ArbitrationPolicySP arbitrationPolicySP = new ArbitrationPolicySP(
+            disputeModule,
+            paymentToken,
+            arbitrationPrice
+        );
+
+        vm.expectRevert(Errors.ArbitrationPolicySP__ZeroAccessManager.selector);
+        arbitrationPolicySP.initialize(address(0));
+    }
+
     function test_ArbitrationPolicySP_onRaiseDispute_NotDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicySP__NotDisputeModule.selector);
         arbitrationPolicySP.onRaiseDispute(address(1), new bytes(0));

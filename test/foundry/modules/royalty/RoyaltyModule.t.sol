@@ -112,12 +112,7 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
         address impl = address(new RoyaltyModule());
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
-        RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(0))
-            )
-        );
+        RoyaltyModule(TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(0))));
     }
 
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {

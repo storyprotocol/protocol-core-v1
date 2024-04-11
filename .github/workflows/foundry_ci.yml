@@ -56,7 +56,7 @@ jobs:
   Coverage:
     needs: [foundry-test]
     uses: storyprotocol/gha-workflows/.github/workflows/reusable-forge-code-coverage.yml@feat/add_reusable_forge_code_coverage
-    # FOR LOCAL TESTING
+    # FOR LOCAL TESTING ONLY
     # uses: ./../gha-workflows/.github/workflows/reusable-forge-code-coverage.yml
     with:
       exclude_paths: 'test/*, script/*'

@@ -59,7 +59,7 @@ contract AccessControlledTest is BaseTest {
 
     function test_AccessControlled_revert_callOnlyIpAccountFunction_withNonIpAccount() public {
         address nonOwner = vm.addr(3);
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__CallerIsNotIpAccount.selector, nonOwner));
+        vm.expectRevert("onlyIpAccount");
         vm.prank(nonOwner);
         mockModule.onlyIpAccountFunction("test", true);
     }
@@ -176,7 +176,7 @@ contract AccessControlledTest is BaseTest {
 
     function test_AccessControlled_revert_callIpAccountOrPermissionFunction_passInNonIpAccount() public {
         address nonIpAccount = vm.addr(7);
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, nonIpAccount));
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessController__IPAccountIsNotValid.selector, nonIpAccount));
         vm.prank(owner);
         mockModule.ipAccountOrPermissionFunction(nonIpAccount, "test", true);
     }
@@ -221,16 +221,6 @@ contract AccessControlledTest is BaseTest {
         new MockAccessControlledModule(
             address(0),
             address(ipAccountRegistry),
-            address(moduleRegistry),
-            "MockAccessControlledModule"
-        );
-    }
-
-    function test_AccessControlled_revert_constructor_zeroAddress_ipAccountRegistry() public {
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__ZeroAddress.selector));
-        new MockAccessControlledModule(
-            address(accessController),
-            address(0),
             address(moduleRegistry),
             "MockAccessControlledModule"
         );

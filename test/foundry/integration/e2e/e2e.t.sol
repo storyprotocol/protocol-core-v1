@@ -130,7 +130,6 @@ contract e2e is Test {
         impl = address(
             new LicensingModule(
                 address(accessController),
-                address(ipAssetRegistry),
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
@@ -167,7 +166,6 @@ contract e2e is Test {
         impl = address(
             new PILicenseTemplate(
                 address(accessController),
-                address(ipAssetRegistry),
                 address(licenseRegistry),
                 address(royaltyModule),
                 address(licenseToken)

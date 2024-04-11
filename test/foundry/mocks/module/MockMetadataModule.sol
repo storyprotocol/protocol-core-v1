@@ -23,11 +23,7 @@ contract MockMetadataModule is BaseModule, AccessControlled {
 
     /// @notice Creates a new MockMetadataModule instance.
     /// @param accessController The address of the AccessController contract.
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract.
-    constructor(
-        address accessController,
-        address ipAccountRegistry
-    ) AccessControlled(accessController, ipAccountRegistry) {
+    constructor(address accessController) AccessControlled(accessController) {
         ipTypesSupported["STORY"] = true;
         ipTypesSupported["CHARACTOR"] = true;
         ipTypesSupported["BOOK"] = true;

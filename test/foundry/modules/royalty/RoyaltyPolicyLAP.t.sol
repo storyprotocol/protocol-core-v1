@@ -148,12 +148,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_setSnapshotInterval_revert_NotOwner() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessManaged.AccessManagedUnauthorized.selector,
-                address(this)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, address(this)));
         royaltyPolicyLAP.setSnapshotInterval(100);
     }
 
@@ -164,12 +159,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_setIpRoyaltyVaultBeacon_revert_NotOwner() public {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessManaged.AccessManagedUnauthorized.selector,
-                address(this)
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, address(this)));
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
     }
 

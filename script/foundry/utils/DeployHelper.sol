@@ -262,7 +262,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(
             new LicensingModule(
                 address(accessController),
-                address(ipAccountRegistry),
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
@@ -308,7 +307,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(
             new PILicenseTemplate(
                 address(accessController),
-                address(ipAccountRegistry),
                 address(licenseRegistry),
                 address(royaltyModule),
                 address(licenseToken)
@@ -335,7 +333,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
 
         _predeploy("CoreMetadataModule");
-        coreMetadataModule = new CoreMetadataModule(address(accessController), address(ipAssetRegistry));
+        coreMetadataModule = new CoreMetadataModule(address(accessController));
         _postdeploy("CoreMetadataModule", address(coreMetadataModule));
 
         _predeploy("CoreMetadataViewModule");
@@ -343,7 +341,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
 
         _predeploy("TokenWithdrawalModule");
-        tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
+        tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController));
         _postdeploy("TokenWithdrawalModule", address(tokenWithdrawalModule));
     }
 

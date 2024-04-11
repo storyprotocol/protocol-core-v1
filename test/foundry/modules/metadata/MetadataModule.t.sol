@@ -15,7 +15,7 @@ contract MetadataModuleTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        metadataModule = new MockMetadataModule(address(accessController), address(ipAssetRegistry));
+        metadataModule = new MockMetadataModule(address(accessController));
         module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
 
         vm.etch(

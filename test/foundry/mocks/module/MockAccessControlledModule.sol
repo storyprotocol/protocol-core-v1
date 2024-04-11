@@ -16,20 +16,17 @@ contract MockAccessControlledModule is BaseModule, AccessControlled {
     using ERC165Checker for address;
     using IPAccountChecker for IIPAccountRegistry;
 
+    IIPAccountRegistry public ipAccountRegistry;
     IModuleRegistry public moduleRegistry;
     string public name;
 
-    /// @notice Creates a new MockAccessControlledModule instance.
-    /// @param accessController The address of the AccessController contract.
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract.
-    /// @param moduleRegistry_ The address of the ModuleRegistry contract.
-    /// @param name_ The name of the module.
     constructor(
         address accessController,
-        address ipAccountRegistry,
+        address ipAccountRegistry_,
         address moduleRegistry_,
         string memory name_
-    ) AccessControlled(accessController, ipAccountRegistry) {
+    ) AccessControlled(accessController) {
+        ipAccountRegistry = IIPAccountRegistry(ipAccountRegistry_);
         moduleRegistry = IModuleRegistry(moduleRegistry_);
         name = name_;
     }
@@ -39,10 +36,9 @@ contract MockAccessControlledModule is BaseModule, AccessControlled {
     /// @param success A boolean to simulate function success or failure.
     /// @return The input string parameter if the call is successful.
     /// @dev This function reverts if the `success` parameter is false.
-    function onlyIpAccountFunction(
-        string memory param,
-        bool success
-    ) external view onlyIpAccount returns (string memory) {
+    function onlyIpAccountFunction(string memory param, bool success) external view returns (string memory) {
+        require(ipAccountRegistry.isIpAccount(msg.sender), "onlyIpAccount");
+
         if (!success) {
             revert("expected failure");
         }

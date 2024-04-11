@@ -61,7 +61,7 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_NftTokenURI_InvalidIpAccount() public {
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessController__IPAccountIsNotValid.selector, address(0x1234)));
         vm.prank(alice);
         coreMetadataModule.updateNftTokenURI(address(0x1234), bytes32(0));
     }
@@ -119,7 +119,7 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_MetadataURI_InvalidIpAccount() public {
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessController__IPAccountIsNotValid.selector, address(0x1234)));
         vm.prank(alice);
         coreMetadataModule.setMetadataURI(address(0x1234), "My MetadataURI", bytes32(0));
     }
@@ -171,7 +171,7 @@ contract CoreMetadataModuleTest is BaseTest {
     }
 
     function test_CoreMetadata_All_InvalidIpAccount() public {
-        vm.expectRevert(abi.encodeWithSelector(Errors.AccessControlled__NotIpAccount.selector, address(0x1234)));
+        vm.expectRevert(abi.encodeWithSelector(Errors.AccessController__IPAccountIsNotValid.selector, address(0x1234)));
         vm.prank(alice);
         coreMetadataModule.setAll(address(0x1234), "My MetadataURI", bytes32("0x1234"), bytes32("0x5678"));
     }

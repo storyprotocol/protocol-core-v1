@@ -33,7 +33,10 @@ contract TestRoyaltyModule is BaseTest {
 
         address impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLAP.initialize, address(protocolAccessManager)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyPolicyLAP.initialize, address(protocolAccessManager))
+            )
         );
 
         arbitrationRelayer = u.relayer;
@@ -109,7 +112,10 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+            )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
         vm.prank(u.admin);
@@ -120,7 +126,10 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+            )
         );
         testRoyaltyModule.setDisputeModule(address(disputeModule));
         assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));
@@ -136,7 +145,10 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+            )
         );
         testRoyaltyModule.setLicensingModule(address(licensingModule));
         assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));

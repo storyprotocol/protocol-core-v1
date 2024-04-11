@@ -86,9 +86,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint32 unclaimedTokens,
         address ipIdAddress
     ) external initializer {
-        if (ipIdAddress == address(0)) revert Errors.IpRoyaltyVault__ZeroIpId();
-        if (supply == 0) revert Errors.IpRoyaltyVault__ZeroSupply();
-
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         $.ipId = ipIdAddress;

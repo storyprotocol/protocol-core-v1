@@ -106,10 +106,7 @@ contract TestArbitrationPolicySP is BaseTest {
 
         vm.expectRevert(Errors.ArbitrationPolicySP__ZeroAccessManager.selector);
         arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, address(0))
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, address(0)))
         );
     }
 

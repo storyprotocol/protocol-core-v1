@@ -287,8 +287,6 @@ library Errors {
     error RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
     error RoyaltyPolicyLAP__ZeroAccessManager();
 
-    error IpRoyaltyVault__ZeroIpId();
-    error IpRoyaltyVault__ZeroSupply();
     error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
     error IpRoyaltyVault__NotRoyaltyPolicyLAP();
     error IpRoyaltyVault__SnapshotIntervalTooShort();

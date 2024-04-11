@@ -204,7 +204,7 @@ contract IPAssetRegistryTest is BaseTest {
         registry.registerCrossChain(chainid, tokenAddress, tokenId);
     }
 
-        /// @notice Helper function for generating an account address.
+    /// @notice Helper function for generating an account address.
     function _getIPAccount(uint256 chainid, uint256 tokenId) internal view returns (address) {
         return
             erc6551Registry.account(

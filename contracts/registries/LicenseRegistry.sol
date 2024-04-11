@@ -43,6 +43,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param mintingLicenseConfigs Mapping of minting license configs to a licenseTerms of an IP
     /// @param mintingLicenseConfigsForIp Mapping of minting license configs to an IP,
     /// the config will apply to all licenses under the IP
+    /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         ILicensingModule licensingModule;
@@ -58,7 +59,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
     }
 
-    // TODO: update the storage location
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicenseRegistryStorageLocation =
         0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;

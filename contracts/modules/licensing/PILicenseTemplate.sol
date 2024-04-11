@@ -27,6 +27,7 @@ contract PILicenseTemplate is
     using ERC165Checker for address;
     using Strings for *;
 
+    /// @dev Storage structure for the PILicenseTemplate
     /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
     struct PILicenseTemplateStorage {
         mapping(uint256 licenseTermsId => PILTerms) licenseTerms;
@@ -39,11 +40,9 @@ contract PILicenseTemplate is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
 
-    // TODO: update storage location
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
-    // & ~bytes32(uint256(0xff));
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
-        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+        0xc6c6991297bc120d0383f0017fab72b8ca34fd4849ed6478dbaac67a33c3a700;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(

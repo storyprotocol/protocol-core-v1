@@ -37,12 +37,12 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
     /// @param tokenId The token identifier of the NFT.
     /// @return id The address of the newly registered IP.
     function register(address tokenContract, uint256 tokenId) external returns (address id) {
-        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
-            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
-        }
-
         if (!tokenContract.supportsInterface(type(IERC721Metadata).interfaceId)) {
             revert Errors.IPAssetRegistry__UnsupportedIERC721Metadata(tokenContract);
+        }
+
+        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
+            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
         }
 
         id = registerIpAccount(block.chainid, tokenContract, tokenId);

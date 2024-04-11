@@ -34,22 +34,24 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     }
 
     /// Constructor
-    /// @param _disputeModule The dispute module address
-    /// @param _paymentToken The ERC20 payment token address
-    /// @param _arbitrationPrice The arbitration price
+    /// @param disputeModule The dispute module address
+    /// @param paymentToken The ERC20 payment token address
+    /// @param arbitrationPrice The arbitration price
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address _disputeModule, address _paymentToken, uint256 _arbitrationPrice) {
-        if (_disputeModule == address(0)) revert Errors.ArbitrationPolicySP__ZeroDisputeModule();
-        if (_paymentToken == address(0)) revert Errors.ArbitrationPolicySP__ZeroPaymentToken();
+    constructor(address disputeModule, address paymentToken, uint256 arbitrationPrice) {
+        if (disputeModule == address(0)) revert Errors.ArbitrationPolicySP__ZeroDisputeModule();
+        if (paymentToken == address(0)) revert Errors.ArbitrationPolicySP__ZeroPaymentToken();
 
-        DISPUTE_MODULE = _disputeModule;
-        PAYMENT_TOKEN = _paymentToken;
-        ARBITRATION_PRICE = _arbitrationPrice;
+        DISPUTE_MODULE = disputeModule;
+        PAYMENT_TOKEN = paymentToken;
+        ARBITRATION_PRICE = arbitrationPrice;
     }
 
     /// @notice initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) revert Errors.ArbitrationPolicySP__ZeroAccessManager();
+
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }
@@ -70,7 +72,7 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     /// @param data The arbitrary data used to set the dispute judgement
     function onDisputeJudgement(uint256 disputeId, bool decision, bytes calldata data) external onlyDisputeModule {
         if (decision) {
-            (, address disputeInitiator, , , , ) = IDisputeModule(DISPUTE_MODULE).disputes(disputeId);
+            (, address disputeInitiator, , , , , ) = IDisputeModule(DISPUTE_MODULE).disputes(disputeId);
             IERC20(PAYMENT_TOKEN).safeTransfer(disputeInitiator, ARBITRATION_PRICE);
         }
     }

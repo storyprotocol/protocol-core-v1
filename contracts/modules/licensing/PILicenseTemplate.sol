@@ -48,11 +48,10 @@ contract PILicenseTemplate is
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
-        address ipAccountRegistry,
         address licenseRegistry,
         address royaltyModule,
         address licenseToken
-    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseToken) {
+    ) LicensorApprovalChecker(accessController, licenseToken) {
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();

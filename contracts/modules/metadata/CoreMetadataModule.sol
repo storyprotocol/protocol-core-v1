@@ -32,11 +32,7 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
 
     /// @notice Creates a new CoreMetadataModule instance.
     /// @param accessController The address of the AccessController contract.
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract.
-    constructor(
-        address accessController,
-        address ipAccountRegistry
-    ) AccessControlled(accessController, ipAccountRegistry) {}
+    constructor(address accessController) AccessControlled(accessController) {}
 
     /// @notice Update the nftTokenURI for an IP asset,
     /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.

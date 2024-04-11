@@ -68,7 +68,7 @@ contract DisputeModule is
     /// @param controller The address of the access controller
     /// @param assetRegistry The address of the asset registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address controller, address assetRegistry) AccessControlled(controller, assetRegistry) {
+    constructor(address controller, address assetRegistry) AccessControlled(controller) {
         IP_ASSET_REGISTRY = IIPAssetRegistry(assetRegistry);
         _disableInitializers();
     }

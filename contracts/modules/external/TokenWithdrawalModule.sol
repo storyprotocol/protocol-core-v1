@@ -23,10 +23,7 @@ contract TokenWithdrawalModule is AccessControlled, BaseModule, ITokenWithdrawal
 
     string public constant override name = TOKEN_WITHDRAWAL_MODULE_KEY;
 
-    constructor(
-        address accessController,
-        address ipAccountRegistry
-    ) AccessControlled(accessController, ipAccountRegistry) {}
+    constructor(address accessController) AccessControlled(accessController) {}
 
     /// @notice Withdraws ERC20 token from the IP account to the IP account owner.
     /// @dev When calling this function, the caller must have the permission to call `transfer` via the IP account.

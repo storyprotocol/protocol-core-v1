@@ -74,19 +74,18 @@ contract LicensingModule is
 
     /// Constructor
     /// @param accessController The address of the AccessController contract
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract
     /// @param royaltyModule The address of the RoyaltyModule contract
     /// @param registry The address of the LicenseRegistry contract
     /// @param disputeModule The address of the DisputeModule contract
+    /// @param licenseToken The address of the LicenseToken contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
-        address ipAccountRegistry,
         address royaltyModule,
         address registry,
         address disputeModule,
         address licenseToken
-    ) AccessControlled(accessController, ipAccountRegistry) {
+    ) AccessControlled(accessController) {
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
         LICENSE_REGISTRY = ILicenseRegistry(registry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);

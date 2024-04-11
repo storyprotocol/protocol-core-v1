@@ -41,14 +41,9 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
 
     /// @notice Constructor function
     /// @param accessController The address of the AccessController contract
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract
     /// @param licenseToken The address of the LicenseRegistry contract
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(
-        address accessController,
-        address ipAccountRegistry,
-        address licenseToken
-    ) AccessControlled(accessController, ipAccountRegistry) {
+    constructor(address accessController, address licenseToken) AccessControlled(accessController) {
         LICENSE_NFT = ILicenseToken(licenseToken);
     }
 

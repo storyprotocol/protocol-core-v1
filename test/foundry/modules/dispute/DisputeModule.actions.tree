@@ -1,4 +1,4 @@
-DisputeModule.sol
+DisputeModule.sol:actions
 ├── when IP is not registered
 │   └── it should revert
 └── when IP is registered

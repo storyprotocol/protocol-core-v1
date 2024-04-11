@@ -207,6 +207,11 @@ library Errors {
     error LicensingModule__LicenseNotCompatibleForDerivative(address childIpId);
     error LicensingModule__NoLicenseToken();
     error LicensingModule__LicenseTokenNotCompatibleForDerivative(address childIpId, uint256[] licenseTokenIds);
+    error LicensingModule__LicenseDenyMintLicenseToken(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        address licensorIpId
+    );
 
     ////////////////////////////////////////////////////////////////////////////
     //                     LicensorApprovalChecker                            //

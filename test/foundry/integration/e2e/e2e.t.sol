@@ -169,8 +169,7 @@ contract e2e is Test {
                 address(accessController),
                 address(ipAssetRegistry),
                 address(licenseRegistry),
-                address(royaltyModule),
-                address(licenseToken)
+                address(royaltyModule)
             )
         );
         piLicenseTemplate = PILicenseTemplate(

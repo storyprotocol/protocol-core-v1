@@ -50,9 +50,8 @@ contract PILicenseTemplate is
         address accessController,
         address ipAccountRegistry,
         address licenseRegistry,
-        address royaltyModule,
-        address licenseToken
-    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseToken) {
+        address royaltyModule
+    ) LicensorApprovalChecker(accessController, ipAccountRegistry) {
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();
@@ -297,7 +296,7 @@ contract PILicenseTemplate is
                 terms.expiration == 0 ? "never" : terms.expiration.toString(),
                 '"},',
                 '{"trait_type": "Currency", "value": "',
-                terms.currency == address(0) ? "Native Token" : terms.currency.toHexString(),
+                terms.currency.toHexString(),
                 '"},',
                 // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
                 _policyCommercialTraitsToJson(terms),
@@ -427,7 +426,7 @@ contract PILicenseTemplate is
 
         // If the policy defines the licensor must approve derivatives, check if the
         // derivative is approved by the licensor
-        if (terms.derivativesApproval && !isDerivativeApproved(licenseTermsId, childIpId)) {
+        if (terms.derivativesApproval && !isDerivativeApproved(parentIpId, licenseTermsId, childIpId)) {
             return false;
         }
         // Check if the commercializerChecker allows the link

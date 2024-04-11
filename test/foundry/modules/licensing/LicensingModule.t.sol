@@ -12,6 +12,7 @@ import { ILicensingModule } from "../../../../contracts/interfaces/modules/licen
 import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
 import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 
 // test
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
@@ -989,6 +990,101 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTermsId, termsId);
     }
 
+    function test_LicensingModule_mintLicenseTokens_HookVerifyPass() public {
+        vm.prank(u.admin);
+        royaltyModule.whitelistRoyaltyToken(address(0x123), true);
+
+        MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
+        PILTerms memory terms = PILTerms({
+            transferable: true,
+            royaltyPolicy: address(royaltyPolicyLAP),
+            mintingFee: 0,
+            expiration: 0,
+            commercialUse: true,
+            commercialAttribution: true,
+            commercializerChecker: address(tokenGatedHook),
+            commercializerCheckerData: abi.encode(address(gatedNftBar)),
+            commercialRevShare: 0,
+            commercialRevCelling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: true,
+            derivativeRevCelling: 0,
+            currency: address(0x123)
+        });
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        gatedNftBar.mint(ipOwner2);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        assertEq(licenseToken.ownerOf(lcTokenId), ipOwner2);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
+        assertEq(licenseToken.totalMintedTokens(), 1);
+        assertEq(licenseToken.totalSupply(), 1);
+        assertEq(licenseToken.balanceOf(ipOwner2), 1);
+    }
+
+    function test_LicensingModule_mintLicenseTokens_revert_HookVerifyFail() public {
+        vm.prank(u.admin);
+        royaltyModule.whitelistRoyaltyToken(address(0x123), true);
+
+        MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
+        PILTerms memory terms = PILTerms({
+            transferable: true,
+            royaltyPolicy: address(royaltyPolicyLAP),
+            mintingFee: 0,
+            expiration: 0,
+            commercialUse: true,
+            commercialAttribution: true,
+            commercializerChecker: address(tokenGatedHook),
+            commercializerCheckerData: abi.encode(address(gatedNftBar)),
+            commercialRevShare: 0,
+            commercialRevCelling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: true,
+            derivativeRevCelling: 0,
+            currency: address(0x123)
+        });
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicenseDenyMintLicenseToken.selector,
+                address(pilTemplate),
+                termsId,
+                ipId1
+            )
+        );
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+    }
+
     function test_LicensingModule_revert_HookVerifyFail() public {
         vm.prank(u.admin);
         royaltyModule.whitelistRoyaltyToken(address(0x123), true);
@@ -1017,6 +1113,8 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
+        uint256 gatedNftId = gatedNftBar.mint(ipOwner2);
+
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
             licensorIpId: ipId1,
             licenseTemplate: address(pilTemplate),
@@ -1034,6 +1132,9 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
 
+        vm.prank(ipOwner2);
+        gatedNftBar.burn(gatedNftId);
+
         uint256[] memory licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
         vm.expectRevert(
@@ -1045,6 +1146,58 @@ contract LicensingModuleTest is BaseTest {
         );
         vm.prank(ipOwner2);
         licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
+    }
+
+    // test registerDerivativeWithLicenseTokens revert licenseTokenIds is empty
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_emptyLicenseTokens() public {
+        vm.expectRevert(Errors.LicensingModule__NoLicenseToken.selector);
+        vm.prank(ipOwner1);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId1, new uint256[](0), "");
+    }
+
+    // test registerDerivative revert parentIpIds is empty
+    function test_LicensingModule_registerDerivative_revert_emptyParentIpIds() public {
+        vm.expectRevert(Errors.LicensingModule__NoParentIp.selector);
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, new address[](0), new uint256[](0), address(0), "");
+    }
+
+    function test_LicensingModule_registerDerivative_revert_parentIdsLengthMismatchWithLicenseIds() public {
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__LicenseTermsLengthMismatch.selector, 1, 0));
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, new uint256[](0), address(0), "");
+    }
+
+    function test_LicensingModule_registerDerivative_revert_IncompatibleLicenses() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), socialRemixTermsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commUseTermsId);
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipId1;
+        parentIpIds[1] = ipId2;
+
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = socialRemixTermsId;
+        licenseTermsIds[1] = commUseTermsId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicenseNotCompatibleForDerivative.selector, ipId3)
+        );
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

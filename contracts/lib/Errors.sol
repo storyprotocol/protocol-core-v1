@@ -318,8 +318,6 @@ library Errors {
     //                             AccessControlled                           //
     ////////////////////////////////////////////////////////////////////////////
     error AccessControlled__ZeroAddress();
-    error AccessControlled__NotIpAccount(address ipAccount);
-    error AccessControlled__CallerIsNotIpAccount(address caller);
 
     ////////////////////////////////////////////////////////////////////////////
     //                         CoreMetadataModule                       //

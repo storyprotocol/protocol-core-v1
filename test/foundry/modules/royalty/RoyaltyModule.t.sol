@@ -109,6 +109,17 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
     }
 
+    function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
+        address impl = address(new RoyaltyModule());
+        vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
+        RoyaltyModule(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(0))
+            )
+        );
+    }
+
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
         address impl = address(new RoyaltyModule());
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
@@ -408,6 +419,34 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(royaltyPolicyLAP), address(USDC), 100);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyToken() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(7);
+        address payerAddress = address(3);
+        address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
+        address token = address(1);
+
+        vm.startPrank(address(licensingModule));
+
+        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyPolicy() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(7);
+        address payerAddress = address(3);
+        address licenseRoyaltyPolicy = address(1);
+        address token = address(USDC);
+
+        vm.startPrank(u.admin);
+        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), false);
+
+        vm.startPrank(address(licensingModule));
+        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy.selector);
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {

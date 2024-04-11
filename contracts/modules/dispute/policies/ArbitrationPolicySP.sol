@@ -45,6 +45,8 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         DISPUTE_MODULE = disputeModule;
         PAYMENT_TOKEN = paymentToken;
         ARBITRATION_PRICE = arbitrationPrice;
+        
+        _disableInitializers();
     }
 
     /// @notice initializer for this implementation contract

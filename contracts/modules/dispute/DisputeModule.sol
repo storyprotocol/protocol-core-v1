@@ -6,11 +6,13 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 // solhint-disable-next-line max-line-length
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
+import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../../modules/BaseModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
+import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
 import { Errors } from "../../lib/Errors.sol";
@@ -25,7 +27,8 @@ contract DisputeModule is
     AccessManagedUpgradeable,
     ReentrancyGuardUpgradeable,
     AccessControlled,
-    UUPSUpgradeable
+    UUPSUpgradeable,
+    MulticallUpgradeable
 {
     using EnumerableSet for EnumerableSet.Bytes32Set;
 
@@ -64,21 +67,38 @@ contract DisputeModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
 
+    /// @notice Protocol-wide license registry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
+
     /// Constructor
     /// @param controller The address of the access controller
     /// @param assetRegistry The address of the asset registry
+    /// @param licenseRegistry The address of the license registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address controller, address assetRegistry) AccessControlled(controller, assetRegistry) {
+    constructor(
+        address controller,
+        address assetRegistry,
+        address licenseRegistry
+    ) AccessControlled(controller, assetRegistry) {
+        if (licenseRegistry == address(0)) revert Errors.DisputeModule__ZeroLicenseRegistry();
+        if (assetRegistry == address(0)) revert Errors.DisputeModule__ZeroAssetRegistry();
+        if (controller == address(0)) revert Errors.DisputeModule__ZeroController();
+
         IP_ASSET_REGISTRY = IIPAssetRegistry(assetRegistry);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }
 
-    /// @notice initializer for this implementation contract
+    /// @notice Initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
+        if (accessManager == address(0)) revert Errors.DisputeModule__ZeroAccessManager();
+
         __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        __Multicall_init();
     }
 
     /// @notice Whitelists a dispute tag
@@ -178,7 +198,8 @@ contract DisputeModule is
             arbitrationPolicy: arbitrationPolicy,
             linkToDisputeEvidence: linkToDisputeEvidenceBytes,
             targetTag: targetTag,
-            currentTag: IN_DISPUTE
+            currentTag: IN_DISPUTE,
+            parentDisputeId: 0
         });
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(msg.sender, data);
@@ -239,13 +260,60 @@ contract DisputeModule is
         emit DisputeCancelled(disputeId, data);
     }
 
+    /// @notice Tags a derivative if a parent has been tagged with an infringement tag
+    /// @param parentIpId The infringing parent ipId
+    /// @param derivativeIpId The derivative ipId
+    /// @param parentDisputeId The dispute id that tagged the parent ipId as infringing
+    function tagDerivativeIfParentInfringed(
+        address parentIpId,
+        address derivativeIpId,
+        uint256 parentDisputeId
+    ) external {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+
+        Dispute memory parentDispute = $.disputes[parentDisputeId];
+        if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
+        if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
+            revert Errors.DisputeModule__ParentNotTagged();
+
+        if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
+
+        address arbitrationPolicy = $.arbitrationPolicies[derivativeIpId];
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
+
+        uint256 disputeId = ++$.disputeCounter;
+
+        $.disputes[disputeId] = Dispute({
+            targetIpId: derivativeIpId,
+            disputeInitiator: msg.sender,
+            arbitrationPolicy: arbitrationPolicy,
+            linkToDisputeEvidence: "",
+            targetTag: parentDispute.currentTag,
+            currentTag: parentDispute.currentTag,
+            parentDisputeId: parentDisputeId
+        });
+
+        $.successfulDisputesPerIp[derivativeIpId]++;
+
+        emit DerivativeTaggedOnParentInfringement(
+            parentIpId,
+            derivativeIpId,
+            parentDisputeId,
+            parentDispute.currentTag
+        );
+    }
+
     /// @notice Resolves a dispute after it has been judged
     /// @param disputeId The dispute id
     function resolveDispute(uint256 disputeId) external {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 
-        if (msg.sender != dispute.disputeInitiator) revert Errors.DisputeModule__NotDisputeInitiator();
+        if (dispute.parentDisputeId == 0 && msg.sender != dispute.disputeInitiator)
+            revert Errors.DisputeModule__NotDisputeInitiator();
+        if (dispute.parentDisputeId > 0 && $.disputes[dispute.parentDisputeId].currentTag != bytes32(0))
+            revert Errors.DisputeModule__ParentDisputeNotResolved();
+
         if (dispute.currentTag == IN_DISPUTE || dispute.currentTag == bytes32(0))
             revert Errors.DisputeModule__NotAbleToResolve();
 
@@ -283,6 +351,7 @@ contract DisputeModule is
     /// @return linkToDisputeEvidence The link of the dispute summary
     /// @return targetTag The target tag of the dispute
     /// @return currentTag The current tag of the dispute
+    /// @return parentDisputeId The parent dispute id
     function disputes(
         uint256 disputeId
     )
@@ -294,17 +363,19 @@ contract DisputeModule is
             address arbitrationPolicy,
             bytes32 linkToDisputeEvidence,
             bytes32 targetTag,
-            bytes32 currentTag
+            bytes32 currentTag,
+            uint256 parentDisputeId
         )
     {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        Dispute memory dispute = _getDisputeModuleStorage().disputes[disputeId];
         return (
-            $.disputes[disputeId].targetIpId,
-            $.disputes[disputeId].disputeInitiator,
-            $.disputes[disputeId].arbitrationPolicy,
-            $.disputes[disputeId].linkToDisputeEvidence,
-            $.disputes[disputeId].targetTag,
-            $.disputes[disputeId].currentTag
+            dispute.targetIpId,
+            dispute.disputeInitiator,
+            dispute.arbitrationPolicy,
+            dispute.linkToDisputeEvidence,
+            dispute.targetTag,
+            dispute.currentTag,
+            dispute.parentDisputeId
         );
     }
 

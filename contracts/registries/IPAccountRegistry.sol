@@ -9,7 +9,7 @@ import { Errors } from "../lib/Errors.sol";
 /// @title IPAccountRegistry
 /// @notice This contract is responsible for managing the registration and tracking of IP Accounts.
 /// It leverages a public ERC6551 registry to deploy IPAccount contracts.
-contract IPAccountRegistry is IIPAccountRegistry {
+abstract contract IPAccountRegistry is IIPAccountRegistry {
     /// @notice Returns the IPAccount implementation address
     address public immutable IP_ACCOUNT_IMPL;
 

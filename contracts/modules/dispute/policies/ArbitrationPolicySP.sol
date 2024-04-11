@@ -56,8 +56,8 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         __UUPSUpgradeable_init();
     }
 
-    /// @notice Executes custom logic on raising dispute.
-    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @notice Executes custom logic on raising dispute
+    /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
     /// @param data The arbitrary data used to raise the dispute
     function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule {
@@ -65,8 +65,8 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         IERC20(PAYMENT_TOKEN).safeTransferFrom(caller, address(this), ARBITRATION_PRICE);
     }
 
-    /// @notice Executes custom logic on disputing judgement.
-    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @notice Executes custom logic on disputing judgement
+    /// @dev Enforced to be only callable by the DisputeModule
     /// @param disputeId The dispute id
     /// @param decision The decision of the dispute
     /// @param data The arbitrary data used to set the dispute judgement
@@ -77,15 +77,22 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         }
     }
 
-    /// @notice Executes custom logic on disputing cancel.
-    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @notice Executes custom logic on disputing cancel
+    /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to cancel the dispute
     function onDisputeCancel(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {}
 
+    /// @notice Executes custom logic on resolving dispute
+    /// @dev Enforced to be only callable by the DisputeModule
+    /// @param caller Address of the caller
+    /// @param disputeId The dispute id
+    /// @param data The arbitrary data used to resolve the dispute
+    function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {}
+
     /// @notice Allows governance address to withdraw
-    /// @dev Enforced to be only callable by the governance protocol admin.
+    /// @dev Enforced to be only callable by the governance protocol admin
     function governanceWithdraw() external restricted {
         uint256 balance = IERC20(PAYMENT_TOKEN).balanceOf(address(this));
         IERC20(PAYMENT_TOKEN).safeTransfer(msg.sender, balance);

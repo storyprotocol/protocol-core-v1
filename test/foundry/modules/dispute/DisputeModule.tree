@@ -1,0 +1,60 @@
+DisputeModule.sol
+├── when IP is not registered
+│   └── it should revert
+└── when IP is registered
+    ├── when caller raises dispute
+    │   ├── given the tag is not whitelisted
+    │   │   └── it should revert
+    │   ├── given the link to evidence is empty
+    │   │   └── it should revert
+    │   ├── given the arbitration policy is not whitelisted
+    │   │   └── it should use the default arbitration policy
+    │   └── given the tag, link, and arbitration policy are valid
+    │       ├── it should store the raised dispute
+    │       ├── it should set the current tag as IN_DISPUTE
+    │       ├── it should set the target tag
+    │       ├── it should call aribtration policy hook
+    │       ├── it should emit an event
+    │       └── it should succeed
+    ├── when caller sets dispute judgement
+    │   ├── when caller is not a whitelisted relayer
+    │   │   └── it should revert
+    │   └── when caller is a whitelisted relayer
+    │       ├── given the disptue ID is not in dispute (or DNE)
+    │       │   └── it should revert
+    │       ├── given the tag is not whitelisted
+    │       │   └── it should revert
+    │       ├── when decision is true
+    │       │   ├── it should set the dispute current tag as target tag
+    │       │   ├── it should increment the number of judged dispute (true) for the disputed IP
+    │       │   ├── it should emit an event
+    │       │   └── it should succeed
+    │       └── when decision is false
+    │           ├── it should set the dispute current tag as null
+    │           ├── it should call arbitration policy hook
+    │           ├── it should emit an event
+    │           └── it should succeed
+    ├── when caller cancels dispute
+    │   ├── when dispute ID is not IN_DISPUTE
+    │   │   └── it should revert
+    │   └── when dispute ID is IN_DISPUTE
+    │       ├── when caller is not the dispute initiator
+    │       │   └── it should revert
+    │       └── when caller is the dispute initiator
+    │           ├── it should set the dispute current tag as null
+    │           ├── it should call arbitration policy hook
+    │           ├── it should emit an event
+    │           └── it should succeed
+    └── when caller resolves a judged dispute
+        ├── when dispute ID is invalid
+        │   └── it should revert
+        ├── when dispute ID is IN_DISPUTE (waiting judgement)
+        │   └── it should revert
+        └── when dispute ID is not IN_DISPUTE (judged)
+            ├── when caller is not the dispute initiator
+            │   └── it should revert
+            └── when caller is the dispute initiator
+                ├── it should set the dispute current tag as null
+                ├── it should decrement the number of judged dispute (true) for the disputed IP
+                ├── it should emit an event
+                └── it should succeed

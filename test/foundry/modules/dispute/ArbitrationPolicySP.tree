@@ -1,0 +1,22 @@
+ArbitrationPolicySP.sol
+├── when caller is not DisputeModule
+│   └── it should revert
+├── when caller is DisputeModule
+│   ├── when raise dispute callback is called
+│   │   ├── given the allowance is lower than arbitration price
+│   │   │   └── it should revert
+│   │   └── given the allowance is equal to or higher than arbitration price
+│   │       ├── it should safe transfer arbitration price (in the payment token) from dispute raiser
+│   │       └── it should safe transfer arbitration price (in the payment token) to the policy
+│   ├── when dispute judgement callback is called
+│   │   ├── given the decision is false
+│   │   │   └── it should do nothing
+│   │   └── given the decision is true
+│   │       ├── it should safe transfer arbitration price (in the payment token) from the policy
+│   │       └── it should safe transfer arbitration price (in the payment token) to dispute initiator
+│   └── when dispute cancel callback is called
+│       └── it should do nothing
+└── when caller is protocol governance
+    └── when governance withdraw is called
+        ├── it should safe transfer total balance of payment token to the governance
+        └── it should emit an event

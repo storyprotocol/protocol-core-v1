@@ -65,6 +65,9 @@ library Errors {
     /// @notice The NFT token id does not exist or invalid.
     error IPAssetRegistry__InvalidToken(address contractAddress, uint256 tokenId);
 
+    /// @notice Register NFT from the current chain while expecting from cross chain.
+    error IPAssetRegistry__SameChain();
+
     ////////////////////////////////////////////////////////////////////////////
     //                                 IPResolver                            ///
     ////////////////////////////////////////////////////////////////////////////

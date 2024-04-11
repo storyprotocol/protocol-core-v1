@@ -98,6 +98,34 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
         emit IPRegistered(id, block.chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
 
+    function registerCrossChain(uint256 chainId, address tokenContract, uint256 tokenId) external returns (address id) {
+        if (block.chainid == chainId) {
+            revert Errors.IPAssetRegistry__SameChain();
+        }
+
+        id = registerIpAccount(chainId, tokenContract, tokenId);
+        IIPAccount ipAccount = IIPAccount(payable(id));
+
+        if (bytes(ipAccount.getString("NAME")).length != 0) {
+            revert Errors.IPAssetRegistry__AlreadyRegistered();
+        }
+
+        string memory name = string.concat(
+            chainId.toString(),
+            ": ",
+            tokenContract.toHexString(),
+            " #",
+            tokenId.toString()
+        );
+        uint256 registrationDate = block.timestamp;
+        ipAccount.setString("NAME", name);
+        ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
+
+        totalSupply++;
+
+        emit IPRegistered(id, chainId, tokenContract, tokenId, name, "", registrationDate);
+    }
+
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
     /// @dev This is equivalent to the address of its bound IP account.
     /// @param chainId The chain identifier of where the IP resides.

@@ -42,12 +42,12 @@ contract IPAssetRegistryTest is BaseTest {
         tokenId = mockNFT.mintId(alice, 99);
 
         assertEq(ipAccountRegistry.getIPAccountImpl(), address(ipAccountImpl));
-        ipId = _getIPAccount(tokenId);
+        ipId = _getIPAccount(block.chainid, tokenId);
     }
 
     /// @notice Tests retrieval of IP canonical IDs.
     function test_IPAssetRegistry_IpId() public {
-        assertEq(registry.ipId(block.chainid, tokenAddress, tokenId), _getIPAccount(tokenId));
+        assertEq(registry.ipId(block.chainid, tokenAddress, tokenId), _getIPAccount(block.chainid, tokenId));
     }
 
     /// @notice Tests registration of IP permissionlessly.
@@ -150,15 +150,69 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!registry.isRegistered(ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), 1000)));
     }
 
-    /// @notice Helper function for generating an account address.
-    function _getIPAccount(uint256 contractId) internal view returns (address) {
+    /// @notice Tests registration of IP NFT from other chain.
+    function test_IPAssetRegistry_RegisterPermissionless_CrossChain() public {
+        uint256 totalSupply = registry.totalSupply();
+        tokenAddress = address(0x12345);
+        tokenId = 1;
+        uint256 chainid = 55555555;
+
+        ipId = _getIPAccount(chainid, tokenId);
+
+        assertTrue(!registry.isRegistered(ipId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, chainid, tokenAddress, tokenId));
+        string memory name = string.concat(
+            chainid.toString(),
+            ": ",
+            tokenAddress.toHexString(),
+            " #",
+            tokenId.toString()
+        );
+        vm.expectEmit();
+        emit IIPAssetRegistry.IPRegistered(ipId, chainid, tokenAddress, tokenId, name, "", block.timestamp);
+        address registeredIpId = registry.registerCrossChain(chainid, tokenAddress, tokenId);
+
+        assertEq(totalSupply + 1, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
+    /// @notice Tests registration of the same IP twice from cross chain.
+    function test_IPAssetRegistry_revert_RegisterPermissionlessTwice_CrossChain() public {
+        tokenAddress = address(0x12345);
+        tokenId = 1;
+        uint256 chainid = 55555555;
+
+        ipId = _getIPAccount(chainid, tokenId);
+        assertTrue(!registry.isRegistered(ipId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+
+        registry.registerCrossChain(chainid, tokenAddress, tokenId);
+
+        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
+        registry.registerCrossChain(chainid, tokenAddress, tokenId);
+    }
+
+    /// @notice Tests registration of the same IP twice from cross chain.
+    function test_IPAssetRegistry_revert_CrossChain_registerNFTOnSameChain() public {
+        tokenAddress = address(0x12345);
+        tokenId = 1;
+        uint256 chainid = block.chainid;
+
+        vm.expectRevert(Errors.IPAssetRegistry__SameChain.selector);
+        registry.registerCrossChain(chainid, tokenAddress, tokenId);
+    }
+
+        /// @notice Helper function for generating an account address.
+    function _getIPAccount(uint256 chainid, uint256 tokenId) internal view returns (address) {
         return
             erc6551Registry.account(
                 address(ipAccountImpl),
                 ipAccountRegistry.IP_ACCOUNT_SALT(),
-                block.chainid,
+                chainid,
                 tokenAddress,
-                contractId
+                tokenId
             );
     }
 

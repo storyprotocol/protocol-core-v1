@@ -157,10 +157,11 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     // solhint-disable code-complexity
     function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
+        AccessControllerStorage storage $ = _getAccessControllerStorage();
+
         // The ipAccount is restricted to interact exclusively with registered modules.
         // This includes initiating calls to these modules and receiving calls from them.
         // Additionally, it can modify Permissions settings.
-        AccessControllerStorage storage $ = _getAccessControllerStorage();
         if (
             to != address(this) &&
             !IModuleRegistry($.moduleRegistry).isRegistered(to) &&
@@ -168,14 +169,17 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
         ) {
             revert Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule(signer, to);
         }
-        // Must be a valid IPAccount
+
+        // Must be a valid IPAccount. This check must be done first!
         if (!IIPAccountRegistry($.ipAccountRegistry).isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
-        // Owner can call all functions of all modules
-        if (IIPAccount(payable(ipAccount)).owner() == signer) {
+
+        // If signer is the IP Account or its owner, it can call all functions of all modules
+        if (signer == ipAccount || IIPAccount(payable(ipAccount)).owner() == signer) {
             return;
         }
+
         uint functionPermission = getPermission(ipAccount, signer, to, func);
         // Specific function permission overrides wildcard/general permission
         if (functionPermission == AccessPermission.ALLOW) {

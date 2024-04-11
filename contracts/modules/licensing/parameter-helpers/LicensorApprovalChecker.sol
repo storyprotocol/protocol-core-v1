@@ -2,8 +2,6 @@
 pragma solidity 0.8.23;
 
 import { AccessControlled } from "../../../access/AccessControlled.sol";
-import { ILicenseToken } from "../../../interfaces/ILicenseToken.sol";
-
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LicensorApprovalChecker

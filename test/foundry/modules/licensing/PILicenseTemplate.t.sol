@@ -5,12 +5,8 @@ pragma solidity 0.8.23;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
-import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { PILicenseTemplateErrors } from "../../../../contracts/lib/PILicenseTemplateErrors.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
-import { ILicensingModule } from "../../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
-import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 // test
@@ -522,7 +518,9 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     function _DefaultToJson() internal pure returns (string memory) {
+        /* solhint-disable */
         return
             '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
+        /* solhint-enable */
     }
 }

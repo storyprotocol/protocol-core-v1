@@ -4,8 +4,7 @@ pragma solidity 0.8.23;
 
 import { BaseLicenseTemplateUpgradeable } from "contracts/modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 
-contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable
-{
+contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     uint256 public licenseTermsCounter;
     mapping(uint256 => bool) public licenseTerms;
 
@@ -142,6 +141,5 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable
     /// @return The JSON string of the license terms, follow the OpenSea metadata standard.
     function toJson(uint256 licenseTermsId) public view returns (string memory) {
         return "";
-
     }
 }

@@ -8,10 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IIPAccount } from "../../../contracts/interfaces/IIPAccount.sol";
 import { Errors } from "../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";
-import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { MockTokenGatedHook } from "../mocks/MockTokenGatedHook.sol";
 import { MockLicenseTemplate } from "../mocks/module/MockLicenseTemplate.sol";
-import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../../contracts/lib/IPAccountStorageOps.sol";
 import { Licensing } from "../../../contracts/lib/Licensing.sol";
 
@@ -62,7 +59,6 @@ contract LicenseRegistryTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
     }
-
 
     function test_LicenseRegistry_setDisputeModule() public {
         vm.prank(admin);
@@ -210,7 +206,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.attachLicenseTermsToIp(ipId2, address(pilTemplate), defaultTermsId);
     }
 
-
     function test_LicenseRegistry_registerDerivativeIp_revert_parentsArrayEmpty() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(admin);
@@ -222,7 +217,6 @@ contract LicenseRegistryTest is BaseTest {
         vm.expectRevert(Errors.LicenseRegistry__NoParentIp.selector);
         vm.prank(address(licensingModule));
         licenseRegistry.registerDerivativeIp(ipId2, parentIpIds, address(pilTemplate), licenseTermsIds);
-
     }
 
     // test getAttachedLicenseTerms

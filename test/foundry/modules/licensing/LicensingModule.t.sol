@@ -5,14 +5,12 @@ pragma solidity 0.8.23;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
-import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { ILicensingModule } from "../../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
 import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
-import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 
 // test
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";

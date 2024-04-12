@@ -310,8 +310,12 @@ contract DisputeModule is
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 
+        // there are two types of disputes - those that are subject to judgment and those that are not
+        // the way to distinguish is by whether dispute.parentDisputeId is 0 or higher than 0
+        // for the former - only the dispute initiator can resolve
         if (dispute.parentDisputeId == 0 && msg.sender != dispute.disputeInitiator)
             revert Errors.DisputeModule__NotDisputeInitiator();
+        // for the latter - resolving is permissionless as long as the parent dispute has been resolved
         if (dispute.parentDisputeId > 0 && $.disputes[dispute.parentDisputeId].currentTag != bytes32(0))
             revert Errors.DisputeModule__ParentDisputeNotResolved();
 

@@ -1,5 +1,4 @@
 LicenseRegistry.sol:setters
-.
 ├── when setting dispute module
 │   ├── when caller is not protocol manager
 │   │   └── it should revert

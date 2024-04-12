@@ -75,7 +75,6 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, Reentr
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
         if (accessManager == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroAccessManager();
-
         __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();

@@ -40,50 +40,50 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         // init 2nd level with children
         address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties1 = new uint32[](2);
+        uint32[] memory parentRoyalties = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
 
         // 3 is child of 7 and 8
         parents[0] = address(7);
         parents[1] = address(8);
-        parentRoyalties1[0] = 7;
-        parentRoyalties1[1] = 8;
+        parentRoyalties[0] = 7;
+        parentRoyalties[1] = 8;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(3), parents, encodedLicenseData, "");
 
         // 4 is child of 9 and 10
         parents[0] = address(9);
         parents[1] = address(10);
-        parentRoyalties1[0] = 9;
-        parentRoyalties1[1] = 10;
+        parentRoyalties[0] = 9;
+        parentRoyalties[1] = 10;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(4), parents, encodedLicenseData, "");
 
         // 5 is child of 11 and 12
         parents[0] = address(11);
         parents[1] = address(12);
-        parentRoyalties1[0] = 11;
-        parentRoyalties1[1] = 12;
+        parentRoyalties[0] = 11;
+        parentRoyalties[1] = 12;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(5), parents, encodedLicenseData, "");
 
         // 6 is child of 13 and 14
         parents[0] = address(13);
         parents[1] = address(14);
-        parentRoyalties1[0] = 13;
-        parentRoyalties1[1] = 14;
+        parentRoyalties[0] = 13;
+        parentRoyalties[1] = 14;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(6), parents, encodedLicenseData, "");
 
@@ -91,22 +91,22 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         // 1 is child of 3 and 4
         parents[0] = address(3);
         parents[1] = address(4);
-        parentRoyalties1[0] = 3;
-        parentRoyalties1[1] = 4;
+        parentRoyalties[0] = 3;
+        parentRoyalties[1] = 4;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(1), parents, encodedLicenseData, "");
 
         // 2 is child of 5 and 6
         parents[0] = address(5);
         parents[1] = address(6);
-        parentRoyalties1[0] = 5;
-        parentRoyalties1[1] = 6;
+        parentRoyalties[0] = 5;
+        parentRoyalties[1] = 6;
 
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        for (uint32 i = 0; i < parentRoyalties.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
         royaltyPolicyLAP.onLinkToParents(address(2), parents, encodedLicenseData, "");
 

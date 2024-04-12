@@ -59,7 +59,6 @@ contract RoyaltyModule is
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
         if (accessManager == address(0)) revert Errors.RoyaltyModule__ZeroAccessManager();
-
         __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
@@ -134,7 +133,7 @@ contract RoyaltyModule is
 
         // if the node is a root node, then royaltyPolicyIpId will be address(0) and any type of royalty type can be
         // selected to mint a license if the node is a derivative node, then the any minted licenses by the derivative
-        // node should have the same royalty policy as the parent node a derivative node set its royalty policy
+        // node should have the same royalty policy as the parent node and a derivative node set its royalty policy
         // immutably in onLinkToParents() function below
         if (royaltyPolicyIpId != royaltyPolicy && royaltyPolicyIpId != address(0))
             revert Errors.RoyaltyModule__CanOnlyMintSelectedPolicy();

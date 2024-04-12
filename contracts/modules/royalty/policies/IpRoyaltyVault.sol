@@ -100,6 +100,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         __ERC20_init(name, symbol);
     }
 
+    /// @notice Returns the number royalty token decimals
+    function decimals() public view override returns (uint8) {
+        return 6;
+    }
     /// @notice Adds a new revenue token to the vault
     /// @param token The address of the revenue token
     /// @dev Only callable by the royalty policy LAP
@@ -123,24 +127,24 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint32 unclaimedTokens = $.unclaimedRoyaltyTokens;
         $.unclaimedAtSnapshot[snapshotId] = unclaimedTokens;
 
-        address[] memory tokens = $.tokens.values();
+        address[] memory tokenList = $.tokens.values();
 
-        for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 tokenBalance = IERC20Upgradeable(tokens[i]).balanceOf(address(this));
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            uint256 tokenBalance = IERC20Upgradeable(tokenList[i]).balanceOf(address(this));
             if (tokenBalance == 0) {
-                $.tokens.remove(tokens[i]);
+                $.tokens.remove(tokenList[i]);
                 continue;
             }
 
-            uint256 newRevenue = tokenBalance - $.claimVaultAmount[tokens[i]] - $.ancestorsVaultAmount[tokens[i]];
+            uint256 newRevenue = tokenBalance - $.claimVaultAmount[tokenList[i]] - $.ancestorsVaultAmount[tokenList[i]];
             if (newRevenue == 0) continue;
 
             uint256 ancestorsTokens = (newRevenue * unclaimedTokens) / totalSupply();
-            $.ancestorsVaultAmount[tokens[i]] += ancestorsTokens;
+            $.ancestorsVaultAmount[tokenList[i]] += ancestorsTokens;
 
             uint256 claimableTokens = newRevenue - ancestorsTokens;
-            $.claimableAtSnapshot[snapshotId][tokens[i]] = claimableTokens;
-            $.claimVaultAmount[tokens[i]] += claimableTokens;
+            $.claimableAtSnapshot[snapshotId][tokenList[i]] = claimableTokens;
+            $.claimVaultAmount[tokenList[i]] += claimableTokens;
         }
 
         emit SnapshotCompleted(snapshotId, block.timestamp, unclaimedTokens);
@@ -159,19 +163,19 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
-    /// @param tokens The list of revenue tokens to claim
-    function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokens) external nonReentrant {
+    /// @param tokenList The list of revenue tokens to claim
+    function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokenList) external nonReentrant {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
-        for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 claimableToken = _claimableRevenue(msg.sender, snapshotId, tokens[i]);
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            uint256 claimableToken = _claimableRevenue(msg.sender, snapshotId, tokenList[i]);
             if (claimableToken == 0) continue;
 
-            $.isClaimedAtSnapshot[snapshotId][msg.sender][tokens[i]] = true;
-            $.claimVaultAmount[tokens[i]] -= claimableToken;
-            IERC20Upgradeable(tokens[i]).safeTransfer(msg.sender, claimableToken);
+            $.isClaimedAtSnapshot[snapshotId][msg.sender][tokenList[i]] = true;
+            $.claimVaultAmount[tokenList[i]] -= claimableToken;
+            IERC20Upgradeable(tokenList[i]).safeTransfer(msg.sender, claimableToken);
 
-            emit RevenueTokenClaimed(msg.sender, tokens[i], claimableToken);
+            emit RevenueTokenClaimed(msg.sender, tokenList[i], claimableToken);
         }
     }
 
@@ -244,19 +248,19 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     function _collectAccruedTokens(uint256 royaltyTokensToClaim, address ancestorIpId) internal {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
-        address[] memory tokens = $.tokens.values();
+        address[] memory tokenList = $.tokens.values();
 
-        for (uint256 i = 0; i < tokens.length; ++i) {
+        for (uint256 i = 0; i < tokenList.length; ++i) {
             // the only case in which unclaimedRoyaltyTokens can be 0 is when the vault is empty and everyone claimed
             // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
-            uint256 collectAmount = ($.ancestorsVaultAmount[tokens[i]] * royaltyTokensToClaim) /
+            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] * royaltyTokensToClaim) /
                 $.unclaimedRoyaltyTokens;
             if (collectAmount == 0) continue;
 
-            $.ancestorsVaultAmount[tokens[i]] -= collectAmount;
-            IERC20Upgradeable(tokens[i]).safeTransfer(ancestorIpId, collectAmount);
+            $.ancestorsVaultAmount[tokenList[i]] -= collectAmount;
+            IERC20Upgradeable(tokenList[i]).safeTransfer(ancestorIpId, collectAmount);
 
-            emit RevenueTokenClaimed(ancestorIpId, tokens[i], collectAmount);
+            emit RevenueTokenClaimed(ancestorIpId, tokenList[i], collectAmount);
         }
     }
 

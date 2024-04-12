@@ -193,7 +193,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
 
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (_isExpiredNow(ipId)) {
             revert Errors.LicenseRegistry__IpExpired(ipId);
         }
@@ -206,6 +205,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicensingModule__DerivativesCannotAddLicenseTerms();
         }
 
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.licenseTemplates[ipId] != address(0) && $.licenseTemplates[ipId] != licenseTemplate) {
             revert Errors.LicenseRegistry__UnmatchedLicenseTemplate(ipId, $.licenseTemplates[ipId], licenseTemplate);
         }

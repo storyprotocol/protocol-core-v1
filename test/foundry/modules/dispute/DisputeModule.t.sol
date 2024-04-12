@@ -9,6 +9,7 @@ import { Errors } from "contracts/lib/Errors.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { ShortStringOps } from "contracts/utils/ShortStringOps.sol";
+import { IDisputeModule } from "contracts/interfaces/modules/dispute/IDisputeModule.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
@@ -36,6 +37,7 @@ contract DisputeModuleTest is BaseTest {
     address internal ipAccount2 = address(0x111000bbb);
 
     address internal ipAddr;
+    address internal ipAddr2;
     address internal arbitrationRelayer;
     ArbitrationPolicySP internal arbitrationPolicySP2;
 
@@ -70,6 +72,7 @@ contract DisputeModuleTest is BaseTest {
         });
 
         mockNFT.mintId(u.alice, 0);
+        mockNFT.mintId(u.bob, 1);
 
         address expectedAddr = ERC6551AccountLib.computeAddress(
             address(erc6551Registry),
@@ -79,16 +82,43 @@ contract DisputeModuleTest is BaseTest {
             address(mockNFT),
             0
         );
-        vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.alice);
         ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
-
         licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
+
+        // Bob mints 1 license of policy "pil-commercial-remix" from IPAccount1 and registers the derivative IP for
+        // NFT tokenId 2.
+        vm.startPrank(u.bob);
+
+        uint256 mintAmount = 3;
+        erc20.approve(address(royaltyPolicyLAP), type(uint256).max);
+
+        uint256[] memory licenseIds = new uint256[](1);
+
+        licenseIds[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAddr,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: getSelectedPILicenseTermsId("cheap_flexible"),
+            amount: mintAmount,
+            receiver: u.bob,
+            royaltyContext: ""
+        }); // first license minted
+
+        ipAddr2 = ipAssetRegistry.register(address(mockNFT), 1);
+
+        licensingModule.registerDerivativeWithLicenseTokens(ipAddr2, licenseIds, "");
+
+        vm.stopPrank();
 
         // set arbitration policy
         vm.startPrank(ipAddr);
         disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP));
+        vm.stopPrank();
+
+        // set arbitration policy
+        vm.startPrank(ipAddr2);
+        disputeModule.setArbitrationPolicy(ipAddr2, address(arbitrationPolicySP));
         vm.stopPrank();
     }
 
@@ -185,7 +215,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP2));
     }
 
-    function test_setArbitrationPolicy() public {
+    function test_DisputeModule_setArbitrationPolicy() public {
         vm.startPrank(u.admin);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP2), true);
         vm.stopPrank();
@@ -199,22 +229,22 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.arbitrationPolicies(ipAddr), address(arbitrationPolicySP2));
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute_revert_NotRegisteredIpId() public {
+    function test_DisputeModule_raiseDispute_revert_NotRegisteredIpId() public {
         vm.expectRevert(Errors.DisputeModule__NotRegisteredIpId.selector);
         disputeModule.raiseDispute(address(1), string("urlExample"), "PLAGIARISM", "");
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute_revert_NotWhitelistedDisputeTag() public {
+    function test_DisputeModule_raiseDispute_revert_NotWhitelistedDisputeTag() public {
         vm.expectRevert(Errors.DisputeModule__NotWhitelistedDisputeTag.selector);
         disputeModule.raiseDispute(ipAddr, string("urlExample"), "NOT_WHITELISTED", "");
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute_revert_ZeroLinkToDisputeEvidence() public {
+    function test_DisputeModule_raiseDispute_revert_ZeroLinkToDisputeEvidence() public {
         vm.expectRevert(Errors.DisputeModule__ZeroLinkToDisputeEvidence.selector);
         disputeModule.raiseDispute(ipAddr, string(""), "PLAGIARISM", "");
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute_BlacklistedPolicy() public {
+    function test_DisputeModule_raiseDispute_BlacklistedPolicy() public {
         vm.startPrank(u.admin);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), false);
         vm.stopPrank();
@@ -249,9 +279,11 @@ contract DisputeModuleTest is BaseTest {
             address arbitrationPolicy,
             bytes32 linkToDisputeEvidence,
             bytes32 targetTag,
-            bytes32 currentTag
+            bytes32 currentTag,
+            uint256 parentDisputeId
         ) = disputeModule.disputes(disputeIdAfter);
 
+        assertEq(disputeIdAfter, 1);
         assertEq(disputeIdAfter - disputeIdBefore, 1);
         assertEq(ipAccount1USDCBalanceBefore - ipAccount1USDCBalanceAfter, ARBITRATION_PRICE);
         assertEq(arbitrationPolicySPUSDCBalanceAfter - arbitrationPolicySPUSDCBalanceBefore, ARBITRATION_PRICE);
@@ -261,9 +293,10 @@ contract DisputeModuleTest is BaseTest {
         assertEq(linkToDisputeEvidence, ShortStringOps.stringToBytes32("urlExample"));
         assertEq(targetTag, bytes32("PLAGIARISM"));
         assertEq(currentTag, bytes32("IN_DISPUTE"));
+        assertEq(parentDisputeId, 0);
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute() public {
+    function test_DisputeModule_raiseDispute() public {
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
 
@@ -294,7 +327,8 @@ contract DisputeModuleTest is BaseTest {
             address arbitrationPolicy,
             bytes32 linkToDisputeEvidence,
             bytes32 targetTag,
-            bytes32 currentTag
+            bytes32 currentTag,
+            uint256 parentDisputeId
         ) = disputeModule.disputes(disputeIdAfter);
 
         assertEq(disputeIdAfter - disputeIdBefore, 1);
@@ -306,14 +340,15 @@ contract DisputeModuleTest is BaseTest {
         assertEq(linkToDisputeEvidence, ShortStringOps.stringToBytes32("urlExample"));
         assertEq(targetTag, bytes32("PLAGIARISM"));
         assertEq(currentTag, bytes32("IN_DISPUTE"));
+        assertEq(parentDisputeId, 0);
     }
 
-    function test_DisputeModule_PolicySP_setDisputeJudgement_revert_NotInDisputeState() public {
+    function test_DisputeModule_setDisputeJudgement_revert_NotInDisputeState() public {
         vm.expectRevert(Errors.DisputeModule__NotInDisputeState.selector);
         disputeModule.setDisputeJudgement(1, true, "");
     }
 
-    function test_DisputeModule_PolicySP_setDisputeJudgement_revert_NotWhitelistedArbitrationRelayer() public {
+    function test_DisputeModule_setDisputeJudgement_revert_NotWhitelistedArbitrationRelayer() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
@@ -324,7 +359,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.setDisputeJudgement(1, true, "");
     }
 
-    function test_DisputeModule_PolicySP_setDisputeJudgement_True() public {
+    function test_DisputeModule_setDisputeJudgement_True() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
@@ -332,7 +367,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         // set dispute judgement
-        (, , , , , bytes32 currentTagBefore) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceBefore = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceBefore = USDC.balanceOf(address(arbitrationPolicySP));
 
@@ -342,7 +377,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(arbitrationRelayer);
         disputeModule.setDisputeJudgement(1, true, "");
 
-        (, , , , , bytes32 currentTagAfter) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
 
@@ -353,7 +388,7 @@ contract DisputeModuleTest is BaseTest {
         assertTrue(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_PolicySP_setDisputeJudgement_False() public {
+    function test_DisputeModule_setDisputeJudgement_False() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
@@ -361,7 +396,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         // set dispute judgement
-        (, , , , , bytes32 currentTagBefore) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceBefore = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceBefore = USDC.balanceOf(address(arbitrationPolicySP));
 
@@ -371,7 +406,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(arbitrationRelayer);
         disputeModule.setDisputeJudgement(1, false, "");
 
-        (, , , , , bytes32 currentTagAfter) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
 
@@ -382,7 +417,7 @@ contract DisputeModuleTest is BaseTest {
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_PolicySP_cancelDispute_revert_NotDisputeInitiator() public {
+    function test_DisputeModule_cancelDispute_revert_NotDisputeInitiator() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
@@ -393,19 +428,19 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.cancelDispute(1, "");
     }
 
-    function test_DisputeModule_PolicySP_cancelDispute_revert_NotInDisputeState() public {
+    function test_DisputeModule_cancelDispute_revert_NotInDisputeState() public {
         vm.expectRevert(Errors.DisputeModule__NotInDisputeState.selector);
         disputeModule.cancelDispute(1, "");
     }
 
-    function test_DisputeModule_PolicySP_cancelDispute() public {
+    function test_DisputeModule_cancelDispute() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
         disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagBeforeCancel) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagBeforeCancel, ) = disputeModule.disputes(1);
 
         vm.startPrank(ipAccount1);
         vm.expectEmit(true, true, true, true, address(disputeModule));
@@ -414,16 +449,95 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.cancelDispute(1, "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagAfterCancel) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagAfterCancel, ) = disputeModule.disputes(1);
 
         assertEq(currentTagBeforeCancel, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfterCancel, bytes32(0));
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
+    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_ParentIpIdMismatch() public {
+        vm.expectRevert(Errors.DisputeModule__ParentIpIdMismatch.selector);
+        disputeModule.tagDerivativeIfParentInfringed(address(1), address(2), 1);
+    }
+
+    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_ParentNotTagged() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.DisputeModule__ParentNotTagged.selector);
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+    }
+
+    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_NotDerivative() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.DisputeModule__NotDerivative.selector);
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, address(0), 1);
+    }
+
+    function test_DisputeModule_tagDerivativeIfParentInfringed() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        assertEq(licenseRegistry.isParentIp(ipAddr, ipAddr2), true);
+
+        // tag child ip
+        vm.startPrank(address(1));
+        vm.expectEmit(true, true, true, true, address(disputeModule));
+        emit IDisputeModule.DerivativeTaggedOnParentInfringement(ipAddr, ipAddr2, 1, "PLAGIARISM");
+
+        uint256 disputeIdBefore = disputeModule.disputeCounter();
+
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+
+        uint256 disputeIdAfter = disputeModule.disputeCounter();
+
+        (
+            address targetIpId,
+            address disputeInitiator,
+            address arbitrationPolicy,
+            bytes32 linkToDisputeEvidence,
+            bytes32 targetTag,
+            bytes32 currentTag,
+            uint256 parentDisputeId
+        ) = disputeModule.disputes(disputeIdAfter);
+
+        assertEq(disputeIdAfter - disputeIdBefore, 1);
+        assertEq(disputeIdAfter, 2);
+        assertTrue(disputeModule.isIpTagged(ipAddr2));
+        assertEq(targetIpId, ipAddr2);
+        assertEq(disputeInitiator, address(1));
+        assertEq(arbitrationPolicy, address(arbitrationPolicySP));
+        assertEq(linkToDisputeEvidence, bytes32(0));
+        assertEq(targetTag, bytes32("PLAGIARISM"));
+        assertEq(currentTag, bytes32("PLAGIARISM"));
+        assertEq(parentDisputeId, 1);
+    }
+
     function test_DisputeModule_resolveDispute_revert_NotDisputeInitiator() public {
         vm.expectRevert(Errors.DisputeModule__NotDisputeInitiator.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
     }
 
     function test_DisputeModule_resolveDispute_revert_NotAbleToResolve() public {
@@ -435,7 +549,26 @@ contract DisputeModuleTest is BaseTest {
 
         vm.startPrank(ipAccount1);
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
+    }
+
+    function test_DisputeModule_resolveDispute_revert_ParentDisputeNotResolved() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        // tag derivative
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+
+        vm.expectRevert(Errors.DisputeModule__ParentDisputeNotResolved.selector);
+        disputeModule.resolveDispute(2, "");
     }
 
     function test_DisputeModule_resolveDispute() public {
@@ -450,24 +583,24 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.setDisputeJudgement(1, true, "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagBeforeResolve) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagBeforeResolve, ) = disputeModule.disputes(1);
 
         // resolve dispute
         vm.startPrank(ipAccount1);
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit DisputeResolved(1);
 
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
 
-        (, , , , , bytes32 currentTagAfterResolve) = disputeModule.disputes(1);
+        (, , , , , bytes32 currentTagAfterResolve, ) = disputeModule.disputes(1);
 
         assertEq(currentTagBeforeResolve, bytes32("PLAGIARISM"));
         assertEq(currentTagAfterResolve, bytes32(0));
         assertFalse(disputeModule.isIpTagged(ipAddr));
 
-        // Cant resolve again
+        // Can't resolve again
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
-        disputeModule.resolveDispute(1);
+        disputeModule.resolveDispute(1, "");
         vm.stopPrank();
     }
 

@@ -36,6 +36,13 @@ interface IArbitrationPolicy {
     /// @param data The arbitrary data used to cancel the dispute
     function onDisputeCancel(address caller, uint256 disputeId, bytes calldata data) external;
 
+    /// @notice Executes custom logic on resolving dispute
+    /// @dev Enforced to be only callable by the DisputeModule
+    /// @param caller Address of the caller
+    /// @param disputeId The dispute id
+    /// @param data The arbitrary data used to resolve the dispute
+    function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external;
+
     /// @notice Allows governance address to withdraw
     /// @dev Enforced to be only callable by the governance protocol admin.
     function governanceWithdraw() external;

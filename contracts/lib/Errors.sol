@@ -233,10 +233,19 @@ library Errors {
     error DisputeModule__NotInDisputeState();
     error DisputeModule__NotAbleToResolve();
     error DisputeModule__NotRegisteredIpId();
+    error DisputeModule__ParentIpIdMismatch();
+    error DisputeModule__ParentNotTagged();
+    error DisputeModule__NotDerivative();
+    error DisputeModule__ParentDisputeNotResolved();
+    error DisputeModule__ZeroLicenseRegistry();
+    error DisputeModule__ZeroAssetRegistry();
+    error DisputeModule__ZeroController();
+    error DisputeModule__ZeroAccessManager();
 
     error ArbitrationPolicySP__ZeroDisputeModule();
     error ArbitrationPolicySP__ZeroPaymentToken();
     error ArbitrationPolicySP__NotDisputeModule();
+    error ArbitrationPolicySP__ZeroAccessManager();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
@@ -254,6 +263,7 @@ library Errors {
     error RoyaltyModule__NoParentsOnLinking();
     error RoyaltyModule__ZeroDisputeModule();
     error RoyaltyModule__IpIsTagged();
+    error RoyaltyModule__ZeroAccessManager();
 
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
     error RoyaltyPolicyLAP__ZeroLiquidSplitFactory();
@@ -270,8 +280,8 @@ library Errors {
     error RoyaltyPolicyLAP__UnlinkableToParents();
     error RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
     error RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
+    error RoyaltyPolicyLAP__ZeroAccessManager();
 
-    error IpRoyaltyVault__ZeroIpId();
     error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
     error IpRoyaltyVault__NotRoyaltyPolicyLAP();
     error IpRoyaltyVault__SnapshotIntervalTooShort();

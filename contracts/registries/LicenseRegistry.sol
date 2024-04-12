@@ -346,7 +346,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
     }
 
-    /// @notice got the derivative IP of an IP by its index.
+    /// @notice Gets the derivative IP of an IP by its index.
     /// @param parentIpId The address of the IP.
     /// @param index The index of the derivative IP within the array of all derivative IPs of the IP.
     /// @return childIpId The address of the derivative IP.
@@ -375,6 +375,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicenseRegistry__IndexOutOfBounds(childIpId, index, $.parentIps[childIpId].length());
         }
         parentIpId = $.parentIps[childIpId].at(index);
+    }
+
+    function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
+        return _getLicenseRegistryStorage().parentIps[childIpId].contains(parentIpId);
     }
 
     /// @notice Gets the count of parent IPs.

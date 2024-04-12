@@ -134,6 +134,12 @@ interface ILicenseRegistry {
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId);
 
+    /// @notice Checks if an IP is a parent IP.
+    /// @param parentIpId The address of the parent IP.
+    /// @param childIpId The address of the child IP.
+    /// @return Whether the IP is a parent IP.
+    function isParentIp(address parentIpId, address childIpId) external view returns (bool);
+
     /// @notice Gets the count of parent IPs.
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.

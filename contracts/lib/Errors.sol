@@ -228,7 +228,6 @@ library Errors {
     //                            Dispute Module                              //
     ////////////////////////////////////////////////////////////////////////////
 
-    error DisputeModule__ZeroAccessManager();
     error DisputeModule__ZeroArbitrationPolicy();
     error DisputeModule__ZeroArbitrationRelayer();
     error DisputeModule__ZeroDisputeTag();
@@ -253,7 +252,6 @@ library Errors {
     //                         ArbitrationPolicy SP                          //
     ////////////////////////////////////////////////////////////////////////////
 
-    error ArbitrationPolicySP__ZeroAccessManager();
     error ArbitrationPolicySP__ZeroDisputeModule();
     error ArbitrationPolicySP__ZeroPaymentToken();
     error ArbitrationPolicySP__NotDisputeModule();
@@ -263,7 +261,6 @@ library Errors {
     //                            Royalty Module                              //
     ////////////////////////////////////////////////////////////////////////////
 
-    error RoyaltyModule__ZeroAccessManager();
     error RoyaltyModule__ZeroRoyaltyPolicy();
     error RoyaltyModule__NotWhitelistedRoyaltyPolicy();
     error RoyaltyModule__ZeroRoyaltyToken();

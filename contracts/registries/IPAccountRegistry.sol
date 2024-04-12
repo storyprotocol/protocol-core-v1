@@ -11,14 +11,18 @@ import { Errors } from "../lib/Errors.sol";
 /// It leverages a public ERC6551 registry to deploy IPAccount contracts.
 abstract contract IPAccountRegistry is IIPAccountRegistry {
     /// @notice Returns the IPAccount implementation address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable IP_ACCOUNT_IMPL;
 
     /// @notice Returns the IPAccount salt
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     bytes32 public immutable IP_ACCOUNT_SALT;
 
     /// @notice Returns the public ERC6551 registry address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable ERC6551_PUBLIC_REGISTRY;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address erc6551Registry, address ipAccountImpl) {
         if (ipAccountImpl == address(0)) revert Errors.IPAccountRegistry_InvalidIpAccountImpl();
         IP_ACCOUNT_IMPL = ipAccountImpl;

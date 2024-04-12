@@ -120,15 +120,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run(
-        bool runStorageLayoutCheck,
-        bool writeDeploys_
-    ) public virtual {
+    function run(bool runStorageLayoutCheck, bool writeDeploys_) public virtual {
         writeDeploys = writeDeploys_;
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         if (runStorageLayoutCheck) super.run();
-        
+
         _beginBroadcast(); // BroadcastManager.s.sol
 
         _deployProtocolContracts();
@@ -195,10 +192,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        ipAssetRegistry = new IPAssetRegistry(
-            address(erc6551Registry),
-            address(ipAccountImpl)
-        );
+        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl));
         _postdeploy(contractKey, address(ipAssetRegistry));
 
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
@@ -318,7 +312,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 impl,
                 abi.encodeCall(
                     PILicenseTemplate.initialize,
-                    ("pil", "https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf")
+                    (
+                        address(protocolAccessManager),
+                        "pil",
+                        "https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf"
+                    )
                 )
             )
         );
@@ -401,8 +399,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry.registerLicenseTemplate(address(pilTemplate));
     }
 
-    function _configureRoles() private {        
-
+    function _configureRoles() private {
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = UUPSUpgradeable.upgradeToAndCall.selector;
 
@@ -413,7 +410,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(arbitrationPolicySP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicySP),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);

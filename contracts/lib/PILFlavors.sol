@@ -5,7 +5,7 @@ import { IPILicenseTemplate, PILTerms } from "../interfaces/modules/licensing/IP
 
 /// @title PILFlavors Library
 /// @notice Provides a set of predefined PILTerms configurations for different licensing scenarios
-/// See the text: https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf
+/// See the text: https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf
 library PILFlavors {
     bytes public constant EMPTY_BYTES = "";
 

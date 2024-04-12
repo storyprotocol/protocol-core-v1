@@ -273,6 +273,9 @@ contract DisputeModule is
 
         Dispute memory parentDispute = $.disputes[parentDisputeId];
         if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
+
+        // a dispute current tag prior to being resolved can be in 3 states - IN_DISPUTE, 0, or a tag (ie. "PLAGIARISM)
+        // by restricting IN_DISPUTE and 0 - we ensure that the parent has been tagged as infringing before resolving dispute
         if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
             revert Errors.DisputeModule__ParentNotTagged();
 

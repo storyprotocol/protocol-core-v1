@@ -175,7 +175,10 @@ contract e2e is Test {
         piLicenseTemplate = PILicenseTemplate(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(PILicenseTemplate.initialize, ("PIL", "PIL-metadata-url"))
+                abi.encodeCall(
+                    PILicenseTemplate.initialize,
+                    (address(protocolAccessManager), "PIL", "PIL-metadata-url")
+                )
             )
         );
 

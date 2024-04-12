@@ -262,6 +262,46 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.getParentIp(ipId2, 1);
     }
 
+    function test_LicenseRegistry_registerDerivativeIp() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), socialRemixTermsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), socialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipId1;
+        parentIpIds[1] = ipId2;
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = socialRemixTermsId;
+        licenseTermsIds[1] = socialRemixTermsId;
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp(ipId3, parentIpIds, address(pilTemplate), licenseTermsIds);
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_revert_DuplicateLicense() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), socialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipId1;
+        parentIpIds[1] = ipId1;
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = socialRemixTermsId;
+        licenseTermsIds[1] = socialRemixTermsId;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__DuplicateLicense.selector,
+                ipId1,
+                address(pilTemplate),
+                socialRemixTermsId
+            )
+        );
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp(ipId2, parentIpIds, address(pilTemplate), licenseTermsIds);
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

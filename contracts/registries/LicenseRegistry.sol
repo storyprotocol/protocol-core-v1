@@ -238,9 +238,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
 
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             _verifyDerivativeFromParent(parentIpIds[i], childIpId, licenseTemplate, licenseTermsIds[i]);
-            $.parentIps[childIpId].add(parentIpIds[i]);
             $.childIps[parentIpIds[i]].add(childIpId);
-            $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
+            // determine if duplicate license terms
+            bool isNewParent = $.parentIps[childIpId].add(parentIpIds[i]);
+            bool isNewTerms = $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
+            if (!isNewParent && !isNewTerms) {
+                revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
+            }
         }
 
         $.licenseTemplates[childIpId] = licenseTemplate;

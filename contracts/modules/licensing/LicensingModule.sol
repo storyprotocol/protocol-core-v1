@@ -99,6 +99,9 @@ contract LicensingModule is
     function initialize(address accessManager) public initializer {
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+        if (accessManager == address(0)) {
+            revert Errors.LicensingModule__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
     }
 

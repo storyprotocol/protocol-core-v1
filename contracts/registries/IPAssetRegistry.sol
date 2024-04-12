@@ -41,11 +41,16 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
         0x987c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {
+        _disableInitializers();
+    }
 
     /// @notice Initializes the IPAssetRegistry contract.
     /// @param accessManager The address of the access manager.
     function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.IPAssetRegistry__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }

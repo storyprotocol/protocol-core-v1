@@ -51,6 +51,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @dev Initializes the LicenseToken contract
     function initialize(address accessManager, string memory imageUrl) public initializer {
         __ERC721_init("Programmable IP License Token", "PILicenseToken");
+        if (accessManager == address(0)) {
+            revert Errors.LicenseToken__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
         _getLicenseTokenStorage().imageUrl = imageUrl;

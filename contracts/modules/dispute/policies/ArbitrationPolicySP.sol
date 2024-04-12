@@ -52,8 +52,9 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     /// @notice initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) public initializer {
-        if (accessManager == address(0)) revert Errors.ArbitrationPolicySP__ZeroAccessManager();
-
+        if (accessManager == address(0)) {
+            revert Errors.ArbitrationPolicySP__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }

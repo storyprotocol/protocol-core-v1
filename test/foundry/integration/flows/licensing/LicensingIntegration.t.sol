@@ -122,6 +122,7 @@ contract e2e is Test {
         impl = address(
             new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
         );
+
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,

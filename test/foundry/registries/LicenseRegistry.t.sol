@@ -262,7 +262,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.getParentIp(ipId2, 1);
     }
 
-
     function test_LicenseRegistry_registerDerivativeIp() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
@@ -291,7 +290,14 @@ contract LicenseRegistryTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](2);
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
-        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__DuplicateLicense.selector, ipId1, address(pilTemplate), socialRemixTermsId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__DuplicateLicense.selector,
+                ipId1,
+                address(pilTemplate),
+                socialRemixTermsId
+            )
+        );
         vm.prank(address(licensingModule));
         licenseRegistry.registerDerivativeIp(ipId2, parentIpIds, address(pilTemplate), licenseTermsIds);
     }

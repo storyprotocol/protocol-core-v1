@@ -315,7 +315,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                     (
                         address(protocolAccessManager),
                         "pil",
-                        "https://github.com/storyprotocol/protocol-core/blob/main/PIL-Beta-2024-02.pdf"
+                        "https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf"
                     )
                 )
             )

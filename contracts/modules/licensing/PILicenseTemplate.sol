@@ -27,6 +27,7 @@ contract PILicenseTemplate is
     using ERC165Checker for address;
     using Strings for *;
 
+    /// @dev Storage structure for the PILicenseTemplate
     /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
     struct PILicenseTemplateStorage {
         mapping(uint256 licenseTermsId => PILTerms) licenseTerms;
@@ -39,20 +40,17 @@ contract PILicenseTemplate is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
 
-    // TODO: update storage location
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
-    // & ~bytes32(uint256(0xff));
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
-        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+        0xc6c6991297bc120d0383f0017fab72b8ca34fd4849ed6478dbaac67a33c3a700;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAccountRegistry,
         address licenseRegistry,
-        address royaltyModule,
-        address licenseToken
-    ) LicensorApprovalChecker(accessController, ipAccountRegistry, licenseToken) {
+        address royaltyModule
+    ) LicensorApprovalChecker(accessController, ipAccountRegistry) {
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();
@@ -234,7 +232,7 @@ contract PILicenseTemplate is
         uint expireTime = _getExpireTime(licenseTermsIds[0], start);
         for (uint i = 1; i < licenseTermsIds.length; i++) {
             uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
-            if (newExpireTime < expireTime) {
+            if (newExpireTime < expireTime || expireTime == 0) {
                 expireTime = newExpireTime;
             }
         }
@@ -256,6 +254,14 @@ contract PILicenseTemplate is
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         bytes32 licenseTermsHash = keccak256(abi.encode(terms));
         return $.hashedLicenseTerms[licenseTermsHash];
+    }
+
+    /// @notice Gets license terms of the given ID.
+    /// @param selectedLicenseTermsId The ID of the license terms.
+    /// @return terms The PILTerms associate with the given ID.
+    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms) {
+        PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
+        return $.licenseTerms[selectedLicenseTermsId];
     }
 
     /// @notice Returns the total number of registered license terms.
@@ -289,7 +295,7 @@ contract PILicenseTemplate is
                 terms.expiration == 0 ? "never" : terms.expiration.toString(),
                 '"},',
                 '{"trait_type": "Currency", "value": "',
-                terms.currency == address(0) ? "Native Token" : terms.currency.toHexString(),
+                terms.currency.toHexString(),
                 '"},',
                 // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
                 _policyCommercialTraitsToJson(terms),
@@ -419,7 +425,7 @@ contract PILicenseTemplate is
 
         // If the policy defines the licensor must approve derivatives, check if the
         // derivative is approved by the licensor
-        if (terms.derivativesApproval && !isDerivativeApproved(licenseTermsId, childIpId)) {
+        if (terms.derivativesApproval && !isDerivativeApproved(parentIpId, licenseTermsId, childIpId)) {
             return false;
         }
         // Check if the commercializerChecker allows the link

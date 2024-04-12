@@ -57,4 +57,9 @@ interface IPILicenseTemplate is ILicenseTemplate {
     /// @param terms The PILTerms to get the ID for.
     /// @return selectedLicenseTermsId The ID of the given license terms.
     function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 selectedLicenseTermsId);
+
+    /// @notice Gets license terms of the given ID.
+    /// @param selectedLicenseTermsId The ID of the license terms.
+    /// @return terms The PILTerms associate with the given ID.
+    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms);
 }

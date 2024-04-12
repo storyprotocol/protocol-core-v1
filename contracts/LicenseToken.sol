@@ -22,7 +22,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
-    /// @dev Storage of the LicenseToken
+    /// @dev Storage structure for the LicenseToken
     /// @custom:storage-location erc7201:story-protocol.LicenseToken
     struct LicenseTokenStorage {
         string imageUrl;
@@ -32,10 +32,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         mapping(uint256 tokenId => LicenseTokenMetadata) licenseTokenMetadatas;
     }
 
-    // TODO: update the storage location
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseToken")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicenseTokenStorageLocation =
-        0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
+        0x62a0d75e37bea0c3e666dc72a74112fc6af15ce635719127e380d8ca1e555d00;
 
     modifier onlyLicensingModule() {
         if (msg.sender != address(_getLicenseTokenStorage().licensingModule)) {
@@ -319,7 +318,8 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     //                         Upgrades related                               //
     ////////////////////////////////////////////////////////////////////////////
 
-    function _getLicenseTokenStorage() internal pure returns (LicenseTokenStorage storage $) {
+    /// @dev Returns the storage struct of LicenseToken.
+    function _getLicenseTokenStorage() private pure returns (LicenseTokenStorage storage $) {
         assembly {
             $.slot := LicenseTokenStorageLocation
         }

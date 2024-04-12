@@ -2,8 +2,6 @@
 pragma solidity 0.8.23;
 
 import { AccessControlled } from "../../../access/AccessControlled.sol";
-import { ILicenseToken } from "../../../interfaces/ILicenseToken.sol";
-
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title LicensorApprovalChecker
@@ -11,12 +9,12 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 /// licensing terms like "Derivatives With Approval" in PIL.
 abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
     /// @notice Emits when a derivative IP account is approved by the parentIp.
-    /// @param licenseTokenId The ID of the license waiting for approval
+    /// @param licenseTermsId The ID of the license waiting for approval
     /// @param ipId The ID of the derivative IP to be approved
     /// @param caller The executor of the approval
     /// @param approved Result of the approval
     event DerivativeApproved(
-        uint256 indexed licenseTokenId,
+        uint256 indexed licenseTermsId,
         address indexed ipId,
         address indexed caller,
         bool approved
@@ -30,10 +28,6 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
         mapping(uint256 => mapping(address => mapping(address => bool))) approvals;
     }
 
-    /// @notice Returns the licenseToken  address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    ILicenseToken public immutable LICENSE_NFT;
-
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensorApprovalChecker")) - 1))
     // & ~bytes32(uint256(0xff));
     bytes32 private constant LicensorApprovalCheckerStorageLocation =
@@ -42,50 +36,49 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
     /// @notice Constructor function
     /// @param accessController The address of the AccessController contract
     /// @param ipAccountRegistry The address of the IPAccountRegistry contract
-    /// @param licenseToken The address of the LicenseRegistry contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
-        address ipAccountRegistry,
-        address licenseToken
-    ) AccessControlled(accessController, ipAccountRegistry) {
-        LICENSE_NFT = ILicenseToken(licenseToken);
-    }
+        address ipAccountRegistry
+    ) AccessControlled(accessController, ipAccountRegistry) {}
 
     /// @notice Approves or disapproves a derivative IP account.
-    /// @param licenseTokenId The ID of the license waiting for approval
+    /// @param parentIpId The ID of the parent IP grant the approval
+    /// @param licenseTermsId The ID of the license waiting for approval
     /// @param childIpId The ID of the derivative IP to be approved
     /// @param approved Result of the approval
-    function setApproval(uint256 licenseTokenId, address childIpId, bool approved) external {
-        address parentIpId = LICENSE_NFT.getLicensorIpId(licenseTokenId);
-        _setApproval(parentIpId, licenseTokenId, childIpId, approved);
+    function setApproval(address parentIpId, uint256 licenseTermsId, address childIpId, bool approved) external {
+        _setApproval(parentIpId, licenseTermsId, childIpId, approved);
     }
 
     /// @notice Checks if a derivative IP account is approved by the parent.
-    /// @param licenseTokenId The ID of the license NFT issued from a policy of the parent
+    /// @param licenseTermsId The ID of the license NFT issued from a policy of the parent
     /// @param childIpId The ID of the derivative IP to be approved
     /// @return approved True if the derivative IP account using the license is approved
-    function isDerivativeApproved(uint256 licenseTokenId, address childIpId) public view returns (bool) {
-        address parentIpId = LICENSE_NFT.getLicensorIpId(licenseTokenId);
+    function isDerivativeApproved(
+        address parentIpId,
+        uint256 licenseTermsId,
+        address childIpId
+    ) public view returns (bool) {
         LicensorApprovalCheckerStorage storage $ = _getLicensorApprovalCheckerStorage();
-        return $.approvals[licenseTokenId][parentIpId][childIpId];
+        return $.approvals[licenseTermsId][parentIpId][childIpId];
     }
 
     /// @notice Sets the approval for a derivative IP account.
     /// @dev This function is only callable by the parent IP account.
     /// @param parentIpId The ID of the parent IP account
-    /// @param licenseTokenId The ID of the license waiting for approval
+    /// @param licenseTermsId The ID of the license waiting for approval
     /// @param childIpId The ID of the derivative IP to be approved
     /// @param approved Result of the approval
     function _setApproval(
         address parentIpId,
-        uint256 licenseTokenId,
+        uint256 licenseTermsId,
         address childIpId,
         bool approved
     ) internal verifyPermission(parentIpId) {
         LicensorApprovalCheckerStorage storage $ = _getLicensorApprovalCheckerStorage();
-        $.approvals[licenseTokenId][parentIpId][childIpId] = approved;
-        emit DerivativeApproved(licenseTokenId, parentIpId, msg.sender, approved);
+        $.approvals[licenseTermsId][parentIpId][childIpId] = approved;
+        emit DerivativeApproved(licenseTermsId, parentIpId, msg.sender, approved);
     }
 
     /// @dev Returns the storage struct of LicensorApprovalChecker.

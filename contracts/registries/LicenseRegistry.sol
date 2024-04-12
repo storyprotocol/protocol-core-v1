@@ -43,6 +43,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param mintingLicenseConfigs Mapping of minting license configs to a licenseTerms of an IP
     /// @param mintingLicenseConfigsForIp Mapping of minting license configs to an IP,
     /// the config will apply to all licenses under the IP
+    /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         ILicensingModule licensingModule;
@@ -58,7 +59,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
     }
 
-    // TODO: update the storage location
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicenseRegistryStorageLocation =
         0x5ed898e10dedf257f39672a55146f3fecade9da16f4ff022557924a10d60a900;
@@ -193,14 +193,23 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
 
+        if (_isExpiredNow(ipId)) {
+            revert Errors.LicenseRegistry__IpExpired(ipId);
+        }
+
+        if (_hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId)) {
+            revert Errors.LicenseRegistry__LicenseTermsAlreadyAttached(ipId, licenseTemplate, licenseTermsId);
+        }
+
         if (_isDerivativeIp(ipId)) {
             revert Errors.LicensingModule__DerivativesCannotAddLicenseTerms();
         }
 
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if (_isExpiredNow(ipId)) {
-            revert Errors.LicenseRegistry__IpExpired(ipId);
+        if ($.licenseTemplates[ipId] != address(0) && $.licenseTemplates[ipId] != licenseTemplate) {
+            revert Errors.LicenseRegistry__UnmatchedLicenseTemplate(ipId, $.licenseTemplates[ipId], licenseTemplate);
         }
+
         $.licenseTemplates[ipId] = licenseTemplate;
         $.attachedLicenseTerms[ipId].add(licenseTermsId);
     }
@@ -220,11 +229,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicenseRegistry__NoParentIp();
         }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.attachedLicenseTerms[childIpId].length() > 0) {
-            revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(childIpId);
-        }
         if ($.parentIps[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);
+        }
+        if ($.attachedLicenseTerms[childIpId].length() > 0) {
+            revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(childIpId);
         }
 
         for (uint256 i = 0; i < parentIpIds.length; i++) {
@@ -262,7 +271,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
                 revert Errors.LicenseRegistry__LicenseTermsNotExists(licenseTemplate, licenseTermsId);
             }
         } else if (!_hasIpAttachedLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId)) {
-            revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(licensorIpId, licenseTermsId);
+            revert Errors.LicenseRegistry__LicensorIpHasNoLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId);
         }
         return _getMintingLicenseConfig(licensorIpId, licenseTemplate, licenseTermsId);
     }

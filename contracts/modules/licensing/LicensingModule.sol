@@ -167,7 +167,9 @@ contract LicensingModule is
 
         _payMintingFee(licensorIpId, licenseTemplate, licenseTermsId, amount, royaltyContext, mlc);
 
-        ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, licensorIpId, amount);
+        if (!ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, licensorIpId, amount)) {
+            revert Errors.LicensingModule__LicenseDenyMintLicenseToken(licenseTemplate, licenseTermsId, licensorIpId);
+        }
 
         startLicenseTokenId = LICENSE_NFT.mintLicenseTokens(
             licensorIpId,

@@ -254,6 +254,7 @@ library Errors {
     error RoyaltyModule__NoParentsOnLinking();
     error RoyaltyModule__ZeroDisputeModule();
     error RoyaltyModule__IpIsTagged();
+    error RoyaltyModule__ZeroAccessManager();
 
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
     error RoyaltyPolicyLAP__ZeroLiquidSplitFactory();
@@ -270,6 +271,7 @@ library Errors {
     error RoyaltyPolicyLAP__UnlinkableToParents();
     error RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
     error RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
+    error RoyaltyPolicyLAP__ZeroAccessManager();
 
     error IpRoyaltyVault__ZeroIpId();
     error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();

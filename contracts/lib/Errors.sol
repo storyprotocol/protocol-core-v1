@@ -241,19 +241,10 @@ library Errors {
     error DisputeModule__ZeroAssetRegistry();
     error DisputeModule__ZeroController();
     error DisputeModule__ZeroAccessManager();
-    error DisputeModule__ParentIpIdMismatch();
-    error DisputeModule__ParentNotTagged();
-    error DisputeModule__NotDerivative();
-    error DisputeModule__ParentDisputeNotResolved();
-    error DisputeModule__ZeroLicenseRegistry();
-    error DisputeModule__ZeroAssetRegistry();
-    error DisputeModule__ZeroController();
-    error DisputeModule__ZeroAccessManager();
 
     error ArbitrationPolicySP__ZeroDisputeModule();
     error ArbitrationPolicySP__ZeroPaymentToken();
     error ArbitrationPolicySP__NotDisputeModule();
-    error ArbitrationPolicySP__ZeroAccessManager();
     error ArbitrationPolicySP__ZeroAccessManager();
 
     ////////////////////////////////////////////////////////////////////////////

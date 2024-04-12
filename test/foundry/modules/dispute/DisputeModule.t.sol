@@ -571,25 +571,6 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.resolveDispute(2, "");
     }
 
-    function test_DisputeModule_resolveDispute_revert_ParentDisputeNotResolved() public {
-        // raise dispute
-        vm.startPrank(ipAccount1);
-        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
-        vm.stopPrank();
-
-        // set dispute judgement
-        vm.startPrank(arbitrationRelayer);
-        disputeModule.setDisputeJudgement(1, true, "");
-        vm.stopPrank();
-
-        // tag derivative
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
-
-        vm.expectRevert(Errors.DisputeModule__ParentDisputeNotResolved.selector);
-        disputeModule.resolveDispute(2);
-    }
-
     function test_DisputeModule_resolveDispute() public {
         // raise dispute
         vm.startPrank(ipAccount1);

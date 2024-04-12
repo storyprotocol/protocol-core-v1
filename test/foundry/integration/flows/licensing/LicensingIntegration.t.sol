@@ -119,7 +119,10 @@ contract e2e is Test {
         );
         vm.label(address(royaltyModule), "RoyaltyModule");
 
-        impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
+        impl = address(
+            new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
+        );
+
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,

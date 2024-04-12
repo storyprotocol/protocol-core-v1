@@ -209,18 +209,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0);
         _postdeploy(contractKey, address(royaltyModule));
 
-        contractKey = "DisputeModule";
-        _predeploy(contractKey);
-        impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry)));
-        disputeModule = DisputeModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
-            )
-        );
-        impl = address(0);
-        _postdeploy(contractKey, address(disputeModule));
-
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
         impl = address(new LicenseRegistry());
@@ -232,6 +220,18 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
+
+        contractKey = "DisputeModule";
+        _predeploy(contractKey);
+        impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry)));
+        disputeModule = DisputeModule(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
+            )
+        );
+        impl = address(0);
+        _postdeploy(contractKey, address(disputeModule));
 
         contractKey = "LicenseToken";
         _predeploy(contractKey);

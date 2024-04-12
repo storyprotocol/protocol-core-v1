@@ -44,8 +44,8 @@ format:
 coverage:
 	mkdir -p coverage
 	forge coverage --report lcov
-	lcov --remove lcov.info -o coverage/lcov.info 'test/*' 'script/*' --rc branch_coverage=1
-	genhtml coverage/lcov.info -o coverage --rc branch_coverage=1 --ignore-errors category
+	lcov --remove lcov.info -o coverage/lcov.info 'test/*' 'script/*' --rc lcov_branch_coverage=1
+	genhtml coverage/lcov.info -o coverage --rc lcov_branch_coverage=1
 
 abi:
 	rm -rf abi

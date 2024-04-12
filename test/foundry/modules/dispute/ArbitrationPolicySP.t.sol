@@ -9,6 +9,7 @@ import { Errors } from "contracts/lib/Errors.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
+import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 contract TestArbitrationPolicySP is BaseTest {
     event GovernanceWithdrew(uint256 amount);
@@ -94,6 +95,19 @@ contract TestArbitrationPolicySP is BaseTest {
         assertEq(address(arbitrationPolicySP.DISPUTE_MODULE()), disputeModule);
         assertEq(address(arbitrationPolicySP.PAYMENT_TOKEN()), paymentToken);
         assertEq(arbitrationPolicySP.ARBITRATION_PRICE(), arbitrationPrice);
+    }
+
+    function test_ArbitrationPolicySP_revert_ZeroAccessManager() public {
+        address disputeModule = address(1);
+        address paymentToken = address(2);
+        uint256 arbitrationPrice = 1000;
+
+        address impl = address(new ArbitrationPolicySP(address(disputeModule), paymentToken, arbitrationPrice));
+
+        vm.expectRevert(Errors.ArbitrationPolicySP__ZeroAccessManager.selector);
+        arbitrationPolicySP = ArbitrationPolicySP(
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, address(0)))
+        );
     }
 
     function test_ArbitrationPolicySP_onRaiseDispute_NotDisputeModule() public {

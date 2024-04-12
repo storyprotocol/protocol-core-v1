@@ -55,7 +55,7 @@ contract RoyaltyModule is
         _disableInitializers();
     }
 
-    /// @notice initializer for this implementation contract
+    /// @notice Initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
         if (accessManager == address(0)) revert Errors.RoyaltyModule__ZeroAccessManager();

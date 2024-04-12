@@ -1,0 +1,27 @@
+IPAssetRegistry.sol
+├── when registering IP Account
+│   ├── given the token contract does not support IERC721Metadata interface
+│   │   └── it should revert
+│   ├── given the owner of token ID is zero address (DNE or burned)
+│   │   └── it should revert
+│   └── given the token contract supports IERC721Metadata and token ID exists
+│       ├── when IP already has name set in storage (previously registered)
+│       │   └── it should revert
+│       └── when IP does not have name set in storage
+│           ├── it should set the IP name
+│           ├── it should set the IP uri
+│           ├── it should set the IP registration date
+│           └── it should emit an event
+└── when checking if IP is registered
+    ├── given the IP ID is zero address
+    │   └── it should return false
+    ├── given the IP ID has no code
+    │   └── it should return false
+    ├── given the IP ID does not support IIPAccount interface
+    │   └── it should return false
+    ├── given the IP ID does not match the expected registered IP ID
+    │   └── it should return false
+    ├── given the IP ID does not have name set in storage
+    │   └── it should return false
+    └── given the IP ID is valid, matches the expected ID, and has name set in storage
+        └── it should return true

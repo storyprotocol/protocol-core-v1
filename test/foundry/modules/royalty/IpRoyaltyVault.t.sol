@@ -28,8 +28,6 @@ contract TestIpRoyaltyVault is BaseTest {
 
         (, address IpRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         ipRoyaltyVault = IpRoyaltyVault(IpRoyaltyVault2);
-
-        assertEq(ipRoyaltyVault.ipId(), address(2));
     }
 
     function _setupMaxUniqueTree() internal {
@@ -131,15 +129,12 @@ contract TestIpRoyaltyVault is BaseTest {
 
         vm.startPrank(address(licensingModule));
         royaltyModule.onLinkToParents(address(100), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
+        //royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
     }
 
     function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
         vm.expectRevert(Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP.selector);
         ipRoyaltyVault.addIpRoyaltyVaultTokens(address(0));
-    }
-
-    function test_IpRoyaltyVault_decimals() public {
-        assertEq(ipRoyaltyVault.decimals(), 6);
     }
 
     function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens() public {

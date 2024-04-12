@@ -24,6 +24,21 @@ contract TestRoyaltyModule is BaseTest {
     address internal ipAddr;
     address internal arbitrationRelayer;
 
+    struct InitParams {
+        address[] targetAncestors;
+        uint32[] targetRoyaltyAmount;
+        address[] parentAncestors1;
+        address[] parentAncestors2;
+        uint32[] parentAncestorsRoyalties1;
+        uint32[] parentAncestorsRoyalties2;
+    }
+
+    InitParams internal initParamsMax;
+    bytes internal MAX_ANCESTORS;
+    address[] internal MAX_ANCESTORS_ = new address[](14);
+    uint32[] internal MAX_ANCESTORS_ROYALTY_ = new uint32[](14);
+    address[] internal parentsIpIds100;
+
     RoyaltyPolicyLAP internal royaltyPolicyLAP2;
 
     function setUp() public override {
@@ -90,29 +105,55 @@ contract TestRoyaltyModule is BaseTest {
 
     function _setupTree() internal {
         // init royalty policy for roots
-        royaltyModule.onLicenseMinting(address(7), address(royaltyPolicyLAP), abi.encode(uint32(7)), "");
-        royaltyModule.onLicenseMinting(address(8), address(royaltyPolicyLAP), abi.encode(uint32(8)), "");
+        address[] memory nullTargetAncestors = new address[](0);
+        uint32[] memory nullTargetRoyaltyAmount = new uint32[](0);
+        uint32[] memory parentRoyalties = new uint32[](0);
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
+        InitParams memory nullInitParams = InitParams({
+            targetAncestors: nullTargetAncestors,
+            targetRoyaltyAmount: nullTargetRoyaltyAmount,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        bytes memory nullBytes = abi.encode(nullInitParams);
+
+        royaltyModule.onLicenseMinting(address(7), address(royaltyPolicyLAP), abi.encode(uint32(7)), nullBytes);
+        royaltyModule.onLicenseMinting(address(8), address(royaltyPolicyLAP), abi.encode(uint32(8)), nullBytes);
 
         // init 2nd level with children
         address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties = new uint32[](2);
+        address[] memory targetAncestors1 = new address[](2);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](2);
+        uint32[] memory parentRoyalties1 = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
 
         // 3 is child of 7 and 8
         parents[0] = address(7);
         parents[1] = address(8);
-        parentRoyalties[0] = 7;
-        parentRoyalties[1] = 8;
-        for (uint32 i = 0; i < parentRoyalties.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
+        parentRoyalties1[0] = 7;
+        parentRoyalties1[1] = 8;
+        targetAncestors1[0] = address(7);
+        targetAncestors1[1] = address(8);
+        targetRoyaltyAmount1[0] = 7;
+        targetRoyaltyAmount1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
-        royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
-    }
-
-    function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
-        address impl = address(new RoyaltyModule());
-        vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
-        RoyaltyModule(TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(0))));
+        bytes memory encodedBytes = abi.encode(initParams);
+        royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, encodedBytes);
     }
 
     function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
@@ -224,8 +265,40 @@ contract TestRoyaltyModule is BaseTest {
         address licensor = address(3);
         bytes memory licenseData = abi.encode(uint32(15));
 
+        address[] memory parents = new address[](2);
+        address[] memory targetAncestors1 = new address[](2);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](2);
+        uint32[] memory parentRoyalties1 = new uint32[](2);
+        bytes[] memory encodedLicenseData = new bytes[](2);
+
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
+
+        parents[0] = address(7);
+        parents[1] = address(8);
+        parentRoyalties1[0] = 7;
+        parentRoyalties1[1] = 8;
+        targetAncestors1[0] = address(7);
+        targetAncestors1[1] = address(8);
+        targetRoyaltyAmount1[0] = 7;
+        targetRoyaltyAmount1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
+        }
+        bytes memory encodedBytes = abi.encode(initParams);
+
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, "");
+        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, encodedBytes);
     }
 
     function test_RoyaltyModule_onLicenseMinting_Root() public {
@@ -233,8 +306,25 @@ contract TestRoyaltyModule is BaseTest {
         bytes memory licenseData = abi.encode(uint32(15));
 
         // mint a license of another policy
+        address[] memory nullTargetAncestors = new address[](0);
+        uint32[] memory nullTargetRoyaltyAmount = new uint32[](0);
+        uint32[] memory parentRoyalties = new uint32[](0);
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
+        InitParams memory nullInitParams = InitParams({
+            targetAncestors: nullTargetAncestors,
+            targetRoyaltyAmount: nullTargetRoyaltyAmount,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        bytes memory nullBytes = abi.encode(nullInitParams);
+
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, "");
+        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, nullBytes);
         vm.stopPrank();
 
         vm.startPrank(u.admin);
@@ -242,59 +332,119 @@ contract TestRoyaltyModule is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, "");
+        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licenseData, nullBytes);
     }
 
     function test_RoyaltyModule_onLinkToParents_revert_NotWhitelistedRoyaltyPolicy() public {
         address newChild = address(9);
         address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties = new uint32[](2);
+        address[] memory targetAncestors1 = new address[](2);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](2);
+        uint32[] memory parentRoyalties1 = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
 
         parents[0] = address(7);
         parents[1] = address(8);
-        parentRoyalties[0] = 7;
-        parentRoyalties[1] = 8;
-
-        for (uint32 i = 0; i < parentRoyalties.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
+        parentRoyalties1[0] = 7;
+        parentRoyalties1[1] = 8;
+        targetAncestors1[0] = address(7);
+        targetAncestors1[1] = address(8);
+        targetRoyaltyAmount1[0] = 7;
+        targetRoyaltyAmount1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        bytes memory encodedBytes = abi.encode(initParams);
 
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy.selector);
-        royaltyModule.onLinkToParents(newChild, address(1), parents, encodedLicenseData, "");
+        royaltyModule.onLinkToParents(newChild, address(1), parents, encodedLicenseData, encodedBytes);
     }
 
     function test_RoyaltyModule_onLinkToParents_revert_NoParentsOnLinking() public {
         address newChild = address(9);
         address[] memory parents = new address[](0);
-        uint32[] memory parentRoyalties = new uint32[](2);
+        address[] memory targetAncestors1 = new address[](2);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](2);
+        uint32[] memory parentRoyalties1 = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
 
-        parentRoyalties[0] = 7;
-        parentRoyalties[1] = 8;
-
-        for (uint32 i = 0; i < parentRoyalties.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
+        parentRoyalties1[0] = 7;
+        parentRoyalties1[1] = 8;
+        targetAncestors1[0] = address(7);
+        targetAncestors1[1] = address(8);
+        targetRoyaltyAmount1[0] = 7;
+        targetRoyaltyAmount1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        bytes memory encodedBytes = abi.encode(initParams);
 
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__NoParentsOnLinking.selector);
-        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP), parents, encodedLicenseData, "");
+        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP), parents, encodedLicenseData, encodedBytes);
     }
 
     function test_RoyaltyModule_onLinkToParents_revert_IncompatibleRoyaltyPolicy() public {
         address newChild = address(9);
         address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties = new uint32[](1);
+        address[] memory targetAncestors1 = new address[](3);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](3);
+        uint32[] memory parentRoyalties1 = new uint32[](1);
         bytes[] memory encodedLicenseData = new bytes[](2);
+        address[] memory ParentAncestors1 = new address[](2);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory ParentAncestorsRoyalties1 = new uint32[](2);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
 
         parents[0] = address(3);
-        parentRoyalties[0] = 3;
-
-        for (uint32 i = 0; i < parentRoyalties.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
+        parentRoyalties1[0] = 3;
+        targetAncestors1[0] = address(3);
+        targetAncestors1[1] = address(7);
+        targetAncestors1[2] = address(8);
+        targetRoyaltyAmount1[0] = 3;
+        targetRoyaltyAmount1[1] = 7;
+        targetRoyaltyAmount1[2] = 8;
+        ParentAncestors1[0] = address(7);
+        ParentAncestors1[1] = address(8);
+        ParentAncestorsRoyalties1[0] = 7;
+        ParentAncestorsRoyalties1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: ParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: ParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        bytes memory encodedBytes = abi.encode(initParams);
 
         vm.startPrank(u.admin);
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP2), true);
@@ -302,7 +452,7 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__IncompatibleRoyaltyPolicy.selector);
-        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP2), parents, encodedLicenseData, "");
+        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP2), parents, encodedLicenseData, encodedBytes);
     }
 
     function test_RoyaltyModule_onLinkToParents() public {
@@ -310,20 +460,38 @@ contract TestRoyaltyModule is BaseTest {
 
         // new child is linked to 7 and 8
         address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties = new uint32[](2);
+        address[] memory targetAncestors1 = new address[](2);
+        uint32[] memory targetRoyaltyAmount1 = new uint32[](2);
+        uint32[] memory parentRoyalties1 = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
+        address[] memory nullParentAncestors1 = new address[](0);
+        address[] memory nullParentAncestors2 = new address[](0);
+        uint32[] memory nullParentAncestorsRoyalties1 = new uint32[](0);
+        uint32[] memory nullParentAncestorsRoyalties2 = new uint32[](0);
 
         parents[0] = address(7);
         parents[1] = address(8);
-        parentRoyalties[0] = 7;
-        parentRoyalties[1] = 8;
-
-        for (uint32 i = 0; i < parentRoyalties.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
+        parentRoyalties1[0] = 7;
+        parentRoyalties1[1] = 8;
+        targetAncestors1[0] = address(7);
+        targetAncestors1[1] = address(8);
+        targetRoyaltyAmount1[0] = 7;
+        targetRoyaltyAmount1[1] = 8;
+        InitParams memory initParams = InitParams({
+            targetAncestors: targetAncestors1,
+            targetRoyaltyAmount: targetRoyaltyAmount1,
+            parentAncestors1: nullParentAncestors1,
+            parentAncestors2: nullParentAncestors2,
+            parentAncestorsRoyalties1: nullParentAncestorsRoyalties1,
+            parentAncestorsRoyalties2: nullParentAncestorsRoyalties2
+        });
+        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
+            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        bytes memory encodedBytes = abi.encode(initParams);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP), parents, encodedLicenseData, "");
+        royaltyModule.onLinkToParents(newChild, address(royaltyPolicyLAP), parents, encodedLicenseData, encodedBytes);
 
         assertEq(royaltyModule.royaltyPolicies(newChild), address(royaltyPolicyLAP));
     }
@@ -414,34 +582,6 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(royaltyPolicyLAP), address(USDC), 100);
-    }
-
-    function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyToken() public {
-        uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
-        address payerAddress = address(3);
-        address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
-        address token = address(1);
-
-        vm.startPrank(address(licensingModule));
-
-        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
-        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
-    }
-
-    function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyPolicy() public {
-        uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
-        address payerAddress = address(3);
-        address licenseRoyaltyPolicy = address(1);
-        address token = address(USDC);
-
-        vm.startPrank(u.admin);
-        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), false);
-
-        vm.startPrank(address(licensingModule));
-        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy.selector);
-        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {

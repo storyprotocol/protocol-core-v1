@@ -221,6 +221,7 @@ contract RoyaltyModule is
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
         if (IDisputeModule($.disputeModule).isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (licenseRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[licenseRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
 

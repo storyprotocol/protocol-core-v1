@@ -7,24 +7,16 @@ on:
 
 jobs:
 
-  # Add job timestamp
-  print_timestamp: 
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate timestamp
-        run: |
-          echo "TIMESTAMP=$(TZ='America/Los_Angeles' date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
-
-      - name: Print timestamp
-        run: |
-          echo "Execution time (Pacific Time Zone) $TIMESTAMP"
+  # Add a timestamp to the build
+  Timestamp:
+    uses: storyprotocol/gha-workflows/.github/workflows/reusable-timestamp.yml@main
 
   foundry-test:
     strategy:
       fail-fast: true
     name: Foundry Unit Test
     runs-on: ubuntu-latest
-    needs: print_timestamp
+    needs: [Timestamp]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -60,3 +52,12 @@ jobs:
 
       - name: Run solhint
         run: npx solhint contracts/**/*.sol
+
+  Coverage:
+    needs: [foundry-test]
+    uses: storyprotocol/gha-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
+    # FOR LOCAL TESTING ONLY
+    # uses: ./../gha-workflows/.github/workflows/reusable-forge-code-coverage.yml
+    with:
+      exclude_paths: 'test/*, script/*'
+      branch_coverage: true

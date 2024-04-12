@@ -8,24 +8,24 @@ import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/Upgradea
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 
 // contracts
-import { AccessController } from "../../../../contracts/access/AccessController.sol";
-import { IPAccountImpl } from "../../../../contracts/IPAccountImpl.sol";
-import { IPAssetRegistry } from "../../../../contracts/registries/IPAssetRegistry.sol";
-import { ModuleRegistry } from "../../../../contracts/registries/ModuleRegistry.sol";
-import { LicenseRegistry } from "../../../../contracts/registries/LicenseRegistry.sol";
-import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
-import { RoyaltyPolicyLAP } from "../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { DisputeModule } from "../../../../contracts/modules/dispute/DisputeModule.sol";
-import { LicensingModule } from "../../../../contracts/modules/licensing/LicensingModule.sol";
-import { ArbitrationPolicySP } from "../../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
-import { LicenseToken } from "../../../../contracts/LicenseToken.sol";
+import { AccessController } from "../../../../../contracts/access/AccessController.sol";
+import { IPAccountImpl } from "../../../../../contracts/IPAccountImpl.sol";
+import { IPAssetRegistry } from "../../../../../contracts/registries/IPAssetRegistry.sol";
+import { ModuleRegistry } from "../../../../../contracts/registries/ModuleRegistry.sol";
+import { LicenseRegistry } from "../../../../../contracts/registries/LicenseRegistry.sol";
+import { RoyaltyModule } from "../../../../../contracts/modules/royalty/RoyaltyModule.sol";
+import { RoyaltyPolicyLAP } from "../../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
+import { DisputeModule } from "../../../../../contracts/modules/dispute/DisputeModule.sol";
+import { LicensingModule } from "../../../../../contracts/modules/licensing/LicensingModule.sol";
+import { ArbitrationPolicySP } from "../../../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
+import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
+import { LicenseToken } from "../../../../../contracts/LicenseToken.sol";
 import { DISPUTE_MODULE_KEY, LICENSING_MODULE_KEY, ROYALTY_MODULE_KEY } from "contracts/lib/modules/Module.sol";
-import { PILicenseTemplate } from "../../../../contracts/modules/licensing/PILicenseTemplate.sol";
-import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
-import { MockERC20 } from "../../mocks/token/MockERC20.sol";
-import { MockERC721 } from "../../mocks/token/MockERC721.sol";
-import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
+import { PILicenseTemplate } from "../../../../../contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
+import { MockERC20 } from "../../../mocks/token/MockERC20.sol";
+import { MockERC721 } from "../../../mocks/token/MockERC721.sol";
+import { TestProxyHelper } from "../../../utils/TestProxyHelper.sol";
 
 contract e2e is Test {
     MockERC20 erc20;
@@ -169,8 +169,7 @@ contract e2e is Test {
                 address(accessController),
                 address(ipAssetRegistry),
                 address(licenseRegistry),
-                address(royaltyModule),
-                address(licenseToken)
+                address(royaltyModule)
             )
         );
         piLicenseTemplate = PILicenseTemplate(

@@ -123,6 +123,7 @@ library Errors {
     error LicenseRegistry__ParentIpExpired(address ipId);
     error LicenseRegistry__LicenseTermsNotExists(address licenseTemplate, uint256 licenseTermsId);
     error LicenseRegistry__ParentIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
+    error LicenseRegistry__LicensorIpHasNoLicenseTerms(address ipId, address licenseTemplate, uint256 licenseTermsId);
     error LicenseRegistry__NoParentIp();
     error LicenseRegistry__DerivativeIpAlreadyHasLicense(address childIpId);
     error LicenseRegistry__DerivativeAlreadyRegistered(address childIpId);
@@ -130,6 +131,8 @@ library Errors {
     error LicenseRegistry__DerivativeIsParent(address ipId);
     error LicenseRegistry__ParentIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
     error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index, uint256 length);
+    error LicenseRegistry__LicenseTermsAlreadyAttached(address ipId, address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__UnmatchedLicenseTemplate(address ipId, address licenseTemplate, address newLicenseTemplate);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            LicenseToken                                  //
@@ -204,19 +207,11 @@ library Errors {
     error LicensingModule__LicenseNotCompatibleForDerivative(address childIpId);
     error LicensingModule__NoLicenseToken();
     error LicensingModule__LicenseTokenNotCompatibleForDerivative(address childIpId, uint256[] licenseTokenIds);
-
-    ////////////////////////////////////////////////////////////////////////////
-    //                      BasePolicyFrameworkManager                        //
-    ////////////////////////////////////////////////////////////////////////////
-
-    error BasePolicyFrameworkManager__CallerNotLicensingModule();
-
-    ////////////////////////////////////////////////////////////////////////////
-    //                         PolicyFrameworkManager                         //
-    ////////////////////////////////////////////////////////////////////////////
-
-    error PolicyFrameworkManager__GettingPolicyWrongFramework();
-    error PolicyFrameworkManager__CommercializerCheckerDoesNotSupportHook(address commercializer);
+    error LicensingModule__LicenseDenyMintLicenseToken(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        address licensorIpId
+    );
 
     ////////////////////////////////////////////////////////////////////////////
     //                     LicensorApprovalChecker                            //

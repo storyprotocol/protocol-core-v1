@@ -9,16 +9,17 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
 
 abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, Initializable {
-    /// @custom:storage-location erc7201:story-protocol.BaseLicenseTemplate
-    struct BaseLicenseTemplateStorage {
+    /// @dev Storage structure for the BaseLicenseTemplateUpgradeable
+    /// @custom:storage-location erc7201:story-protocol.BaseLicenseTemplateUpgradeable
+    struct BaseLicenseTemplateUpgradeableStorage {
         string name;
         string metadataURI;
     }
 
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplate")) - 1))
-    // & ~bytes32(uint256(0xff));
-    bytes32 private constant BaseLicenseTemplateStorageLocation =
-        0xa55803740ac9329334ad7b6cde0ec056cc3ba32125b59c579552512bed001f00;
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.BaseLicenseTemplateUpgradeable")) - 1)) &
+    // ~bytes32(uint256(0xff));
+    bytes32 private constant BaseLicenseTemplateUpgradeableStorageLocation =
+        0x96c2f019b095cfe7c4d1f26aa9d2741961fe73294777688374a3299707c2fb00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -29,18 +30,18 @@ abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, In
     /// @param _name The name of the license template
     /// @param _metadataURI The URL to the off chain metadata
     function __BaseLicenseTemplate_init(string memory _name, string memory _metadataURI) internal onlyInitializing {
-        _getBaseLicenseTemplateStorage().name = _name;
-        _getBaseLicenseTemplateStorage().metadataURI = _metadataURI;
+        _getBaseLicenseTemplateUpgradeableStorage().name = _name;
+        _getBaseLicenseTemplateUpgradeableStorage().metadataURI = _metadataURI;
     }
 
     /// @notice Returns the name of the license template
     function name() public view override returns (string memory) {
-        return _getBaseLicenseTemplateStorage().name;
+        return _getBaseLicenseTemplateUpgradeableStorage().name;
     }
 
     /// @notice Returns the URL to the off chain metadata
     function getMetadataURI() public view override returns (string memory) {
-        return _getBaseLicenseTemplateStorage().metadataURI;
+        return _getBaseLicenseTemplateUpgradeableStorage().metadataURI;
     }
 
     /// @notice IERC165 interface support.
@@ -48,9 +49,14 @@ abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, In
         return interfaceId == type(ILicenseTemplate).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function _getBaseLicenseTemplateStorage() internal pure returns (BaseLicenseTemplateStorage storage $) {
+    /// @dev Returns the storage struct of BaseLicenseTemplateUpgradeable.
+    function _getBaseLicenseTemplateUpgradeableStorage()
+        private
+        pure
+        returns (BaseLicenseTemplateUpgradeableStorage storage $)
+    {
         assembly {
-            $.slot := BaseLicenseTemplateStorageLocation
+            $.slot := BaseLicenseTemplateUpgradeableStorageLocation
         }
     }
 }

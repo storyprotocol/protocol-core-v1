@@ -6,7 +6,10 @@ pragma solidity 0.8.23;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
@@ -22,7 +25,9 @@ contract PILicenseTemplate is
     BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,
     LicensorApprovalChecker,
-    ReentrancyGuardUpgradeable
+    AccessManagedUpgradeable,
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
 {
     using ERC165Checker for address;
     using Strings for *;
@@ -56,9 +61,15 @@ contract PILicenseTemplate is
         _disableInitializers();
     }
 
-    function initialize(string memory name, string memory metadataURI) external initializer {
+    /// @notice initializer for this implementation contract
+    /// @param accessManager The address of the protocol admin roles contract
+    /// @param name The name of the license template
+    /// @param metadataURI The URL to the off chain metadata
+    function initialize(address accessManager, string memory name, string memory metadataURI) external initializer {
         __BaseLicenseTemplate_init(name, metadataURI);
+        __AccessManaged_init(accessManager);
         __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
     }
 
     /// @notice Registers new license terms and return the ID of the newly registered license terms.
@@ -469,10 +480,18 @@ contract PILicenseTemplate is
         return start + terms.expiration;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
+    //                         Upgrades related                               //
+    ////////////////////////////////////////////////////////////////////////////
+
     /// @dev Returns the storage struct of PILicenseTemplate.
     function _getPILicenseTemplateStorage() private pure returns (PILicenseTemplateStorage storage $) {
         assembly {
             $.slot := PILicenseTemplateStorageLocation
         }
     }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

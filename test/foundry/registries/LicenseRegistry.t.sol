@@ -302,7 +302,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.registerDerivativeIp(ipId2, parentIpIds, address(pilTemplate), licenseTermsIds);
     }
 
-
     function test_LicenseRegistry_isExpiredNow() public {
         vm.startPrank(address(licensingModule));
         licenseRegistry.setExpireTime(ipId1, block.timestamp + 100);

@@ -29,6 +29,9 @@ library Errors {
     //                               IPAssetRegistry                         //
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @notice zero address provided for access manager in initializer.
+    error IPAssetRegistry__ZeroAccessManager();
+
     /// @notice The IP asset has already been registered.
     error IPAssetRegistry__AlreadyRegistered();
 
@@ -110,6 +113,7 @@ library Errors {
     //                            LicenseRegistry                             //
     ////////////////////////////////////////////////////////////////////////////
 
+    error LicenseRegistry__ZeroAccessManager();
     error LicenseRegistry__CallerNotLicensingModule();
     error LicenseRegistry__ZeroLicensingModule();
     error LicensingModule__CallerNotLicenseRegistry();
@@ -140,6 +144,7 @@ library Errors {
     error LicenseToken__CallerNotLicensingModule();
     error LicenseToken__ZeroLicensingModule();
     error LicenseToken__ZeroDisputeModule();
+    error LicenseToken__ZeroAccessManager();
     error LicenseToken__RevokedLicense(uint256 tokenId);
     error LicenseToken__NotTransferable();
     error LicenseToken__LicenseTokenExpired(uint256 tokenId, uint256 expiredAt, uint256 currentTimestamp);
@@ -152,6 +157,7 @@ library Errors {
     //                            LicensingModule                             //
     ////////////////////////////////////////////////////////////////////////////
 
+    error LicensingModule__ZeroAccessManager();
     error LicensingModule__IpAlreadyLinked();
     error LicensingModule__PolicyAlreadySetForIpId();
     error LicensingModule__FrameworkNotFound();
@@ -242,6 +248,10 @@ library Errors {
     error DisputeModule__ZeroController();
     error DisputeModule__ZeroAccessManager();
 
+    ////////////////////////////////////////////////////////////////////////////
+    //                         ArbitrationPolicy SP                          //
+    ////////////////////////////////////////////////////////////////////////////
+
     error ArbitrationPolicySP__ZeroDisputeModule();
     error ArbitrationPolicySP__ZeroPaymentToken();
     error ArbitrationPolicySP__NotDisputeModule();
@@ -294,6 +304,7 @@ library Errors {
     //                             ModuleRegistry                             //
     ////////////////////////////////////////////////////////////////////////////
 
+    error ModuleRegistry__ZeroAccessManager();
     error ModuleRegistry__ModuleAddressZeroAddress();
     error ModuleRegistry__ModuleAddressNotContract();
     error ModuleRegistry__ModuleAlreadyRegistered();
@@ -311,6 +322,7 @@ library Errors {
     //                             AccessController                           //
     ////////////////////////////////////////////////////////////////////////////
 
+    error AccessController__ZeroAccessManager();
     error AccessController__IPAccountIsZeroAddress();
     error AccessController__IPAccountIsNotValid(address ipAccount);
     error AccessController__SignerIsZeroAddress();

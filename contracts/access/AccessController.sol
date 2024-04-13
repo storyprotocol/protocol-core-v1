@@ -57,6 +57,9 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
     /// @notice initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
+        if (accessManager == address(0)) {
+            revert Errors.AccessController__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
     }
 

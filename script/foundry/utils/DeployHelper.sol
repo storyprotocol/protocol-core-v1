@@ -192,7 +192,19 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl));
+        impl = address(
+            new IPAssetRegistry(
+                address(erc6551Registry),
+                address(ipAccountImpl)
+            )
+        );
+        ipAssetRegistry = IPAssetRegistry(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(IPAssetRegistry.initialize, address(protocolAccessManager))
+            )
+        );
+        impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(ipAssetRegistry));
 
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
@@ -420,6 +432,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);

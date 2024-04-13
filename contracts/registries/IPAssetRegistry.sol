@@ -5,6 +5,9 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
@@ -21,15 +24,36 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
+contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
 
+    /// @dev Storage structure for the IPAssetRegistry
     /// @notice Tracks the total number of IP assets in existence.
-    uint256 public totalSupply = 0;
+    /// @custom:storage-location erc7201:story-protocol.IPAssetRegistry
+    struct IPAssetRegistryStorage {
+        uint256 totalSupply;
+    }
 
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.IPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant IPAssetRegistryStorageLocation =
+        0x987c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {
+        _disableInitializers();
+    }
+
+    /// @notice Initializes the IPAssetRegistry contract.
+    /// @param accessManager The address of the access manager.
+    function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.IPAssetRegistry__ZeroAccessManager();
+        }
+        __AccessManaged_init(accessManager);
+        __UUPSUpgradeable_init();
+    }
 
     /// @notice Registers an NFT as an IP asset.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.
@@ -69,7 +93,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
         ipAccount.setString("URI", uri);
         ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
 
-        totalSupply++;
+        _getIPAssetRegistryStorage().totalSupply++;
 
         emit IPRegistered(id, block.chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
@@ -94,5 +118,21 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry {
         (uint chainId, address tokenContract, uint tokenId) = IIPAccount(payable(id)).token();
         if (id != ipAccount(chainId, tokenContract, tokenId)) return false;
         return bytes(IIPAccount(payable(id)).getString("NAME")).length != 0;
+    }
+
+    /// @notice Gets the total number of IP assets registered in the protocol.
+    function totalSupply() external view returns (uint256) {
+        return _getIPAssetRegistryStorage().totalSupply;
+    }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
+
+    /// @dev Returns the storage struct of IPAssetRegistry.
+    function _getIPAssetRegistryStorage() private pure returns (IPAssetRegistryStorage storage $) {
+        assembly {
+            $.slot := IPAssetRegistryStorageLocation
+        }
     }
 }

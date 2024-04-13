@@ -92,7 +92,13 @@ contract e2e is Test {
 
         erc6551Registry = new ERC6551Registry();
         ipAccountImpl = new IPAccountImpl(address(accessController));
-        ipAssetRegistry = new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl));
+        impl = address(new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl)));
+        ipAssetRegistry = IPAssetRegistry(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(IPAssetRegistry.initialize, address(protocolAccessManager))
+            )
+        );
 
         impl = address(new LicenseRegistry());
         licenseRegistry = LicenseRegistry(

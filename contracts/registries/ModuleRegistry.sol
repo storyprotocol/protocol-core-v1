@@ -41,6 +41,9 @@ contract ModuleRegistry is IModuleRegistry, AccessManagedUpgradeable, UUPSUpgrad
     /// @notice initializer for this implementation contract
     /// @param accessManager The address of the governance.
     function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.ModuleRegistry__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
 

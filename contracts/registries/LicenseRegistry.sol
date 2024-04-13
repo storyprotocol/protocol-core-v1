@@ -80,6 +80,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @notice initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.LicenseRegistry__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }

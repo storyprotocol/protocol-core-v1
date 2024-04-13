@@ -92,24 +92,6 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
         }
     }
 
-    /// @notice Sets the permission for all IPAccounts
-    /// @dev Enforced to be only callable by the protocol admin in governance.
-    /// @param signer The address that can call `to` on behalf of the IP account
-    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
-    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
-    /// @param permission The new permission level
-    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external restricted {
-        if (signer == address(0)) {
-            revert Errors.AccessController__SignerIsZeroAddress();
-        }
-        // permission must be one of ABSTAIN, ALLOW, DENY
-        if (permission > 2) {
-            revert Errors.AccessController__PermissionIsNotValid();
-        }
-        _setPermission(address(0), signer, to, func, permission);
-        emit PermissionSet(address(0), address(0), signer, to, func, permission);
-    }
-
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
     /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
@@ -141,7 +123,7 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
         if (permission > 2) {
             revert Errors.AccessController__PermissionIsNotValid();
         }
-        if (!IModuleRegistry($.moduleRegistry).isRegistered(msg.sender) && ipAccount != msg.sender) {
+        if (ipAccount != msg.sender && IIPAccount(payable(ipAccount)).owner() != msg.sender) {
             revert Errors.AccessController__CallerIsNotIPAccount();
         }
         _setPermission(ipAccount, signer, to, func, permission);
@@ -194,9 +176,6 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
             }
             // If module level permission is ABSTAIN, check transaction signer level permission
             if (modulePermission == AccessPermission.ABSTAIN) {
-                if (getPermission(address(0), signer, to, func) == AccessPermission.ALLOW) {
-                    return;
-                }
                 // Pass if the ipAccount allow the signer can call all functions of all modules
                 // Otherwise, revert
                 if (getPermission(ipAccount, signer, address(0), bytes4(0)) == AccessPermission.ALLOW) {

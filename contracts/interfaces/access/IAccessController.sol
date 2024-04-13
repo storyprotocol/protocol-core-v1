@@ -24,14 +24,6 @@ interface IAccessController {
     /// @param permissions An array of `Permission` structs, each representing the permission to be set.
     function setBatchPermissions(AccessPermission.Permission[] memory permissions) external;
 
-    /// @notice Sets the permission for all IPAccounts
-    /// @dev Enforced to be only callable by the protocol admin in governance.
-    /// @param signer The address that can call `to` on behalf of the IP account
-    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
-    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
-    /// @param permission The new permission level
-    function setGlobalPermission(address signer, address to, bytes4 func, uint8 permission) external;
-
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
     /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or

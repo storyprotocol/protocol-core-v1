@@ -302,6 +302,21 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.registerDerivativeIp(ipId2, parentIpIds, address(pilTemplate), licenseTermsIds);
     }
 
+    function test_LicenseRegistry_isExpiredNow() public {
+        vm.startPrank(address(licensingModule));
+        licenseRegistry.setExpireTime(ipId1, block.timestamp + 100);
+        licenseRegistry.setExpireTime(ipId2, block.timestamp + 200);
+        vm.warp(block.timestamp + 101);
+        assertTrue(licenseRegistry.isExpiredNow(ipId1));
+        assertFalse(licenseRegistry.isExpiredNow(ipId2));
+        assertFalse(licenseRegistry.isExpiredNow(ipId3));
+        vm.warp(block.timestamp + 201);
+        assertTrue(licenseRegistry.isExpiredNow(ipId1));
+        assertTrue(licenseRegistry.isExpiredNow(ipId2));
+        assertFalse(licenseRegistry.isExpiredNow(ipId3));
+        vm.stopPrank();
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

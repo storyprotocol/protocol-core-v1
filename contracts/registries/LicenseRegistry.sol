@@ -422,6 +422,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
     }
 
+    /// @notice Checks if an IP is expired.
+    /// @param ipId The address of the IP.
+    /// @return Whether the IP is expired.
+    function isExpiredNow(address ipId) external view returns (bool) {
+        return _isExpiredNow(ipId);
+    }
+
     /// @notice Returns the default license terms.
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();

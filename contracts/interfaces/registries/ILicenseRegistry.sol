@@ -189,4 +189,9 @@ interface ILicenseRegistry {
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.
     function getExpireTime(address ipId) external view returns (uint256);
+
+    /// @notice Checks if an IP is expired.
+    /// @param ipId The address of the IP.
+    /// @return Whether the IP is expired.
+    function isExpiredNow(address ipId) external view returns (bool);
 }

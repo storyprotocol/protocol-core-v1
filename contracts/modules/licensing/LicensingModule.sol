@@ -7,8 +7,6 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { IModule } from "../../interfaces/modules/base/IModule.sol";
@@ -28,6 +26,7 @@ import { IMintingFeeModule } from "contracts/interfaces/modules/licensing/IMinti
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
+import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Licensing Module
 /// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
@@ -39,7 +38,7 @@ contract LicensingModule is
     ILicensingModule,
     BaseModule,
     ReentrancyGuardUpgradeable,
-    AccessManagedUpgradeable,
+    ProtocolPausableUpgradeable,
     UUPSUpgradeable
 {
     using ERC165Checker for address;
@@ -102,7 +101,7 @@ contract LicensingModule is
         }
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -146,7 +145,7 @@ contract LicensingModule is
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
-    ) external returns (uint256 startLicenseTokenId) {
+    ) external whenNotPaused returns (uint256 startLicenseTokenId) {
         if (amount == 0) {
             revert Errors.LicensingModule__MintAmountZero();
         }
@@ -211,7 +210,7 @@ contract LicensingModule is
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
-    ) external nonReentrant verifyPermission(childIpId) {
+    ) external whenNotPaused nonReentrant verifyPermission(childIpId) {
         if (parentIpIds.length != licenseTermsIds.length) {
             revert Errors.LicensingModule__LicenseTermsLengthMismatch(parentIpIds.length, licenseTermsIds.length);
         }
@@ -275,7 +274,7 @@ contract LicensingModule is
         address childIpId,
         uint256[] calldata licenseTokenIds,
         bytes calldata royaltyContext
-    ) external nonReentrant verifyPermission(childIpId) {
+    ) external nonReentrant whenNotPaused verifyPermission(childIpId) {
         if (licenseTokenIds.length == 0) {
             revert Errors.LicensingModule__NoLicenseToken();
         }

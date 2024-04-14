@@ -4,8 +4,6 @@ pragma solidity 0.8.23;
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
@@ -17,6 +15,7 @@ import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ShortStringOps } from "../../utils/ShortStringOps.sol";
+import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Dispute Module
 /// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes
@@ -24,7 +23,7 @@ import { ShortStringOps } from "../../utils/ShortStringOps.sol";
 contract DisputeModule is
     IDisputeModule,
     BaseModule,
-    AccessManagedUpgradeable,
+    ProtocolPausableUpgradeable,
     ReentrancyGuardUpgradeable,
     AccessControlled,
     UUPSUpgradeable,
@@ -96,7 +95,7 @@ contract DisputeModule is
         if (accessManager == address(0)) {
             revert Errors.DisputeModule__ZeroAccessManager();
         }
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         __Multicall_init();
@@ -180,7 +179,7 @@ contract DisputeModule is
         string memory linkToDisputeEvidence,
         bytes32 targetTag,
         bytes calldata data
-    ) external nonReentrant returns (uint256) {
+    ) external nonReentrant whenNotPaused returns (uint256) {
         if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
@@ -222,7 +221,11 @@ contract DisputeModule is
     /// @param disputeId The dispute id
     /// @param decision The decision of the dispute
     /// @param data The data to set the dispute judgement
-    function setDisputeJudgement(uint256 disputeId, bool decision, bytes calldata data) external nonReentrant {
+    function setDisputeJudgement(
+        uint256 disputeId,
+        bool decision,
+        bytes calldata data
+    ) external nonReentrant whenNotPaused {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
 
         Dispute memory dispute = $.disputes[disputeId];
@@ -269,7 +272,7 @@ contract DisputeModule is
         address parentIpId,
         address derivativeIpId,
         uint256 parentDisputeId
-    ) external {
+    ) external whenNotPaused {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
 
         Dispute memory parentDispute = $.disputes[parentDisputeId];

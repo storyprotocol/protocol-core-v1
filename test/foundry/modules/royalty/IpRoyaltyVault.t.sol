@@ -269,6 +269,16 @@ contract TestIpRoyaltyVault is BaseTest {
         ipRoyaltyVault.snapshot();
     }
 
+    function test_IpRoyaltyVault_Snapshot_revert_paused() public {
+        // payment is made to vault
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.snapshot();
+    }
+
     function test_IpRoyaltyVault_Snapshot() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
@@ -408,5 +418,26 @@ contract TestIpRoyaltyVault is BaseTest {
             ancestorsVaultAmountBefore - ipRoyaltyVault.ancestorsVaultAmount(address(USDC)),
             accruedCollectableRevenue
         );
+    }
+
+    function test_IpRoyaltyVault_claimRevenue_revert_paused() public {
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, new address[](0));
+    }
+
+    function test_IpRoyaltyVault_collectRoyaltyTokens_revert_paused() public {
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
     }
 }

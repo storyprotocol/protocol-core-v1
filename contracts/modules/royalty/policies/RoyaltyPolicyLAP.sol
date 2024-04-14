@@ -7,17 +7,21 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
+import { ProtocolPausableUpgradeable } from "../../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
-contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, ReentrancyGuardUpgradeable, UUPSUpgradeable {
+contract RoyaltyPolicyLAP is
+    IRoyaltyPolicyLAP,
+    ProtocolPausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
+{
     using SafeERC20 for IERC20;
 
     /// @dev Storage structure for the RoyaltyPolicyLAP
@@ -76,7 +80,7 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, Reentr
     /// @param accessManager The address of the protocol admin roles contract
     function initialize(address accessManager) external initializer {
         if (accessManager == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroAccessManager();
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }

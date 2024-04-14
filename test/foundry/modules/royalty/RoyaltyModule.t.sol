@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -355,6 +356,27 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), false);
 
         vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy.selector);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_paused() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(7);
+        address payerIpId = address(3);
+
+        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+
+        vm.prank(u.admin);
+        royaltyModule.pause();
+
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, royaltyAmount);
+        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
     }
 

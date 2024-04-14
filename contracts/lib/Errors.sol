@@ -305,6 +305,7 @@ library Errors {
     error IpRoyaltyVault__ClaimerNotAnAncestor();
     error IpRoyaltyVault__IpTagged();
     error IpRoyaltyVault__ZeroDisputeModule();
+    error IpRoyaltyVault__EnforcedPause();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             ModuleRegistry                             //
@@ -348,4 +349,12 @@ library Errors {
     //                         CoreMetadataModule                       //
     ////////////////////////////////////////////////////////////////////////////
     error CoreMetadataModule__MetadataAlreadyFrozen();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                            ProtocolPauseAdmin                              //
+    ////////////////////////////////////////////////////////////////////////////
+    error ProtocolPauseAdmin__ZeroAddress();
+    error ProtocolPauseAdmin__AddingPausedContract();
+    error ProtocolPauseAdmin__PausableAlreadyAdded();
+    error ProtocolPauseAdmin__PausableNotFound();
 }

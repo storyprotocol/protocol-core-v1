@@ -3,15 +3,15 @@ pragma solidity 0.8.23;
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 // solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
-import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
+import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
 import { AccessPermission } from "../lib/AccessPermission.sol";
+import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
 import { Errors } from "../lib/Errors.sol";
 
 /// @title AccessController
@@ -29,7 +29,7 @@ import { Errors } from "../lib/Errors.sol";
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
-contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUpgradeable {
+contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 
     /// @dev The storage struct of AccessController.
@@ -60,7 +60,8 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
         if (accessManager == address(0)) {
             revert Errors.AccessController__ZeroAccessManager();
         }
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
+        __UUPSUpgradeable_init();
     }
 
     /// @notice Sets the addresses of the IP account registry and the module registry
@@ -106,8 +107,13 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @param permission The new permission level
-    function setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) public {
-        // TODO: Reintroduce pause
+    function setPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func,
+        uint8 permission
+    ) public whenNotPaused {
         // IPAccount and signer does not support wildcard permission
         if (ipAccount == address(0)) {
             revert Errors.AccessController__IPAccountIsZeroAddress();

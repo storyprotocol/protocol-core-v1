@@ -11,6 +11,7 @@ import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721WithoutMetadata.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
@@ -116,6 +117,14 @@ contract IPAssetRegistryTest is BaseTest {
         registry.register(block.chainid, tokenAddress, tokenId);
     }
 
+    function test_IPAssetRegistry_revert_paused() public {
+        vm.prank(u.admin);
+        registry.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        registry.register(1, tokenAddress, tokenId);
+    }
+
     /// @notice Tests registration of IP with non ERC721 token.
     function test_IPAssetRegistry_revert_InvalidTokenContract() public {
         // not an ERC721 contract
@@ -195,14 +204,14 @@ contract IPAssetRegistryTest is BaseTest {
     }
 
     /// @notice Helper function for generating an account address.
-    function _getIPAccount(uint256 chainid, uint256 tokenId) internal view returns (address) {
+    function _getIPAccount(uint256 chainid, uint256 _tokenId) internal view returns (address) {
         return
             erc6551Registry.account(
                 address(ipAccountImpl),
                 ipAccountRegistry.IP_ACCOUNT_SALT(),
                 chainid,
                 tokenAddress,
-                tokenId
+                _tokenId
             );
     }
 

@@ -4,6 +4,8 @@ pragma solidity 0.8.23;
 // external
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+
 // contracts
 import { Errors } from "contracts/lib/Errors.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
@@ -244,7 +246,18 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.raiseDispute(ipAddr, string(""), "PLAGIARISM", "");
     }
 
-    function test_DisputeModule_raiseDispute_BlacklistedPolicy() public {
+    function test_DisputeModule_raiseDispute_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        vm.startPrank(u.bob);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+    }
+
+    function test_DisputeModule_PolicySP_raiseDispute_BlacklistedPolicy() public {
         vm.startPrank(u.admin);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), false);
         vm.stopPrank();
@@ -417,7 +430,23 @@ contract DisputeModuleTest is BaseTest {
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_cancelDispute_revert_NotDisputeInitiator() public {
+    function test_DisputeModule_PolicySP_revert_paused() public {
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        // set dispute judgement
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+    }
+
+    function test_DisputeModule_PolicySP_cancelDispute_revert_NotDisputeInitiator() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
@@ -458,6 +487,14 @@ contract DisputeModuleTest is BaseTest {
 
     function test_DisputeModule_tagDerivativeIfParentInfringed_revert_ParentIpIdMismatch() public {
         vm.expectRevert(Errors.DisputeModule__ParentIpIdMismatch.selector);
+        disputeModule.tagDerivativeIfParentInfringed(address(1), address(2), 1);
+    }
+
+    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         disputeModule.tagDerivativeIfParentInfringed(address(1), address(2), 1);
     }
 

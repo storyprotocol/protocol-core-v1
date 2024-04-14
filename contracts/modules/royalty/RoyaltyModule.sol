@@ -5,8 +5,6 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { BaseModule } from "../BaseModule.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
@@ -15,13 +13,14 @@ import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
+import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
 ///         derivative IP.
 contract RoyaltyModule is
     IRoyaltyModule,
-    AccessManagedUpgradeable,
+    ProtocolPausableUpgradeable,
     ReentrancyGuardUpgradeable,
     BaseModule,
     UUPSUpgradeable
@@ -61,7 +60,7 @@ contract RoyaltyModule is
         if (accessManager == address(0)) {
             revert Errors.RoyaltyModule__ZeroAccessManager();
         }
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }
@@ -186,7 +185,7 @@ contract RoyaltyModule is
         address payerIpId,
         address token,
         uint256 amount
-    ) external nonReentrant {
+    ) external nonReentrant whenNotPaused {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
 

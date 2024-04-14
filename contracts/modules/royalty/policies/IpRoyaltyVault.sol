@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 // solhint-disable-next-line max-line-length
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable-v4/security/ReentrancyGuardUpgradeable.sol";
 // solhint-disable-next-line max-line-length
@@ -58,6 +59,12 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Dispute module address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
+
+    modifier whenNotPaused() {
+        // DEV NOTE: If we upgrade RoyaltyPolicyLAP to not pausable, we need to remove this.
+        if (PausableUpgradeable(address(ROYALTY_POLICY_LAP)).paused()) revert Errors.IpRoyaltyVault__EnforcedPause();
+        _;
+    }
 
     /// @notice Constructor
     /// @param royaltyPolicyLAP The address of the royalty policy LAP
@@ -116,7 +123,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Snapshots the claimable revenue and royalty token amounts
     /// @return snapshotId The snapshot id
-    function snapshot() external returns (uint256) {
+    function snapshot() external whenNotPaused returns (uint256) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         if (block.timestamp - $.lastSnapshotTimestamp < ROYALTY_POLICY_LAP.getSnapshotInterval())
@@ -158,14 +165,21 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param snapshotId The snapshot id
     /// @param token The revenue token to claim
     /// @return The amount of revenue token claimable
-    function claimableRevenue(address account, uint256 snapshotId, address token) external view returns (uint256) {
+    function claimableRevenue(
+        address account,
+        uint256 snapshotId,
+        address token
+    ) external view whenNotPaused returns (uint256) {
         return _claimableRevenue(account, snapshotId, token);
     }
 
     /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
     /// @param tokenList The list of revenue tokens to claim
-    function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokenList) external nonReentrant {
+    function claimRevenueByTokenBatch(
+        uint256 snapshotId,
+        address[] calldata tokenList
+    ) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         for (uint256 i = 0; i < tokenList.length; i++) {
@@ -183,7 +197,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
     /// @param token The revenue token to claim
-    function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external {
+    function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         uint256 claimableToken;
@@ -200,7 +214,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Allows ancestors to claim the royalty tokens and any accrued revenue tokens
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
-    function collectRoyaltyTokens(address ancestorIpId) external nonReentrant {
+    function collectRoyaltyTokens(address ancestorIpId) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         (, , , address[] memory ancestors, uint32[] memory ancestorsRoyalties) = ROYALTY_POLICY_LAP.getRoyaltyData(

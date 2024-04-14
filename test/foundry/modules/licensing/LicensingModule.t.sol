@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -522,6 +523,27 @@ contract LicensingModuleTest is BaseTest {
         });
     }
 
+    function test_LicensingModule_mintLicenseTokens_revert_paused() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        vm.prank(u.admin);
+        licensingModule.pause();
+
+        address receiver = address(0x111);
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        emit ILicensingModule.LicenseTokensMinted(address(this), ipId1, address(pilTemplate), termsId, 2, receiver, 0);
+        uint256 firstTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 2,
+            receiver: receiver,
+            royaltyContext: ""
+        });
+    }
+
     function test_LicensingModule_mintLicenseTokens_IpOwnerMintNotAttachedLicense() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         address receiver = address(0x111);
@@ -591,6 +613,30 @@ contract LicensingModuleTest is BaseTest {
         (address licenseTemplate, uint256 licenseTermsId) = licenseRegistry.getAttachedLicenseTerms(ipId2, 0);
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
+    }
+
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        vm.prank(u.admin);
+        licensingModule.pause();
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_twoParents() public {

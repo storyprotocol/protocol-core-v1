@@ -6,11 +6,10 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
+import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
 import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
@@ -24,7 +23,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
+contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
@@ -51,7 +50,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
         if (accessManager == address(0)) {
             revert Errors.IPAssetRegistry__ZeroAccessManager();
         }
-        __AccessManaged_init(accessManager);
+        __ProtocolPausable_init(accessManager);
         __UUPSUpgradeable_init();
     }
 
@@ -61,7 +60,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
     /// @param tokenContract The address of the NFT.
     /// @param tokenId The token identifier of the NFT.
     /// @return id The address of the newly registered IP.
-    function register(uint256 chainid, address tokenContract, uint256 tokenId) external returns (address id) {
+    function register(uint256 chainid, address tokenContract, uint256 tokenId) whenNotPaused external returns (address id) {
         id = registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 

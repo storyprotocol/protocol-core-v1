@@ -11,6 +11,8 @@ import { MockERC1155 } from "../mocks/token/MockERC1155.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+
 contract AccessControllerTest is BaseTest {
     MockModule public mockModule;
     MockModule public moduleWithoutPermission;
@@ -1630,5 +1632,34 @@ contract AccessControllerTest is BaseTest {
             abi.encodeWithSignature("balanceOf(address)", address(ipAccount))
         );
         assertEq(abi.decode(result, (uint256)), 1);
+    }
+
+    function test_AccessController_pause() public {
+        address signer = vm.addr(2);
+        vm.startPrank(u.admin);
+        accessController.pause();
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        accessController.setPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            bytes4(0),
+            AccessPermission.ALLOW
+        );
+        vm.stopPrank();
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        vm.prank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                bytes4(0),
+                AccessPermission.ALLOW
+            )
+        );
     }
 }

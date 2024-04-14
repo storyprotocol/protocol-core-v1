@@ -13,6 +13,8 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
+import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
+import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpgradeable.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
@@ -84,6 +86,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Access Control
     AccessManager internal protocolAccessManager; // protocol roles
     AccessController internal accessController; // per IPA roles
+
+    // Pause
+    ProtocolPauseAdmin internal protocolPauser;
 
     // License system
     LicenseToken internal licenseToken;
@@ -163,6 +168,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         protocolAccessManager = new AccessManager(deployer);
         _postdeploy(contractKey, address(protocolAccessManager));
+
+        contractKey = "ProtocolPauseAdmin";
+        _predeploy(contractKey);
+        protocolPauser = new ProtocolPauseAdmin(address(protocolAccessManager));
+        _postdeploy(contractKey, address(protocolPauser));
 
         contractKey = "AccessController";
         _predeploy(contractKey);
@@ -375,6 +385,15 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     function _configureDeployment() private {
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
 
+        // Protocol Pause
+        protocolPauser.addPausable(address(accessController));
+        protocolPauser.addPausable(address(disputeModule));
+        protocolPauser.addPausable(address(licensingModule));
+        protocolPauser.addPausable(address(royaltyModule));
+        protocolPauser.addPausable(address(royaltyPolicyLAP));
+        protocolPauser.addPausable(address(ipAssetRegistry));
+        
+
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
         moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));
@@ -446,8 +465,24 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
+        // Pause
+        selectors = new bytes4[](2);
+        selectors[0] = ProtocolPausableUpgradeable.pause.selector;
+        selectors[1] = ProtocolPausableUpgradeable.unpause.selector;
+
+        protocolAccessManager.labelRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, ProtocolAdmin.PAUSE_ADMIN_ROLE_LABEL);
+        protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(protocolPauser), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);
+        protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, multisig, 0);
+        protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, address(protocolPauser), 0);
         protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, 0);
 
         ///////// Renounce admin role /////////

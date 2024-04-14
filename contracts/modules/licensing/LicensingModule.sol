@@ -59,7 +59,7 @@ contract LicensingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
 
-    /// @notice Returns the dispute module
+    /// @notice Returns the protocol-wide dispute module
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 

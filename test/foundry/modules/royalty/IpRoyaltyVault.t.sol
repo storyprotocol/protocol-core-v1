@@ -46,7 +46,7 @@ contract TestIpRoyaltyVault is BaseTest {
         uint32[] memory parentRoyalties1 = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
 
-        // 3 is child of 7 and 8
+        // 100 is child of 7 and 8
         parents[0] = address(7);
         parents[1] = address(8);
         parentRoyalties1[0] = 7 * 10 ** 5;
@@ -55,7 +55,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
-        royaltyPolicyLAP.onLinkToParents(address(3), parents, encodedLicenseData, "");
+        royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
 
         // 4 is child of 9 and 10
         parents[0] = address(9);
@@ -91,8 +91,8 @@ contract TestIpRoyaltyVault is BaseTest {
         royaltyPolicyLAP.onLinkToParents(address(6), parents, encodedLicenseData, "");
 
         // init 3rd level with children
-        // 1 is child of 3 and 4
-        parents[0] = address(3);
+        // 1 is child of 100 and 4
+        parents[0] = address(100);
         parents[1] = address(4);
         parentRoyalties1[0] = 3 * 10 ** 5;
         parentRoyalties1[1] = 4 * 10 ** 5;
@@ -128,8 +128,7 @@ contract TestIpRoyaltyVault is BaseTest {
         }
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(address(100), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
-        //royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
+        royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
     }
 
     function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
@@ -150,10 +149,10 @@ contract TestIpRoyaltyVault is BaseTest {
     function test_IpRoyaltyVault_ClaimableRevenue() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(100), 100000 * 10 ** 6); // 100k USDC
-        vm.startPrank(address(100));
+        USDC.mint(address(3), 100000 * 10 ** 6); // 100k USDC
+        vm.startPrank(address(3));
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot
@@ -172,13 +171,13 @@ contract TestIpRoyaltyVault is BaseTest {
     function test_IpRoyaltyVault_ClaimRevenueByTokenBatch() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(100), royaltyAmount); // 100k USDC
-        LINK.mint(address(100), royaltyAmount); // 100k LINK
-        vm.startPrank(address(100));
+        USDC.mint(address(3), royaltyAmount); // 100k USDC
+        LINK.mint(address(3), royaltyAmount); // 100k LINK
+        vm.startPrank(address(3));
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
         LINK.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(LINK), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(LINK), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot
@@ -220,19 +219,19 @@ contract TestIpRoyaltyVault is BaseTest {
 
     function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch() public {
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(100), royaltyAmount); // 100k USDC
+        USDC.mint(address(3), royaltyAmount); // 100k USDC
 
         // 1st payment is made to vault
-        vm.startPrank(address(100));
+        vm.startPrank(address(3));
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount / 2);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount / 2);
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
         // 2nt payment is made to vault
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount / 2);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount / 2);
         vm.stopPrank();
 
         // take snapshot
@@ -282,13 +281,13 @@ contract TestIpRoyaltyVault is BaseTest {
     function test_IpRoyaltyVault_Snapshot() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(100), royaltyAmount); // 100k USDC
-        LINK.mint(address(100), royaltyAmount); // 100k LINK
-        vm.startPrank(address(100));
+        USDC.mint(address(3), royaltyAmount); // 100k USDC
+        LINK.mint(address(3), royaltyAmount); // 100k LINK
+        vm.startPrank(address(3));
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
         LINK.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(LINK), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(LINK), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot
@@ -381,10 +380,10 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 accruedCollectableRevenue = (royaltyAmount * 5 * 10 ** 5) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
 
         // payment is made to vault
-        USDC.mint(address(100), royaltyAmount); // 100k USDC
-        vm.startPrank(address(100));
+        USDC.mint(address(3), royaltyAmount); // 100k USDC
+        vm.startPrank(address(3));
         USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(100), address(USDC), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot

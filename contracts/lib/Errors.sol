@@ -278,6 +278,8 @@ library Errors {
     error RoyaltyModule__CanOnlyMintSelectedPolicy();
     error RoyaltyModule__NoParentsOnLinking();
     error RoyaltyModule__ZeroDisputeModule();
+    error RoyaltyModule__ZeroLicenseRegistry();
+    error RoyaltyModule__IpIsExpired();
     error RoyaltyModule__IpIsTagged();
     error RoyaltyModule__ZeroAccessManager();
 

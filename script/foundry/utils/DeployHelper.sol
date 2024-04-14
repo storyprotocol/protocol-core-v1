@@ -223,18 +223,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
 
-        contractKey = "RoyaltyModule";
-        _predeploy(contractKey);
-        impl = address(new RoyaltyModule());
-        royaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
-            )
-        );
-        impl = address(0);
-        _postdeploy(contractKey, address(royaltyModule));
-
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
         impl = address(new LicenseRegistry());
@@ -276,6 +264,18 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         impl = address(0);
         _postdeploy(contractKey, address(licenseToken));
+
+        contractKey = "RoyaltyModule";
+        _predeploy(contractKey);
+        impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
+        royaltyModule = RoyaltyModule(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+            )
+        );
+        impl = address(0);
+        _postdeploy(contractKey, address(royaltyModule));
 
         contractKey = "LicensingModule";
         _predeploy(contractKey);
@@ -415,7 +415,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.setLicensingModule(address(licensingModule));
-        royaltyModule.setDisputeModule(address(disputeModule));
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyPolicyLAP.setSnapshotInterval(7 days);

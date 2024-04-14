@@ -90,7 +90,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function _setupTree() internal {
         // init royalty policy for roots
-        royaltyModule.onLicenseMinting(address(7), address(royaltyPolicyLAP), abi.encode(uint32(7)), "");
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), abi.encode(uint32(7)), "");
         royaltyModule.onLicenseMinting(address(8), address(royaltyPolicyLAP), abi.encode(uint32(8)), "");
 
         // init 2nd level with children
@@ -98,8 +98,8 @@ contract TestRoyaltyModule is BaseTest {
         uint32[] memory parentRoyalties = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
 
-        // 3 is child of 7 and 8
-        parents[0] = address(7);
+        // 3 is child of 2 and 8
+        parents[0] = address(2);
         parents[1] = address(8);
         parentRoyalties[0] = 7;
         parentRoyalties[1] = 8;
@@ -109,35 +109,9 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
     }
     function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
-        address impl = address(new RoyaltyModule());
+        address impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
         RoyaltyModule(TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(0))));
-    }
-
-    function test_RoyaltyModule_setDisputeModule_revert_ZeroDisputeModule() public {
-        address impl = address(new RoyaltyModule());
-        RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
-            )
-        );
-        vm.expectRevert(Errors.RoyaltyModule__ZeroDisputeModule.selector);
-        vm.prank(u.admin);
-        testRoyaltyModule.setDisputeModule(address(0));
-    }
-
-    function test_RoyaltyModule_setDisputeModule() public {
-        vm.startPrank(u.admin);
-        address impl = address(new RoyaltyModule());
-        RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
-            )
-        );
-        testRoyaltyModule.setDisputeModule(address(disputeModule));
-        assertEq(testRoyaltyModule.disputeModule(), address(disputeModule));
     }
 
     function test_RoyaltyModule_setLicensingModule_revert_ZeroLicensingModule() public {
@@ -148,7 +122,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_setLicensingModule() public {
         vm.startPrank(u.admin);
-        address impl = address(new RoyaltyModule());
+        address impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
         RoyaltyModule testRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -227,7 +201,7 @@ contract TestRoyaltyModule is BaseTest {
     }
 
     function test_RoyaltyModule_onLicenseMinting_Root() public {
-        address licensor = address(7);
+        address licensor = address(2);
         bytes memory licenseData = abi.encode(uint32(15));
 
         // mint a license of another policy
@@ -248,7 +222,7 @@ contract TestRoyaltyModule is BaseTest {
         address[] memory parents = new address[](2);
         uint32[] memory parentRoyalties = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
-        parents[0] = address(7);
+        parents[0] = address(2);
         parents[1] = address(8);
         parentRoyalties[0] = 7;
         parentRoyalties[1] = 8;
@@ -301,7 +275,7 @@ contract TestRoyaltyModule is BaseTest {
         address[] memory parents = new address[](2);
         uint32[] memory parentRoyalties = new uint32[](2);
         bytes[] memory encodedLicenseData = new bytes[](2);
-        parents[0] = address(7);
+        parents[0] = address(2);
         parents[1] = address(8);
         parentRoyalties[0] = 7;
         parentRoyalties[1] = 8;
@@ -322,7 +296,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_NotWhitelistedRoyaltyToken() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerIpId = address(3);
 
         vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
@@ -349,7 +323,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_NotWhitelistedRoyaltyPolicy() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerIpId = address(3);
 
         vm.startPrank(u.admin);
@@ -363,26 +337,33 @@ contract TestRoyaltyModule is BaseTest {
         uint256 royaltyAmount = 100 * 10 ** 6;
         address receiverIpId = address(7);
         address payerIpId = address(3);
-
-        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
-
         vm.prank(u.admin);
         royaltyModule.pause();
-
-        vm.startPrank(payerIpId);
-        USDC.mint(payerIpId, royaltyAmount);
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-
-        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
-        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
 
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
     }
 
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsExpired() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(2);
+        address payerIpId = address(3);
+
+        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, royaltyAmount);
+        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
+
+        vm.warp(block.timestamp + licenseRegistry.getExpireTime(receiverIpId) + 1);
+
+        vm.expectRevert(Errors.RoyaltyModule__IpIsExpired.selector);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+    }
+
     function test_RoyaltyModule_payRoyaltyOnBehalf() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerIpId = address(3);
 
         (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
@@ -422,9 +403,10 @@ contract TestRoyaltyModule is BaseTest {
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(royaltyPolicyLAP), address(USDC), 100);
     }
+
     function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyToken() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerAddress = address(3);
         address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
         address token = address(1);
@@ -432,9 +414,10 @@ contract TestRoyaltyModule is BaseTest {
         vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
     }
+
     function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyPolicy() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerAddress = address(3);
         address licenseRoyaltyPolicy = address(1);
         address token = address(USDC);
@@ -444,9 +427,31 @@ contract TestRoyaltyModule is BaseTest {
         vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy.selector);
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
     }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsExpired() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(2);
+        address payerAddress = address(3);
+        address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
+        address token = address(USDC);
+
+        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+
+        vm.startPrank(payerAddress);
+        USDC.mint(payerAddress, royaltyAmount);
+        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
+        vm.stopPrank;
+
+        vm.warp(block.timestamp + licenseRegistry.getExpireTime(receiverIpId) + 1);
+
+        vm.startPrank(address(licensingModule));
+        vm.expectRevert(Errors.RoyaltyModule__IpIsExpired.selector);
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, licenseRoyaltyPolicy, token, royaltyAmount);
+    }
+
     function test_RoyaltyModule_payLicenseMintingFee() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(7);
+        address receiverIpId = address(2);
         address payerAddress = address(3);
         address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
         address token = address(USDC);

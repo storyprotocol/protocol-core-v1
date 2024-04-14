@@ -7,7 +7,7 @@ interface IArbitrationPolicy {
     /// @param amount The amount withdrawn
     event GovernanceWithdrew(uint256 amount);
 
-    /// @notice Returns the dispute module address
+    /// @notice Returns the protocol-wide dispute module address
     function DISPUTE_MODULE() external view returns (address);
 
     /// @notice Returns the payment token address

@@ -17,7 +17,7 @@ import { Errors } from "../../../lib/Errors.sol";
 contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
-    /// @notice Returns the dispute module address
+    /// @notice Returns the protocol-wide dispute module address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable DISPUTE_MODULE;
     /// @notice Returns the payment token address

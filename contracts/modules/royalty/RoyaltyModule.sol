@@ -10,6 +10,7 @@ import { BaseModule } from "../BaseModule.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
+import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
@@ -27,15 +28,21 @@ contract RoyaltyModule is
 {
     using ERC165Checker for address;
 
+    /// @notice Returns the canonical protocol-wide LicenseRegistry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
+
+    /// @notice Returns the protocol-wide dispute module
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IDisputeModule public immutable DISPUTE_MODULE;
+
     /// @dev Storage structure for the RoyaltyModule
-    /// @param disputeModule The address of the dispute module
     /// @param licensingModule The address of the licensing module
     /// @param isWhitelistedRoyaltyPolicy Indicates if a royalty policy is whitelisted
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param royaltyPolicies Indicates the royalty policy for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
-        address disputeModule;
         address licensingModule;
         mapping(address royaltyPolicy => bool isWhitelisted) isWhitelistedRoyaltyPolicy;
         mapping(address token => bool) isWhitelistedRoyaltyToken;
@@ -49,8 +56,15 @@ contract RoyaltyModule is
     string public constant override name = ROYALTY_MODULE_KEY;
 
     /// @notice Constructor
+    /// @param disputeModule The address of the dispute module
+    /// @param licenseRegistry The address of the license registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address disputeModule, address licenseRegistry) {
+        if (disputeModule == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
+        if (licenseRegistry == address(0)) revert Errors.RoyaltyModule__ZeroLicenseRegistry();
+
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }
 
@@ -78,14 +92,6 @@ contract RoyaltyModule is
     function setLicensingModule(address licensing) external restricted {
         if (licensing == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
         _getRoyaltyModuleStorage().licensingModule = licensing;
-    }
-
-    /// @notice Sets the dispute module
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param dispute The address of the dispute module
-    function setDisputeModule(address dispute) external restricted {
-        if (dispute == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
-        _getRoyaltyModuleStorage().disputeModule = dispute;
     }
 
     /// @notice Whitelist a royalty policy
@@ -189,7 +195,7 @@ contract RoyaltyModule is
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
 
-        IDisputeModule dispute = IDisputeModule($.disputeModule);
+        IDisputeModule dispute = DISPUTE_MODULE;
         if (dispute.isIpTagged(receiverIpId) || dispute.isIpTagged(payerIpId))
             revert Errors.RoyaltyModule__IpIsTagged();
 
@@ -199,6 +205,10 @@ contract RoyaltyModule is
         if (payerRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[payerRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
+
+        ILicenseRegistry licenseRegistry = LICENSE_REGISTRY;
+        if (licenseRegistry.isExpiredNow(receiverIpId) || licenseRegistry.isExpiredNow(payerIpId))
+            revert Errors.RoyaltyModule__IpIsExpired();
 
         IRoyaltyPolicy(payerRoyaltyPolicy).onRoyaltyPayment(msg.sender, receiverIpId, token, amount);
 
@@ -220,10 +230,11 @@ contract RoyaltyModule is
     ) external onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
-        if (IDisputeModule($.disputeModule).isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (DISPUTE_MODULE.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
         if (licenseRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[licenseRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
+        if (LICENSE_REGISTRY.isExpiredNow(receiverIpId)) revert Errors.RoyaltyModule__IpIsExpired();
 
         IRoyaltyPolicy(licenseRoyaltyPolicy).onRoyaltyPayment(payerAddress, receiverIpId, token, amount);
 
@@ -233,11 +244,6 @@ contract RoyaltyModule is
     /// @notice Returns the licensing module address
     function licensingModule() external view returns (address) {
         return _getRoyaltyModuleStorage().licensingModule;
-    }
-
-    /// @notice Returns the dispute module address
-    function disputeModule() external view returns (address) {
-        return _getRoyaltyModuleStorage().disputeModule;
     }
 
     /// @notice Indicates if a royalty policy is whitelisted

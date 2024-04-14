@@ -237,11 +237,11 @@ contract e2e is Test {
         uint256 tokenId6 = mockNft.mint(dave);
         uint256 tokenId7 = mockNft.mint(eve);
 
-        ipId1 = ipAssetRegistry.register(address(mockNft), tokenId1);
-        ipId2 = ipAssetRegistry.register(address(mockNft), tokenId2);
-        ipId3 = ipAssetRegistry.register(address(mockNft), tokenId3);
-        ipId6 = ipAssetRegistry.register(address(mockNft), tokenId6);
-        ipId7 = ipAssetRegistry.register(address(mockNft), tokenId7);
+        ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
+        ipId2 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId2);
+        ipId3 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId3);
+        ipId6 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId6);
+        ipId7 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId7);
 
         // register license terms
         uint256 lcId1 = piLicenseTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());

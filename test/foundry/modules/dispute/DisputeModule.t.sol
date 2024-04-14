@@ -84,7 +84,7 @@ contract DisputeModuleTest is BaseTest {
         );
 
         vm.startPrank(u.alice);
-        ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
+        ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
         licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 
         // Bob mints 1 license of policy "pil-commercial-remix" from IPAccount1 and registers the derivative IP for
@@ -105,7 +105,7 @@ contract DisputeModuleTest is BaseTest {
             royaltyContext: ""
         }); // first license minted
 
-        ipAddr2 = ipAssetRegistry.register(address(mockNFT), 1);
+        ipAddr2 = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);
 
         licensingModule.registerDerivativeWithLicenseTokens(ipAddr2, licenseIds, "");
 

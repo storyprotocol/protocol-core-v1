@@ -57,37 +57,19 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
 
     /// @notice Registers an NFT as an IP asset.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.
+    /// @param chainid The chain identifier of where the IP NFT resides.
     /// @param tokenContract The address of the NFT.
     /// @param tokenId The token identifier of the NFT.
     /// @return id The address of the newly registered IP.
-    function register(address tokenContract, uint256 tokenId) external returns (address id) {
-        if (!tokenContract.supportsInterface(type(IERC721).interfaceId)) {
-            revert Errors.IPAssetRegistry__UnsupportedIERC721(tokenContract);
-        }
-
-        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
-            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
-        }
-
-        if (!tokenContract.supportsInterface(type(IERC721Metadata).interfaceId)) {
-            revert Errors.IPAssetRegistry__UnsupportedIERC721Metadata(tokenContract);
-        }
-
-        id = registerIpAccount(block.chainid, tokenContract, tokenId);
+    function register(uint256 chainid, address tokenContract, uint256 tokenId) external returns (address id) {
+        id = registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 
         if (bytes(ipAccount.getString("NAME")).length != 0) {
             revert Errors.IPAssetRegistry__AlreadyRegistered();
         }
 
-        string memory name = string.concat(
-            block.chainid.toString(),
-            ": ",
-            IERC721Metadata(tokenContract).name(),
-            " #",
-            tokenId.toString()
-        );
-        string memory uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
+        (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);
         uint256 registrationDate = block.timestamp;
         ipAccount.setString("NAME", name);
         ipAccount.setString("URI", uri);
@@ -95,7 +77,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
 
         _getIPAssetRegistryStorage().totalSupply++;
 
-        emit IPRegistered(id, block.chainid, tokenContract, tokenId, name, uri, registrationDate);
+        emit IPRegistered(id, chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
 
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
@@ -123,6 +105,40 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
     /// @notice Gets the total number of IP assets registered in the protocol.
     function totalSupply() external view returns (uint256) {
         return _getIPAssetRegistryStorage().totalSupply;
+    }
+
+    /// @dev Retrieves the name and URI of from IP NFT.
+    function _getNameAndUri(
+        uint256 chainid,
+        address tokenContract,
+        uint256 tokenId
+    ) internal view returns (string memory name, string memory uri) {
+        if (chainid != block.chainid) {
+            name = string.concat(chainid.toString(), ": ", tokenContract.toHexString(), " #", tokenId.toString());
+            uri = "";
+            return (name, uri);
+        }
+        // Handle NFT on the same chain
+        if (!tokenContract.supportsInterface(type(IERC721).interfaceId)) {
+            revert Errors.IPAssetRegistry__UnsupportedIERC721(tokenContract);
+        }
+
+        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
+            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
+        }
+
+        if (!tokenContract.supportsInterface(type(IERC721Metadata).interfaceId)) {
+            revert Errors.IPAssetRegistry__UnsupportedIERC721Metadata(tokenContract);
+        }
+
+        name = string.concat(
+            block.chainid.toString(),
+            ": ",
+            IERC721Metadata(tokenContract).name(),
+            " #",
+            tokenId.toString()
+        );
+        uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

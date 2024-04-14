@@ -20,7 +20,7 @@ contract CoreMetadataViewModuleTest is BaseTest {
 
         mockNFT.mintId(alice, 99);
 
-        ipAccount = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 99)));
+        ipAccount = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 99)));
 
         vm.label(address(ipAccount), "IPAccount1");
     }

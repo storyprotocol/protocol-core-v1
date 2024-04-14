@@ -77,7 +77,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.alice);
-        ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
+        ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
 
         licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 

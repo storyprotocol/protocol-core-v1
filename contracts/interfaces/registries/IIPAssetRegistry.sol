@@ -28,10 +28,11 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     function totalSupply() external view returns (uint256);
 
     /// @notice Registers an NFT as an IP asset.
+    /// @param chainid The chain identifier of where the IP NFT resides.
     /// @param tokenContract The address of the NFT.
     /// @param tokenId The token identifier of the NFT.
     /// @return id The address of the newly registered IP.
-    function register(address tokenContract, uint256 tokenId) external returns (address id);
+    function register(uint256 chainid, address tokenContract, uint256 tokenId) external returns (address id);
 
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
     /// @dev This is equivalent to the address of its bound IP account.

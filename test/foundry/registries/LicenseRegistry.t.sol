@@ -49,10 +49,10 @@ contract LicenseRegistryTest is BaseTest {
         mockNft.mintId(ipOwner3, tokenId3);
         mockNft.mintId(ipOwner5, tokenId5);
 
-        ipId1 = ipAssetRegistry.register(address(mockNft), tokenId1);
-        ipId2 = ipAssetRegistry.register(address(mockNft), tokenId2);
-        ipId3 = ipAssetRegistry.register(address(mockNft), tokenId3);
-        ipId5 = ipAssetRegistry.register(address(mockNft), tokenId5);
+        ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
+        ipId2 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId2);
+        ipId3 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId3);
+        ipId5 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId5);
 
         vm.label(ipId1, "IPAccount1");
         vm.label(ipId2, "IPAccount2");

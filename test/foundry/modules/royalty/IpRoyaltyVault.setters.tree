@@ -1,0 +1,20 @@
+IpRoyaltyVault.sol:setters
+├── when initializing IpRoyaltyVault
+│   ├── it should set IP ID as the argument value
+│   ├── it should set the unclaimed royalty tokens to the argument value
+│   ├── it should set the snapshot timestamp as current block timestamp
+│   ├── it should mint unclaimedTokens amount of RTs to the vault (RTs claimable by parents)
+│   ├── it should mint the rest (supply - unclaimedTokens) amount of RTs to the IP (RTs owned by IP)
+│   ├── it should initialize ReentrancyGuard
+│   ├── it should initialize ERC20Snapshot
+│   └── it should initialize ERC20 with the argument name and symbol
+└── when adding token to IpRoyaltyVault
+    ├── when caller is not Royalty Policy LAP
+    │   └── it should revert
+    └── when caller is Royalty Policy LAP
+        ├── when token does not support IERC20 interface
+        │   └── it should revert
+        └── when token supports IERC20 interface
+            ├── it should add token to the set of tokens
+            ├── it should emit an event
+            └── it should return true if the value was added to set

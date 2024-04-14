@@ -1,0 +1,27 @@
+RoyaltyModule.sol:payments
+├── when paying royalty on behalf
+│   ├── given the payment token is not in allowlist
+│   │   └── it should revert
+│   ├── given the payer's royalty policy is zero address
+│   │   └── it should revert
+│   ├── given the payer's royalty policy is not in allowlist
+│   │   └── it should revert
+│   ├── given the receiver IP is dispute tagged
+│   │   └── it should revert
+│   ├── given the payer IP is dispute tagged
+│   │   └── it should revert
+│   └── given the payment token and payer's royalty policy are in allowlist and receiver IP and payer IP are not dispute tagged
+│       ├── it should call royalty policy callback `onRoyaltyPayment` with msg.sender as caller
+│       └── it should emit an event
+└── when paying license minting fee
+    ├── given the payment token is not in allowlist
+    │   └── it should revert
+    ├── given the license royalty policy is zero address
+    │   └── it should revert
+    ├── given the license royalty policy is not in allowlist
+    │   └── it should revert
+    ├── given the receiver IP is dispute tagged
+    │   └── it should revert
+    └── given the payment token and license royalty policy are in allowlist and receiver IP is not dispute tagged
+        ├── it should call royalty policy callback `onRoyaltyPayment` with payer as caller
+        └── it should emit an event

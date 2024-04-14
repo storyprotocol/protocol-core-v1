@@ -1,0 +1,19 @@
+IpRoyaltyVault.sol:snapshot
+└── when taking snapshot
+    ├── when snapshot interval has not passed
+    │   └── it should revert
+    └── when snapshot interval has passed
+        ├── it should set last snapshot timestamp as now
+        ├── it should save the current unclaimed RT amount
+        ├── given each token in non-empty token list
+        │   ├── when token balance of vault is zero
+        │   │   └── it should remove token from vault token list
+        │   └── when token balance of vault is non-zero
+        │       ├── when new revenue is zero
+        │       │   └── it should skip to next token in list
+        │       └── when new revenue is non-zero
+        │           ├── it should save the portion of new revenue owned to ancestor IPs that have not claimed RT
+        │           ├── it should set the claimable amount for token at snapshotId
+        │           └── it should save the portion of new revenue claimable of token by RT owners
+        ├── it should emit an event
+        └── it should return the new snapshotId

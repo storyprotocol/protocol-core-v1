@@ -1,0 +1,42 @@
+RoyaltyPolicyLAP.sol
+├── when calling onLicenseMinting
+│   ├── when caller is not royalty module
+│   │   └── it should revert
+│   └── when caller is royalty module
+│       ├── when the sum of IP's royalty stack and new license royalty exceeds total supply of RT
+│       │   └── it should revert
+│       └── when the sum of IP's royalty stack and new license royalty is equal to or less than total supply of RT
+│           ├── when IP royalty vault address is non-zero
+│           │   └── given the list of ancestor addresses is greater than max ancestors cap
+│           │       └── it should revert
+│           └── when IP royalty vault address is zero
+│               └── it should initialize policy with IP and empty list of parent IPs and license data
+├── when calling onLinkToParents
+│   ├── when caller is not royalty module
+│   │   └── it should revert
+│   └── when caller is royalty module
+│       ├── when IP is unlinkable to parents
+│       │   └── it should revert
+│       └── when IP is linkable to parents
+│           └── it should initialize policy with
+├── when calling onRoyaltyPayment
+│   ├── when caller is not royalty module
+│   │   └── it should revert
+│   └── when caller is royalty module
+│       ├── it should add the payment token to IP's royalty vault
+│       └── it should transfer payment token amount from caller to IP's royalty vault
+└── when initializing policy
+    ├── given size of parent IP list is greater than MAX_PARENTS
+    │   └── it should revert
+    ├── given the size of parent royalty list does not equal to size of parent IP list
+    │   └── it should revert
+    ├── given the new ancestor count is greater than MAX_ANCESTORS
+    │   └── it should revert
+    ├── given the new royalty stack is greater than TOTAL_RT_SUPPLY
+    │   └── it should revert
+    └── given the validations pass
+        ├── it should set parent IPs as unlinkable (can't register as derivative)
+        ├── it should deploy the beacon proxy of IpRoyaltyVault
+        ├── it should initialize the deployed IpRoyaltyVault
+        ├── it should save the royalty data for IP
+        └── it should emit an event

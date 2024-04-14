@@ -1,0 +1,27 @@
+RoyaltyModule.sol:callbacks
+├── when calling onLicensingMinting
+│   ├── when caller is not licensing module
+│   │   └── it should revert
+│   └── when caller is licensing module
+│       ├── when royalty policy is not in allowlist of royalty policies
+│       │   └── it should revert
+│       └── when royalty policy is in allowlist
+│           ├── when IP's royalty policy is zero or does not match the royalty policy parameter
+│           │   └── it should revert
+│           └── when IP's royalty policy is non-zero and is equal to the royalty policy paramter
+│               └── it should call royalty policy's callback `onLicensingMinting`
+└── when calling onLinkToParents
+    ├── when caller is not licensing module
+    │   └── it should revert
+    └── when caller is licensing module
+        ├── when royalty policy is not in allowlist of royalty policies
+        │   └── it should revert
+        └── when royalty policy is in allowlist
+            ├── when parent IP list is empty
+            │   └── it should revert
+            └── when parent IP list is not empty
+                ├── given any parent IP's royalty policy is non-zero and does not match the royalty policy parameter
+                │   └── it should revert
+                └── given all parent IPs are either zero address or is equal to the royalty policy parameter
+                    ├── it should set child IP's royalty policy as the royalty policy parameter
+                    └── it should call royalty policy's callback `onLinkToParents`

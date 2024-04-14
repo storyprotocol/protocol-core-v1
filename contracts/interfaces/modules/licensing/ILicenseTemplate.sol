@@ -33,6 +33,11 @@ interface ILicenseTemplate is IERC165 {
     /// @return The metadata URI of the license template.
     function getMetadataURI() external view returns (string memory);
 
+    /// @notice Returns the URI of the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The URI of the license terms.
+    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory);
+
     /// @notice Returns the total number of registered license terms.
     /// @return The total number of registered license terms.
     function totalRegisteredLicenseTerms() external view returns (uint256);

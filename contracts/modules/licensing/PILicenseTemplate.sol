@@ -279,6 +279,13 @@ contract PILicenseTemplate is
         return $.licenseTerms[selectedLicenseTermsId];
     }
 
+    /// @notice Returns the URI of the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The URI of the license terms.
+    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory) {
+        return _getPILicenseTemplateStorage().licenseTerms[licenseTermsId].uri;
+    }
+
     /// @notice Returns the total number of registered license terms.
     /// @return The total number of registered license terms.
     function totalRegisteredLicenseTerms() external view returns (uint256) {
@@ -311,6 +318,9 @@ contract PILicenseTemplate is
                 '"},',
                 '{"trait_type": "Currency", "value": "',
                 terms.currency.toHexString(),
+                '"},',
+                '{"trait_type": "URI", "value": "',
+                terms.uri,
                 '"},',
                 // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
                 _policyCommercialTraitsToJson(terms),

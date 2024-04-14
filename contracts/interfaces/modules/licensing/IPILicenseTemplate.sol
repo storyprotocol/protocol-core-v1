@@ -24,6 +24,7 @@ import { ILicenseTemplate } from "../../../interfaces/modules/licensing/ILicense
 /// same terms or not.
 /// @param derivativeRevCelling The maximum revenue that can be generated from the derivative use of the work.
 /// @param currency The ERC20 token to be used to pay the minting fee. the token must be registered in story protocol.
+/// @param uri The URI of the license terms, which can be used to fetch the offchain license terms.
 struct PILTerms {
     bool transferable;
     address royaltyPolicy;
@@ -41,6 +42,7 @@ struct PILTerms {
     bool derivativesReciprocal;
     uint256 derivativeRevCelling;
     address currency;
+    string uri;
 }
 
 /// @title IPILicenseTemplate

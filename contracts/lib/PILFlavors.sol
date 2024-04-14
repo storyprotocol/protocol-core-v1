@@ -115,7 +115,8 @@ library PILFlavors {
                 derivativesApproval: false,
                 derivativesReciprocal: false,
                 derivativeRevCelling: 0,
-                currency: address(0)
+                currency: address(0),
+                uri: ""
             });
     }
 
@@ -138,7 +139,8 @@ library PILFlavors {
                 derivativesApproval: false,
                 derivativesReciprocal: true,
                 derivativeRevCelling: 0,
-                currency: address(0)
+                currency: address(0),
+                uri: ""
             });
     }
 
@@ -165,7 +167,8 @@ library PILFlavors {
                 derivativesApproval: false,
                 derivativesReciprocal: false,
                 derivativeRevCelling: 0,
-                currency: currencyToken
+                currency: currencyToken,
+                uri: ""
             });
     }
 
@@ -193,7 +196,8 @@ library PILFlavors {
                 derivativesApproval: false,
                 derivativesReciprocal: true,
                 derivativeRevCelling: 0,
-                currency: currencyToken
+                currency: currencyToken,
+                uri: ""
             });
     }
 }

@@ -142,4 +142,11 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function toJson(uint256 licenseTermsId) public view returns (string memory) {
         return "";
     }
+
+    /// @notice Returns the URI of the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return The URI of the license terms.
+    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory) {
+        return "";
+    }
 }

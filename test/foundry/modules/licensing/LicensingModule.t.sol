@@ -186,7 +186,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);
@@ -434,7 +435,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);
@@ -758,7 +760,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);
@@ -1055,7 +1058,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);
@@ -1104,7 +1108,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);
@@ -1150,7 +1155,8 @@ contract LicensingModuleTest is BaseTest {
             derivativesApproval: false,
             derivativesReciprocal: true,
             derivativeRevCelling: 0,
-            currency: address(0x123)
+            currency: address(0x123),
+            uri: ""
         });
 
         uint256 termsId = pilTemplate.registerLicenseTerms(terms);

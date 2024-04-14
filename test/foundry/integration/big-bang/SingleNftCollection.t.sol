@@ -57,7 +57,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 derivativesApproval: false,
                 derivativesReciprocal: false,
                 derivativeRevCelling: 0,
-                currency: address(erc20)
+                currency: address(erc20),
+                uri: ""
             })
         );
     }

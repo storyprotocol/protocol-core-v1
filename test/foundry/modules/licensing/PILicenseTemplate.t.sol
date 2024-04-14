@@ -497,6 +497,42 @@ contract PILicenseTemplateTest is BaseTest {
         assertFalse(pilTemplate.isLicenseTransferable(nonTransferableTermsId));
     }
 
+    function test_PILicenseTemplate_getLicenseURI() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.uri = "license.url";
+        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
+    }
+
+    function test_PILicenseTemplate_differentLicenseURI() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.uri = "license.url";
+        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
+
+        PILTerms memory terms1 = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms1.uri = "another.license.url";
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
+
+        assertEq(pilTemplate.getLicenseTermsURI(termsId1), "another.license.url");
+        assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
+        assertEq(pilTemplate.getLicenseTermsId(terms1), termsId1);
+        assertEq(pilTemplate.getLicenseTermsId(terms), termsId);
+    }
+
+
     function test_PILicenseTemplate_getEarlierExpiredTime_WithEmptyLicenseTerms() public {
         uint256[] memory licenseTermsIds = new uint256[](0);
         assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);
@@ -520,7 +556,7 @@ contract PILicenseTemplateTest is BaseTest {
     function _DefaultToJson() internal pure returns (string memory) {
         /* solhint-disable */
         return
-            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
+            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
         /* solhint-enable */
     }
 }

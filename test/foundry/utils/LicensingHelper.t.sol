@@ -98,7 +98,8 @@ contract LicensingHelper {
                 derivativesApproval: false,
                 derivativesReciprocal: reciprocal,
                 derivativeRevCelling: 0,
-                currency: address(erc20)
+                currency: address(erc20),
+                uri: ""
             });
     }
 
@@ -124,7 +125,8 @@ contract LicensingHelper {
                 derivativesApproval: false,
                 derivativesReciprocal: reciprocal,
                 derivativeRevCelling: 0,
-                currency: address(0)
+                currency: address(0),
+                uri: ""
             });
     }
 

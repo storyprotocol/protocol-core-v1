@@ -1,0 +1,41 @@
+RoyaltyModule.sol:setters
+├── when setting licensing module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when address is zero
+│       │   └── it should revert
+│       └── when address is non-zero
+│           ├── when address does not support IModule interface
+│           │   └── it should revert
+│           └── when address supports IModule interface
+│               └── it set the licensing module address
+├── when setting dispute module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when address is zero
+│       │   └── it should revert
+│       └── when address is non-zero
+│           ├── when address does not support IModule interface
+│           │   └── it should revert
+│           └── when address supports IModule interface
+│               └── it set the dispute module address
+├── when allowlisting royalty policy
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when policy address is zero
+│       │   └── it should revert
+│       └── when policy address is non-zero
+│           ├── it should set the allowlist of (key: policy) -> (value: allowed)
+│           └── it should emit an event
+└── when allowlisting royalty token
+    ├── when caller is not protocol manager
+    │   └── it should revert
+    └── when caller is protocol manager
+        ├── when token address is zero
+        │   └── it should revert
+        └── when token address is non-zero
+            ├── it should set the allowlist of (key: token) -> (value: allowed)
+            └── it should emit an event

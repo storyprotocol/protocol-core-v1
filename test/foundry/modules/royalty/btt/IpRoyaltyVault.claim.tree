@@ -1,0 +1,40 @@
+IpRoyaltyVault.sol:claim
+├── when getting claimable revenue
+│   ├── when IP of the vault is dispute tagged
+│   │   └── it should return 0
+│   └── when IP of the vault is not dispute tagged
+│       ├── when the account already claimed token at snapshotId
+│       │   └── it should return 0
+│       └── when the account has not claimed token at snapshotId
+│           ├── it should A = (account's RT balance at snapshotId)
+│           ├── it should B = (claimable amount of token at snapshotId)
+│           ├── it should C = (total RT supply at snapshotId - unclaimed RT supply at snapshotId)
+│           └── it should return (A * B) / C
+├── when claiming revenue by token batch
+│   ├── it should, for each token, get claimable revenue of msg.sender at snapshotId
+│   ├── it should, for each token, skip if claimable revenue is 0
+│   ├── it sohuld, for each token, set claimed as true for msg.sender on token at snapshotId
+│   ├── it should, for each token, deduct the claimed amount from the token's claim vault amount
+│   ├── it should, for each token, transfer the claimed revenue to msg.sender
+│   └── it should, for each token, emit an event
+├── when claiming revenue by snapshot batch
+│   ├── it should, for each snapshot, get claimable revenue of msg.sender and token
+│   ├── it should, for each snapshot, set claimed as true for msg.sender on token at snapshotId
+│   ├── it should deduct the claimed amount from the token's claim vault amount
+│   ├── it should transfer the claimed revenue of token to msg.sender
+│   └── it should emit an event
+└── when collecting royalty tokens
+    ├── when IP of the vault is dispute tagged
+    │   └── it should revert
+    └── when IP of the vault is not dispute tagged
+        ├── when ancestor IP is not a valid ancestor of vault IP
+        │   └── it should revert
+        └── when ancestor IP is a valid ancestor of vault IP
+            ├── when ancestor IP already claimed royalty token from the vault
+            │   └── it should revert
+            └── when ancestor IP has not claimed royalty token from the vault
+                ├── it should transfer royalty tokens to the ancestor IP
+                ├── it should set collecte as true for the ancestor IP
+                ├── it should deduct the claimed RT amount from the vault's unclaimed RT
+                ├── it should collect any accrued revenue at the time of claim
+                └── it should emit an event

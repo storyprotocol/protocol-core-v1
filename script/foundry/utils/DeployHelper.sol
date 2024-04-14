@@ -140,6 +140,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
 
+        if (address(royaltyPolicyLAP) != ipRoyaltyVaultBeacon.owner()) {
+            revert RoleConfigError("RoyaltyPolicyLAP is not owner of IpRoyaltyVaultBeacon");
+        }
+
         if (!multisigAdmin || !multisigUpgrader) {
             revert RoleConfigError("Multisig roles not granted");
         }
@@ -340,7 +344,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
-        ipRoyaltyVaultBeacon = new UpgradeableBeacon(address(ipRoyaltyVaultImpl), address(protocolAccessManager));
+        // Transfer Ownership to RoyaltyPolicyLAP later
+        ipRoyaltyVaultBeacon = new UpgradeableBeacon(address(ipRoyaltyVaultImpl), deployer);
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
 
         _predeploy("CoreMetadataModule");
@@ -396,6 +401,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyPolicyLAP.setSnapshotInterval(7 days);
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
+        ipRoyaltyVaultBeacon.transferOwnership(address(royaltyPolicyLAP));
 
         // Dispute Module and SP Dispute Policy
         address arbitrationRelayer = relayer;
@@ -429,10 +435,16 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+
+        // Royalty and Upgrade Beacon
+        // Owner of the beacon is the RoyaltyPolicyLAP
+        selectors = new bytes4[](2);
+        selectors[0] = RoyaltyPolicyLAP.upgradeVaults.selector;
+        selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
+        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);

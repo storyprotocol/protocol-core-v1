@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
+import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 // solhint-disable-next-line max-line-length
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
@@ -95,6 +96,16 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, Reentr
         if (beacon == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.ipRoyaltyVaultBeacon = beacon;
+    }
+
+    /// @dev Upgrades the ip royalty vault beacon
+    /// @dev Enforced to be only callable by the upgrader admin
+    /// @param newVault The new ip royalty vault beacon address
+    function upgradeVaults(address newVault) public restricted {
+        // UpgradeableBeacon already checks for newImplementation.bytecode.length > 0,
+        // no need to check for zero address
+        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
+        UpgradeableBeacon($.ipRoyaltyVaultBeacon).upgradeTo(newVault);
     }
 
     /// @notice Executes royalty related logic on minting a license

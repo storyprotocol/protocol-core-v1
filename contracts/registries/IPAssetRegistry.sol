@@ -60,7 +60,11 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausabl
     /// @param tokenContract The address of the NFT.
     /// @param tokenId The token identifier of the NFT.
     /// @return id The address of the newly registered IP.
-    function register(uint256 chainid, address tokenContract, uint256 tokenId) whenNotPaused external returns (address id) {
+    function register(
+        uint256 chainid,
+        address tokenContract,
+        uint256 tokenId
+    ) external whenNotPaused returns (address id) {
         id = registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 

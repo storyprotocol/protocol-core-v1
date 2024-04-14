@@ -332,7 +332,7 @@ library Errors {
     error AccessController__IPAccountIsZeroAddress();
     error AccessController__IPAccountIsNotValid(address ipAccount);
     error AccessController__SignerIsZeroAddress();
-    error AccessController__CallerIsNotIPAccount();
+    error AccessController__CallerIsNotIPAccountOrOwner();
     error AccessController__PermissionIsNotValid();
     error AccessController__BothCallerAndRecipientAreNotRegisteredModule(address signer, address to);
     error AccessController__PermissionDenied(address ipAccount, address signer, address to, bytes4 func);

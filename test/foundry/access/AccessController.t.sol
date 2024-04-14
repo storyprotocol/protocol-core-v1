@@ -138,8 +138,7 @@ contract AccessControllerTest is BaseTest {
             AccessPermission.ALLOW
         );
 
-        vm.prank(owner); // not calling from ipAccount
-        vm.expectRevert(Errors.AccessController__CallerIsNotIPAccount.selector);
+        vm.prank(owner); // directly call by owner
         accessController.setPermission(
             address(ipAccount),
             signer,
@@ -1172,7 +1171,7 @@ contract AccessControllerTest is BaseTest {
             permission: AccessPermission.ALLOW
         });
 
-        vm.expectRevert(Errors.AccessController__CallerIsNotIPAccount.selector);
+        vm.expectRevert(Errors.AccessController__CallerIsNotIPAccountOrOwner.selector);
         accessController.setBatchPermissions(permissionList);
     }
 
@@ -1530,5 +1529,106 @@ contract AccessControllerTest is BaseTest {
         vm.prank(owner);
         tokenWithdrawalModule.withdrawERC20(payable(address(ipAccount)), address(mock20), 1e18);
         assertEq(mock20.balanceOf(owner), 1e18);
+    }
+
+    function test_AccessController_OwnerSetPermission() public {
+        address signer = vm.addr(2);
+        vm.prank(owner);
+        accessController.setPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector,
+            AccessPermission.ALLOW
+        );
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.ALLOW
+        );
+    }
+
+    function test_AccessController_OwnerSetPermissionBatch() public {
+        address signer = vm.addr(2);
+        AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);
+        permissionList[0] = AccessPermission.Permission({
+            ipAccount: address(ipAccount),
+            signer: signer,
+            to: address(mockModule),
+            func: mockModule.executeSuccessfully.selector,
+            permission: AccessPermission.ALLOW
+        });
+        permissionList[1] = AccessPermission.Permission({
+            ipAccount: address(ipAccount),
+            signer: signer,
+            to: address(mockModule),
+            func: mockModule.executeNoReturn.selector,
+            permission: AccessPermission.DENY
+        });
+        permissionList[2] = AccessPermission.Permission({
+            ipAccount: address(ipAccount),
+            signer: signer,
+            to: address(mockModule),
+            func: mockModule.executeRevert.selector,
+            permission: AccessPermission.ALLOW
+        });
+
+        vm.prank(owner);
+        accessController.setBatchPermissions(permissionList);
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.ALLOW
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeNoReturn.selector
+            ),
+            AccessPermission.DENY
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeRevert.selector
+            ),
+            AccessPermission.ALLOW
+        );
+    }
+
+    function test_AccessController_OwnerCallExternalContracts() public {
+        vm.startPrank(owner);
+        bytes memory result = ipAccount.execute(
+            address(mockNFT),
+            0,
+            abi.encodeWithSignature("mint(address)", address(owner))
+        );
+        assertEq(abi.decode(result, (uint256)), 1);
+
+        ipAccount.execute(
+            address(mockNFT),
+            0,
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", address(owner), address(ipAccount), 1)
+        );
+        result = ipAccount.execute(
+            address(mockNFT),
+            0,
+            abi.encodeWithSignature("balanceOf(address)", address(ipAccount))
+        );
+        assertEq(abi.decode(result, (uint256)), 1);
     }
 }

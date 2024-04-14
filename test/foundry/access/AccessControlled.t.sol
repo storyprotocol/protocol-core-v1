@@ -163,14 +163,23 @@ contract AccessControlledTest is BaseTest {
             address(moduleRegistry),
             "NonRegisteredMockAccessControlledModule"
         );
+        address signer = vm.addr(2);
+        vm.prank(owner);
+        accessController.setPermission(
+            address(ipAccount),
+            signer,
+            address(nonRegisteredModule),
+            nonRegisteredModule.ipAccountOrPermissionFunction.selector,
+            AccessPermission.ALLOW
+        );
         vm.expectRevert(
             abi.encodeWithSelector(
                 Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule.selector,
-                owner,
+                signer,
                 address(nonRegisteredModule)
             )
         );
-        vm.prank(owner);
+        vm.prank(signer);
         nonRegisteredModule.ipAccountOrPermissionFunction(address(ipAccount), "test", true);
     }
 

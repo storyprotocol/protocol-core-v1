@@ -42,7 +42,7 @@ jobs:
       # This step requires full build to be run first
       - name: Upgrade Safety test
         run: |
-          forge clean && forge build
+          forge clean && forge build --build-info
       # npx @openzeppelin/upgrades-core validate out/build-info
 
       - name: Run Forge tests

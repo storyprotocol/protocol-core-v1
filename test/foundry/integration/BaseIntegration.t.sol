@@ -72,7 +72,7 @@ contract BaseIntegration is BaseTest {
         });
 
         vm.startPrank(owner);
-        return ipAssetRegistry.register(nft, tokenId);
+        return ipAssetRegistry.register(block.chainid, nft, tokenId);
     }
 
     function registerIpAccount(MockERC721 nft, uint256 tokenId, address caller) internal returns (address) {

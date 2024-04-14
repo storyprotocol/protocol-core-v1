@@ -68,7 +68,7 @@ contract IPAssetRegistryTest is BaseTest {
             block.timestamp
         );
         vm.prank(alice);
-        registry.register(tokenAddress, tokenId);
+        registry.register(block.chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
         assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
@@ -94,7 +94,7 @@ contract IPAssetRegistryTest is BaseTest {
             block.timestamp
         );
         vm.prank(alice);
-        registry.register(tokenAddress, tokenId);
+        registry.register(block.chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
         assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
@@ -109,18 +109,18 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
 
         vm.prank(alice);
-        registry.register(tokenAddress, tokenId);
+        registry.register(block.chainid, tokenAddress, tokenId);
 
         vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
         vm.prank(alice);
-        registry.register(tokenAddress, tokenId);
+        registry.register(block.chainid, tokenAddress, tokenId);
     }
 
     /// @notice Tests registration of IP with non ERC721 token.
     function test_IPAssetRegistry_revert_InvalidTokenContract() public {
         // not an ERC721 contract
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__UnsupportedIERC721.selector, address(0x12345)));
-        registry.register(address(0x12345), 1);
+        registry.register(block.chainid, address(0x12345), 1);
 
         // not implemented ERC721Metadata contract
         MockERC721WithoutMetadata erc721WithoutMetadata = new MockERC721WithoutMetadata();
@@ -128,7 +128,7 @@ contract IPAssetRegistryTest is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(Errors.IPAssetRegistry__UnsupportedIERC721Metadata.selector, erc721WithoutMetadata)
         );
-        registry.register(address(erc721WithoutMetadata), 1);
+        registry.register(block.chainid, address(erc721WithoutMetadata), 1);
     }
 
     /// @notice Tests registration of IP with non-exist NFT.
@@ -139,7 +139,7 @@ contract IPAssetRegistryTest is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(Errors.IPAssetRegistry__InvalidToken.selector, erc721WithoutMetadata, 999)
         );
-        registry.register(address(erc721WithoutMetadata), 999);
+        registry.register(block.chainid, address(erc721WithoutMetadata), 999);
     }
 
     function test_IPAssetRegistry_not_registered() public {
@@ -170,7 +170,7 @@ contract IPAssetRegistryTest is BaseTest {
         );
         vm.expectEmit();
         emit IIPAssetRegistry.IPRegistered(ipId, chainid, tokenAddress, tokenId, name, "", block.timestamp);
-        address registeredIpId = registry.registerCrossChain(chainid, tokenAddress, tokenId);
+        address registeredIpId = registry.register(chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
         assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, chainid, tokenAddress, tokenId));
@@ -188,20 +188,10 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!registry.isRegistered(ipId));
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
 
-        registry.registerCrossChain(chainid, tokenAddress, tokenId);
+        registry.register(chainid, tokenAddress, tokenId);
 
         vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
-        registry.registerCrossChain(chainid, tokenAddress, tokenId);
-    }
-
-    /// @notice Tests registration of the same IP twice from cross chain.
-    function test_IPAssetRegistry_revert_CrossChain_registerNFTOnSameChain() public {
-        tokenAddress = address(0x12345);
-        tokenId = 1;
-        uint256 chainid = block.chainid;
-
-        vm.expectRevert(Errors.IPAssetRegistry__SameChain.selector);
-        registry.registerCrossChain(chainid, tokenAddress, tokenId);
+        registry.register(chainid, tokenAddress, tokenId);
     }
 
     /// @notice Helper function for generating an account address.

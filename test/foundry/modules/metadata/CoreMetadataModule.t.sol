@@ -17,7 +17,7 @@ contract CoreMetadataModuleTest is BaseTest {
 
         mockNFT.mintId(alice, 1);
 
-        ipAccount = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 1)));
+        ipAccount = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 1)));
 
         vm.label(address(ipAccount), "IPAccount1");
     }
@@ -39,7 +39,7 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "NFT_METADATA_HASH"), bytes32("0x1234"));
 
         mockNFT.mintId(alice, 2);
-        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
+        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 2)));
         vm.label(address(ipAccount2), "IPAccount2");
 
         vm.prank(alice);
@@ -97,7 +97,7 @@ contract CoreMetadataModuleTest is BaseTest {
         assertEq(ipAccount.getBytes32(address(coreMetadataModule), "METADATA_HASH"), bytes32("0x1234"));
 
         mockNFT.mintId(alice, 2);
-        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
+        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 2)));
         vm.label(address(ipAccount2), "IPAccount2");
 
         vm.prank(alice);
@@ -212,7 +212,7 @@ contract CoreMetadataModuleTest is BaseTest {
         coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x1234"));
 
         mockNFT.mintId(alice, 2);
-        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(address(mockNFT), 2)));
+        IIPAccount ipAccount2 = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 2)));
         vm.label(address(ipAccount2), "IPAccount2");
 
         coreMetadataModule.setMetadataURI(address(ipAccount2), "My MetadataURI2", bytes32("0x5678"));

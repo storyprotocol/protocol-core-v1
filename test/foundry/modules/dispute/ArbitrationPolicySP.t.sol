@@ -48,7 +48,7 @@ contract TestArbitrationPolicySP is BaseTest {
         vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.admin);
-        ipAddr = ipAssetRegistry.register(address(mockNFT), 0);
+        ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
 
         licensingModule.attachLicenseTerms(ipAddr, address(pilTemplate), getSelectedPILicenseTermsId("cheap_flexible"));
 

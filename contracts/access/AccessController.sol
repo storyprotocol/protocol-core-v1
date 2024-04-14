@@ -174,26 +174,27 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (functionPermission == AccessPermission.ALLOW) {
             return;
         }
-
-        // If specific function permission is ABSTAIN, check module level permission
-        if (functionPermission == AccessPermission.ABSTAIN) {
-            uint8 modulePermission = getPermission(ipAccount, signer, to, bytes4(0));
-            // Return true if allow to call all functions of the module
-            if (modulePermission == AccessPermission.ALLOW) {
-                return;
-            }
-            // If module level permission is ABSTAIN, check transaction signer level permission
-            if (modulePermission == AccessPermission.ABSTAIN) {
-                // Pass if the ipAccount allow the signer can call all functions of all modules
-                // Otherwise, revert
-                if (getPermission(ipAccount, signer, address(0), bytes4(0)) == AccessPermission.ALLOW) {
-                    return;
-                }
-                revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
-            }
+        // Specific function permission is DENY, revert
+        if (functionPermission == AccessPermission.DENY) {
             revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
         }
-        revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
+        // Function permission is UNSET, check module level permission
+        uint8 modulePermission = getPermission(ipAccount, signer, to, bytes4(0));
+        // Return true if allow to call all functions of the module
+        if (modulePermission == AccessPermission.ALLOW) {
+            return;
+        }
+        // Module level permission is DENY, revert
+        if (modulePermission == AccessPermission.DENY) {
+            revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
+        }
+        // Module level permission is UNSET, check transaction signer level permission
+        // Pass if the ipAccount allow the signer to call all functions of all modules
+        // Otherwise, revert
+        if (getPermission(ipAccount, signer, address(0), bytes4(0)) != AccessPermission.ALLOW) {
+            revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
+        }
+        // If the transaction signer is allowed to call all functions of all modules, return
     }
 
     /// @notice Returns the permission level for a specific function call.

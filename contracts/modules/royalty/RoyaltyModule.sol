@@ -206,9 +206,7 @@ contract RoyaltyModule is
         if (!$.isWhitelistedRoyaltyPolicy[payerRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
 
-        ILicenseRegistry licenseRegistry = LICENSE_REGISTRY;
-        if (licenseRegistry.isExpiredNow(receiverIpId) || licenseRegistry.isExpiredNow(payerIpId))
-            revert Errors.RoyaltyModule__IpIsExpired();
+        if (LICENSE_REGISTRY.isExpiredNow(receiverIpId)) revert Errors.RoyaltyModule__IpIsExpired();
 
         IRoyaltyPolicy(payerRoyaltyPolicy).onRoyaltyPayment(msg.sender, receiverIpId, token, amount);
 

@@ -127,7 +127,6 @@ contract e2e is Test {
             )
         );
 
-
         impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
         royaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
@@ -136,7 +135,7 @@ contract e2e is Test {
             )
         );
         vm.label(address(royaltyModule), "RoyaltyModule");
-        
+
         impl = address(
             new LicensingModule(
                 address(accessController),

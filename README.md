@@ -72,7 +72,7 @@ make # this builds
 
 ```sh
 forge clean
-forge compile
+forge compile --build-info
 npx @openzeppelin/upgrades-core@^1.32.3 validate out/build-info 
 ```
 

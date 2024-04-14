@@ -142,9 +142,6 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     // solhint-disable code-complexity
     function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
-        // The ipAccount is restricted to interact exclusively with registered modules.
-        // This includes initiating calls to these modules and receiving calls from them.
-        // Additionally, it can modify Permissions settings.
         AccessControllerStorage storage $ = _getAccessControllerStorage();
         // Must be a valid IPAccount
         if (!IIPAccountRegistry($.ipAccountRegistry).isIpAccount(ipAccount)) {
@@ -154,6 +151,10 @@ contract AccessController is IAccessController, AccessManagedUpgradeable, UUPSUp
         if (IIPAccount(payable(ipAccount)).owner() == signer) {
             return;
         }
+
+        // If the caller (signer) is not the Owner, IPAccount is limited to interactions with only registered modules.
+        // These interactions can be either initiating calls to these modules or receiving calls from them.
+        // The IP account can also modify its own Permissions settings.
         if (
             to != address(this) &&
             !IModuleRegistry($.moduleRegistry).isRegistered(to) &&

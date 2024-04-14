@@ -113,7 +113,6 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, AccessManagedUp
         address tokenContract,
         uint256 tokenId
     ) internal view returns (string memory name, string memory uri) {
-
         if (chainid != block.chainid) {
             name = string.concat(chainid.toString(), ": ", tokenContract.toHexString(), " #", tokenId.toString());
             uri = "";

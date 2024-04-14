@@ -5,9 +5,9 @@ pragma solidity 0.8.23;
 /// @notice Library for IPAccount access control permissions.
 ///         These permissions are used by the AccessController.
 library AccessPermission {
-    /// @notice ABSTAIN means having not enough information to make decision at current level, deferred decision to up
+    /// @notice UNSET means having not enough information to make decision at current level, deferred decision to up
     /// level permission.
-    uint8 public constant ABSTAIN = 0;
+    uint8 public constant UNSET = 0;
 
     /// @notice ALLOW means the permission is granted to transaction signer to call the function.
     uint8 public constant ALLOW = 1;
@@ -20,7 +20,7 @@ library AccessPermission {
     /// @param signer The address that can call `to` on behalf of the `ipAccount`
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
-    /// @param permission The permission level for the transaction (0 = ABSTAIN, 1 = ALLOW, 2 = DENY).
+    /// @param permission The permission level for the transaction (0 = UNSET, 1 = ALLOW, 2 = DENY).
     struct Permission {
         address ipAccount;
         address signer;

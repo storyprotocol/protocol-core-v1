@@ -26,9 +26,9 @@ interface IAccessController {
 
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
-    /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
+    /// address to a function selector to a permission level. The permission level can be 0 (UNSET), 1 (ALLOW), or
     /// 2 (DENY).
-    /// @dev By default, all policies are set to 0 (ABSTAIN), which means that the permission is not set.
+    /// @dev By default, all policies are set to 0 (UNSET), which means that the permission is not set.
     /// The owner of ipAccount by default has all permission.
     /// address(0) => wildcard
     /// bytes4(0) => wildcard
@@ -44,7 +44,7 @@ interface IAccessController {
     /// Otherwise, the function is a noop.
     /// @dev This function checks the permission level for a specific function call.
     /// If a specific permission is set, it overrides the general (wildcard) permission.
-    /// If the current level permission is ABSTAIN, the final permission is determined by the upper level.
+    /// If the current level permission is UNSET, the final permission is determined by the upper level.
     /// @param ipAccount The address of the IP account that grants the permission for `signer`
     /// @param signer The address that can call `to` on behalf of the `ipAccount`
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)

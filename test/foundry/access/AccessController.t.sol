@@ -224,7 +224,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
 
         accessController.checkPermission(
@@ -261,7 +261,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -306,7 +306,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
         accessController.checkPermission(
             address(ipAccount),
@@ -342,7 +342,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -626,7 +626,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
 
         accessController.checkPermission(
@@ -682,7 +682,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -1211,7 +1211,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
     }
 
@@ -1292,7 +1292,7 @@ contract AccessControllerTest is BaseTest {
                 address(mockModule),
                 mockModule.executeSuccessfully.selector
             ),
-            AccessPermission.ABSTAIN
+            AccessPermission.UNSET
         );
 
         vm.prank(address(0xbeefbeef));

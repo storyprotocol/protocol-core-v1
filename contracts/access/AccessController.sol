@@ -22,7 +22,7 @@ import { Errors } from "../lib/Errors.sol";
 ///
 /// Each policy is represented as a mapping from an IP account address to a signer address to a recipient
 /// address to a function selector to a permission level.
-/// The permission level can be 0 (ABSTAIN), 1 (ALLOW), or 2 (DENY).
+/// The permission level can be 0 (UNSET), 1 (ALLOW), or 2 (DENY).
 ///
 /// The contract includes the following functions:
 /// - initialize: Sets the addresses of the IP account registry and the module registry.
@@ -95,9 +95,9 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
 
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
-    /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
+    /// address to a function selector to a permission level. The permission level can be 0 (UNSET), 1 (ALLOW), or
     /// 2 (DENY).
-    /// @dev By default, all policies are set to 0 (ABSTAIN), which means that the permission is not set.
+    /// @dev By default, all policies are set to 0 (UNSET), which means that the permission is not set.
     /// The owner of ipAccount by default has all permission.
     /// address(0) => wildcard
     /// bytes4(0) => wildcard
@@ -125,7 +125,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (!IIPAccountRegistry($.ipAccountRegistry).isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
-        // permission must be one of ABSTAIN, ALLOW, DENY
+        // permission must be one of UNSET, ALLOW, DENY
         if (permission > 2) {
             revert Errors.AccessController__PermissionIsNotValid();
         }
@@ -141,7 +141,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     /// Otherwise, the function is a noop.
     /// @dev This function checks the permission level for a specific function call.
     /// If a specific permission is set, it overrides the general (wildcard) permission.
-    /// If the current level permission is ABSTAIN, the final permission is determined by the upper level.
+    /// If the current level permission is UNSET, the final permission is determined by the upper level.
     /// @param ipAccount The address of the IP account that grants the permission for `signer`
     /// @param signer The address that can call `to` on behalf of the `ipAccount`
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
@@ -175,15 +175,15 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
             return;
         }
 
-        // If specific function permission is ABSTAIN, check module level permission
-        if (functionPermission == AccessPermission.ABSTAIN) {
+        // If specific function permission is UNSET, check module level permission
+        if (functionPermission == AccessPermission.UNSET) {
             uint8 modulePermission = getPermission(ipAccount, signer, to, bytes4(0));
             // Return true if allow to call all functions of the module
             if (modulePermission == AccessPermission.ALLOW) {
                 return;
             }
-            // If module level permission is ABSTAIN, check transaction signer level permission
-            if (modulePermission == AccessPermission.ABSTAIN) {
+            // If module level permission is UNSET, check transaction signer level permission
+            if (modulePermission == AccessPermission.UNSET) {
                 // Pass if the ipAccount allow the signer can call all functions of all modules
                 // Otherwise, revert
                 if (getPermission(ipAccount, signer, address(0), bytes4(0)) == AccessPermission.ALLOW) {

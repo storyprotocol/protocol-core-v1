@@ -1,0 +1,22 @@
+AccessController.sol:checkPermission
+├── given the `ipAccount` is not a valid SP IP Account address
+│   └── it should revert
+├── given the `signer` is IP owner
+│   └── it should return
+├── given the `to` is not Access Controller and neither `to` or `signer` are registered module
+│   └── it sohuld revert
+└── given the validations pass
+    ├── given the perm(ipAccount, signer, to, func) is ALLOW
+    │   └── it should return
+    ├── given the perm(ipAccount, signer, to, func) is DENY
+    │   └── it should revert
+    └── given the perm(ipAccount, signer, to, func) is ABSTAIN
+        ├── given the perm(ipAccount, signer, to, wildcard) is ALLOW
+        │   └── it should return
+        ├── given the perm(ipAccount, signer, to, wildcard) is DENY
+        │   └── it should revert
+        └── given the perm(ipAccount, signer, to, wildcard) is ABSTAIN
+            ├── given the perm(ipAccount, signer, wildcard, wildcard) is ALLOW
+            │   └── it should return
+            └── given the perm(ipAccount, signer, wildcard, wildcard) is DENY
+                └── it should revert

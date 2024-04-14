@@ -532,7 +532,6 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(pilTemplate.getLicenseTermsId(terms), termsId);
     }
 
-
     function test_PILicenseTemplate_getEarlierExpiredTime_WithEmptyLicenseTerms() public {
         uint256[] memory licenseTermsIds = new uint256[](0);
         assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);

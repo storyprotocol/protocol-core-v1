@@ -1646,7 +1646,7 @@ contract AccessControllerTest is BaseTest {
             bytes4(0),
             AccessPermission.ALLOW
         );
-        
+
         vm.stopPrank();
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         vm.prank(owner);

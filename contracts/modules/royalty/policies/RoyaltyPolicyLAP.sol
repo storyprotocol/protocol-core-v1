@@ -167,7 +167,9 @@ contract RoyaltyPolicyLAP is IRoyaltyPolicyLAP, AccessManagedUpgradeable, Reentr
     function onRoyaltyPayment(address caller, address ipId, address token, uint256 amount) external onlyRoyaltyModule {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         address destination = $.royaltyData[ipId].ipRoyaltyVault;
-        IIpRoyaltyVault(destination).addIpRoyaltyVaultTokens(token);
+        if (IIpRoyaltyVault(destination).addIpRoyaltyVaultTokens(token)) {
+            emit RoyaltyTokenAddedToVault(token, destination);
+        }
         IERC20(token).safeTransferFrom(caller, destination, amount);
     }
 

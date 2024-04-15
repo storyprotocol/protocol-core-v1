@@ -1,0 +1,18 @@
+IPAccountRegistry.sol
+├── when registering IP Account
+│   ├── it should call ERC-6551 registry with SP IP Account impl and salt
+│   ├── it should create a SP IP Account
+│   └── it should emit an event
+└── when checking address of IP Account
+    ├── when ERC-6551 implementation is incorrect
+    │   └── it should return unexpected address
+    ├── when ERC-6551 salt is incorrect
+    │   └── it should return unexpected address
+    ├── when chain ID is incorrect
+    │   └── it should return unexpected address
+    ├── when token contract is incorrect
+    │   └── it should return unexpected address
+    ├── when token ID is incorrect
+    │   └── it should return unexpected address
+    └── when all inputs are correct
+        └── it should return expected address

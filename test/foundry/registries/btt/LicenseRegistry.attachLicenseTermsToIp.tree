@@ -1,0 +1,16 @@
+LicenseRegistry.sol:attachLicenseTermsToIp
+├── when caller is not licensing module
+│   └── it should revert
+└── when caller is licensing module
+    ├── given the license template is not registered
+    │   └── it should revert
+    ├── given the license terms ID is not registered (DNE)
+    │   └── it should revert
+    ├── given the IP has parents (is derivative)
+    │   └── it should revert
+    ├── given the IP is expired
+    │   └── it should revert
+    └── given license template and terms ID are registered, IP is root, and IP is not expired
+        ├── it should set the license template as IP's license template
+        ├── it should add the license terms ID to IP's set of attached license terms
+        └── it should associate the set index of attahced license template with that of attached license terms ID

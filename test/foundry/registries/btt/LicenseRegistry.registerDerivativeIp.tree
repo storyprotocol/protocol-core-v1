@@ -1,0 +1,31 @@
+LicenseRegistry.sol:registerDerivativeIp
+├── when caller is not licensing module
+│   └── it should revert
+└── when caller is licensing module
+    ├── given the parent IP list is empty
+    │   └── it should revert
+    ├── given the length of parent IP list does not equal the length of license term ID list
+    │   └── it should revert
+    ├── given the child IP already has license terms attached (not default terms)
+    │   └── it should revert
+    ├── given the child IP already has one or more parents (is derivative)
+    │   └── it should revert
+    └── given the parent IP list is non-empty and child has no parents and attached license terms
+        ├── given any parent IP is the child IP
+        │   └── it should revert
+        ├── given any parent IP has dispute tag
+        │   └── it should revert
+        ├── given any parent IP has expired
+        │   └── it should revert
+        └── given all parent IPs are not disputed or expired and are not the child IP
+            ├── when the license template and terms are not default
+            │   ├── given any parent IP does not have license template in its set of used license templates
+            │   │   └── it should revert
+            │   └── given any parent IP does not have license terms ID in its set of attached license terms ID
+            │       └── it should revert
+            └── when all the license terms are either from parent IPs or default license terms
+                ├── it should, for each parent, add parent IP to the child IP's set of parent IPs
+                ├── it should, for each parent, add child IP to the parent's set of child IPs
+                ├── it should, for each license terms, add license terms to child's set of attached license terms
+                ├── it should add license template to the child IP's set of license templates
+                └── it should set the expiry time of child IP

@@ -1,0 +1,53 @@
+LicenseRegistry.sol:setters
+├── when setting dispute module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when address is zero
+│       │   └── it should revert
+│       └── when address is non-zero
+│           ├── when address does not support IModule interface
+│           │   └── it should revert
+│           └── when address supports IModule interface
+│               └── it set the dispute module address
+├── when setting licensing module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when address is zero
+│       │   └── it should revert
+│       └── when address is non-zero
+│           ├── when address does not support IModule interface
+│           │   └── it should revert
+│           └── when address supports IModule interface
+│               └── it set the licensing module address
+├── when setting defaut license terms
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when default license terms are set
+│       │   └── it should revert
+│       └── when default license terms are unset
+│           ├── it should set the default license template
+│           └── it should set the default license terms
+├── when setting expiration time
+│   ├── when caller is not licensing module
+│   │   └── it should revert
+│   └── when caller is licensing module
+│       ├── it should set expiration time in IP Account storage
+│       └── it should emit an event
+├── when setting minting license config for license
+│   ├── when caller is not licensing module
+│   │   └── it should revert
+│   └── when caller is licensing module
+│       ├── when license template is not registered
+│       │   └── it should revert
+│       └── when license template is registered
+│           ├── it should set
+│           └── it should emit an event
+└── when setting minting license config for IP
+    ├── when caller is not licensing module
+    │   └── it should revert
+    └── when caller is licensing module
+        ├── it should set the minting license config struct for IP
+        └── it should emit an event

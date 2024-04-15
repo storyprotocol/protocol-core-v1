@@ -1,0 +1,66 @@
+ModuleRegistry.sol
+├── when registering module type
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── given the name is null
+│       │   └── it should revert
+│       ├── given the interface ID is null
+│       │   └── it should revert
+│       └── given the name and interface ID are valid
+│           ├── when name is already registered with interface ID
+│           │   └── it should revert
+│           └── when name is not registered
+│               ├── it should set the key `name` with value `interfaceId`
+│               └── it should emit an event
+├── when removing module type
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when name is null
+│       │   └── it should revert
+│       └── when name is not null
+│           ├── given the name is not registered with any interface ID
+│           │   └── it should revert
+│           └── given the name is registered
+│               ├── it should delete the interface ID
+│               └── it should emit an event
+├── when registering module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── given the module type (interface ID) is null
+│       │   └── it should revert
+│       ├── given the module type is not registered
+│       │   └── it should revert
+│       ├── given the module address is zero address
+│       │   └── it should revert
+│       ├── given the module address is not a contract
+│       │   └── it should revert
+│       ├── given the module address is already registered (check name)
+│       │   └── it should revert
+│       ├── given the module is already registered
+│       │   └── it should revert
+│       ├── given the module does not support interface ID of module type
+│       │   └── it should revert
+│       └── given the inputs are valid, module is not registered, and type is registered
+│           ├── it should add (key: module name) -> (value: module address)
+│           ├── it should add (key: module address) -> (value: module type)
+│           └── it should emit an event
+├── when removing module
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── given the name is null
+│       │   └── it should revert
+│       ├── given the module with name is not registered
+│       │   └── it should revert
+│       └── given the module with name is registered
+│           ├── it should delete (key: module name) -> (value: module address)
+│           ├── it should delete (key: module address) -> (value: module type)
+│           └── it should emit an event
+└── when checking if module is registered
+    ├── when the return module type of the module address is zero
+    │   └── it should return false
+    └── when the return module type of the module address is non-zero
+        └── it should return true

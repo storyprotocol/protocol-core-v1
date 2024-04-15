@@ -178,7 +178,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (functionPermission == AccessPermission.DENY) {
             revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
         }
-        // Function permission is UNSET, check module level permission
+        // Function permission is ABSTAIN, check module level permission
         uint8 modulePermission = getPermission(ipAccount, signer, to, bytes4(0));
         // Return true if allow to call all functions of the module
         if (modulePermission == AccessPermission.ALLOW) {
@@ -188,7 +188,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (modulePermission == AccessPermission.DENY) {
             revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
         }
-        // Module level permission is UNSET, check transaction signer level permission
+        // Module level permission is ABSTAIN, check transaction signer level permission
         // Pass if the ipAccount allow the signer to call all functions of all modules
         // Otherwise, revert
         if (getPermission(ipAccount, signer, address(0), bytes4(0)) != AccessPermission.ALLOW) {

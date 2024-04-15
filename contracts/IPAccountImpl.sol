@@ -30,10 +30,15 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
     /// in the implementation code's storage.
     /// This means that each cloned IPAccount will inherently use the same AccessController
     /// without the need for individual configuration.
-    /// @param accessController_ The address of the AccessController contract to be used for permission checks
-    constructor(address accessController_) {
-        if (accessController_ == address(0)) revert Errors.IPAccount__InvalidAccessController();
-        accessController = accessController_;
+    /// @param accessController The address of the AccessController contract to be used for permission checks
+    constructor(
+        address accessController,
+        address ipAssetRegistry,
+        address licenseRegistry,
+        address moduleRegistry
+    ) IPAccountStorage(ipAssetRegistry, licenseRegistry, moduleRegistry) {
+        if (accessController == address(0)) revert Errors.IPAccount__InvalidAccessController();
+        accessController = accessController;
     }
 
     /// @notice Checks if the contract supports a specific interface

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccountStorage } from "./interfaces/IIPAccountStorage.sol";
+import { IModuleRegistry } from "./interfaces/registries/IModuleRegistry.sol";
+import { Errors } from "./lib/Errors.sol";
 import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// @title IPAccount Storage
@@ -13,15 +15,28 @@ import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortSt
 contract IPAccountStorage is ERC165, IIPAccountStorage {
     using ShortStrings for *;
 
-    mapping(bytes32 => mapping(bytes32 => string)) public stringData;
+    address public immutable MODULE_REGISTRY;
+    address public immutable LICENSE_REGISTRY;
+    address public immutable IP_ASSET_REGISTRY;
+
     mapping(bytes32 => mapping(bytes32 => bytes)) public bytesData;
     mapping(bytes32 => mapping(bytes32 => bytes32)) public bytes32Data;
-    mapping(bytes32 => mapping(bytes32 => uint256)) public uint256Data;
-    mapping(bytes32 => mapping(bytes32 => address)) public addressData;
-    mapping(bytes32 => mapping(bytes32 => bool)) public boolData;
+
+    constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
+        MODULE_REGISTRY = moduleRegistry;
+        LICENSE_REGISTRY = licenseRegistry;
+        IP_ASSET_REGISTRY = ipAssetRegistry;
+    }
 
     /// @inheritdoc IIPAccountStorage
     function setBytes(bytes32 key, bytes calldata value) external {
+        if (
+            msg.sender != IP_ASSET_REGISTRY &&
+            msg.sender != LICENSE_REGISTRY &&
+            !IModuleRegistry(MODULE_REGISTRY).isRegistered(msg.sender)
+        ) {
+            revert Errors.IPAccountStorage__NotRegisteredModule(msg.sender);
+        }
         bytesData[_toBytes32(msg.sender)][key] = value;
     }
     /// @inheritdoc IIPAccountStorage
@@ -35,6 +50,13 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
 
     /// @inheritdoc IIPAccountStorage
     function setBytes32(bytes32 key, bytes32 value) external {
+        if (
+            msg.sender != IP_ASSET_REGISTRY &&
+            msg.sender != LICENSE_REGISTRY &&
+            !IModuleRegistry(MODULE_REGISTRY).isRegistered(msg.sender)
+        ) {
+            revert Errors.IPAccountStorage__NotRegisteredModule(msg.sender);
+        }
         bytes32Data[_toBytes32(msg.sender)][key] = value;
     }
     /// @inheritdoc IIPAccountStorage

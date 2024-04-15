@@ -22,7 +22,6 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     mapping(bytes32 => mapping(bytes32 => bytes)) public bytesData;
     mapping(bytes32 => mapping(bytes32 => bytes32)) public bytes32Data;
 
-
     modifier onlyRegisteredModule() {
         if (
             msg.sender != IP_ASSET_REGISTRY &&

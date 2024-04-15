@@ -12,7 +12,6 @@ import { MockIpRoyaltyVaultV2 } from "../mocks/module/MockIpRoyaltyVaultV2.sol";
 import { MockAccessControllerV2 } from "../mocks/module/MockAccessControllerV2.sol";
 
 contract UpgradesTest is BaseTest {
-
     uint32 execDelay = 600;
 
     function setUp() public override {
@@ -45,7 +44,6 @@ contract UpgradesTest is BaseTest {
     }
 
     function test_upgradeAccessController() public {
-        
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             u.bob,
             address(accessController),
@@ -53,7 +51,6 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-
 
         address newAccessController = address(new MockAccessControllerV2());
         vm.prank(u.bob);
@@ -75,7 +72,10 @@ contract UpgradesTest is BaseTest {
 
     function test_deploymentSetup() public {
         // Deployer doesn't have the roles
-        (bool isMember, uint32 executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
+        (bool isMember, uint32 executionDelay) = protocolAccessManager.hasRole(
+            ProtocolAdmin.PROTOCOL_ADMIN_ROLE,
+            deployer
+        );
         assertFalse(isMember);
         assertEq(executionDelay, 0);
         (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, deployer);
@@ -84,14 +84,17 @@ contract UpgradesTest is BaseTest {
         (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, deployer);
         assertFalse(isMember);
         assertEq(executionDelay, 0);
-        
+
         (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         assertTrue(isMember);
         assertEq(executionDelay, 0);
         (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, multisig);
         assertTrue(isMember);
         assertEq(executionDelay, 0);
-        (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, address(protocolPauser));
+        (isMember, executionDelay) = protocolAccessManager.hasRole(
+            ProtocolAdmin.PAUSE_ADMIN_ROLE,
+            address(protocolPauser)
+        );
         assertTrue(isMember);
         assertEq(executionDelay, 0);
         (isMember, executionDelay) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
@@ -99,7 +102,7 @@ contract UpgradesTest is BaseTest {
         assertEq(executionDelay, execDelay);
 
         // Target function role wiring
-        
+
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             multisig,
             address(royaltyPolicyLAP),
@@ -107,8 +110,14 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, 600);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(royaltyPolicyLAP), RoyaltyPolicyLAP.upgradeVaults.selector), ProtocolAdmin.UPGRADER_ROLE);
-        
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(royaltyPolicyLAP),
+                RoyaltyPolicyLAP.upgradeVaults.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
             address(accessController),
@@ -116,7 +125,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(accessController), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(accessController),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -125,7 +140,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(licenseToken), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(licenseToken),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -134,7 +155,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(disputeModule), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(disputeModule),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -143,7 +170,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(arbitrationPolicySP), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(arbitrationPolicySP),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -152,7 +185,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(licensingModule), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(licensingModule),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -161,7 +200,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(royaltyModule), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(royaltyModule),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -170,7 +215,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(licenseRegistry), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(licenseRegistry),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -179,7 +230,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(moduleRegistry), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(moduleRegistry),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -188,7 +245,13 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(ipAssetRegistry), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(ipAssetRegistry),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
@@ -197,6 +260,12 @@ contract UpgradesTest is BaseTest {
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
-        assertEq(protocolAccessManager.getTargetFunctionRole(address(royaltyPolicyLAP), UUPSUpgradeable.upgradeToAndCall.selector), ProtocolAdmin.UPGRADER_ROLE);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(royaltyPolicyLAP),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
     }
 }

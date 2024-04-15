@@ -333,6 +333,8 @@ library Errors {
 
     error AccessController__ZeroAccessManager();
     error AccessController__IPAccountIsZeroAddress();
+    error AccessController__ZeroIpAccountRegistry();
+    error AccessController__ZeroModuleRegistry();
     error AccessController__IPAccountIsNotValid(address ipAccount);
     error AccessController__SignerIsZeroAddress();
     error AccessController__CallerIsNotIPAccountOrOwner();

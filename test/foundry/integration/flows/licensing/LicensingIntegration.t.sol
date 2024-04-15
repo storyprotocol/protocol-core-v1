@@ -27,6 +27,7 @@ import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { MockERC20 } from "../../../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../../../mocks/token/MockERC721.sol";
 import { TestProxyHelper } from "../../../utils/TestProxyHelper.sol";
+import { EmptyImpl } from "script/foundry/utils/upgrades/EmptyImpl.sol";
 
 contract e2e is Test {
     MockERC20 erc20;
@@ -81,11 +82,11 @@ contract e2e is Test {
         );
         address ipAccountImplAddr = CREATE3.getDeployed(ipAccountImplSalt);
 
-        address impl = address(new AccessController());
+        address impl = address(new EmptyImpl());
         accessController = AccessController(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+                ""
             )
         );
 
@@ -222,7 +223,11 @@ contract e2e is Test {
 
         royaltyPolicyLAP.setSnapshotInterval(7 days);
 
-        accessController.setAddresses(address(ipAssetRegistry), address(moduleRegistry));
+        impl = address(new AccessController(address(ipAssetRegistry), address(moduleRegistry)));
+        accessController.upgradeToAndCall(
+            impl,
+            abi.encodeWithSelector(AccessController.initialize.selector, address(protocolAccessManager))
+        );
 
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
         moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));

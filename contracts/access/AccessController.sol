@@ -35,22 +35,33 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     /// @dev The storage struct of AccessController.
     /// @param encodedPermissions tracks the permission granted to an encoded permission path, where the
     /// encoded permission path = keccak256(abi.encodePacked(ipAccount, signer, to, func))
-    /// @notice The address of the IP Account Registry.
-    /// @notice The address of the Module Registry.
     /// @custom:storage-location erc7201:story-protocol.AccessController
     struct AccessControllerStorage {
         mapping(bytes32 => uint8) encodedPermissions;
-        address ipAccountRegistry;
-        address moduleRegistry;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.AccessController")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant AccessControllerStorageLocation =
         0xe80df7f3a04d1e1a0b61a4a820184d4b4a2f8a6a808f315dbcc7b502f40b1800;
 
+    /// @notice The address of the IP Account Registry.
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable IP_ACCOUNT_REGISTRY;
+    /// @notice The address of the Module Registry.
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable MODULE_REGISTRY;
+    
     /// Constructor
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address ipAccountRegistry, address moduleRegistry) {
+        if (ipAccountRegistry == address(0)) {
+            revert Errors.AccessController__ZeroIpAccountRegistry();
+        }
+        if (moduleRegistry == address(0)) {
+            revert Errors.AccessController__ZeroModuleRegistry();
+        }
+        IP_ACCOUNT_REGISTRY = ipAccountRegistry;
+        MODULE_REGISTRY = moduleRegistry;
         _disableInitializers();
     }
 
@@ -62,16 +73,6 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         }
         __ProtocolPausable_init(accessManager);
         __UUPSUpgradeable_init();
-    }
-
-    /// @notice Sets the addresses of the IP account registry and the module registry
-    /// @dev TODO: figure out how to set these addresses in the constructor to make them immutable
-    /// @param ipAccountRegistry address of the IP account registry
-    /// @param moduleRegistry address of the module registry
-    function setAddresses(address ipAccountRegistry, address moduleRegistry) external restricted {
-        AccessControllerStorage storage $ = _getAccessControllerStorage();
-        $.ipAccountRegistry = ipAccountRegistry;
-        $.moduleRegistry = moduleRegistry;
     }
 
     /// @notice Sets a batch of permissions in a single transaction.
@@ -122,7 +123,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
             revert Errors.AccessController__SignerIsZeroAddress();
         }
         AccessControllerStorage storage $ = _getAccessControllerStorage();
-        if (!IIPAccountRegistry($.ipAccountRegistry).isIpAccount(ipAccount)) {
+        if (!IIPAccountRegistry(IP_ACCOUNT_REGISTRY).isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
         // permission must be one of ABSTAIN, ALLOW, DENY
@@ -150,7 +151,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
         AccessControllerStorage storage $ = _getAccessControllerStorage();
         // Must be a valid IPAccount
-        if (!IIPAccountRegistry($.ipAccountRegistry).isIpAccount(ipAccount)) {
+        if (!IIPAccountRegistry(IP_ACCOUNT_REGISTRY).isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
         // Owner can call any contracts either registered module or unregistered/external contracts
@@ -163,8 +164,8 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         // The IP account can also modify its own Permissions settings.
         if (
             to != address(this) &&
-            !IModuleRegistry($.moduleRegistry).isRegistered(to) &&
-            !IModuleRegistry($.moduleRegistry).isRegistered(signer)
+            !IModuleRegistry(MODULE_REGISTRY).isRegistered(to) &&
+            !IModuleRegistry(MODULE_REGISTRY).isRegistered(signer)
         ) {
             revert Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule(signer, to);
         }

@@ -50,6 +50,7 @@ import { StringUtil } from "./StringUtil.sol";
 import { BroadcastManager } from "./BroadcastManager.s.sol";
 import { StorageLayoutChecker } from "./upgrades/StorageLayoutCheck.s.sol";
 import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
+import { EmptyImpl } from "./upgrades/EmptyImpl.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
@@ -186,11 +187,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         contractKey = "AccessController";
         _predeploy(contractKey);
 
-        address impl = address(new AccessController());
+        address impl = address(new EmptyImpl());
         accessController = AccessController(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+                ""
             )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
@@ -380,6 +381,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("TokenWithdrawalModule");
         tokenWithdrawalModule = new TokenWithdrawalModule(address(accessController), address(ipAccountRegistry));
         _postdeploy("TokenWithdrawalModule", address(tokenWithdrawalModule));
+
+        /// Upgrade to the final implementation of modules with circular dependencies
+        impl = address(new AccessController(address(ipAccountRegistry), address(moduleRegistry)));
+        accessController.upgradeToAndCall(
+            impl,
+            abi.encodeWithSelector(AccessController.initialize.selector, address(protocolAccessManager))
+        );
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -420,9 +428,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // License Token
         licenseToken.setDisputeModule(address(disputeModule));
         licenseToken.setLicensingModule(address(licensingModule));
-
-        // Access Controller
-        accessController.setAddresses(address(ipAccountRegistry), address(moduleRegistry));
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.setLicensingModule(address(licensingModule));

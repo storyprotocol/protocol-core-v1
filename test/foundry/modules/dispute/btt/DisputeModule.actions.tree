@@ -1,0 +1,77 @@
+DisputeModule.sol:actions
+├── when raising dispute
+│   ├── when IP is not registered
+│   │   └── it should revert
+│   └── when IP is registered
+│       ├── given the tag is not allowlisted
+│       │   └── it should revert
+│       ├── given the link to evidence is empty
+│       │   └── it should revert
+│       ├── given the arbitration policy is not allowlisted
+│       │   └── it should use the default arbitration policy
+│       └── given the tag, link, and arbitration policy are valid
+│           ├── it should store the raised dispute
+│           ├── it should set the current tag as IN_DISPUTE
+│           ├── it should set the target tag
+│           ├── it should call aribtration policy hook
+│           ├── it should emit an event
+│           └── it should succeed
+├── when setting dispute judgement
+│   ├── when IP is not registered
+│   │   └── it should revert
+│   └── when IP is registered
+│       ├── when caller is not an allowlisted relayer
+│       │   └── it should revert
+│       └── when caller is an allowlisted relayer
+│           ├── given the disptue ID is not IN_DISPUTE or does not exist
+│           │   └── it should revert
+│           ├── given the tag is not allowlisted
+│           │   └── it should revert
+│           └── given the disptue ID is IN_DISPUTE and tag is allowlisted
+│               ├── when decision is true
+│               │   ├── it should set the dispute current tag as target tag
+│               │   ├── it should increment the number of judged dispute (true) for the disputed IP
+│               │   ├── it should emit an event
+│               │   └── it should succeed
+│               └── when decision is false
+│                   ├── it should set the dispute current tag as null
+│                   ├── it should call arbitration policy hook
+│                   ├── it should emit an event
+│                   └── it should succeed
+├── when cancelling dispute
+│   ├── when dispute ID is not IN_DISPUTE
+│   │   └── it should revert
+│   └── when dispute ID is IN_DISPUTE
+│       ├── when caller is not the dispute initiator
+│       │   └── it should revert
+│       └── when caller is the dispute initiator
+│           ├── it should set the dispute current tag as null
+│           ├── it should call arbitration policy hook
+│           ├── it should emit an event
+│           └── it should succeed
+├── when tagging derivative from infringed parent
+│   ├── given the parent IP is not equal to the target IP of dispute ID
+│   │   └── it should revert
+│   ├── given the current tag of parent IP is IN_DISPUTE or null
+│   │   └── it should revert
+│   ├── given the derivative IP is not a child of parent IP
+│   │   └── it should revert
+│   └── given the validations pass
+│       ├── it should increment the global dispute counter
+│       ├── it should use the arbitration policy of derivative IP, if allowlisted, otherwise base policy
+│       ├── it should set the derivative IP's dispute current tag as parent IP's current tag
+│       ├── it should set the derivative IP's dispute data
+│       ├── it should increment the successful dispute counter of derivative IP
+│       └── it should emit an event
+└── when resolving a judged dispute
+    ├── given the dispute parent ID is zero (root IP) and caller is not dispute initiator
+    │   └── it should revert
+    ├── given the dispute parent ID is non-zero (child IP) and parent dispute is not resolved
+    │   └── it should revert
+    ├── given the dispute is IN_DISPUTE or invalid (not resolved)
+    │   └── it should revert
+    └── given the validations pass and dispute is judged as dispute
+        ├── it should set the dispute current tag as null
+        ├── it should decrement the number of judged dispute (true) for the disputed IP
+        ├── it should emit an event
+        └── it should succeed

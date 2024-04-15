@@ -1,0 +1,49 @@
+DisputeModule.sol:setters
+├── when allowlisting dispute tag
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when dispute tag is null
+│       │   └── it should revert
+│       └── when dispute tag is not null
+│           ├── it should set the allowlist of dispute tag with `allowed` value
+│           └── it should emit an event
+├── when allowlisting arbitration policy
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when arbitration policy does not support IArbitrationPolicy
+│       │   └── it should revert
+│       └── when arbitration policy supports IArbitrationPolicy
+│           ├── it should set the allowlist of arbitration policy with `allowed` value
+│           └── it should emit an event
+├── when allowlisting arbitration relayer
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when arbitration policy does not support IArbitrationPolicy
+│       │   └── it should revert
+│       └── when arbitration policy supports IArbitrationPolicy
+│           ├── when relayer is zero address
+│           │   └── it should revert
+│           └── when relayer is non-zero address
+│               ├── it should set the allowlist of arbitration policy with `allowed` value
+│               └── it should emit an event
+├── when setting base arbitration policy
+│   ├── when caller is not protocol manager
+│   │   └── it should revert
+│   └── when caller is protocol manager
+│       ├── when arbitration policy is not allowlisted in protocol
+│       │   └── it should revert
+│       └── when arbitration policy is allowlisted in protocol
+│           ├── it should set the base policy as the arbitration policy
+│           └── it should emit an event
+└── when setting arbitration policy for IP
+    ├── when caller does not have permission for IP
+    │   └── it should revert
+    └── when caller has permission for IP
+        ├── when arbitration policy is not allowlisted in protocol
+        │   └── it should revert
+        └── when arbitration policy is allowlisted in protocol
+            ├── it should set the IP's arbitration policy
+            └── it should emit an event

@@ -50,6 +50,9 @@ contract CoreMetadataModule is
 
     /// @notice Initializes the CoreMetadataModule contract.
     function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.CoreMetadataModule__ZeroAccessManager();
+        }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
     }

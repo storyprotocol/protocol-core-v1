@@ -56,7 +56,7 @@ contract PILicenseTemplateTest is BaseTest {
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
     function test_PILicenseTemplate_registerLicenseTerms() public {
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         assertEq(defaultTermsId, 1);
         (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) = pilTemplate
             .getRoyaltyPolicy(defaultTermsId);
@@ -66,10 +66,10 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(currency, address(0), "currency should be address(0)");
         assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId), "license should be transferable");
         assertEq(pilTemplate.getLicenseTermsId(PILFlavors.defaultValuesLicenseTerms()), 1);
-        assertEq(pilTemplate.getExpireTime(defaultTermsId, block.timestamp), 0, "expire time should be 0");
+        assertEq(pilTemplate.getExpireTime(defaultTermsId, uint40(block.timestamp)), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(defaultTermsId), "license terms should exist");
 
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(socialRemixTermsId, 2);
         (royaltyPolicy, royaltyData, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(socialRemixTermsId);
         assertEq(royaltyPolicy, address(0));
@@ -78,10 +78,10 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(currency, address(0));
         assertTrue(pilTemplate.isLicenseTransferable(socialRemixTermsId));
         assertEq(pilTemplate.getLicenseTermsId(PILFlavors.nonCommercialSocialRemixing()), 2);
-        assertEq(pilTemplate.getExpireTime(socialRemixTermsId, block.timestamp), 0, "expire time should be 0");
+        assertEq(pilTemplate.getExpireTime(socialRemixTermsId, uint40(block.timestamp)), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(socialRemixTermsId), "license terms should exist");
 
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -99,10 +99,10 @@ contract PILicenseTemplateTest is BaseTest {
             pilTemplate.getLicenseTermsId(PILFlavors.commercialUse(100, address(erc20), address(royaltyPolicyLAP))),
             3
         );
-        assertEq(pilTemplate.getExpireTime(commUseTermsId, block.timestamp), 0, "expire time should be 0");
+        assertEq(pilTemplate.getExpireTime(commUseTermsId, uint40(block.timestamp)), 0, "expire time should be 0");
         assertEq(pilTemplate.totalRegisteredLicenseTerms(), 3);
 
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commRemixTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 100,
                 commercialRevShare: 10,
@@ -123,24 +123,24 @@ contract PILicenseTemplateTest is BaseTest {
             ),
             4
         );
-        assertEq(pilTemplate.getExpireTime(commRemixTermsId, block.timestamp), 0, "expire time should be 0");
+        assertEq(pilTemplate.getExpireTime(commRemixTermsId, uint40(block.timestamp)), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(commRemixTermsId), "license terms should exist");
 
         assertEq(pilTemplate.totalRegisteredLicenseTerms(), 4);
 
-        uint256[] memory licenseTermsIds = new uint256[](4);
+        uint32[] memory licenseTermsIds = new uint32[](4);
         licenseTermsIds[0] = defaultTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
         licenseTermsIds[2] = commUseTermsId;
         licenseTermsIds[3] = commRemixTermsId;
-        assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);
+        assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, uint40(block.timestamp)), 0);
 
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
     }
     // register license terms twice
     function test_PILicenseTemplate_registerLicenseTerms_twice() public {
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        uint256 defaultTermsId1 = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 defaultTermsId1 = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         assertEq(defaultTermsId, defaultTermsId1);
     }
 
@@ -237,7 +237,7 @@ contract PILicenseTemplateTest is BaseTest {
 
     // get license terms ID by PILTerms struct
     function test_PILicenseTemplate_getLicenseTermsId() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -257,7 +257,7 @@ contract PILicenseTemplateTest is BaseTest {
 
     // get license terms struct by ID
     function test_PILicenseTemplate_getLicenseTerms() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -272,7 +272,7 @@ contract PILicenseTemplateTest is BaseTest {
 
     // test license terms exists
     function test_PILicenseTemplate_exists() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -285,7 +285,7 @@ contract PILicenseTemplateTest is BaseTest {
 
     // test verifyMintLicenseToken
     function test_PILicenseTemplate_verifyMintLicenseToken() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -297,7 +297,7 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     function test_PILicenseTemplate_verifyMintLicenseToken_FromDerivativeIp_ButNotAttachedLicense() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 0,
                 currencyToken: address(erc20),
@@ -309,19 +309,19 @@ contract PILicenseTemplateTest is BaseTest {
 
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipId1;
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         licenseTermsIds[0] = commUseTermsId;
         vm.prank(ipOwner2);
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
-        uint256 anotherTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 anotherTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
 
         bool result = pilTemplate.verifyMintLicenseToken(anotherTermsId, ipOwner3, ipId2, 1);
         assertFalse(result);
     }
 
     function test_PILicenseTemplate_verifyMintLicenseToken_FromDerivativeIp_NotReciprocal() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 0,
                 currencyToken: address(erc20),
@@ -333,7 +333,7 @@ contract PILicenseTemplateTest is BaseTest {
 
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipId1;
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         licenseTermsIds[0] = commUseTermsId;
         vm.prank(ipOwner2);
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
@@ -344,7 +344,7 @@ contract PILicenseTemplateTest is BaseTest {
 
     // test verifyRegisterDerivative
     function test_PILicenseTemplate_verifyRegisterDerivative() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -359,7 +359,7 @@ contract PILicenseTemplateTest is BaseTest {
     function test_PILicenseTemplate_verifyRegisterDerivative_WithApproval() public {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
         vm.prank(ipId1);
         pilTemplate.setApproval(ipId1, socialRemixTermsId, ipId2, true);
         assertTrue(pilTemplate.isDerivativeApproved(ipId1, socialRemixTermsId, ipId2));
@@ -371,7 +371,7 @@ contract PILicenseTemplateTest is BaseTest {
     function test_PILicenseTemplate_verifyRegisterDerivative_WithoutApproval() public {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
         vm.prank(ipId1);
         pilTemplate.setApproval(ipId1, socialRemixTermsId, ipId2, false);
         assertFalse(pilTemplate.isDerivativeApproved(ipId1, socialRemixTermsId, ipId2));
@@ -382,21 +382,21 @@ contract PILicenseTemplateTest is BaseTest {
 
     function test_PILicenseTemplate_verifyRegisterDerivative_derivativeNotAllowed() public {
         PILTerms memory terms = PILFlavors.defaultValuesLicenseTerms();
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
         bool result = pilTemplate.verifyRegisterDerivative(ipId2, ipId1, socialRemixTermsId, ipOwner2);
         assertFalse(result);
     }
 
     // test verifyCompatibleLicenses
     function test_PILicenseTemplate_verifyCompatibleLicenses() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commRemixTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 100,
                 commercialRevShare: 10,
@@ -404,13 +404,13 @@ contract PILicenseTemplateTest is BaseTest {
                 currencyToken: address(erc20)
             })
         );
-        uint256[] memory licenseTermsIds = new uint256[](2);
+        uint32[] memory licenseTermsIds = new uint32[](2);
         licenseTermsIds[0] = commUseTermsId;
         licenseTermsIds[1] = commRemixTermsId;
         assertFalse(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
 
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseTermsIds[0] = defaultTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
         assertFalse(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
@@ -426,14 +426,14 @@ contract PILicenseTemplateTest is BaseTest {
 
     // test verifyRegisterDerivativeForAllParents
     function test_PILicenseTemplate_verifyRegisterDerivativeForAllParents() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commRemixTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 100,
                 commercialRevShare: 10,
@@ -441,7 +441,7 @@ contract PILicenseTemplateTest is BaseTest {
                 currencyToken: address(erc20)
             })
         );
-        uint256[] memory licenseTermsIds = new uint256[](2);
+        uint32[] memory licenseTermsIds = new uint32[](2);
         licenseTermsIds[0] = commUseTermsId;
         licenseTermsIds[1] = commRemixTermsId;
         address[] memory parentIpIds = new address[](2);
@@ -449,8 +449,8 @@ contract PILicenseTemplateTest is BaseTest {
         parentIpIds[1] = ipId3;
         assertFalse(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
 
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseTermsIds[0] = defaultTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
         assertFalse(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
@@ -466,13 +466,13 @@ contract PILicenseTemplateTest is BaseTest {
 
     // test isLicenseTransferable
     function test_PILicenseTemplate_isLicenseTransferable() public {
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        uint32 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId));
 
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertTrue(pilTemplate.isLicenseTransferable(socialRemixTermsId));
 
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
                 currencyToken: address(erc20),
@@ -481,7 +481,7 @@ contract PILicenseTemplateTest is BaseTest {
         );
         assertTrue(pilTemplate.isLicenseTransferable(commUseTermsId));
 
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+        uint32 commRemixTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 100,
                 commercialRevShare: 10,
@@ -493,7 +493,7 @@ contract PILicenseTemplateTest is BaseTest {
 
         PILTerms memory terms = pilTemplate.getLicenseTerms(commRemixTermsId);
         terms.transferable = false;
-        uint256 nonTransferableTermsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 nonTransferableTermsId = pilTemplate.registerLicenseTerms(terms);
         assertFalse(pilTemplate.isLicenseTransferable(nonTransferableTermsId));
     }
 
@@ -504,7 +504,7 @@ contract PILicenseTemplateTest is BaseTest {
             royaltyPolicy: address(royaltyPolicyLAP)
         });
         terms.uri = "license.url";
-        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 termsId = pilTemplate.registerLicenseTerms(terms);
         assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
     }
 
@@ -515,7 +515,7 @@ contract PILicenseTemplateTest is BaseTest {
             royaltyPolicy: address(royaltyPolicyLAP)
         });
         terms.uri = "license.url";
-        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
+        uint32 termsId = pilTemplate.registerLicenseTerms(terms);
         assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
 
         PILTerms memory terms1 = PILFlavors.commercialUse({
@@ -524,7 +524,7 @@ contract PILicenseTemplateTest is BaseTest {
             royaltyPolicy: address(royaltyPolicyLAP)
         });
         terms1.uri = "another.license.url";
-        uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
+        uint32 termsId1 = pilTemplate.registerLicenseTerms(terms1);
 
         assertEq(pilTemplate.getLicenseTermsURI(termsId1), "another.license.url");
         assertEq(pilTemplate.getLicenseTermsURI(termsId), "license.url");
@@ -533,8 +533,8 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     function test_PILicenseTemplate_getEarlierExpiredTime_WithEmptyLicenseTerms() public {
-        uint256[] memory licenseTermsIds = new uint256[](0);
-        assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);
+        uint32[] memory licenseTermsIds = new uint32[](0);
+        assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, uint40(block.timestamp)), 0);
     }
 
     function test_PILicenseTemplate_name() public {

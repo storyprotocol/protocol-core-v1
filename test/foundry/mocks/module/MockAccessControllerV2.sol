@@ -11,7 +11,8 @@ contract MockAccessControllerV2 is AccessController {
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.AccessControllerV2")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant AccessControllerV2StorageLocation = 0xf328f2cdee4ae4df23921504bfa43e3156fb4d18b23549ca0a43fd1e64947a00;
+    bytes32 private constant AccessControllerV2StorageLocation =
+        0xf328f2cdee4ae4df23921504bfa43e3156fb4d18b23549ca0a43fd1e64947a00;
 
     function initialize() public reinitializer(2) {
         _getAccessControllerV2Storage().newState = "initialized";

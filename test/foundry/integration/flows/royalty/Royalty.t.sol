@@ -24,7 +24,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
     uint32 internal defaultCommRevShare = 10 * 10 ** 6; // 10%
     uint256 internal mintingFee = 7 ether;
-    uint256 internal commRemixTermsId;
+    uint32 internal commRemixTermsId;
 
     function setUp() public override {
         super.setUp();

@@ -243,10 +243,10 @@ contract e2e is Test {
         ipId7 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId7);
 
         // register license terms
-        uint256 lcId1 = piLicenseTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 lcId1 = piLicenseTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(lcId1, 1);
 
-        uint256 lcId2 = piLicenseTemplate.registerLicenseTerms(
+        uint32 lcId2 = piLicenseTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
         );
         assertEq(lcId2, 2);
@@ -267,7 +267,7 @@ contract e2e is Test {
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(piLicenseTemplate), 1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
 
-        (address attachedTemplate, uint256 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipId1, 0);
+        (address attachedTemplate, uint32 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipId1, 0);
         assertEq(attachedTemplate, address(piLicenseTemplate));
         assertEq(attachedId, 1);
 
@@ -284,7 +284,7 @@ contract e2e is Test {
         // register derivative directly
         vm.startPrank(bob);
         address[] memory parentIpIds = new address[](1);
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         parentIpIds[0] = ipId1;
         licenseTermsIds[0] = 1;
 
@@ -389,7 +389,7 @@ contract e2e is Test {
         erc20.mint(eve, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
         parentIpIds = new address[](1);
-        licenseTermsIds = new uint256[](1);
+        licenseTermsIds = new uint32[](1);
         parentIpIds[0] = ipId1;
         licenseTermsIds[0] = 2;
 

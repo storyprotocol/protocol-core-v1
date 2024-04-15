@@ -30,13 +30,13 @@ contract Licensing_Scenarios is BaseIntegration {
     }
 
     function test_Integration_LicensingScenarios_PILFlavors_getId() public {
-        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+        uint32 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
         assertEq(ncSocialRemixTermsId, PILFlavors.getNonCommercialSocialRemixingId(pilTemplate));
 
         uint32 commercialRevShare = 10;
         uint256 mintingFee = 100;
 
-        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+        uint32 commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({
                 commercialRevShare: commercialRevShare,
@@ -56,7 +56,7 @@ contract Licensing_Scenarios is BaseIntegration {
             })
         );
 
-        uint256 commTermsId = registerSelectedPILicenseTerms(
+        uint32 commTermsId = registerSelectedPILicenseTerms(
             "commercial_use",
             PILFlavors.commercialUse({
                 mintingFee: mintingFee,
@@ -83,10 +83,10 @@ contract Licensing_Scenarios is BaseIntegration {
         uint256 mintingFee = 100;
 
         // Register non-commercial social remixing policy
-        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+        uint32 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
 
         // Register commercial remixing policy
-        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+        uint32 commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({
                 commercialRevShare: commercialRevShare,
@@ -97,7 +97,7 @@ contract Licensing_Scenarios is BaseIntegration {
         );
 
         // Register commercial use policy
-        uint256 commTermsId = registerSelectedPILicenseTerms(
+        uint32 commTermsId = registerSelectedPILicenseTerms(
             "commercial_use",
             PILFlavors.commercialUse({
                 mintingFee: mintingFee,

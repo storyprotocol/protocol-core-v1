@@ -16,7 +16,7 @@ contract LicensingHelper {
     IERC20 private erc20; // keep private to avoid collision with `BaseIntegration`
 
     mapping(string selectionName => PILTerms) internal selectedPILicenseTerms;
-    mapping(string selectionName => uint256 licenseTermsId) internal selectedPILicenseTermsId;
+    mapping(string selectionName => uint32 licenseTermsId) internal selectedPILicenseTermsId;
 
     string[] internal emptyStringArray = new string[](0);
 
@@ -29,7 +29,7 @@ contract LicensingHelper {
     function registerSelectedPILicenseTerms(
         string memory selectionName,
         PILTerms memory selectedPILicenseTerms_
-    ) public returns (uint256 pilSelectedLicenseTermsId) {
+    ) public returns (uint32 pilSelectedLicenseTermsId) {
         string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
         pilSelectedLicenseTermsId = pilTemplate.registerLicenseTerms(selectedPILicenseTerms_);
         // pilSelectedLicenseTermsId = pilTemplate.getLicenseTermsId(selectedPILicenseTerms_);
@@ -45,7 +45,7 @@ contract LicensingHelper {
         bool reciprocal,
         uint32 commercialRevShare,
         uint256 mintingFee
-    ) public returns (uint256 pilSelectedLicenseTermsId) {
+    ) public returns (uint32 pilSelectedLicenseTermsId) {
         pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
             selectionName,
             mapSelectedPILicenseTerms_Commercial(transferable, derivatives, reciprocal, commercialRevShare, mintingFee)
@@ -57,7 +57,7 @@ contract LicensingHelper {
         bool transferable,
         bool derivatives,
         bool reciprocal
-    ) public returns (uint256 pilSelectedLicenseTermsId) {
+    ) public returns (uint32 pilSelectedLicenseTermsId) {
         pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
             selectionName,
             mapSelectedPILicenseTerms_NonCommercial(transferable, derivatives, reciprocal)
@@ -66,7 +66,7 @@ contract LicensingHelper {
 
     function registerSelectedPILicenseTerms_NonCommercialSocialRemixing()
         public
-        returns (uint256 pilSelectedLicenseTermsId)
+        returns (uint32 pilSelectedLicenseTermsId)
     {
         pilSelectedLicenseTermsId = registerSelectedPILicenseTerms(
             "nc_social_remix",
@@ -135,7 +135,7 @@ contract LicensingHelper {
         return selectedPILicenseTerms[selectionName];
     }
 
-    function getSelectedPILicenseTermsId(string memory selectionName) internal view returns (uint256) {
+    function getSelectedPILicenseTermsId(string memory selectionName) internal view returns (uint32) {
         string memory _selectionName = string(abi.encodePacked("PIL_", selectionName));
         return selectedPILicenseTermsId[selectionName];
     }

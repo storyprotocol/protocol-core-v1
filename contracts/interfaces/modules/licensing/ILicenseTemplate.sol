@@ -16,7 +16,7 @@ interface ILicenseTemplate is IERC165 {
     /// @param licenseTermsId The ID of the license terms.
     /// @param licenseTemplate The address of the license template.
     /// @param licenseTerms The data of the license.
-    event LicenseTermsRegistered(uint256 indexed licenseTermsId, address indexed licenseTemplate, bytes licenseTerms);
+    event LicenseTermsRegistered(uint32 indexed licenseTermsId, address indexed licenseTemplate, bytes licenseTerms);
 
     /// @notice Returns the name of the license template.
     /// @return The name of the license template.
@@ -27,7 +27,7 @@ interface ILicenseTemplate is IERC165 {
     /// hence the json format should follow the common NFT metadata standard.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The JSON string of the license terms.
-    function toJson(uint256 licenseTermsId) external view returns (string memory);
+    function toJson(uint32 licenseTermsId) external view returns (string memory);
 
     /// @notice Returns the metadata URI of the license template.
     /// @return The metadata URI of the license template.
@@ -36,33 +36,33 @@ interface ILicenseTemplate is IERC165 {
     /// @notice Returns the URI of the license terms.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The URI of the license terms.
-    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory);
+    function getLicenseTermsURI(uint32 licenseTermsId) external view returns (string memory);
 
     /// @notice Returns the total number of registered license terms.
     /// @return The total number of registered license terms.
-    function totalRegisteredLicenseTerms() external view returns (uint256);
+    function totalRegisteredLicenseTerms() external view returns (uint32);
 
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function exists(uint256 licenseTermsId) external view returns (bool);
+    function exists(uint32 licenseTermsId) external view returns (bool);
 
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms is transferable, false otherwise.
-    function isLicenseTransferable(uint256 licenseTermsId) external view returns (bool);
+    function isLicenseTransferable(uint32 licenseTermsId) external view returns (bool);
 
     /// @notice Returns the earliest expiration time among the given license terms.
-    /// @param start The start time to calculate the expiration time.
     /// @param licenseTermsIds The IDs of the license terms.
+    /// @param start The start time to calculate the expiration time.
     /// @return The earliest expiration time.
-    function getEarlierExpireTime(uint256[] calldata licenseTermsIds, uint256 start) external view returns (uint256);
+    function getEarlierExpireTime(uint32[] calldata licenseTermsIds, uint40 start) external view returns (uint40);
 
     /// @notice Returns the expiration time of a license terms.
-    /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
+    /// @param start The start time.
     /// @return The expiration time.
-    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint256);
+    function getExpireTime(uint32 licenseTermsId, uint40 start) external view returns (uint40);
 
     /// @notice Returns the royalty policy of a license terms.
     /// @dev All License Templates should implement this method.
@@ -76,7 +76,7 @@ interface ILicenseTemplate is IERC165 {
     /// @return currencyToken The address of the ERC20 token, used for minting license fee and royalties.
     /// the currency token will used for pay for license token minting fee and royalties.
     function getRoyaltyPolicy(
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     )
         external
         view
@@ -91,7 +91,7 @@ interface ILicenseTemplate is IERC165 {
     /// @param amount The amount of licenses to mint.
     /// @return True if the minting is verified, false otherwise.
     function verifyMintLicenseToken(
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee,
         address licensorIpId,
         uint256 amount
@@ -109,7 +109,7 @@ interface ILicenseTemplate is IERC165 {
     function verifyRegisterDerivative(
         address childIpId,
         address parentIpId,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee
     ) external returns (bool);
 
@@ -119,7 +119,7 @@ interface ILicenseTemplate is IERC165 {
     /// It ensures that the licenses of all parent IPs are compatible with each other during the registration process.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return True if the licenses are compatible, false otherwise.
-    function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view returns (bool);
+    function verifyCompatibleLicenses(uint32[] calldata licenseTermsIds) external view returns (bool);
 
     /// @notice Verifies the registration of a derivative for all parent IPs.
     /// @dev This function is called by the LicensingModule to verify licenses for registering a derivative IP
@@ -134,7 +134,7 @@ interface ILicenseTemplate is IERC165 {
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpId,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address childIpOwner
     ) external returns (bool);
 }

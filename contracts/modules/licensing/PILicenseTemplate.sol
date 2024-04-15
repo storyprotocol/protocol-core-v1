@@ -36,9 +36,9 @@ contract PILicenseTemplate is
     /// @dev Storage structure for the PILicenseTemplate
     /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
     struct PILicenseTemplateStorage {
-        mapping(uint256 licenseTermsId => PILTerms) licenseTerms;
-        mapping(bytes32 licenseTermsHash => uint256 licenseTermsId) hashedLicenseTerms;
-        uint256 licenseTermsCounter;
+        mapping(uint32 licenseTermsId => PILTerms) licenseTerms;
+        mapping(bytes32 licenseTermsHash => uint32 licenseTermsId) hashedLicenseTerms;
+        uint32 licenseTermsCounter;
     }
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -81,7 +81,7 @@ contract PILicenseTemplate is
     /// It will return existing ID if the terms are already registered.
     /// @param terms The PILTerms to register.
     /// @return id The ID of the newly registered license terms.
-    function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint256 id) {
+    function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint32 id) {
         if (terms.royaltyPolicy != address(0) && !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(terms.royaltyPolicy)) {
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
         }
@@ -114,7 +114,7 @@ contract PILicenseTemplate is
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function exists(uint256 licenseTermsId) external view override returns (bool) {
+    function exists(uint32 licenseTermsId) external view override returns (bool) {
         return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
     }
 
@@ -126,7 +126,7 @@ contract PILicenseTemplate is
     /// @param licensorIpId The IP ID of the licensor who attached the license terms minting the license token.
     /// @return True if the minting is verified, false otherwise.
     function verifyMintLicenseToken(
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee,
         address licensorIpId,
         uint256
@@ -166,7 +166,7 @@ contract PILicenseTemplate is
     function verifyRegisterDerivative(
         address childIpId,
         address parentIpId,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee
     ) external override returns (bool) {
         return _verifyRegisterDerivative(childIpId, parentIpId, licenseTermsId, licensee);
@@ -178,7 +178,7 @@ contract PILicenseTemplate is
     /// It ensures that the licenses of all parent IPs are compatible with each other during the registration process.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return True if the licenses are compatible, false otherwise.
-    function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view override returns (bool) {
+    function verifyCompatibleLicenses(uint32[] calldata licenseTermsIds) external view override returns (bool) {
         return _verifyCompatibleLicenseTerms(licenseTermsIds);
     }
 
@@ -195,7 +195,7 @@ contract PILicenseTemplate is
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpIds,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address childIpOwner
     ) external override returns (bool) {
         if (!_verifyCompatibleLicenseTerms(licenseTermsIds)) {
@@ -217,7 +217,7 @@ contract PILicenseTemplate is
     /// @return currency The address of the ERC20 token, used for minting license fee and royalties.
     /// the currency token will used for pay for license token minting fee and royalties.
     function getRoyaltyPolicy(
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
@@ -226,7 +226,7 @@ contract PILicenseTemplate is
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms is transferable, false otherwise.
-    function isLicenseTransferable(uint256 licenseTermsId) external view override returns (bool) {
+    function isLicenseTransferable(uint32 licenseTermsId) external view override returns (bool) {
         return _getPILicenseTemplateStorage().licenseTerms[licenseTermsId].transferable;
     }
 
@@ -235,15 +235,15 @@ contract PILicenseTemplate is
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return The earliest expiration time.
     function getEarlierExpireTime(
-        uint256[] calldata licenseTermsIds,
-        uint256 start
-    ) external view override returns (uint256) {
+        uint32[] calldata licenseTermsIds,
+        uint40 start
+    ) external view override returns (uint40) {
         if (licenseTermsIds.length == 0) {
             return 0;
         }
-        uint expireTime = _getExpireTime(licenseTermsIds[0], start);
-        for (uint i = 1; i < licenseTermsIds.length; i++) {
-            uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
+        uint40 expireTime = _getExpireTime(licenseTermsIds[0], start);
+        for (uint256 i = 1; i < licenseTermsIds.length; i++) {
+            uint40 newExpireTime = _getExpireTime(licenseTermsIds[i], start);
             if (newExpireTime < expireTime || expireTime == 0) {
                 expireTime = newExpireTime;
             }
@@ -255,34 +255,34 @@ contract PILicenseTemplate is
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint256) {
+    function getExpireTime(uint32 licenseTermsId, uint40 start) external view returns (uint40) {
         return _getExpireTime(licenseTermsId, start);
     }
 
     /// @notice Gets the ID of the given license terms.
     /// @param terms The PILTerms to get the ID for.
     /// @return selectedLicenseTermsId The ID of the given license terms.
-    function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 selectedLicenseTermsId) {
+    function getLicenseTermsId(PILTerms calldata terms) external view returns (uint32 selectedLicenseTermsId) {
         return _getPILicenseTemplateStorage().hashedLicenseTerms[keccak256(abi.encode(terms))];
     }
 
     /// @notice Gets license terms of the given ID.
     /// @param selectedLicenseTermsId The ID of the license terms.
     /// @return terms The PILTerms associate with the given ID.
-    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms) {
+    function getLicenseTerms(uint32 selectedLicenseTermsId) external view returns (PILTerms memory terms) {
         return _getPILicenseTemplateStorage().licenseTerms[selectedLicenseTermsId];
     }
 
     /// @notice Returns the URI of the license terms.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The URI of the license terms.
-    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory) {
+    function getLicenseTermsURI(uint32 licenseTermsId) external view returns (string memory) {
         return _getPILicenseTemplateStorage().licenseTerms[licenseTermsId].uri;
     }
 
     /// @notice Returns the total number of registered license terms.
     /// @return The total number of registered license terms.
-    function totalRegisteredLicenseTerms() external view returns (uint256) {
+    function totalRegisteredLicenseTerms() external view returns (uint32) {
         return _getPILicenseTemplateStorage().licenseTermsCounter;
     }
 
@@ -297,7 +297,7 @@ contract PILicenseTemplate is
     /// @dev Must return OpenSea standard compliant metadata.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The JSON string of the license terms, follow the OpenSea metadata standard.
-    function toJson(uint256 licenseTermsId) public view returns (string memory) {
+    function toJson(uint32 licenseTermsId) public view returns (string memory) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
 
         /* solhint-disable */
@@ -430,7 +430,7 @@ contract PILicenseTemplate is
     function _verifyRegisterDerivative(
         address childIpId,
         address parentIpId,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee
     ) internal returns (bool) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
@@ -456,7 +456,7 @@ contract PILicenseTemplate is
     }
 
     /// @dev Verifies if the license terms are compatible.
-    function _verifyCompatibleLicenseTerms(uint256[] calldata licenseTermsIds) internal view returns (bool) {
+    function _verifyCompatibleLicenseTerms(uint32[] calldata licenseTermsIds) internal view returns (bool) {
         if (licenseTermsIds.length < 2) return true;
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         bool commercial = $.licenseTerms[licenseTermsIds[0]].commercialUse;
@@ -469,7 +469,7 @@ contract PILicenseTemplate is
     }
 
     /// @dev Calculate and returns the expiration time based given start time and license terms.
-    function _getExpireTime(uint256 licenseTermsId, uint256 start) internal view returns (uint) {
+    function _getExpireTime(uint32 licenseTermsId, uint40 start) internal view returns (uint40) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         if (terms.expiration == 0) {
             return 0;

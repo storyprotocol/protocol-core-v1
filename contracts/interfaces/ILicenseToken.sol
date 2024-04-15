@@ -15,19 +15,20 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 /// metadata.
 interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @notice Metadata struct for License Tokens.
+    /// @dev Struct layout for 2 storage slots.
     /// @param licensorIpId The ID of the licensor IP for which the License Token was minted.
-    /// @param licenseTemplate The address of the License Template associated with the License Token.
-    /// @param licenseTermsId The ID of the License Terms associated with the License Token.
     /// @param transferable Whether the License Token is transferable, determined by the License Terms.
+    /// @param licenseTermsId The ID of the License Terms associated with the License Token.
+    /// @param licenseTemplate The address of the License Template associated with the License Token.
     /// @param mintedAt The timestamp at which the License Token was minted.
     /// @param expiresAt The timestamp at which the License Token expires.
     struct LicenseTokenMetadata {
         address licensorIpId;
-        address licenseTemplate;
-        uint256 licenseTermsId;
         bool transferable;
-        uint256 mintedAt;
-        uint256 expiresAt;
+        uint32 licenseTermsId;
+        address licenseTemplate;
+        uint40 mintedAt;
+        uint40 expiresAt;
     }
 
     /// @notice Emitted when a License Token is minted.
@@ -48,7 +49,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
@@ -71,7 +72,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
 
     /// @notice Returns the ID of the license terms that are used for the given license ID
     /// @param tokenId The ID of the license token
-    function getLicenseTermsId(uint256 tokenId) external view returns (uint256);
+    function getLicenseTermsId(uint256 tokenId) external view returns (uint32);
 
     /// @notice Returns the address of the license template that is used for the given license ID
     /// @param tokenId The ID of the license token
@@ -107,5 +108,5 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         address childIpId,
         address childIpOwner,
         uint256[] calldata tokenIds
-    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds);
+    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint32[] memory licenseTermsIds);
 }

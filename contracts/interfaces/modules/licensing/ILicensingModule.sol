@@ -19,7 +19,7 @@ interface ILicensingModule is IModule {
         address indexed caller,
         address indexed ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     );
 
     /// @notice Emitted when license tokens are minted.
@@ -34,7 +34,7 @@ interface ILicensingModule is IModule {
         address indexed caller,
         address indexed licensorIpId,
         address licenseTemplate,
-        uint256 indexed licenseTermsId,
+        uint32 indexed licenseTermsId,
         uint256 amount,
         address receiver,
         uint256 startLicenseTokenId
@@ -52,7 +52,7 @@ interface ILicensingModule is IModule {
         address indexed childIpId,
         uint256[] licenseTokenIds,
         address[] parentIpIds,
-        uint256[] licenseTermsIds,
+        uint32[] licenseTermsIds,
         address licenseTemplate
     );
 
@@ -61,7 +61,7 @@ interface ILicensingModule is IModule {
     /// @param ipId The IP ID.
     /// @param licenseTemplate The address of the license template.
     /// @param licenseTermsId The ID of the license terms.
-    function attachLicenseTerms(address ipId, address licenseTemplate, uint256 licenseTermsId) external;
+    function attachLicenseTerms(address ipId, address licenseTemplate, uint32 licenseTermsId) external;
 
     /// @notice Mints license tokens for the license terms attached to an IP.
     /// The license tokens are minted to the receiver.
@@ -85,7 +85,7 @@ interface ILicensingModule is IModule {
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
@@ -104,7 +104,7 @@ interface ILicensingModule is IModule {
     function registerDerivative(
         address childIpId,
         address[] calldata parentIpIds,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
     ) external;

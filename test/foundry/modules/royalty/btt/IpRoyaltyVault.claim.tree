@@ -13,7 +13,7 @@ IpRoyaltyVault.sol:claim
 ├── when claiming revenue by token batch
 │   ├── it should, for each token, get claimable revenue of msg.sender at snapshotId
 │   ├── it should, for each token, skip if claimable revenue is 0
-│   ├── it sohuld, for each token, set claimed as true for msg.sender on token at snapshotId
+│   ├── it should, for each token, set claimed as true for msg.sender on token at snapshotId
 │   ├── it should, for each token, deduct the claimed amount from the token's claim vault amount
 │   ├── it should, for each token, transfer the claimed revenue to msg.sender
 │   └── it should, for each token, emit an event

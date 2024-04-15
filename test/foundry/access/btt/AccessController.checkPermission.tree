@@ -4,7 +4,7 @@ AccessController.sol:checkPermission
 ├── given the `signer` is IP owner
 │   └── it should return
 ├── given the `to` is not Access Controller and neither `to` or `signer` are registered module
-│   └── it sohuld revert
+│   └── it should revert
 └── given the validations pass
     ├── given the perm(ipAccount, signer, to, func) is ALLOW
     │   └── it should return

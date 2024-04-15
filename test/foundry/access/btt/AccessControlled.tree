@@ -3,17 +3,17 @@ AccessControlled.sol
 │   ├── when `ipAccount` is not a valid SP IP Account address
 │   │   └── it should revert
 │   └── when `ipAccount` is a valid SP IP Account
-│       ├── when `ipAccount` is msg.sender
+│       ├── when `ipAccount` is caller
 │       │   └── it should return
-│       └── when `ipAccount` is not msg.sender
+│       └── when `ipAccount` is not caller
 │           └── it should check permission via Access Controller
 └── when checking if IP has permission
     ├── when `ipAccount` is not a valid SP IP Account address
     │   └── it should return false
     └── when `ipAccount` is a valid SP IP Account
-        ├── when `ipAccount` is msg.sender
+        ├── when `ipAccount` is caller
         │   └── it should return true
-        └── when `ipAccount` is not msg.sender
+        └── when `ipAccount` is not caller
             ├── when Access Controller check permission returns
             │   └── it should return true
             └── when Access Controller check permission reverts

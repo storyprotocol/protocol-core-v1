@@ -1,15 +1,14 @@
 AccessController.sol:setPermission
-├── when caller is not `ipAccount`
-│   └── it should revert
-└── when caller is `ipAccount`
-    ├── given the `ipAccount` is not a valid SP IP Account address
-    │   └── it should revert
-    ├── given the `signer` is zero address
-    │   └── it should revert
-    ├── given the msg.sender is not `ipAccount` or its owner
-    │   └── it should revert
-    ├── given the `permission` is not ABSTAIN, ALLOW, and DENY
-    │   └── it should revert
-    └── given the `permission` is ABSTAIN, ALLOW, or DENY
-        ├── it should set (`ipAccount` owner => `ipAccount` => `signer` => `to` => `func`) = `permission`
-        └── it should emit an event
+# given the `ipAccount` is zero address
+## it should revert
+# given the `signer` is zero address
+## it should revert
+# given the `ipAccount` is not a valid SP IP Account address
+## it should revert
+# given the `permission` is not ABSTAIN, ALLOW, and DENY
+## it should revert
+# given the caller is not `ipAccount` or its owner
+## it should revert
+# given the `permission` is ABSTAIN, ALLOW, or DENY
+## it should set (`ipAccount` owner => `ipAccount` => `signer` => `to` => `func`) = `permission`
+## it should emit an event

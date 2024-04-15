@@ -42,9 +42,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         mapping(address token => uint256 amount) ancestorsVaultAmount;
         mapping(address ancestorIpId => bool) isCollectedByAncestor;
         mapping(address token => uint256 amount) claimVaultAmount;
-        mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
+        mapping(bytes32 key => uint256 amount) claimableAtSnapshot;
         mapping(uint256 snapshotId => uint32 tokenAmount) unclaimedAtSnapshot;
-        mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
+        mapping(bytes32 key => bool isClaimedAtSnapshot) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
     }
 
@@ -151,7 +151,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             $.ancestorsVaultAmount[tokenList[i]] += ancestorsTokens;
 
             uint256 claimableTokens = newRevenue - ancestorsTokens;
-            $.claimableAtSnapshot[snapshotId][tokenList[i]] = claimableTokens;
+            $.claimableAtSnapshot[_claimableSnapshotKey(snapshotId, tokenList[i])] = claimableTokens;
             $.claimVaultAmount[tokenList[i]] += claimableTokens;
         }
 
@@ -186,7 +186,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             uint256 claimableToken = _claimableRevenue(msg.sender, snapshotId, tokenList[i]);
             if (claimableToken == 0) continue;
 
-            $.isClaimedAtSnapshot[snapshotId][msg.sender][tokenList[i]] = true;
+            $.isClaimedAtSnapshot[_isClaimedAtSnapshotKey(snapshotId, msg.sender, tokenList[i])] = true;
             $.claimVaultAmount[tokenList[i]] -= claimableToken;
             IERC20Upgradeable(tokenList[i]).safeTransfer(msg.sender, claimableToken);
 
@@ -203,7 +203,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint256 claimableToken;
         for (uint256 i = 0; i < snapshotIds.length; i++) {
             claimableToken += _claimableRevenue(msg.sender, snapshotIds[i], token);
-            $.isClaimedAtSnapshot[snapshotIds[i]][msg.sender][token] = true;
+            $.isClaimedAtSnapshot[_isClaimedAtSnapshotKey(snapshotIds[i], msg.sender, token)] = true;
         }
 
         $.claimVaultAmount[token] -= claimableToken;
@@ -253,8 +253,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
         uint256 balance = balanceOfAt(account, snapshotId);
         uint256 totalSupply = totalSupplyAt(snapshotId) - $.unclaimedAtSnapshot[snapshotId];
-        uint256 claimableToken = $.claimableAtSnapshot[snapshotId][token];
-        return $.isClaimedAtSnapshot[snapshotId][account][token] ? 0 : (balance * claimableToken) / totalSupply;
+        uint256 claimableToken = $.claimableAtSnapshot[_claimableSnapshotKey(snapshotId, token)];
+        return $.isClaimedAtSnapshot[(_isClaimedAtSnapshotKey(snapshotId, account, token))] ? 0 : (balance * claimableToken) / totalSupply;
     }
 
     /// @dev Collect the accrued tokens (if any)
@@ -317,7 +317,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param snapshotId The snapshot id
     /// @param token The address of the revenue token
     function claimableAtSnapshot(uint256 snapshotId, address token) external view returns (uint256) {
-        return _getIpRoyaltyVaultStorage().claimableAtSnapshot[snapshotId][token];
+        return _getIpRoyaltyVaultStorage().claimableAtSnapshot[_claimableSnapshotKey(snapshotId, token)];
     }
 
     /// @notice Amount of unclaimed revenue tokens at the snapshot
@@ -331,12 +331,22 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param claimer The address of the claimer
     /// @param token The address of the revenue token
     function isClaimedAtSnapshot(uint256 snapshotId, address claimer, address token) external view returns (bool) {
-        return _getIpRoyaltyVaultStorage().isClaimedAtSnapshot[snapshotId][claimer][token];
+        return _getIpRoyaltyVaultStorage().isClaimedAtSnapshot[_isClaimedAtSnapshotKey(snapshotId, claimer, token)];
     }
 
     /// @notice The list of revenue tokens in the vault
     function tokens() external view returns (address[] memory) {
         return _getIpRoyaltyVaultStorage().tokens.values();
+    }
+
+    // @notice helper method to generate the key for claimableAtSnapshot mapping
+    function _claimableSnapshotKey(uint256 snapshotId, address token) private pure returns (bytes32) {
+        return keccak256(abi.encode(snapshotId, token));
+    }
+
+    /// @notice helper method to generate the key for isClaimedAtSnapshot mapping
+    function _isClaimedAtSnapshotKey(uint256 snapshotId, address claimer, address token) private pure returns (bytes32) {
+        return keccak256(abi.encode(snapshotId, claimer, token));
     }
 
     /// @dev Returns the storage struct of the IpRoyaltyVault

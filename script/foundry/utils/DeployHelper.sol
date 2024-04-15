@@ -11,6 +11,7 @@ import { stdJson } from "forge-std/StdJson.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { CREATE3 } from "@solady/src/utils/CREATE3.sol";
 
 // contracts
 import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
@@ -157,8 +158,16 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
+    function create3Deploy(bytes32 salt, bytes calldata creationCode, uint256 value) external returns (address) {
+        return CREATE3.deploy(salt, creationCode, value);
+    }
+
     function _deployProtocolContracts() private {
         require(address(erc20) != address(0), "Deploy: Asset Not Set");
+        bytes32 ipAccountImplSalt = keccak256(
+            abi.encode(type(IPAccountImpl).creationCode, address(this), block.timestamp)
+        );
+        address ipAccountImplAddr = CREATE3.getDeployed(ipAccountImplSalt);
 
         string memory contractKey;
 
@@ -187,11 +196,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(accessController));
 
-        contractKey = "IPAccountImpl";
-        _predeploy(contractKey);
-        ipAccountImpl = new IPAccountImpl(address(accessController));
-        _postdeploy(contractKey, address(ipAccountImpl));
-
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
         impl = address(new ModuleRegistry());
@@ -206,12 +210,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        impl = address(
-            new IPAssetRegistry(
-                address(erc6551Registry),
-                address(ipAccountImpl)
-            )
-        );
+        impl = address(new IPAssetRegistry(address(erc6551Registry), ipAccountImplAddr));
         ipAssetRegistry = IPAssetRegistry(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -246,6 +245,18 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
+
+        contractKey = "IPAccountImpl";
+        bytes memory ipAccountImplCode = abi.encodePacked(
+            type(IPAccountImpl).creationCode,
+            abi.encode(
+                address(accessController)
+            )
+        );
+        _predeploy(contractKey);
+        this.create3Deploy(ipAccountImplSalt, ipAccountImplCode, 0);
+        ipAccountImpl = IPAccountImpl(payable(ipAccountImplAddr));
+        _postdeploy(contractKey, address(ipAccountImpl));
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);

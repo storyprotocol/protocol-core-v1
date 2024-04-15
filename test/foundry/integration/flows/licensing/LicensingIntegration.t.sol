@@ -6,6 +6,7 @@ import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
+import { CREATE3 } from "@solady/src/utils/CREATE3.sol";
 
 // contracts
 import { AccessController } from "../../../../../contracts/access/AccessController.sol";
@@ -74,6 +75,12 @@ contract e2e is Test {
         protocolAccessManager = new AccessManager(admin);
 
         // Deploy contracts
+
+        bytes32 ipAccountImplSalt = keccak256(
+            abi.encode(type(IPAccountImpl).creationCode, address(this), block.timestamp)
+        );
+        address ipAccountImplAddr = CREATE3.getDeployed(ipAccountImplSalt);
+
         address impl = address(new AccessController());
         accessController = AccessController(
             TestProxyHelper.deployUUPSProxy(
@@ -91,8 +98,7 @@ contract e2e is Test {
         );
 
         erc6551Registry = new ERC6551Registry();
-        ipAccountImpl = new IPAccountImpl(address(accessController));
-        impl = address(new IPAssetRegistry(address(erc6551Registry), address(ipAccountImpl)));
+        impl = address(new IPAssetRegistry(address(erc6551Registry), ipAccountImplAddr));
         ipAssetRegistry = IPAssetRegistry(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -107,6 +113,18 @@ contract e2e is Test {
                 abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
             )
         );
+
+        bytes memory ipAccountImplCode = abi.encodePacked(
+            type(IPAccountImpl).creationCode,
+            abi.encode(
+                address(accessController),
+                address(ipAssetRegistry),
+                address(licenseRegistry),
+                address(moduleRegistry)
+            )
+        );
+        this.create3Deploy(ipAccountImplSalt, ipAccountImplCode, 0);
+        ipAccountImpl = IPAccountImpl(payable(ipAccountImplAddr));
 
         impl = address(new LicenseToken());
         licenseToken = LicenseToken(
@@ -228,6 +246,10 @@ contract e2e is Test {
         licenseToken.setLicensingModule(address(licensingModule));
 
         vm.stopPrank();
+    }
+
+    function create3Deploy(bytes32 salt, bytes calldata creationCode, uint256 value) external returns (address) {
+        return CREATE3.deploy(salt, creationCode, value);
     }
 
     function test_e2e() public {

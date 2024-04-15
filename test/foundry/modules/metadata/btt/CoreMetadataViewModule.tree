@@ -1,18 +1,18 @@
 CoreMetadataViewModule.sol
-# when getting metadata URI
-## it should return IP's core metadata storage METADATA_URI
-# when getting metadata hash
-## it should return IP's core metadata storage METADATA_HASH
-# when getting registration date
-## it should return IP's core metadata storage REGISTRATION_DATE
-# when getting NFT metadata URI
-## when IP core metadat storage NFT_TOKEN_URI is empty
-### it should return IP's asset registry storage URI
-## when IP core metadat storage NFT_TOKEN_URI is not empty
-### it should return IP's core metadata storage NFT_TOKEN_URI
-# when getting NFT metadata hash
-## it should return IP's core metadata storage NFT_METADATA_HASH
-# when getting IP owner
-## it should return IP's owner via IPAccount.owner()
-# when getting JSON string
-## it should return correctly formatted JSON of standard NFT metadata
+├── when getting metadata URI
+│   └── it should return IP's core metadata storage METADATA_URI
+├── when getting metadata hash
+│   └── it should return IP's core metadata storage METADATA_HASH
+├── when getting registration date
+│   └── it should return IP's core metadata storage REGISTRATION_DATE
+├── when getting NFT metadata URI
+│   ├── when IP core metadat storage NFT_TOKEN_URI is empty
+│   │   └── it should return IP's asset registry storage URI
+│   └── when IP core metadat storage NFT_TOKEN_URI is not empty
+│       └── it should return IP's core metadata storage NFT_TOKEN_URI
+├── when getting NFT metadata hash
+│   └── it should return IP's core metadata storage NFT_METADATA_HASH
+├── when getting IP owner
+│   └── it should return IP's owner via IPAccount.owner()
+└── when getting JSON string
+    └── it should return correctly formatted JSON of standard NFT metadata

@@ -42,6 +42,7 @@ import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVaul
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
 import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILMetadataRenderer } from "contracts/modules/licensing/PILMetadataRenderer.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 
 // script
@@ -93,6 +94,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // License system
     LicenseToken internal licenseToken;
     PILicenseTemplate internal pilTemplate;
+    PILMetadataRenderer internal pilMetadataRenderer;
 
     // Token
     ERC20 private immutable erc20; // keep private to avoid conflict with inheriting contracts
@@ -324,13 +326,18 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0);
         _postdeploy("RoyaltyPolicyLAP", address(royaltyPolicyLAP));
 
+        _predeploy("PILMetadataRenderer");
+        pilMetadataRenderer = new PILMetadataRenderer();
+        _postdeploy("PILMetadataRenderer", address(pilMetadataRenderer));
+
         _predeploy("PILicenseTemplate");
         impl = address(
             new PILicenseTemplate(
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(pilMetadataRenderer)
             )
         );
         pilTemplate = PILicenseTemplate(

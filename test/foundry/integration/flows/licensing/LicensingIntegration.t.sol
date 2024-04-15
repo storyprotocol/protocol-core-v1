@@ -22,6 +22,7 @@ import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policie
 import { LicenseToken } from "../../../../../contracts/LicenseToken.sol";
 import { DISPUTE_MODULE_KEY, LICENSING_MODULE_KEY, ROYALTY_MODULE_KEY } from "contracts/lib/modules/Module.sol";
 import { PILicenseTemplate } from "../../../../../contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILMetadataRenderer } from "../../../../../contracts/modules/licensing/PILMetadataRenderer.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { MockERC20 } from "../../../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../../../mocks/token/MockERC721.sol";
@@ -52,6 +53,7 @@ contract e2e is Test {
     LicensingModule licensingModule;
     PILicenseTemplate piLicenseTemplate;
     RoyaltyPolicyLAP royaltyPolicyLAP;
+    PILMetadataRenderer pilMetadataRenderer;
 
     address ipId1;
     address ipId2;
@@ -172,13 +174,14 @@ contract e2e is Test {
                 abi.encodeCall(RoyaltyPolicyLAP.initialize, (address(protocolAccessManager)))
             )
         );
-
+        pilMetadataRenderer = new PILMetadataRenderer();
         impl = address(
             new PILicenseTemplate(
                 address(accessController),
                 address(ipAssetRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(pilMetadataRenderer)
             )
         );
         piLicenseTemplate = PILicenseTemplate(

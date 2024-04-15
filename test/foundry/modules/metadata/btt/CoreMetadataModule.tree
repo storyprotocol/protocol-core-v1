@@ -1,0 +1,39 @@
+CoreMetadataModule.sol
+├── when updating NFT token URI
+│   ├── when caller does not have permission to call for `ipAccount`
+│   │   └── it should revert
+│   └── when caller has permission to call for `ipAccount`
+│       ├── when IP metadata is immutable
+│       │   └── it should revert
+│       └── when IP metadata is mutable
+│           ├── it should set IP's NFT_TOKEN_URI storage to token URI of tokenId
+│           ├── it should set IP's NFT_METADATA_HASH storage to parameter NFT metadata hash
+│           └── it should emit an event
+├── when setting metadata URI
+│   ├── when caller does not have permission to call for `ipAccount`
+│   │   └── it should revert
+│   └── when caller has permission to call for `ipAccount`
+│       ├── when IP metadata is immutable
+│       │   └── it should revert
+│       └── when IP metadata is mutable
+│           ├── it should set IP's METADATA_URI storage to parameter metadat URI
+│           ├── it should set IP's METADATA_HASH storage to parameter metadata hash
+│           └── it should emit an event
+├── when setting all
+│   ├── when caller does not have permission to call for `ipAccount`
+│   │   └── it should revert
+│   └── when caller has permission to call for `ipAccount`
+│       ├── when IP metadata is immutable
+│       │   └── it should revert
+│       └── when IP metadata is mutable
+│           ├── it should set IP's NFT_TOKEN_URI storage to token URI of tokenId
+│           ├── it should set IP's NFT_METADATA_HASH storage to parameter NFT metadata hash
+│           ├── it should set IP's METADATA_URI storage to parameter metadat URI
+│           ├── it should set IP's METADATA_HASH storage to parameter metadata hash
+│           └── it should emit events
+└── when freezing metadata
+    ├── when caller does not have permission to call for `ipAccount`
+    │   └── it should revert
+    └── when caller has permission to call for `ipAccount`
+        ├── it should set IP's IMMUTABLE to true
+        └── it should emit an event

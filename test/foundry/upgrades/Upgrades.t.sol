@@ -52,9 +52,7 @@ contract UpgradesTest is BaseTest {
         assertFalse(immediate);
         assertEq(delay, execDelay);
 
-        address newAccessController = address(
-            new MockAccessControllerV2(address(ipAccountRegistry), address(moduleRegistry))
-        );
+        address newAccessController = address(new MockAccessControllerV2());
         vm.prank(u.bob);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             address(accessController),
@@ -265,6 +263,21 @@ contract UpgradesTest is BaseTest {
         assertEq(
             protocolAccessManager.getTargetFunctionRole(
                 address(royaltyPolicyLAP),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+
+        (immediate, delay) = protocolAccessManager.canCall(
+            multisig,
+            address(coreMetadataModule),
+            UUPSUpgradeable.upgradeToAndCall.selector
+        );
+        assertFalse(immediate);
+        assertEq(delay, execDelay);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(coreMetadataModule),
                 UUPSUpgradeable.upgradeToAndCall.selector
             ),
             ProtocolAdmin.UPGRADER_ROLE

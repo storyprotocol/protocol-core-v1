@@ -500,13 +500,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
 
         _predeploy("CoreMetadataModule");
+        impl = address(new CoreMetadataModule(address(accessController), address(ipAssetRegistry)));
         coreMetadataModule = CoreMetadataModule(
-            create3Deployer.deploy(
-                _getSalt(type(CoreMetadataModule).name),
-                abi.encodePacked(
-                    type(CoreMetadataModule).creationCode,
-                    abi.encode(address(accessController), address(ipAssetRegistry))
-                )
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(CoreMetadataModule.initialize, address(protocolAccessManager))
             )
         );
         _postdeploy("CoreMetadataModule", address(coreMetadataModule));
@@ -608,6 +606,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(coreMetadataModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyPolicyLAP

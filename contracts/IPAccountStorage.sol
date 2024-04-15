@@ -22,14 +22,8 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     mapping(bytes32 => mapping(bytes32 => bytes)) public bytesData;
     mapping(bytes32 => mapping(bytes32 => bytes32)) public bytes32Data;
 
-    constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
-        MODULE_REGISTRY = moduleRegistry;
-        LICENSE_REGISTRY = licenseRegistry;
-        IP_ASSET_REGISTRY = ipAssetRegistry;
-    }
 
-    /// @inheritdoc IIPAccountStorage
-    function setBytes(bytes32 key, bytes calldata value) external {
+    modifier onlyRegisteredModule() {
         if (
             msg.sender != IP_ASSET_REGISTRY &&
             msg.sender != LICENSE_REGISTRY &&
@@ -37,6 +31,17 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         ) {
             revert Errors.IPAccountStorage__NotRegisteredModule(msg.sender);
         }
+        _;
+    }
+
+    constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
+        MODULE_REGISTRY = moduleRegistry;
+        LICENSE_REGISTRY = licenseRegistry;
+        IP_ASSET_REGISTRY = ipAssetRegistry;
+    }
+
+    /// @inheritdoc IIPAccountStorage
+    function setBytes(bytes32 key, bytes calldata value) external onlyRegisteredModule {
         bytesData[_toBytes32(msg.sender)][key] = value;
     }
     /// @inheritdoc IIPAccountStorage
@@ -49,14 +54,7 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     }
 
     /// @inheritdoc IIPAccountStorage
-    function setBytes32(bytes32 key, bytes32 value) external {
-        if (
-            msg.sender != IP_ASSET_REGISTRY &&
-            msg.sender != LICENSE_REGISTRY &&
-            !IModuleRegistry(MODULE_REGISTRY).isRegistered(msg.sender)
-        ) {
-            revert Errors.IPAccountStorage__NotRegisteredModule(msg.sender);
-        }
+    function setBytes32(bytes32 key, bytes32 value) external onlyRegisteredModule {
         bytes32Data[_toBytes32(msg.sender)][key] = value;
     }
     /// @inheritdoc IIPAccountStorage

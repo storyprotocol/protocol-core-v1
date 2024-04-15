@@ -208,11 +208,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(moduleRegistry));
 
-        contractKey = "IPAccountImpl";
-        _predeploy(contractKey);
-        ipAccountImpl = new IPAccountImpl(address(accessController), address(moduleRegistry));
-        _postdeploy(contractKey, address(ipAccountImpl));
-
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
         impl = address(new IPAssetRegistry(address(erc6551Registry), ipAccountImplAddr));
@@ -243,7 +238,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         bytes memory ipAccountImplCode = abi.encodePacked(
             type(IPAccountImpl).creationCode,
             abi.encode(
-                address(accessController)
+                address(accessController),
+                address(ipAssetRegistry),
+                address(licenseRegistry),
+                address(moduleRegistry)
             )
         );
         _predeploy(contractKey);

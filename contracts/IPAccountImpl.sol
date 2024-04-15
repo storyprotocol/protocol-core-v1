@@ -18,7 +18,7 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
 contract IPAccountImpl is IPAccountStorage, IIPAccount {
-    address public immutable accessController;
+    address public immutable ACCESS_CONTROLLER;
 
     /// @notice Returns the IPAccount's internal nonce for transaction ordering.
     uint256 public state;
@@ -38,7 +38,7 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
         address moduleRegistry
     ) IPAccountStorage(ipAssetRegistry, licenseRegistry, moduleRegistry) {
         if (accessController == address(0)) revert Errors.IPAccount__InvalidAccessController();
-        accessController = accessController;
+        ACCESS_CONTROLLER = accessController;
     }
 
     /// @notice Checks if the contract supports a specific interface
@@ -108,7 +108,7 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
             selector = bytes4(data[:4]);
         }
         // the check will revert if permission is denied
-        IAccessController(accessController).checkPermission(address(this), signer, to, selector);
+        IAccessController(ACCESS_CONTROLLER).checkPermission(address(this), signer, to, selector);
         return true;
     }
 

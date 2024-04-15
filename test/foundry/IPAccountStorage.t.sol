@@ -3,6 +3,7 @@ pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
 import { BaseModule } from "../../contracts/modules/BaseModule.sol";
+import { Errors } from "../../contracts/lib/Errors.sol";
 
 import { MockModule } from "./mocks/module/MockModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";
@@ -26,7 +27,6 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         moduleRegistry.registerModule("MockModule", address(module));
         moduleRegistry.registerModule("IPAccountStorageTest", address(this));
         vm.stopPrank();
-
     }
 
     function test_IPAccountStorage_storeBytes() public {
@@ -129,6 +129,42 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         ipAccount.setBytes32("test", "testData");
         vm.prank(vm.addr(2));
         assertEq(ipAccount.getBytes32(_toBytes32(address(module)), "test"), "testData");
+    }
+
+    function test_IPAccountStorage_setBytes32_revert_NonRegisteredModule() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.IPAccountStorage__NotRegisteredModule.selector, address(0x123)));
+        vm.prank(address(0x123));
+        ipAccount.setBytes32("test", "testData");
+    }
+
+    function test_IPAccountStorage_setBytes_revert_NonRegisteredModule() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.IPAccountStorage__NotRegisteredModule.selector, address(0x123)));
+        vm.prank(address(0x123));
+        ipAccount.setBytes("test", "testData");
+    }
+
+    function test_IPAccountStorage_setBytes_ByIpAssetRegistry() public {
+        vm.prank(address(ipAssetRegistry));
+        ipAccount.setBytes("test", "testData");
+        assertEq(ipAccount.getBytes(_toBytes32(address(ipAssetRegistry)), "test"), "testData");
+    }
+
+    function test_IPAccountStorage_setBytes32_ByIpAssetRegistry() public {
+        vm.prank(address(ipAssetRegistry));
+        ipAccount.setBytes32("test", "testData");
+        assertEq(ipAccount.getBytes32(_toBytes32(address(ipAssetRegistry)), "test"), "testData");
+    }
+
+    function test_IPAccountStorage_setBytes_ByLicenseRegistry() public {
+        vm.prank(address(licenseRegistry));
+        ipAccount.setBytes("test", "testData");
+        assertEq(ipAccount.getBytes(_toBytes32(address(licenseRegistry)), "test"), "testData");
+    }
+
+    function test_IPAccountStorage_setBytes32_ByLicenseRegistry() public {
+        vm.prank(address(licenseRegistry));
+        ipAccount.setBytes32("test", "testData");
+        assertEq(ipAccount.getBytes32(_toBytes32(address(licenseRegistry)), "test"), "testData");
     }
 
     function _toBytes32(address a) internal pure returns (bytes32) {

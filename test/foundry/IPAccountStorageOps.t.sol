@@ -118,7 +118,10 @@ contract IPAccountStorageOpsTest is BaseTest, BaseModule {
         vm.prank(address(module));
         assertEq(IPAccountStorageOps.getBytes(ipAccount, "test".toShortString()), abi.encodePacked("test"));
         vm.prank(vm.addr(2));
-        assertEq(IPAccountStorageOps.getBytes(ipAccount, address(module), "test".toShortString()), abi.encodePacked("test"));
+        assertEq(
+            IPAccountStorageOps.getBytes(ipAccount, address(module), "test".toShortString()),
+            abi.encodePacked("test")
+        );
     }
 
     function test_IPAccountStorageOps_setBytes_bytes32() public {
@@ -127,7 +130,10 @@ contract IPAccountStorageOpsTest is BaseTest, BaseModule {
         vm.prank(address(module));
         assertEq(IPAccountStorageOps.getBytes(ipAccount, "test".toShortString()), abi.encodePacked("test"));
         vm.prank(vm.addr(2));
-        assertEq(IPAccountStorageOps.getBytes(ipAccount, address(module), "test".toShortString()), abi.encodePacked("test"));
+        assertEq(
+            IPAccountStorageOps.getBytes(ipAccount, address(module), "test".toShortString()),
+            abi.encodePacked("test")
+        );
         vm.prank(vm.addr(2));
         assertEq(IPAccountStorageOps.getBytes(ipAccount, address(module), bytes32("test")), abi.encodePacked("test"));
     }

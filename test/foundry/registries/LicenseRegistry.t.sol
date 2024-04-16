@@ -130,12 +130,7 @@ contract LicenseRegistryTest is BaseTest {
             abi.encodeWithSelector(Errors.LicenseRegistry__UnregisteredLicenseTemplate.selector, address(pilTemplate2))
         );
         vm.prank(address(licensingModule));
-        licenseRegistry.setLicensingConfigForLicense(
-            ipAcct[1],
-            address(pilTemplate2),
-            termsId,
-            mintingLicenseConfig
-        );
+        licenseRegistry.setLicensingConfigForLicense(ipAcct[1], address(pilTemplate2), termsId, mintingLicenseConfig);
     }
 
     function test_LicenseRegistry_setLicensingConfigForIp() public {

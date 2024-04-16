@@ -3,17 +3,25 @@ pragma solidity 0.8.23;
 
 import { IModule } from "../base/IModule.sol";
 
-/// @title IMintingFeeModule
-/// @notice This interface is used to determine the minting fee of a license token.
-/// IP owners can configure the MintingFeeModule to a specific license terms or all licenses of an IP Asset.
-/// When someone calls the `mintLicenseTokens` function of LicensingModule, the LicensingModule will check whether
-/// the license term or IP Asset has been configured with this module. If so, LicensingModule will call this module
-/// to determine the minting fee of the license token.
-/// @dev Developers can create a contract that implements this interface to implement various algorithms to determine
-/// the minting price,
-/// for example, a bonding curve formula. This allows IP owners to configure the module to hook into the LicensingModule
-/// when minting a license token.
+/// @title ILicensingHook
+/// @notice This interface defines the hook functions that are called by the LicensingModule when
+/// executing licensing functions.
+/// IP owners can configure the hook to a specific license terms or all licenses of an IP Asset.
+/// @dev Developers can create a contract that implements this interface to implement various checks
+/// and determine the minting price.
 interface ILicensingHook is IModule {
+    /// @notice This function is called when the LicensingModule mints license tokens.
+    /// @dev The hook can be used to implement various checks and determine the minting price.
+    /// The hook should revert if the minting is not allowed.
+    /// @param caller The address of the caller who calling the mintLicenseTokens() function.
+    /// @param licensorIpId The ID of licensor IP from which issue the license tokens.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms within the license template,
+    /// which is used to mint license tokens.
+    /// @param amount The amount of license tokens to mint.
+    /// @param receiver The address of the receiver who receive the license tokens.
+    /// @param hookData The data to be used by the licensing hook.
+    /// @return totalMintingFee The total minting fee to be paid when minting amount of license tokens.
     function beforeMintLicenseTokens(
         address caller,
         address licensorIpId,
@@ -22,8 +30,17 @@ interface ILicensingHook is IModule {
         uint256 amount,
         address receiver,
         bytes calldata hookData
-    ) external returns (uint256);
+    ) external returns (uint256 totalMintingFee);
 
+    /// @notice This function is called when the LicensingModule mints license tokens.
+    /// @dev The hook can be used to implement various checks and determine the minting price.
+    /// The hook should revert if the registering of derivative is not allowed.
+    /// @param childIpId The derivative IP ID.
+    /// @param parentIpId The parent IP ID.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// @param hookData The data to be used by the licensing hook.
+    /// @return mintingFee The minting fee to be paid when register child IP to the parent IP as derivative.
     function beforeRegisterDerivative(
         address caller,
         address childIpId,
@@ -31,5 +48,5 @@ interface ILicensingHook is IModule {
         address licenseTemplate,
         uint256 licenseTermsId,
         bytes calldata hookData
-    ) external returns (uint256);
+    ) external returns (uint256 mintingFee);
 }

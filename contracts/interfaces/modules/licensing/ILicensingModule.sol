@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IModule } from "../base/IModule.sol";
+import { Licensing } from "../../../lib/Licensing.sol";
 
 /// @title ILicensingModule
 /// @notice This interface defines the entry point for users to manage licenses in the Story Protocol.
@@ -120,5 +121,21 @@ interface ILicensingModule is IModule {
         address childIpId,
         uint256[] calldata licenseTokenIds,
         bytes calldata royaltyContext
+    ) external;
+
+    /// @notice Sets the licensing configuration for a specific license terms of an IP.
+    /// If both licenseTemplate and licenseTermsId are not specified then the licensing config apply
+    /// to all licenses of given IP.
+    /// @param ipId The address of the IP for which the configuration is being set.
+    /// @param licenseTemplate The address of the license template used.
+    /// If not specified, the configuration applies to all licenses.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// If not specified, the configuration applies to all licenses.
+    /// @param licensingConfig The licensing configuration for the license.
+    function setLicensingConfig(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        Licensing.LicensingConfig memory licensingConfig
     ) external;
 }

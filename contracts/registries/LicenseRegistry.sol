@@ -133,13 +133,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing
-            .LicensingConfig({
-                isSet: true,
-                mintingFee: licensingConfig.mintingFee,
-                licensingHook: licensingConfig.licensingHook,
-                hookData: licensingConfig.hookData
-            });
+        $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: licensingConfig.mintingFee,
+            licensingHook: licensingConfig.licensingHook,
+            hookData: licensingConfig.hookData
+        });
 
         emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId);
     }

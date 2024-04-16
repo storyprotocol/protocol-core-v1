@@ -23,7 +23,6 @@ import { LICENSING_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
 import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
-import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 import { ILicensingHook } from "../..//interfaces/modules/licensing/ILicensingHook.sol";
@@ -353,29 +352,38 @@ contract LicensingModule is
         );
     }
 
+    /// @notice Sets the licensing configuration for a specific license terms of an IP.
+    /// If both licenseTemplate and licenseTermsId are not specified then the licensing config apply
+    /// to all licenses of given IP.
+    /// @param ipId The address of the IP for which the configuration is being set.
+    /// @param licenseTemplate The address of the license template used.
+    /// If not specified, the configuration applies to all licenses.
+    /// @param licenseTermsId The ID of the license terms within the license template.
+    /// If not specified, the configuration applies to all licenses.
+    /// @param licensingConfig The licensing configuration for the license.
     function setLicensingConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.LicensingConfig memory config
+        Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) {
         if (ipId == address(0)) {
             revert Errors.LicensingModule__ZeroIpId();
         }
         if (
-            config.licensingHook != address(0) &&
-            (!config.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||
-                !MODULE_REGISTRY.isRegistered(config.licensingHook))
+            licensingConfig.licensingHook != address(0) &&
+            (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||
+                !MODULE_REGISTRY.isRegistered(licensingConfig.licensingHook))
         ) {
-            revert Errors.LicensingModule__InvalidLicensingHook(config.licensingHook);
+            revert Errors.LicensingModule__InvalidLicensingHook(licensingConfig.licensingHook);
         }
         if (licenseTemplate == address(0) && licenseTermsId == 0) {
-            LICENSE_REGISTRY.setLicensingConfigForIp(ipId, config);
+            LICENSE_REGISTRY.setLicensingConfigForIp(ipId, licensingConfig);
+        } else if (licenseTemplate != address(0) && licenseTermsId != 0) {
+            LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
+        } else {
+            revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
         }
-        if (licenseTemplate != address(0) && licenseTermsId != 0) {
-            LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, config);
-        }
-        revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
     }
 
     /// @dev pay minting fee for all parent IPs

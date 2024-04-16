@@ -173,10 +173,7 @@ interface ILicenseRegistry {
     /// However, this global configuration can be overridden by a configuration set at a specific license level.
     /// @param ipId The IP ID for which the configuration is being set.
     /// @param licensingConfig The MintingLicenseConfig to be set for all licenses under the given IP.
-    function setLicensingConfigForIp(
-        address ipId,
-        Licensing.LicensingConfig calldata licensingConfig
-    ) external;
+    function setLicensingConfigForIp(address ipId, Licensing.LicensingConfig calldata licensingConfig) external;
 
     /// @notice Sets the expiration time for an IP.
     /// @param ipId The address of the IP.

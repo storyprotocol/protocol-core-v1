@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## v1.0.0
+
+- Introduce new Licensing System (#33, #37, #64, #75, #94)
+	- Licensing Module, License Registry, License Token (ERC-721), and PILicenseTemplate
+	- Expiring License Tokens & IP
+	- Variable minting pricing of License Tokens via hooks
+	- Option to register derivative IPs without minting License Tokens
+	- Default Selected License Template and Terms
+	- PILicense offchain metadata, currency, and templating
+	- Permit linking to parent only once
+- Introduce pausability for the protocol by the governance (#76)
+- Enhance Access Controller (#89, #97)
+	- Improve security by removing global permission
+	- Allows IP owners to directly set permissions
+	- Allows IP owners to call any external contracts
+	- Flatten if structure in `checkPermissions`
+- Modify Dispute Module to add a hook and mechanism for permissionless tagging of IPs with disputed parent IPs (#60)
+- Add expired getter for IPs for real-time IP expiry tagging in Dispute Module (#87)
+- Maintain cross-chain registration for IP Accounts (#55)
+- Refactor Governance to OZ Access Manager to leverage timelocked protocol admin functions (#43)
+- Limit writes to IPAccountStorage to registered modules (#103)
+- Enhancements to the IP Royalty Vault (#32, #78, #90) and Royalty Policy LAP (#91)
+- Enhancements for contract upgradeability (#38, #82, #88) and testing of upgradeability (#95)
+- Simplify the testing to a single framework for tests and deployment (#36)
+- Bolster testing (#36, #52, #64, #85, #111)
+- CREATE3 for deterministic address deployments (#104)
+- Miscellaneous configs (#50), code cleanup (#52, #112) and structure (#56, #85), and pkg bump (#34)
+- Enhanec CI/CD (#72, #92)
+
+Full Changelog: [v1.0.0-rc.1...v1.0.0](https://github.com/storyprotocol/protocol-core/compare/v1.0.0-rc.1...v1.0.0)
+
 ## v1.0.0-rc.1
 
 - Migrate to upgradable contracts (for some) and toolings (#6, #7, #8, #16, #25)

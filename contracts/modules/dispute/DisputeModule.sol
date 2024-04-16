@@ -71,20 +71,20 @@ contract DisputeModule is
     ILicenseRegistry public immutable LICENSE_REGISTRY;
 
     /// Constructor
-    /// @param controller The address of the access controller
-    /// @param assetRegistry The address of the asset registry
+    /// @param accessController The address of the access controller
+    /// @param ipAssetRegistry The address of the asset registry
     /// @param licenseRegistry The address of the license registry
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
-        address controller,
-        address assetRegistry,
+        address accessController,
+        address ipAssetRegistry,
         address licenseRegistry
-    ) AccessControlled(controller, assetRegistry) {
+    ) AccessControlled(accessController, ipAssetRegistry) {
         if (licenseRegistry == address(0)) revert Errors.DisputeModule__ZeroLicenseRegistry();
-        if (assetRegistry == address(0)) revert Errors.DisputeModule__ZeroAssetRegistry();
-        if (controller == address(0)) revert Errors.DisputeModule__ZeroController();
+        if (ipAssetRegistry == address(0)) revert Errors.DisputeModule__ZeroIPAssetRegistry();
+        if (accessController == address(0)) revert Errors.DisputeModule__ZeroAccessController();
 
-        IP_ASSET_REGISTRY = IIPAssetRegistry(assetRegistry);
+        IP_ASSET_REGISTRY = IIPAssetRegistry(ipAssetRegistry);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }

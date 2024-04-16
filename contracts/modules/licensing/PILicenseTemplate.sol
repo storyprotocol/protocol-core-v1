@@ -12,7 +12,6 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
-import { Errors } from "../../lib/Errors.sol";
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
@@ -68,7 +67,7 @@ contract PILicenseTemplate is
     /// @param metadataURI The URL to the off chain metadata
     function initialize(address accessManager, string memory name, string memory metadataURI) external initializer {
         if (accessManager == address(0)) {
-            revert Errors.PILicenseTemplate__ZeroAccessManager();
+            revert PILicenseTemplateErrors.PILicenseTemplate__ZeroAccessManager();
         }
         __BaseLicenseTemplate_init(name, metadataURI);
         __AccessManaged_init(accessManager);

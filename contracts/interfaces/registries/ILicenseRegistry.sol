@@ -64,8 +64,6 @@ interface ILicenseRegistry {
     /// @return Whether the IP has derivative IPs.
     function hasDerivativeIps(address ipId) external view returns (bool);
 
-    // TODO: getDerivativeIpCount
-
     /// @notice Verifies the minting of a license token.
     /// @param licensorIpId The address of the licensor IP.
     /// @param licenseTemplate The address of the license template where the license terms are defined.

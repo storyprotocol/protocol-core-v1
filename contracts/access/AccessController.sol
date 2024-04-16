@@ -65,7 +65,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     }
 
     /// @notice Sets the addresses of the IP account registry and the module registry
-    /// @dev TODO: figure out how to set these addresses in the constructor to make them immutable
+    /// @dev TODO: Set these addresses in the constructor to make them immutable
     /// @param ipAccountRegistry address of the IP account registry
     /// @param moduleRegistry address of the module registry
     function setAddresses(address ipAccountRegistry, address moduleRegistry) external restricted {
@@ -75,10 +75,9 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     }
 
     /// @notice Sets a batch of permissions in a single transaction.
-    /// @dev This function allows setting multiple permissions at once. Pausable.
+    /// @dev This function allows setting multiple permissions at once. Pausable via setPermission.
     /// @param permissions An array of `Permission` structs, each representing the permission to be set.
     function setBatchPermissions(AccessPermission.Permission[] memory permissions) external {
-        // TODO: removed pause.
         for (uint256 i = 0; i < permissions.length; ) {
             setPermission(
                 permissions[i].ipAccount,

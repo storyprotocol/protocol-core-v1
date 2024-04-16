@@ -4,6 +4,9 @@ pragma solidity 0.8.23;
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
+import { IDisputeModule } from "./modules/dispute/IDisputeModule.sol";
+import { ILicensingModule } from "./modules/licensing/ILicensingModule.sol";
+
 /// @title ILicenseToken
 /// @notice Interface for the License Token (ERC721) NFT collection that manages License Tokens representing
 /// License Terms.
@@ -91,6 +94,14 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @param tokenId The ID of the License Token.
     /// @return A `LicenseTokenMetadata` struct containing the metadata of the specified License Token.
     function getLicenseTokenMetadata(uint256 tokenId) external view returns (LicenseTokenMetadata memory);
+
+    /// @notice Returns the canonical protocol-wide DisputeModule
+    /// @return The DisputeModule instance
+    function disputeModule() external view returns (IDisputeModule);
+
+    /// @notice Returns the canonical protocol-wide LicensingModule
+    /// @return The LicensingModule instance
+    function licensingModule() external view returns (ILicensingModule);
 
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.

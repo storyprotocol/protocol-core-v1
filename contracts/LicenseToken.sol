@@ -220,7 +220,14 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
     }
 
+    /// @notice Returns the canonical protocol-wide DisputeModule
+    /// @return The DisputeModule instance
+    function disputeModule() external view returns (IDisputeModule) {
+        return _getLicenseTokenStorage().disputeModule;
+    }
+
     /// @notice Returns the canonical protocol-wide LicensingModule
+    /// @return The LicensingModule instance
     function licensingModule() external view returns (ILicensingModule) {
         return _getLicenseTokenStorage().licensingModule;
     }

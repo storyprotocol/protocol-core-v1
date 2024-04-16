@@ -138,7 +138,7 @@ library Errors {
     error LicenseRegistry__DerivativeAlreadyRegistered(address childIpId);
     error LicenseRegistry__ParentIpTagged(address ipId);
     error LicenseRegistry__DerivativeIsParent(address ipId);
-    error LicenseRegistry__ParentIpUnmachedLicenseTemplate(address ipId, address licenseTemplate);
+    error LicenseRegistry__ParentIpUnmatchedLicenseTemplate(address ipId, address licenseTemplate);
     error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index, uint256 length);
     error LicenseRegistry__LicenseTermsAlreadyAttached(address ipId, address licenseTemplate, uint256 licenseTermsId);
     error LicenseRegistry__UnmatchedLicenseTemplate(address ipId, address licenseTemplate, address newLicenseTemplate);

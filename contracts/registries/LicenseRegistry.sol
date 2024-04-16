@@ -459,7 +459,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // childIp can only register with default license terms or the license terms attached to the parent IP
         if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsId) {
             if ($.licenseTemplates[parentIpId] != licenseTemplate) {
-                revert Errors.LicenseRegistry__ParentIpUnmachedLicenseTemplate(parentIpId, licenseTemplate);
+                revert Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate(parentIpId, licenseTemplate);
             }
             if (!$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
                 revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);

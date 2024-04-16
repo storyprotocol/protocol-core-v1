@@ -5,29 +5,43 @@ pragma solidity 0.8.23;
 /// @notice Library for all Story Protocol contract errors.
 library Errors {
     ////////////////////////////////////////////////////////////////////////////
-    //                                IPAccount                               //
+    //                                IP Account                              //
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for Access Controller.
+    error IPAccount__ZeroAccessController();
+
+    /// @notice Invalid signer provided.
     error IPAccount__InvalidSigner();
+
+    /// @notice Invalid signature provided, must be an EIP-712 signature.
     error IPAccount__InvalidSignature();
+
+    /// @notice Signature is expired.
     error IPAccount__ExpiredSignature();
+
+    /// @notice Provided calldata is invalid.
     error IPAccount__InvalidCalldata();
-    error IPAccount__InvalidAccessController();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Account Storage                          //
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Caller writing to IP Account storage is not a registered module.
     error IPAccountStorage__NotRegisteredModule(address module);
 
     ////////////////////////////////////////////////////////////////////////////
     //                           IP Account Registry                          //
     ////////////////////////////////////////////////////////////////////////////
-    error IPAccountRegistry_InvalidIpAccountImpl();
+
+    /// @notice Zero address provided for IP Account implementation.
+    error IPAccountRegistry_ZeroIpAccountImpl();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
 
-    /// @notice zero address provided for Access Manager in initializer.
+    /// @notice Zero address provided for Access Manager in initializer.
     error IPAssetRegistry__ZeroAccessManager();
 
     /// @notice The IP asset has already been registered.

@@ -37,7 +37,7 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
         address licenseRegistry,
         address moduleRegistry
     ) IPAccountStorage(ipAssetRegistry, licenseRegistry, moduleRegistry) {
-        if (accessController == address(0)) revert Errors.IPAccount__InvalidAccessController();
+        if (accessController == address(0)) revert Errors.IPAccount__ZeroAccessController();
         ACCESS_CONTROLLER = accessController;
     }
 

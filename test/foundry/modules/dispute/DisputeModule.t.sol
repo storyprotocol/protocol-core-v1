@@ -10,7 +10,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 import { Errors } from "contracts/lib/Errors.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { ShortStringOps } from "contracts/utils/ShortStringOps.sol";
+import { ShortStringOps } from "contracts/lib/ShortStringOps.sol";
 import { IDisputeModule } from "contracts/interfaces/modules/dispute/IDisputeModule.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";

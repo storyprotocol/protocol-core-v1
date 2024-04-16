@@ -38,7 +38,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     struct IpRoyaltyVaultStorage {
         address ipId;
         uint32 unclaimedRoyaltyTokens;
-        uint256 lastSnapshotTimestamp;
+        uint40 lastSnapshotTimestamp;
         mapping(address token => uint256 amount) ancestorsVaultAmount;
         mapping(address ancestorIpId => bool) isCollectedByAncestor;
         mapping(address token => uint256 amount) claimVaultAmount;
@@ -96,7 +96,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         $.ipId = ipIdAddress;
-        $.lastSnapshotTimestamp = block.timestamp;
+        $.lastSnapshotTimestamp = uint40(block.timestamp);
         $.unclaimedRoyaltyTokens = unclaimedTokens;
 
         _mint(address(this), unclaimedTokens);
@@ -130,7 +130,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             revert Errors.IpRoyaltyVault__SnapshotIntervalTooShort();
 
         uint256 snapshotId = _snapshot();
-        $.lastSnapshotTimestamp = block.timestamp;
+        $.lastSnapshotTimestamp = uint40(block.timestamp);
 
         uint32 unclaimedTokens = $.unclaimedRoyaltyTokens;
         $.unclaimedAtSnapshot[snapshotId] = unclaimedTokens;

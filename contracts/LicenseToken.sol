@@ -110,9 +110,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
             licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
             licenseTermsId: licenseTermsId,
-            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
-            mintedAt: block.timestamp,
-            expiresAt: ILicenseTemplate(licenseTemplate).getExpireTime(licenseTermsId, block.timestamp)
+            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId)
         });
 
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
@@ -136,7 +134,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
-    /// for example, whether token is expired.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.
     /// @param childIpId The ID of the derivative IP.
     /// @param childIpOwner The address of the owner of the derivative IP.
@@ -161,9 +158,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
-            if (_isExpiredNow(tokenIds[i])) {
-                revert Errors.LicenseToken__LicenseTokenExpired(tokenIds[i], ltm.expiresAt, block.timestamp);
-            }
             if (ownerOf(tokenIds[i]) != childIpOwner) {
                 revert Errors.LicenseToken__NotLicenseTokenOwner(tokenIds[i], childIpOwner, ownerOf(tokenIds[i]));
             }
@@ -211,13 +205,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @param tokenId The ID of the license token
     function getLicenseTemplate(uint256 tokenId) external view returns (address) {
         return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTemplate;
-    }
-
-    /// @notice Gets the expiration time of a License Token.
-    /// @param tokenId The ID of the License Token.
-    /// @return The expiration time of the License Token.
-    function getExpirationTime(uint256 tokenId) external view returns (uint256) {
-        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
     }
 
     /// @notice Returns the canonical protocol-wide DisputeModule
@@ -317,11 +304,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
             }
         }
         return super._update(to, tokenId, auth);
-    }
-
-    function _isExpiredNow(uint256 tokenId) internal view returns (bool) {
-        uint256 expireTime = _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
-        return expireTime != 0 && expireTime < block.timestamp;
     }
 
     ////////////////////////////////////////////////////////////////////////////

@@ -206,7 +206,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), block.timestamp + 10 days);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
@@ -336,7 +335,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.tokenOfOwnerByIndex(receiver, 0), lcTokenId);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
@@ -363,7 +361,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(firstTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(firstTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(firstTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(firstTokenId), 0);
         assertEq(licenseToken.tokenOfOwnerByIndex(receiver, 0), firstTokenId);
 
         uint256 secondTokenId = firstTokenId + 1;
@@ -372,7 +369,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(secondTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(secondTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(secondTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(secondTokenId), 0);
         assertEq(licenseToken.tokenOfOwnerByIndex(receiver, 1), secondTokenId);
         assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(licenseToken.totalSupply(), 2);
@@ -408,7 +404,6 @@ contract LicensingModuleTest is BaseTest {
             assertEq(licenseToken.getLicenseTermsId(tokenId), termsId);
             assertEq(licenseToken.getLicenseTemplate(tokenId), address(pilTemplate));
             assertEq(licenseToken.getLicensorIpId(tokenId), ipId1);
-            assertEq(licenseToken.getExpirationTime(tokenId), 0);
             assertEq(licenseToken.tokenOfOwnerByIndex(receiver, i), tokenId);
             assertEq(licenseToken.totalMintedTokens(), i + 1);
             assertEq(licenseToken.totalSupply(), i + 1);
@@ -455,7 +450,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), block.timestamp + 10 days);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
@@ -562,7 +556,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.tokenOfOwnerByIndex(receiver, 0), lcTokenId);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
@@ -586,7 +579,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
@@ -670,13 +662,11 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId1), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId1), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId1), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId1), 0);
 
         assertEq(licenseToken.ownerOf(lcTokenId2), ipOwner3);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId2), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId2), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId2), ipId2);
-        assertEq(licenseToken.getExpirationTime(lcTokenId2), 0);
 
         assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(licenseToken.totalSupply(), 2);
@@ -741,69 +731,6 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId1, licenseTokens, "");
     }
 
-    function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_ExpiredLicenseToken() public {
-        vm.prank(u.admin);
-        royaltyModule.whitelistRoyaltyToken(address(0x123), true);
-        PILTerms memory terms = PILTerms({
-            transferable: true,
-            royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
-            expiration: 10 days,
-            commercialUse: true,
-            commercialAttribution: true,
-            commercializerChecker: address(0),
-            commercializerCheckerData: "",
-            commercialRevShare: 0,
-            commercialRevCelling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: true,
-            derivativeRevCelling: 0,
-            currency: address(0x123),
-            uri: ""
-        });
-
-        uint256 termsId = pilTemplate.registerLicenseTerms(terms);
-        vm.prank(ipOwner1);
-        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
-
-        uint256 lcTokenId = licensingModule.mintLicenseTokens({
-            licensorIpId: ipId1,
-            licenseTemplate: address(pilTemplate),
-            licenseTermsId: termsId,
-            amount: 1,
-            receiver: ipOwner2,
-            royaltyContext: ""
-        });
-
-        uint256 lcTokenExpiredTime = licenseToken.getExpirationTime(lcTokenId);
-        assertEq(licenseToken.ownerOf(lcTokenId), ipOwner2);
-        assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
-        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
-        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(lcTokenExpiredTime, block.timestamp + 10 days);
-        assertEq(licenseToken.totalMintedTokens(), 1);
-        assertEq(licenseToken.totalSupply(), 1);
-        assertEq(licenseToken.balanceOf(ipOwner2), 1);
-
-        vm.warp(11 days);
-
-        uint256[] memory licenseTokens = new uint256[](1);
-        licenseTokens[0] = lcTokenId;
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseToken__LicenseTokenExpired.selector,
-                lcTokenId,
-                lcTokenExpiredTime,
-                block.timestamp
-            )
-        );
-        vm.prank(ipOwner2);
-        licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
-    }
-
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_ParentExpired() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         PILTerms memory expiredTerms = PILFlavors.nonCommercialSocialRemixing();
@@ -837,13 +764,11 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId1), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId1), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId1), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId1), 0);
 
         assertEq(licenseToken.ownerOf(lcTokenId2), ipOwner3);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId2), expiredTermsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId2), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId2), ipId2);
-        assertEq(licenseToken.getExpirationTime(lcTokenId2), block.timestamp + 10 days);
 
         assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(licenseToken.totalSupply(), 2);
@@ -1081,7 +1006,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
@@ -1177,7 +1101,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(ipOwner2), 1);

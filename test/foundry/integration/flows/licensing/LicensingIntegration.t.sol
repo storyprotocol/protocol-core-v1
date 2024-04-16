@@ -139,7 +139,6 @@ contract LicensingIntegrationTest is BaseIntegration {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 1);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 1);
 
         // register derivative with license tokens
@@ -177,7 +176,6 @@ contract LicensingIntegrationTest is BaseIntegration {
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
-        assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 2);
         assertEq(erc20.balanceOf(u.dan), 900);
 

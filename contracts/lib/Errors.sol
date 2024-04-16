@@ -148,9 +148,6 @@ library Errors {
     /// @notice License token is not transferable.
     error LicenseToken__NotTransferable();
 
-    /// @notice License token is expired.
-    error LicenseToken__LicenseTokenExpired(uint256 tokenId, uint256 expiredAt, uint256 currentTimestamp);
-
     /// @notice License token is not owned by the caller.
     error LicenseToken__NotLicenseTokenOwner(uint256 tokenId, address iPowner, address tokenOwner);
 

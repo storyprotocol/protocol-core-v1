@@ -10,7 +10,7 @@ import { ILicensingModule } from "./modules/licensing/ILicensingModule.sol";
 /// @title ILicenseToken
 /// @notice Interface for the License Token (ERC721) NFT collection that manages License Tokens representing
 /// License Terms.
-/// Each License Token may represent a set of License Terms and could have an expiration time.
+/// Each License Token may represent a set of License Terms.
 /// License Tokens are ERC721 NFTs that can be minted, transferred (if allowed), and burned.
 /// Derivative IP owners can burn License Tokens to register their IP as a derivative of the licensor IP for which
 /// the License Token was minted.
@@ -22,15 +22,11 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @param licenseTemplate The address of the License Template associated with the License Token.
     /// @param licenseTermsId The ID of the License Terms associated with the License Token.
     /// @param transferable Whether the License Token is transferable, determined by the License Terms.
-    /// @param mintedAt The timestamp at which the License Token was minted.
-    /// @param expiresAt The timestamp at which the License Token expires.
     struct LicenseTokenMetadata {
         address licensorIpId;
         address licenseTemplate;
         uint256 licenseTermsId;
         bool transferable;
-        uint256 mintedAt;
-        uint256 expiresAt;
     }
 
     /// @notice Emitted when a License Token is minted.
@@ -85,11 +81,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @return True if the License Token has been revoked, false otherwise.
     function isLicenseTokenRevoked(uint256 tokenId) external view returns (bool);
 
-    /// @notice Gets the expiration time of a License Token.
-    /// @param tokenId The ID of the License Token.
-    /// @return The expiration time of the License Token.
-    function getExpirationTime(uint256 tokenId) external view returns (uint256);
-
     /// @notice Retrieves the metadata associated with a License Token.
     /// @param tokenId The ID of the License Token.
     /// @return A `LicenseTokenMetadata` struct containing the metadata of the specified License Token.
@@ -105,7 +96,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
 
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
-    /// for example, whether token is expired.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.
     /// @param childIpId The ID of the derivative IP.
     /// @param childIpOwner The address of the owner of the derivative IP.

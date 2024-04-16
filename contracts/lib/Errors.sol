@@ -268,7 +268,7 @@ library Errors {
     /// @notice Provided parent dispute's target IP is not the derivative IP's parent.
     error DisputeModule__NotDerivative();
 
-    /// @notice Provided parent dispute is still in dispute state.
+    /// @notice Provided parent dispute has not been resolved.
     error DisputeModule__ParentDisputeNotResolved();
 
     ////////////////////////////////////////////////////////////////////////////
@@ -355,10 +355,10 @@ library Errors {
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLAP__NotRoyaltyModule();
 
-    /// @notice Size of parent IP list is above the protocol limit.
+    /// @notice Size of parent IP list is above the LAP royalty policy limit.
     error RoyaltyPolicyLAP__AboveParentLimit();
 
-    /// @notice Amount of ancestors for derivative IP is above the protocol limit.
+    /// @notice Amount of ancestors for derivative IP is above the LAP royalty policy limit.
     error RoyaltyPolicyLAP__AboveAncestorsLimit();
 
     /// @notice Total royalty stack exceeds the protocol limit.

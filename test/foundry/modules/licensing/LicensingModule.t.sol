@@ -73,7 +73,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
-        assertFalse(licenseRegistry.getMintingLicenseConfig(ipId1, address(pilTemplate), termsId).isSet);
+        assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId).isSet);
         assertEq(licenseRegistry.getExpireTime(ipId1), 0);
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId));
@@ -94,7 +94,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
-        assertFalse(licenseRegistry.getMintingLicenseConfig(ipId1, address(pilTemplate), termsId).isSet);
+        assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId).isSet);
         assertEq(licenseRegistry.getExpireTime(ipId1), 0);
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId));
@@ -110,7 +110,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId2), 0);
-        assertFalse(licenseRegistry.getMintingLicenseConfig(ipId2, address(pilTemplate), termsId).isSet);
+        assertFalse(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), termsId).isSet);
         assertEq(licenseRegistry.getExpireTime(ipId2), 0);
         assertFalse(licenseRegistry.isDerivativeIp(ipId2));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId));
@@ -129,7 +129,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
-        assertFalse(licenseRegistry.getMintingLicenseConfig(ipId1, address(pilTemplate), termsId1).isSet);
+        assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId1).isSet);
         assertEq(licenseRegistry.getExpireTime(ipId1), 0);
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId1));
@@ -146,7 +146,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
-        assertFalse(licenseRegistry.getMintingLicenseConfig(ipId1, address(pilTemplate), termsId2).isSet);
+        assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId2).isSet);
         assertEq(licenseRegistry.getExpireTime(ipId1), 0);
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId2));

@@ -305,6 +305,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             new LicensingModule(
                 address(accessController),
                 address(ipAccountRegistry),
+                address(moduleRegistry),
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),

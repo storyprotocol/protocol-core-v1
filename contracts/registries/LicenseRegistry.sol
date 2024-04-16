@@ -42,8 +42,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param attachedLicenseTerms Mapping of attached license terms to IP IDs
     /// @param licenseTemplates Mapping of license templates to IP IDs
     /// @param expireTimes Mapping of IP IDs to expire times
-    /// @param mintingLicenseConfigs Mapping of minting license configs to a licenseTerms of an IP
-    /// @param mintingLicenseConfigsForIp Mapping of minting license configs to an IP,
+    /// @param licensingConfigs Mapping of minting license configs to a licenseTerms of an IP
+    /// @param licensingConfigsForIp Mapping of minting license configs to an IP,
     /// the config will apply to all licenses under the IP
     /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
@@ -55,8 +55,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
-        mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigs;
-        mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
+        mapping(bytes32 ipLicenseHash => Licensing.LicensingConfig licensingConfig) licensingConfigs;
+        mapping(address ipId => Licensing.LicensingConfig licensingConfig) licensingConfigsForIp;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -122,47 +122,45 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param ipId The address of the IP for which the configuration is being set.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsId The ID of the license terms within the license template.
-    /// @param mintingLicenseConfig The configuration for minting the license.
-    function setMintingLicenseConfigForLicense(
+    /// @param licensingConfig The configuration for minting the license.
+    function setLicensingConfigForLicense(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing.LicensingConfig calldata licensingConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing
-            .MintingLicenseConfig({
+        $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing
+            .LicensingConfig({
                 isSet: true,
-                mintingFee: mintingLicenseConfig.mintingFee,
-                mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
-                receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
-                receiverCheckData: mintingLicenseConfig.receiverCheckData
+                mintingFee: licensingConfig.mintingFee,
+                licensingHook: licensingConfig.licensingHook,
+                hookData: licensingConfig.hookData
             });
 
-        emit MintingLicenseConfigSetLicense(ipId, licenseTemplate, licenseTermsId);
+        emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId);
     }
 
-    /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
+    /// @notice Sets the LicensingConfig for an IP and applies it to all licenses attached to the IP.
     /// @dev This function will set a global configuration for all licenses under a specific IP.
     /// However, this global configuration can be overridden by a configuration set at a specific license level.
     /// @param ipId The IP ID for which the configuration is being set.
-    /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
-    function setMintingLicenseConfigForIp(
+    /// @param licensingConfig The LicensingConfig to be set for all licenses under the given IP.
+    function setLicensingConfigForIp(
         address ipId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing.LicensingConfig calldata licensingConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.mintingLicenseConfigsForIp[ipId] = Licensing.MintingLicenseConfig({
+        $.licensingConfigsForIp[ipId] = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: mintingLicenseConfig.mintingFee,
-            mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
-            receiverCheckModule: mintingLicenseConfig.receiverCheckModule,
-            receiverCheckData: mintingLicenseConfig.receiverCheckData
+            mintingFee: licensingConfig.mintingFee,
+            licensingHook: licensingConfig.licensingHook,
+            hookData: licensingConfig.hookData
         });
-        emit MintingLicenseConfigSetForIP(ipId, mintingLicenseConfig);
+        emit LicensingConfigSetForIP(ipId, licensingConfig);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -251,7 +249,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseConfig memory) {
+    ) external view returns (Licensing.LicensingConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (_isExpiredNow(licensorIpId)) {
             revert Errors.LicenseRegistry__ParentIpExpired(licensorIpId);
@@ -263,7 +261,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         } else if (!_hasIpAttachedLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId)) {
             revert Errors.LicenseRegistry__LicensorIpHasNoLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId);
         }
-        return _getMintingLicenseConfig(licensorIpId, licenseTemplate, licenseTermsId);
+        return _getLicensingConfig(licensorIpId, licenseTemplate, licenseTermsId);
     }
 
     /// @notice Checks if a license template is registered.
@@ -380,12 +378,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The configuration for minting the license.
-    function getMintingLicenseConfig(
+    function getLicensingConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseConfig memory) {
-        return _getMintingLicenseConfig(ipId, licenseTemplate, licenseTermsId);
+    ) external view returns (Licensing.LicensingConfig memory) {
+        return _getLicensingConfig(ipId, licenseTemplate, licenseTermsId);
     }
 
     /// @notice Gets the expiration time for an IP.
@@ -485,19 +483,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param ipId The address of the IP.
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
-    function _getMintingLicenseConfig(
+    function _getLicensingConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) internal view returns (Licensing.MintingLicenseConfig memory) {
+    ) internal view returns (Licensing.LicensingConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        if ($.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
-            return $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
+        if ($.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
+            return $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
         }
-        return $.mintingLicenseConfigsForIp[ipId];
+        return $.licensingConfigsForIp[ipId];
     }
 
     /// @dev Get the hash of the IP ID, license template, and license terms ID

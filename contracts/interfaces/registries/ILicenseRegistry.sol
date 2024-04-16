@@ -13,14 +13,14 @@ interface ILicenseRegistry {
     event LicenseTemplateRegistered(address indexed licenseTemplate);
 
     /// @notice Emitted when a minting license configuration is set.
-    event MintingLicenseConfigSetLicense(
+    event LicensingConfigSetForLicense(
         address indexed ipId,
         address indexed licenseTemplate,
         uint256 indexed licenseTermsId
     );
 
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
-    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
+    event LicensingConfigSetForIP(address indexed ipId, Licensing.LicensingConfig licensingConfig);
 
     /// @notice Emitted when an expiration time is set for an IP.
     event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
@@ -75,7 +75,7 @@ interface ILicenseRegistry {
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseConfig memory);
+    ) external view returns (Licensing.LicensingConfig memory);
 
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
@@ -149,33 +149,33 @@ interface ILicenseRegistry {
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The configuration for minting the license.
-    function getMintingLicenseConfig(
+    function getLicensingConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseConfig memory);
+    ) external view returns (Licensing.LicensingConfig memory);
 
     /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
     /// @dev This function can only be called by the LicensingModule.
     /// @param ipId The address of the IP for which the configuration is being set.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsId The ID of the license terms within the license template.
-    /// @param mintingLicenseConfig The configuration for minting the license.
-    function setMintingLicenseConfigForLicense(
+    /// @param licensingConfig The configuration for minting the license.
+    function setLicensingConfigForLicense(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing.LicensingConfig calldata licensingConfig
     ) external;
 
     /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
     /// @dev This function will set a global configuration for all licenses under a specific IP.
     /// However, this global configuration can be overridden by a configuration set at a specific license level.
     /// @param ipId The IP ID for which the configuration is being set.
-    /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
-    function setMintingLicenseConfigForIp(
+    /// @param licensingConfig The MintingLicenseConfig to be set for all licenses under the given IP.
+    function setLicensingConfigForIp(
         address ipId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing.LicensingConfig calldata licensingConfig
     ) external;
 
     /// @notice Sets the expiration time for an IP.

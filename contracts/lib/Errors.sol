@@ -218,6 +218,9 @@ library Errors {
         uint256 licenseTermsId,
         address licensorIpId
     );
+    error LicensingModule__ZeroIpId();
+    error LicensingModule__InvalidLicensingHook(address hook);
+    error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

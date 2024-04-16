@@ -13,14 +13,12 @@ library Licensing {
     /// If both the license and IP have the configuration, then the license configuration takes precedence.
     /// @param isSet Whether the configuration is set or not.
     /// @param mintingFee The minting fee to be paid when minting license tokens.
-    /// @param mintingFeeModule The module that determines the minting fee.
-    /// @param receiverCheckModule The module that determines who can receive the license tokens.
-    /// @param receiverCheckData The data to be used by the receiver check module.
-    struct MintingLicenseConfig {
+    /// @param licensingHook The module that determines who can receive the license tokens.
+    /// @param hookData The data to be used by the receiver check module.
+    struct LicensingConfig {
         bool isSet;
         uint256 mintingFee;
-        address mintingFeeModule;
-        address receiverCheckModule;
-        bytes receiverCheckData;
+        address licensingHook;
+        bytes hookData;
     }
 }

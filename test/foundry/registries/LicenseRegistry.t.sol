@@ -90,50 +90,47 @@ contract LicenseRegistryTest is BaseTest {
         );
     }
 
-    function test_LicenseRegistry_setMintingLicenseConfigForLicense() public {
+    function test_LicenseRegistry_setLicensingConfigForLicense() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        Licensing.MintingLicenseConfig memory mintingLicenseConfig = Licensing.MintingLicenseConfig({
+        Licensing.LicensingConfig memory mintingLicenseConfig = Licensing.LicensingConfig({
             isSet: true,
             mintingFee: 100,
-            mintingFeeModule: address(0),
-            receiverCheckModule: address(0),
-            receiverCheckData: ""
+            licensingHook: address(0),
+            hookData: ""
         });
 
         vm.prank(address(licensingModule));
-        licenseRegistry.setMintingLicenseConfigForLicense(
+        licenseRegistry.setLicensingConfigForLicense(
             ipAcct[1],
             address(pilTemplate),
             defaultTermsId,
             mintingLicenseConfig
         );
-        Licensing.MintingLicenseConfig memory returnedMintingLicenseConfig = licenseRegistry.getMintingLicenseConfig(
+        Licensing.LicensingConfig memory returnedLicensingConfig = licenseRegistry.getLicensingConfig(
             ipAcct[1],
             address(pilTemplate),
             defaultTermsId
         );
-        assertEq(returnedMintingLicenseConfig.mintingFee, 100);
-        assertEq(returnedMintingLicenseConfig.mintingFeeModule, address(0));
-        assertEq(returnedMintingLicenseConfig.receiverCheckModule, address(0));
-        assertEq(returnedMintingLicenseConfig.receiverCheckData, "");
+        assertEq(returnedLicensingConfig.mintingFee, 100);
+        assertEq(returnedLicensingConfig.licensingHook, address(0));
+        assertEq(returnedLicensingConfig.hookData, "");
     }
 
-    function test_LicenseRegistry_setMintingLicenseConfigForLicense_revert_UnregisteredTemplate() public {
+    function test_LicenseRegistry_setLicensingConfigForLicense_revert_UnregisteredTemplate() public {
         MockLicenseTemplate pilTemplate2 = new MockLicenseTemplate();
         uint256 termsId = pilTemplate2.registerLicenseTerms();
-        Licensing.MintingLicenseConfig memory mintingLicenseConfig = Licensing.MintingLicenseConfig({
+        Licensing.LicensingConfig memory mintingLicenseConfig = Licensing.LicensingConfig({
             isSet: true,
             mintingFee: 100,
-            mintingFeeModule: address(0),
-            receiverCheckModule: address(0),
-            receiverCheckData: ""
+            licensingHook: address(0),
+            hookData: ""
         });
 
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicenseRegistry__UnregisteredLicenseTemplate.selector, address(pilTemplate2))
         );
         vm.prank(address(licensingModule));
-        licenseRegistry.setMintingLicenseConfigForLicense(
+        licenseRegistry.setLicensingConfigForLicense(
             ipAcct[1],
             address(pilTemplate2),
             termsId,
@@ -141,28 +138,26 @@ contract LicenseRegistryTest is BaseTest {
         );
     }
 
-    function test_LicenseRegistry_setMintingLicenseConfigForIp() public {
+    function test_LicenseRegistry_setLicensingConfigForIp() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        Licensing.MintingLicenseConfig memory mintingLicenseConfig = Licensing.MintingLicenseConfig({
+        Licensing.LicensingConfig memory mintingLicenseConfig = Licensing.LicensingConfig({
             isSet: true,
             mintingFee: 100,
-            mintingFeeModule: address(0),
-            receiverCheckModule: address(0),
-            receiverCheckData: ""
+            licensingHook: address(0),
+            hookData: ""
         });
 
         vm.prank(address(licensingModule));
-        licenseRegistry.setMintingLicenseConfigForIp(ipAcct[1], mintingLicenseConfig);
+        licenseRegistry.setLicensingConfigForIp(ipAcct[1], mintingLicenseConfig);
 
-        Licensing.MintingLicenseConfig memory returnedMintingLicenseConfig = licenseRegistry.getMintingLicenseConfig(
+        Licensing.LicensingConfig memory returnedLicensingConfig = licenseRegistry.getLicensingConfig(
             ipAcct[1],
             address(pilTemplate),
             defaultTermsId
         );
-        assertEq(returnedMintingLicenseConfig.mintingFee, 100);
-        assertEq(returnedMintingLicenseConfig.mintingFeeModule, address(0));
-        assertEq(returnedMintingLicenseConfig.receiverCheckModule, address(0));
-        assertEq(returnedMintingLicenseConfig.receiverCheckData, "");
+        assertEq(returnedLicensingConfig.mintingFee, 100);
+        assertEq(returnedLicensingConfig.licensingHook, address(0));
+        assertEq(returnedLicensingConfig.hookData, "");
     }
 
     // test attachLicenseTermsToIp

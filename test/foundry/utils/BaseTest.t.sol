@@ -93,4 +93,14 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         address impl = address(new MockRoyaltyPolicyLAP());
         vm.etch(address(royaltyPolicyLAP), impl.code);
     }
+
+    function _disputeIp(address disputeInitiator, address ipAddrToDispute) internal returns (uint256 disputeId) {
+        vm.startPrank(disputeInitiator);
+        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        disputeId = disputeModule.raiseDispute(ipAddrToDispute, string("urlExample"), "PLAGIARISM", "");
+        vm.stopPrank();
+
+        vm.prank(u.relayer); // admin is a judge
+        disputeModule.setDisputeJudgement(disputeId, true, "");
+    }
 }

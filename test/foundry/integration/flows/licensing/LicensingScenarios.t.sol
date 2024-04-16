@@ -10,7 +10,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 
 // test
-import { BaseIntegration } from "../..//BaseIntegration.t.sol";
+import { BaseIntegration } from "../../BaseIntegration.t.sol";
 
 contract Licensing_Scenarios is BaseIntegration {
     using EnumerableSet for EnumerableSet.UintSet;

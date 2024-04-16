@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 // external
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contract
 import { Errors } from "../../../../../contracts/lib/Errors.sol";
@@ -66,7 +65,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         });
     }
 
-    function test_Integration_Disputes_revert_cannotRegisterDerivativeFromDisputedIpParent() public {
+    function test_Integration_Disputes_revert_cannotRegisterDerivativeWithTokensFromDisputedIpParent() public {
         assertEq(licenseToken.balanceOf(u.carl), 0);
 
         vm.prank(u.carl);
@@ -88,6 +87,26 @@ contract Flows_Integration_Disputes is BaseIntegration {
         vm.prank(u.carl);
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseToken__RevokedLicense.selector, licenseId));
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
+    }
+
+    function test_Integration_Disputes_revert_cannotRegisterDerivativeFromDisputedIpParent() public {
+        _disputeIp(u.bob, ipAcct[1]);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = ncSocialRemixTermsId;
+
+        vm.prank(u.carl);
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__ParentIpTagged.selector, ipAcct[1]));
+        licensingModule.registerDerivative({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: ""
+        });
     }
 
     function test_Integration_Disputes_transferLicenseAfterIpDispute() public {
@@ -130,15 +149,5 @@ contract Flows_Integration_Disputes is BaseIntegration {
             royaltyContext: ""
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
-    }
-
-    function _disputeIp(address disputeInitiator, address ipAddrToDispute) internal returns (uint256 disputeId) {
-        vm.startPrank(disputeInitiator);
-        IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeId = disputeModule.raiseDispute(ipAddrToDispute, string("urlExample"), "PLAGIARISM", "");
-        vm.stopPrank();
-
-        vm.prank(u.relayer); // admin is a judge
-        disputeModule.setDisputeJudgement(disputeId, true, "");
     }
 }

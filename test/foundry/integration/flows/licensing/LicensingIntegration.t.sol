@@ -1,344 +1,144 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-// external
-import { Test } from "forge-std/Test.sol";
-import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
-import { CREATE3 } from "@solady/src/utils/CREATE3.sol";
-
 // contracts
-import { AccessController } from "../../../../../contracts/access/AccessController.sol";
-import { IPAccountImpl } from "../../../../../contracts/IPAccountImpl.sol";
-import { IPAssetRegistry } from "../../../../../contracts/registries/IPAssetRegistry.sol";
-import { ModuleRegistry } from "../../../../../contracts/registries/ModuleRegistry.sol";
-import { LicenseRegistry } from "../../../../../contracts/registries/LicenseRegistry.sol";
-import { RoyaltyModule } from "../../../../../contracts/modules/royalty/RoyaltyModule.sol";
-import { RoyaltyPolicyLAP } from "../../../../../contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
-import { DisputeModule } from "../../../../../contracts/modules/dispute/DisputeModule.sol";
-import { LicensingModule } from "../../../../../contracts/modules/licensing/LicensingModule.sol";
-import { ArbitrationPolicySP } from "../../../../../contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
-import { LicenseToken } from "../../../../../contracts/LicenseToken.sol";
-import { DISPUTE_MODULE_KEY, LICENSING_MODULE_KEY, ROYALTY_MODULE_KEY } from "contracts/lib/modules/Module.sol";
-import { PILicenseTemplate } from "../../../../../contracts/modules/licensing/PILicenseTemplate.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
-import { MockERC20 } from "../../../mocks/token/MockERC20.sol";
-import { MockERC721 } from "../../../mocks/token/MockERC721.sol";
+import { Errors } from "../../../../../contracts/lib/Errors.sol";
+import { PILicenseTemplate } from "../../../../../contracts/modules/licensing/PILicenseTemplate.sol";
+
+// test
+import { BaseIntegration } from "../../BaseIntegration.t.sol";
 import { TestProxyHelper } from "../../../utils/TestProxyHelper.sol";
+import { MockERC20 } from "../../../mocks/token/MockERC20.sol";
 
-contract e2e is Test {
-    MockERC20 erc20;
-    MockERC721 mockNft;
-    uint256 internal constant ARBITRATION_PRICE = 1000;
-
-    address admin;
-    address alice;
-    address bob;
-    address charlie;
-    address dave;
-    address eve;
-
-    AccessManager protocolAccessManager;
-    AccessController accessController;
-    ModuleRegistry moduleRegistry;
-    ERC6551Registry erc6551Registry;
-    IPAccountImpl ipAccountImpl;
-    IPAssetRegistry ipAssetRegistry;
-    LicenseRegistry licenseRegistry;
-    LicenseToken licenseToken;
-    RoyaltyModule royaltyModule;
-    DisputeModule disputeModule;
-    LicensingModule licensingModule;
-    PILicenseTemplate piLicenseTemplate;
-    RoyaltyPolicyLAP royaltyPolicyLAP;
-
-    address ipId1;
-    address ipId2;
-    address ipId3;
-    address ipId6;
-    address ipId7;
-
+contract LicensingIntegrationTest is BaseIntegration {
     error ERC721NonexistentToken(uint256 tokenId);
 
-    function setUp() public {
-        admin = vm.addr(1);
-        alice = vm.addr(2);
-        bob = vm.addr(3);
-        charlie = vm.addr(4);
-        dave = vm.addr(5);
-        eve = vm.addr(6);
+    mapping(uint256 => uint256 tokenId) private tokenIds;
+    mapping(uint256 tokenId => address ipId) private ipAcct;
 
+    PILicenseTemplate private anotherPILTemplate;
+
+    function setUp() public override {
+        super.setUp();
+
+        // new token to make this test work (asserts) temporarily
         erc20 = new MockERC20();
-        mockNft = new MockERC721("ape");
-        protocolAccessManager = new AccessManager(admin);
+        vm.prank(u.admin);
+        royaltyModule.whitelistRoyaltyToken(address(erc20), true);
 
-        // Deploy contracts
+        tokenIds[1] = mockNFT.mint(u.alice);
+        tokenIds[2] = mockNFT.mint(u.bob);
+        tokenIds[3] = mockNFT.mint(u.carl);
+        tokenIds[6] = mockNFT.mint(u.dan);
+        tokenIds[7] = mockNFT.mint(u.eve);
 
-        bytes32 ipAccountImplSalt = keccak256(
-            abi.encode(type(IPAccountImpl).creationCode, address(this), block.timestamp)
-        );
-        address ipAccountImplAddr = CREATE3.getDeployed(ipAccountImplSalt);
+        ipAcct[1] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[1]);
+        ipAcct[2] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[2]);
+        ipAcct[3] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[3]);
+        ipAcct[6] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[6]);
+        ipAcct[7] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[7]);
 
-        address impl = address(new AccessController());
-        accessController = AccessController(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
-            )
-        );
-
-        impl = address(new ModuleRegistry());
-        moduleRegistry = ModuleRegistry(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
-            )
-        );
-
-        erc6551Registry = new ERC6551Registry();
-        impl = address(new IPAssetRegistry(address(erc6551Registry), ipAccountImplAddr));
-        ipAssetRegistry = IPAssetRegistry(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(IPAssetRegistry.initialize, address(protocolAccessManager))
-            )
-        );
-
-        impl = address(new LicenseRegistry());
-        licenseRegistry = LicenseRegistry(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
-            )
-        );
-
-        bytes memory ipAccountImplCode = abi.encodePacked(
-            type(IPAccountImpl).creationCode,
-            abi.encode(
-                address(accessController),
-                address(ipAssetRegistry),
-                address(licenseRegistry),
-                address(moduleRegistry)
-            )
-        );
-        this.create3Deploy(ipAccountImplSalt, ipAccountImplCode, 0);
-        ipAccountImpl = IPAccountImpl(payable(ipAccountImplAddr));
-
-        impl = address(new LicenseToken());
-        licenseToken = LicenseToken(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(LicenseToken.initialize, (address(protocolAccessManager), "image_url"))
-            )
-        );
-
-        impl = address(
-            new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
-        );
-
-        disputeModule = DisputeModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(DisputeModule.initialize, (address(protocolAccessManager)))
-            )
-        );
-
-        impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
-        royaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager)))
-            )
-        );
-        vm.label(address(royaltyModule), "RoyaltyModule");
-
-        impl = address(
-            new LicensingModule(
-                address(accessController),
-                address(ipAssetRegistry),
-                address(royaltyModule),
-                address(licenseRegistry),
-                address(disputeModule),
-                address(licenseToken)
-            )
-        );
-
-        licensingModule = LicensingModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(LicensingModule.initialize, (address(protocolAccessManager)))
-            )
-        );
-
-        erc20 = new MockERC20();
-        mockNft = new MockERC721("ape");
-
-        impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
-        ArbitrationPolicySP arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager)))
-            )
-        );
-
-        impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
-        royaltyPolicyLAP = RoyaltyPolicyLAP(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyPolicyLAP.initialize, (address(protocolAccessManager)))
-            )
-        );
-
-        impl = address(
+        address anotherPILTemplateImpl = address(
             new PILicenseTemplate(
                 address(accessController),
-                address(ipAssetRegistry),
+                address(ipAccountRegistry),
                 address(licenseRegistry),
                 address(royaltyModule)
             )
         );
-        piLicenseTemplate = PILicenseTemplate(
+
+        anotherPILTemplate = PILicenseTemplate(
             TestProxyHelper.deployUUPSProxy(
-                impl,
+                anotherPILTemplateImpl,
                 abi.encodeCall(
                     PILicenseTemplate.initialize,
-                    (address(protocolAccessManager), "PIL", "PIL-metadata-url")
+                    (
+                        address(protocolAccessManager),
+                        "another-pil",
+                        "https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf"
+                    )
                 )
             )
         );
-
-        // Configure protocol
-        vm.startPrank(admin);
-
-        address ipRoyaltyVaultImplementation = address(
-            new IpRoyaltyVault(address(royaltyPolicyLAP), address(disputeModule))
-        );
-        address ipRoyaltyVaultBeacon = address(
-            new UpgradeableBeacon(ipRoyaltyVaultImplementation, address(protocolAccessManager))
-        );
-        royaltyPolicyLAP.setIpRoyaltyVaultBeacon(ipRoyaltyVaultBeacon);
-
-        royaltyPolicyLAP.setSnapshotInterval(7 days);
-
-        accessController.setAddresses(address(ipAssetRegistry), address(moduleRegistry));
-
-        moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
-        moduleRegistry.registerModule(LICENSING_MODULE_KEY, address(licensingModule));
-        moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
-
-        royaltyModule.setLicensingModule(address(licensingModule));
-        royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
-
-        disputeModule.whitelistDisputeTag("PLAGIARISM", true);
-        disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), admin, true);
-        disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicySP));
-
-        licenseRegistry.setDisputeModule(address(disputeModule));
-        licenseRegistry.setLicensingModule(address(licensingModule));
-        licenseRegistry.registerLicenseTemplate(address(piLicenseTemplate));
-
-        licenseToken.setDisputeModule(address(disputeModule));
-        licenseToken.setLicensingModule(address(licensingModule));
-
-        vm.stopPrank();
     }
 
-    function create3Deploy(bytes32 salt, bytes calldata creationCode, uint256 value) external returns (address) {
-        return CREATE3.deploy(salt, creationCode, value);
-    }
-
-    function test_e2e() public {
-        uint256 tokenId1 = mockNft.mint(alice);
-        uint256 tokenId2 = mockNft.mint(bob);
-        uint256 tokenId3 = mockNft.mint(charlie);
-        uint256 tokenId6 = mockNft.mint(dave);
-        uint256 tokenId7 = mockNft.mint(eve);
-
-        ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
-        ipId2 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId2);
-        ipId3 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId3);
-        ipId6 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId6);
-        ipId7 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId7);
-
+    function test_LicensingIntegration_Simple() public {
         // register license terms
-        uint256 lcId1 = piLicenseTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 lcId1 = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(lcId1, 1);
 
-        uint256 lcId2 = piLicenseTemplate.registerLicenseTerms(
+        uint256 lcId2 = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
         );
         assertEq(lcId2, 2);
         assertEq(
-            piLicenseTemplate.getLicenseTermsId(
+            pilTemplate.getLicenseTermsId(
                 PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
             ),
             2
         );
-        assertTrue(piLicenseTemplate.exists(2));
+        assertTrue(pilTemplate.exists(2));
 
-        assertTrue(piLicenseTemplate.exists(lcId2));
+        assertTrue(pilTemplate.exists(lcId2));
 
         // attach licenses
-        vm.startPrank(alice);
-        licensingModule.attachLicenseTerms(ipId1, address(piLicenseTemplate), 1);
+        vm.startPrank(u.alice);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), 1);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(piLicenseTemplate), 1), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), 1), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 1);
 
-        (address attachedTemplate, uint256 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipId1, 0);
-        assertEq(attachedTemplate, address(piLicenseTemplate));
+        (address attachedTemplate, uint256 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
+        assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, 1);
 
-        licensingModule.attachLicenseTerms(ipId1, address(piLicenseTemplate), 2);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), 2);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(piLicenseTemplate), 2), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), 2), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 2);
 
-        (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipId1, 1);
-        assertEq(attachedTemplate, address(piLicenseTemplate));
+        (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 1);
+        assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, 2);
         vm.stopPrank();
 
         // register derivative directly
-        vm.startPrank(bob);
+        vm.startPrank(u.bob);
         address[] memory parentIpIds = new address[](1);
         uint256[] memory licenseTermsIds = new uint256[](1);
-        parentIpIds[0] = ipId1;
+        parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 1;
 
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(piLicenseTemplate), "");
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(piLicenseTemplate), 1), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
-        assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
-        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 1);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 0), ipId2);
-        assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
-        assertEq(licenseRegistry.getParentIpCount(ipId2), 1);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[2], address(pilTemplate), 1), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[2]), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[2]), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[2]), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[1]), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[1]), 1);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[2]), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 0), ipAcct[2]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[2], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIpCount(ipAcct[2]), 1);
         vm.stopPrank();
 
         // mint license token
-        vm.startPrank(charlie);
+        vm.startPrank(u.carl);
         uint256 lcTokenId = licensingModule.mintLicenseTokens(
-            ipId1,
-            address(piLicenseTemplate),
+            ipAcct[1],
+            address(pilTemplate),
             1,
             1,
-            address(charlie),
+            address(u.carl),
             ""
         );
-        assertEq(licenseToken.ownerOf(lcTokenId), charlie);
+        assertEq(licenseToken.ownerOf(lcTokenId), u.carl);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 1);
-        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
-        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
         assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 1);
 
@@ -346,20 +146,20 @@ contract e2e is Test {
         uint256[] memory licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
 
-        licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseTokens, "");
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(piLicenseTemplate), 1), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
-        assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId3), false);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
-        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 2);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 0), ipId2);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 1), ipId3);
-        assertEq(licenseRegistry.getParentIp(ipId3, 0), ipId1);
-        assertEq(licenseRegistry.getParentIpCount(ipId3), 1);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[3], address(pilTemplate), 1), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[3]), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[3]), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[3]), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[1]), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[1]), 2);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[2]), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 0), ipAcct[2]);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 1), ipAcct[3]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[3], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIpCount(ipAcct[3]), 1);
 
         vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
         assertEq(licenseToken.ownerOf(lcTokenId), address(0));
@@ -367,39 +167,39 @@ contract e2e is Test {
         vm.stopPrank();
 
         // mint license token with payments
-        vm.startPrank(dave);
-        erc20.mint(dave, 1000);
+        vm.startPrank(u.dan);
+        erc20.mint(u.dan, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
 
-        lcTokenId = licensingModule.mintLicenseTokens(ipId1, address(piLicenseTemplate), 2, 1, address(dave), "");
+        lcTokenId = licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), 2, 1, address(u.dan), "");
 
-        assertEq(licenseToken.ownerOf(lcTokenId), dave);
+        assertEq(licenseToken.ownerOf(lcTokenId), u.dan);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
-        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(piLicenseTemplate));
-        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
         assertEq(licenseToken.getExpirationTime(lcTokenId), 0);
         assertEq(licenseToken.totalMintedTokens(), 2);
-        assertEq(erc20.balanceOf(dave), 900);
+        assertEq(erc20.balanceOf(u.dan), 900);
 
         // register derivative with license tokens
         licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
 
-        licensingModule.registerDerivativeWithLicenseTokens(ipId6, licenseTokens, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[6], licenseTokens, "");
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId6, address(piLicenseTemplate), 2), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId6), 1);
-        assertEq(licenseRegistry.isDerivativeIp(ipId6), true);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId6), false);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
-        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 3);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId6), 0);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 0), ipId2);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 1), ipId3);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 2), ipId6);
-        assertEq(licenseRegistry.getParentIp(ipId6, 0), ipId1);
-        assertEq(licenseRegistry.getParentIpCount(ipId6), 1);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[6], address(pilTemplate), 2), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[6]), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[6]), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[6]), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[1]), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[1]), 3);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[6]), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 0), ipAcct[2]);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 1), ipAcct[3]);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 2), ipAcct[6]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[6], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIpCount(ipAcct[6]), 1);
 
         vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
         assertEq(licenseToken.ownerOf(lcTokenId), address(0));
@@ -407,29 +207,100 @@ contract e2e is Test {
         vm.stopPrank();
 
         // register derivative directly with payments
-        vm.startPrank(eve);
-        erc20.mint(eve, 1000);
+        vm.startPrank(u.eve);
+        erc20.mint(u.eve, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
         parentIpIds = new address[](1);
         licenseTermsIds = new uint256[](1);
-        parentIpIds[0] = ipId1;
+        parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 2;
 
-        licensingModule.registerDerivative(ipId7, parentIpIds, licenseTermsIds, address(piLicenseTemplate), "");
+        licensingModule.registerDerivative(ipAcct[7], parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId7, address(piLicenseTemplate), 2), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId7), 1);
-        assertEq(licenseRegistry.isDerivativeIp(ipId7), true);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId7), false);
-        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
-        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 4);
-        assertEq(licenseRegistry.getDerivativeIpCount(ipId7), 0);
-        assertEq(licenseRegistry.getDerivativeIp(ipId1, 3), ipId7);
-        assertEq(licenseRegistry.getParentIp(ipId7, 0), ipId1);
-        assertEq(licenseRegistry.getParentIpCount(ipId7), 1);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[7], address(pilTemplate), 2), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[7]), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[7]), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[7]), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipAcct[1]), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[1]), 4);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipAcct[7]), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipAcct[1], 3), ipAcct[7]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[7], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIpCount(ipAcct[7]), 1);
         assertEq(licenseToken.totalMintedTokens(), 2);
-        assertEq(erc20.balanceOf(eve), 900);
+        assertEq(erc20.balanceOf(u.eve), 900);
         vm.stopPrank();
+    }
+
+    function test_LicensingIntegration_revert_registerDerivative_parentIpUnmatchedLicenseTemplate() public {
+        uint256 commRemixTermsId = anotherPILTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                commercialRevShare: 100,
+                mintingFee: 1 ether,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(USDC)
+            })
+        );
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = commRemixTermsId;
+
+        vm.prank(u.carl);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate.selector,
+                ipAcct[1],
+                address(anotherPILTemplate)
+            )
+        );
+        licensingModule.registerDerivative({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(anotherPILTemplate),
+            royaltyContext: ""
+        });
+    }
+
+    function test_LicensingIntegration_revert_registerDerivative_parentIpNoLicenseTerms() public {
+        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+            "commercial_remix",
+            PILFlavors.commercialRemix({
+                commercialRevShare: 100,
+                mintingFee: 1 ether,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(USDC)
+            })
+        );
+
+        vm.prank(u.alice);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = commRemixTermsId;
+
+        vm.prank(u.carl);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__ParentIpHasNoLicenseTerms.selector,
+                ipAcct[1],
+                commRemixTermsId
+            )
+        );
+        licensingModule.registerDerivative({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: ""
+        });
     }
 }

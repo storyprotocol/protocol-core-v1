@@ -1,0 +1,48 @@
+IPAccountImpl.sol
+# when checking supported interfaces
+## it should support IIPAccount interface
+## it should support IIPAccountStorage interface
+## it should support IERC6551Account interface
+## it should support IERC1155Receiver interface
+## it should support IERC721Receiver interface
+## it should support IERC165 interface
+# when checking identifier of IP
+## it should return expected chain ID
+## it should return expected token contract
+## it should return expected token ID
+# when checking if signer is valid
+## when the data length is greater than zero and less than four
+### it should revert
+## when the data length is zero or greater than or equal to four
+### when checking permission via access controller fails
+#### it should revert
+### when checking permission via access controller succeeds
+#### it should true
+#### it sohuld return IERC6551Account.isValidSigner.selector
+# when executing
+## when signer is invalid in access controlelr
+### it should revert
+## when signer is valid in access controller
+### when call fails
+#### it should revert
+### when call succeeds
+#### it should increment `state`
+#### it should emit an event
+#### it should return result
+# when executing with signature
+## given the signer is zero address
+### it should revert
+## given the deadline is in the past
+### it should revert
+## given the EIP1976 signature is invalid now
+### it should revert
+## given the EIP1976 signature is valid
+### it should call `_execute`
+### it should emit an event
+# when receiving ERC721
+## it should return onERC721Received selector
+# when receiving ERC1155
+## given batch received
+### it should return onERC1155BatchReceived selector
+## given single received
+### it should return onERC1155Received selector

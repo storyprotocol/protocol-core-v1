@@ -10,48 +10,44 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 // test
-import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 
 contract PILicenseTemplateTest is BaseTest {
     using Strings for *;
 
-    MockERC721 internal mockNft = new MockERC721("MockERC721");
     MockERC721 internal gatedNftFoo = new MockERC721{ salt: bytes32(uint256(1)) }("GatedNftFoo");
     MockERC721 internal gatedNftBar = new MockERC721{ salt: bytes32(uint256(2)) }("GatedNftBar");
 
-    address public ipId1;
-    address public ipId2;
-    address public ipId3;
-    address public ipId5;
-    address public ipOwner1 = address(0x111);
-    address public ipOwner2 = address(0x222);
-    address public ipOwner3 = address(0x333);
-    address public ipOwner5 = address(0x444);
-    uint256 public tokenId1 = 1;
-    uint256 public tokenId2 = 2;
-    uint256 public tokenId3 = 3;
-    uint256 public tokenId5 = 5;
+    mapping(uint256 => address) internal ipAcct;
+    mapping(uint256 => address) internal ipOwner;
+    mapping(uint256 => uint256) internal tokenIds;
 
-    address public licenseHolder = address(0x101);
+    address internal licenseHolder = address(0x101);
 
     function setUp() public override {
         super.setUp();
+
+        ipOwner[1] = u.alice;
+        ipOwner[2] = u.bob;
+        ipOwner[3] = u.carl;
+        ipOwner[5] = u.dan;
+
         // Create IPAccounts
-        mockNft.mintId(ipOwner1, tokenId1);
-        mockNft.mintId(ipOwner2, tokenId2);
-        mockNft.mintId(ipOwner3, tokenId3);
-        mockNft.mintId(ipOwner5, tokenId5);
+        tokenIds[1] = mockNFT.mint(ipOwner[1]);
+        tokenIds[2] = mockNFT.mint(ipOwner[2]);
+        tokenIds[3] = mockNFT.mint(ipOwner[3]);
+        tokenIds[5] = mockNFT.mint(ipOwner[5]);
 
-        ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
-        ipId2 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId2);
-        ipId3 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId3);
-        ipId5 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId5);
+        ipAcct[1] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[1]);
+        ipAcct[2] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[2]);
+        ipAcct[3] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[3]);
+        ipAcct[5] = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenIds[5]);
 
-        vm.label(ipId1, "IPAccount1");
-        vm.label(ipId2, "IPAccount2");
-        vm.label(ipId3, "IPAccount3");
-        vm.label(ipId5, "IPAccount5");
+        vm.label(ipAcct[1], "IPAccount1");
+        vm.label(ipAcct[2], "IPAccount2");
+        vm.label(ipAcct[3], "IPAccount3");
+        vm.label(ipAcct[5], "IPAccount5");
     }
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
@@ -292,7 +288,7 @@ contract PILicenseTemplateTest is BaseTest {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        bool result = pilTemplate.verifyMintLicenseToken(commUseTermsId, ipId2, ipId1, 1);
+        bool result = pilTemplate.verifyMintLicenseToken(commUseTermsId, ipAcct[2], ipAcct[1], 1);
         assertTrue(result);
     }
 
@@ -304,19 +300,19 @@ contract PILicenseTemplateTest is BaseTest {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        vm.prank(ipOwner1);
-        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commUseTermsId);
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commUseTermsId);
 
         address[] memory parentIpIds = new address[](1);
-        parentIpIds[0] = ipId1;
+        parentIpIds[0] = ipAcct[1];
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = commUseTermsId;
-        vm.prank(ipOwner2);
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        vm.prank(ipOwner[2]);
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
         uint256 anotherTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
 
-        bool result = pilTemplate.verifyMintLicenseToken(anotherTermsId, ipOwner3, ipId2, 1);
+        bool result = pilTemplate.verifyMintLicenseToken(anotherTermsId, ipOwner[3], ipAcct[2], 1);
         assertFalse(result);
     }
 
@@ -328,17 +324,17 @@ contract PILicenseTemplateTest is BaseTest {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        vm.prank(ipOwner1);
-        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commUseTermsId);
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commUseTermsId);
 
         address[] memory parentIpIds = new address[](1);
-        parentIpIds[0] = ipId1;
+        parentIpIds[0] = ipAcct[1];
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = commUseTermsId;
-        vm.prank(ipOwner2);
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        vm.prank(ipOwner[2]);
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
-        bool result = pilTemplate.verifyMintLicenseToken(commUseTermsId, ipOwner3, ipId2, 1);
+        bool result = pilTemplate.verifyMintLicenseToken(commUseTermsId, ipOwner[3], ipAcct[2], 1);
         assertFalse(result);
     }
 
@@ -352,7 +348,7 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
 
-        bool result = pilTemplate.verifyRegisterDerivative(ipId2, ipId1, commUseTermsId, ipOwner2);
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], commUseTermsId, ipOwner[2]);
         assertTrue(result);
     }
 
@@ -360,11 +356,11 @@ contract PILicenseTemplateTest is BaseTest {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
-        vm.prank(ipId1);
-        pilTemplate.setApproval(ipId1, socialRemixTermsId, ipId2, true);
-        assertTrue(pilTemplate.isDerivativeApproved(ipId1, socialRemixTermsId, ipId2));
+        vm.prank(ipAcct[1]);
+        pilTemplate.setApproval(ipAcct[1], socialRemixTermsId, ipAcct[2], true);
+        assertTrue(pilTemplate.isDerivativeApproved(ipAcct[1], socialRemixTermsId, ipAcct[2]));
 
-        bool result = pilTemplate.verifyRegisterDerivative(ipId2, ipId1, socialRemixTermsId, ipOwner2);
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], socialRemixTermsId, ipOwner[2]);
         assertTrue(result);
     }
 
@@ -372,18 +368,18 @@ contract PILicenseTemplateTest is BaseTest {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
-        vm.prank(ipId1);
-        pilTemplate.setApproval(ipId1, socialRemixTermsId, ipId2, false);
-        assertFalse(pilTemplate.isDerivativeApproved(ipId1, socialRemixTermsId, ipId2));
+        vm.prank(ipAcct[1]);
+        pilTemplate.setApproval(ipAcct[1], socialRemixTermsId, ipAcct[2], false);
+        assertFalse(pilTemplate.isDerivativeApproved(ipAcct[1], socialRemixTermsId, ipAcct[2]));
 
-        bool result = pilTemplate.verifyRegisterDerivative(ipId2, ipId1, socialRemixTermsId, ipOwner2);
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], socialRemixTermsId, ipOwner[2]);
         assertFalse(result);
     }
 
     function test_PILicenseTemplate_verifyRegisterDerivative_derivativeNotAllowed() public {
         PILTerms memory terms = PILFlavors.defaultValuesLicenseTerms();
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
-        bool result = pilTemplate.verifyRegisterDerivative(ipId2, ipId1, socialRemixTermsId, ipOwner2);
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], socialRemixTermsId, ipOwner[2]);
         assertFalse(result);
     }
 
@@ -445,23 +441,31 @@ contract PILicenseTemplateTest is BaseTest {
         licenseTermsIds[0] = commUseTermsId;
         licenseTermsIds[1] = commRemixTermsId;
         address[] memory parentIpIds = new address[](2);
-        parentIpIds[0] = ipId1;
-        parentIpIds[1] = ipId3;
-        assertFalse(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[3];
+        assertFalse(
+            pilTemplate.verifyRegisterDerivativeForAllParents(ipAcct[2], parentIpIds, licenseTermsIds, ipOwner[2])
+        );
 
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseTermsIds[0] = defaultTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
-        assertFalse(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
+        assertFalse(
+            pilTemplate.verifyRegisterDerivativeForAllParents(ipAcct[2], parentIpIds, licenseTermsIds, ipOwner[2])
+        );
 
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = commRemixTermsId;
-        assertFalse(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
+        assertFalse(
+            pilTemplate.verifyRegisterDerivativeForAllParents(ipAcct[2], parentIpIds, licenseTermsIds, ipOwner[2])
+        );
 
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
-        assertTrue(pilTemplate.verifyRegisterDerivativeForAllParents(ipId2, parentIpIds, licenseTermsIds, ipOwner2));
+        assertTrue(
+            pilTemplate.verifyRegisterDerivativeForAllParents(ipAcct[2], parentIpIds, licenseTermsIds, ipOwner[2])
+        );
     }
 
     // test isLicenseTransferable

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
 import { Errors } from "../../contracts/lib/Errors.sol";
 
@@ -41,9 +43,7 @@ contract IPAccountTest is BaseTest {
         assertEq(predictedAccount, deployedAccount);
     }
 
-    // TODO: Fix this test, "vm.addr(2)" hits error AccessController__BothCallerAndRecipientAreNotRegisteredModule
-    // but we want to test for "AccessController__PermissionDenied" for vm.addr(2) (which is not a module or IPAccount)
-    /*function test_IPAccount_TokenAndOwnership() public {
+    function test_IPAccount_TokenAndOwnership() public {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
 
@@ -63,20 +63,20 @@ contract IPAccountTest is BaseTest {
             abi.encodeWithSelector(
                 Errors.AccessController__PermissionDenied.selector,
                 address(ipAccount),
-                vm.addr(2),
+                address(module),
                 address(0),
                 bytes4(0)
             )
         );
-        ipAccount.isValidSigner(vm.addr(2), "");
+        ipAccount.isValidSigner(address(module), "");
         assertEq(ipAccount.isValidSigner(owner, ""), IERC6551Account.isValidSigner.selector);
 
         // Transfer token to new owner and make sure account owner changes
-        address newOwner = vm.addr(2);
+        address newOwner = address(module);
         vm.prank(owner);
-        mockNFT.safeTransferFrom(owner, newOwner, tokenId);
+        mockNFT.transferFrom(owner, newOwner, tokenId);
         assertEq(ipAccount.isValidSigner(newOwner, ""), IERC6551Account.isValidSigner.selector);
-    }*/
+    }
 
     function test_IPAccount_OwnerExecutionPass() public {
         address owner = vm.addr(1);

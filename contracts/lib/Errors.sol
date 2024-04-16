@@ -218,8 +218,11 @@ library Errors {
         uint256 licenseTermsId,
         address licensorIpId
     );
-    error LicensingModule__ZeroIpId();
+
+    /// @notice Licensing hook is invalid either not support ILicensingHook interface or not registered as module
     error LicensingModule__InvalidLicensingHook(address hook);
+
+    /// @notice The license terms ID is invalid or license template doesn't exist.
     error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////

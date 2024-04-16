@@ -367,9 +367,6 @@ contract LicensingModule is
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) {
-        if (ipId == address(0)) {
-            revert Errors.LicensingModule__ZeroIpId();
-        }
         if (
             licensingConfig.licensingHook != address(0) &&
             (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||

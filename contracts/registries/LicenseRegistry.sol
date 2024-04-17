@@ -219,8 +219,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if ($.attachedLicenseTerms[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(childIpId);
         }
-
+        // earliest expiration time
+        uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
+            uint256 parentExp = _getExpireTime(parentIpIds[i]);
+            if (parentExp > 0 && (parentExp < earliestExp || earliestExp == 0)) earliestExp = parentExp;
             _verifyDerivativeFromParent(parentIpIds[i], childIpId, licenseTemplate, licenseTermsIds[i]);
             $.childIps[parentIpIds[i]].add(childIpId);
             // determine if duplicate license terms
@@ -232,10 +235,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
 
         $.licenseTemplates[childIpId] = licenseTemplate;
-        _setExpirationTime(
-            childIpId,
-            ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp)
-        );
+        uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
+        if (licenseExp > 0 && (licenseExp < earliestExp || earliestExp == 0)) earliestExp = licenseExp;
+        // default value is 0, means never expired
+        if (earliestExp != 0) _setExpirationTime(childIpId, earliestExp);
     }
 
     /// @notice Verifies the minting of a license token.
@@ -390,7 +393,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.
     function getExpireTime(address ipId) external view returns (uint256) {
-        return IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
+        return _getExpireTime(ipId);
     }
 
     /// @notice Checks if an IP is expired.
@@ -438,8 +441,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
     }
 
+    function _getExpireTime(address ipId) internal view returns (uint256) {
+        return IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
+    }
+
     function _isExpiredNow(address ipId) internal view returns (bool) {
-        uint256 expireTime = IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
+        uint256 expireTime = _getExpireTime(ipId);
         return expireTime != 0 && expireTime < block.timestamp;
     }
 

@@ -245,7 +245,7 @@ contract PILicenseTemplate is
         uint expireTime = _getExpireTime(licenseTermsIds[0], start);
         for (uint i = 1; i < licenseTermsIds.length; i++) {
             uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
-            if (newExpireTime < expireTime || expireTime == 0) {
+            if (newExpireTime > 0 && (newExpireTime < expireTime || expireTime == 0)) {
                 expireTime = newExpireTime;
             }
         }

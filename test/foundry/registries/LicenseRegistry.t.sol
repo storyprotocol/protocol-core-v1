@@ -11,6 +11,7 @@ import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";
 import { MockLicenseTemplate } from "../mocks/module/MockLicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../../contracts/lib/IPAccountStorageOps.sol";
 import { Licensing } from "../../../contracts/lib/Licensing.sol";
+import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 // test
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
@@ -308,6 +309,80 @@ contract LicenseRegistryTest is BaseTest {
             licenseTermsId: 1, // dones't need to exist for this test case
             isMintedByIpOwner: false
         });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_parentIpExpireFirst() public {
+        vm.prank(address(licensingModule));
+        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 100);
+        PILTerms memory terms1 = PILFlavors.nonCommercialSocialRemixing();
+        terms1.expiration = 200;
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), termsId1);
+
+        PILTerms memory terms2 = PILFlavors.nonCommercialSocialRemixing();
+        terms2.expiration = 400;
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(terms2);
+        vm.prank(ipOwner[2]);
+        licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), termsId2);
+
+        address[] memory parentIpIds = new address[](2);
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[2];
+        licenseTermsIds[0] = termsId1;
+        licenseTermsIds[1] = termsId2;
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp(ipAcct[3], parentIpIds, address(pilTemplate), licenseTermsIds);
+
+        assertEq(licenseRegistry.getExpireTime(ipAcct[1]), block.timestamp + 100, "ipAcct[1] expire time is incorrect");
+        assertEq(licenseRegistry.getExpireTime(ipAcct[2]), 0, "ipAcct[2] expire time is incorrect");
+        assertEq(licenseRegistry.getExpireTime(ipAcct[3]), block.timestamp + 100, "ipAcct[3] expire time is incorrect");
+        assertEq(licenseRegistry.getParentIp(ipAcct[3], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[3], 1), ipAcct[2]);
+        (address attachedTemplate1, uint256 attachedTermsId1) = licenseRegistry.getAttachedLicenseTerms(ipAcct[3], 0);
+        assertEq(attachedTemplate1, address(pilTemplate));
+        assertEq(attachedTermsId1, termsId1);
+        (address attachedTemplate2, uint256 attachedTermsId2) = licenseRegistry.getAttachedLicenseTerms(ipAcct[3], 1);
+        assertEq(attachedTemplate2, address(pilTemplate));
+        assertEq(attachedTermsId2, termsId2);
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_termsExpireFirst() public {
+        vm.prank(address(licensingModule));
+        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 500);
+        PILTerms memory terms1 = PILFlavors.nonCommercialSocialRemixing();
+        terms1.expiration = 0;
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), termsId1);
+
+        PILTerms memory terms2 = PILFlavors.nonCommercialSocialRemixing();
+        terms2.expiration = 400;
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(terms2);
+        vm.prank(ipOwner[2]);
+        licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), termsId2);
+
+        address[] memory parentIpIds = new address[](2);
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[2];
+        licenseTermsIds[0] = termsId1;
+        licenseTermsIds[1] = termsId2;
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp(ipAcct[3], parentIpIds, address(pilTemplate), licenseTermsIds);
+
+        assertEq(licenseRegistry.getExpireTime(ipAcct[1]), block.timestamp + 500, "ipAcct[1] expire time is incorrect");
+        assertEq(licenseRegistry.getExpireTime(ipAcct[2]), 0, "ipAcct[2] expire time is incorrect");
+        assertEq(licenseRegistry.getExpireTime(ipAcct[3]), block.timestamp + 400, "ipAcct[3] expire time is incorrect");
+        assertEq(licenseRegistry.getParentIp(ipAcct[3], 0), ipAcct[1]);
+        assertEq(licenseRegistry.getParentIp(ipAcct[3], 1), ipAcct[2]);
+        (address attachedTemplate1, uint256 attachedTermsId1) = licenseRegistry.getAttachedLicenseTerms(ipAcct[3], 0);
+        assertEq(attachedTemplate1, address(pilTemplate));
+        assertEq(attachedTermsId1, termsId1);
+        (address attachedTemplate2, uint256 attachedTermsId2) = licenseRegistry.getAttachedLicenseTerms(ipAcct[3], 1);
+        assertEq(attachedTemplate2, address(pilTemplate));
+        assertEq(attachedTermsId2, termsId2);
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

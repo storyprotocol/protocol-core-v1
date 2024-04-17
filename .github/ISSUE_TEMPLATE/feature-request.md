@@ -1,8 +1,8 @@
 ---
-name: Task
-about: Create a regular work item to be picked up by a contributor.
+name: Feature Request
+about: Create a feature request item to be picked up by a contributor.
 title: ''
-labels: ''
+labels: 'enhancement'
 assignees: ''
 
 ---

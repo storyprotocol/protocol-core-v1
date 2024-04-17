@@ -284,7 +284,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
-        impl = address(new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry)));
+        impl = address(new RoyaltyModule(licensingModuleAddr, address(disputeModule), address(licenseRegistry)));
         royaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,

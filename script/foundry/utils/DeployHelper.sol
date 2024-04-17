@@ -11,7 +11,6 @@ import { stdJson } from "forge-std/StdJson.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { CREATE3 } from "@solady/src/utils/CREATE3.sol";
 
 // contracts
 import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
@@ -53,6 +52,7 @@ import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
+import { Create3Deployer } from "test/foundry/utils/Create3Deployer.sol";
 
 contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
@@ -158,16 +158,32 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
-    function create3Deploy(bytes32 salt, bytes calldata creationCode, uint256 value) external returns (address) {
-        return CREATE3.deploy(salt, creationCode, value);
-    }
-
     function _deployProtocolContracts() private {
         require(address(erc20) != address(0), "Deploy: Asset Not Set");
         bytes32 ipAccountImplSalt = keccak256(
             abi.encode(type(IPAccountImpl).creationCode, address(this), block.timestamp)
         );
-        address ipAccountImplAddr = CREATE3.getDeployed(ipAccountImplSalt);
+        address ipAccountImplAddr = Create3Deployer.getDeployed(ipAccountImplSalt);
+
+        bytes32 licenseTokenSalt = keccak256(
+            abi.encode(type(LicenseToken).creationCode, address(this), block.timestamp)
+        );
+        address licenseTokenAddr = Create3Deployer.getDeployed(licenseTokenSalt);
+
+        bytes32 licensingModuleSalt = keccak256(
+            abi.encode(type(LicensingModule).creationCode, address(this), block.timestamp)
+        );
+        address licensingModuleAddr = Create3Deployer.getDeployed(licensingModuleSalt);
+
+        bytes32 disputeModuleSalt = keccak256(
+            abi.encode(type(DisputeModule).creationCode, address(this), block.timestamp)
+        );
+        address disputeModuleAddr = Create3Deployer.getDeployed(disputeModuleSalt);
+
+        bytes32 licenseRegistrySalt = keccak256(
+            abi.encode(type(LicenseRegistry).creationCode, address(this), block.timestamp)
+        );
+        address licenseRegistryAddr = Create3Deployer.getDeployed(licenseRegistrySalt);
 
         string memory contractKey;
 
@@ -183,22 +199,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser = new ProtocolPauseAdmin(address(protocolAccessManager));
         _postdeploy(contractKey, address(protocolPauser));
 
-        contractKey = "AccessController";
-        _predeploy(contractKey);
-
-        address impl = address(new AccessController());
-        accessController = AccessController(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
-            )
-        );
-        impl = address(0); // Make sure we don't deploy wrong impl
-        _postdeploy(contractKey, address(accessController));
-
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
-        impl = address(new ModuleRegistry());
+        address impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -222,17 +225,31 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
 
+        contractKey = "AccessController";
+        _predeploy(contractKey);
+        impl = address(new AccessController(address(ipAssetRegistry), address(moduleRegistry)));
+        accessController = AccessController(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(AccessController.initialize, address(protocolAccessManager))
+            )
+        );
+        impl = address(0); // Make sure we don't deploy wrong impl
+        _postdeploy(contractKey, address(accessController));
+
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
-        impl = address(new LicenseRegistry());
+        impl = address(new LicenseRegistry(licensingModuleAddr, disputeModuleAddr));
         licenseRegistry = LicenseRegistry(
             TestProxyHelper.deployUUPSProxy(
+                licenseRegistrySalt,
                 impl,
                 abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
             )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
+        require(licenseRegistryAddr == address(licenseRegistry), "Deploy: License Registry Address Mismatch");
 
         contractKey = "IPAccountImpl";
         bytes memory ipAccountImplCode = abi.encodePacked(
@@ -245,43 +262,29 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             )
         );
         _predeploy(contractKey);
-        this.create3Deploy(ipAccountImplSalt, ipAccountImplCode, 0);
-        ipAccountImpl = IPAccountImpl(payable(ipAccountImplAddr));
+        ipAccountImpl = IPAccountImpl(payable(Create3Deployer.deploy(ipAccountImplSalt, ipAccountImplCode)));
         _postdeploy(contractKey, address(ipAccountImpl));
+        require(ipAccountImplAddr == address(ipAccountImpl), "Deploy: IP Account Impl Address Mismatch");
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
-        impl = address(new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry)));
+        impl = address(
+            new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
+        );
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
+                disputeModuleSalt,
                 impl,
                 abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
             )
         );
         impl = address(0);
         _postdeploy(contractKey, address(disputeModule));
-
-        contractKey = "LicenseToken";
-        _predeploy(contractKey);
-        impl = address(new LicenseToken());
-        licenseToken = LicenseToken(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(
-                    LicenseToken.initialize,
-                    (
-                        address(protocolAccessManager),
-                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
-                    )
-                )
-            )
-        );
-        impl = address(0);
-        _postdeploy(contractKey, address(licenseToken));
+        require(disputeModuleAddr == address(disputeModule), "Deploy: Dispute Module Address Mismatch");
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
-        impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
+        impl = address(new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry)));
         royaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -300,17 +303,39 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                address(licenseToken)
+                licenseTokenAddr
             )
         );
         licensingModule = LicensingModule(
             TestProxyHelper.deployUUPSProxy(
+                licensingModuleSalt,
                 impl,
                 abi.encodeCall(LicensingModule.initialize, address(protocolAccessManager))
             )
         );
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
+        require(licensingModuleAddr == address(licensingModule), "Deploy: Licensing Module Address Mismatch");
+
+        contractKey = "LicenseToken";
+        _predeploy(contractKey);
+        impl = address(new LicenseToken(address(licensingModule), address(disputeModule)));
+        licenseToken = LicenseToken(
+            TestProxyHelper.deployUUPSProxy(
+                licenseTokenSalt,
+                impl,
+                abi.encodeCall(
+                    LicenseToken.initialize,
+                    (
+                        address(protocolAccessManager),
+                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                    )
+                )
+            )
+        );
+        impl = address(0);
+        _postdeploy(contractKey, address(licenseToken));
+        require(licenseTokenAddr == address(licenseToken), "Deploy: License Token Address Mismatch");
 
         //
         // Story-specific Non-Core Contracts
@@ -406,7 +431,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(royaltyModule));
         protocolPauser.addPausable(address(royaltyPolicyLAP));
         protocolPauser.addPausable(address(ipAssetRegistry));
-        
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -416,19 +440,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         moduleRegistry.registerModule(CORE_METADATA_VIEW_MODULE_KEY, address(coreMetadataViewModule));
         moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
 
-        // License Registry
-        licenseRegistry.setDisputeModule(address(disputeModule));
-        licenseRegistry.setLicensingModule(address(licensingModule));
-
-        // License Token
-        licenseToken.setDisputeModule(address(disputeModule));
-        licenseToken.setLicensingModule(address(licensingModule));
-
-        // Access Controller
-        accessController.setAddresses(address(ipAccountRegistry), address(moduleRegistry));
-
         // Royalty Module and SP Royalty Policy
-        royaltyModule.setLicensingModule(address(licensingModule));
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyPolicyLAP.setSnapshotInterval(7 days);
@@ -484,13 +496,33 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         selectors[1] = ProtocolPausableUpgradeable.unpause.selector;
 
         protocolAccessManager.labelRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, ProtocolAdmin.PAUSE_ADMIN_ROLE_LABEL);
-        protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(accessController),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(licensingModule),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(royaltyPolicyLAP),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(ipAssetRegistry),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(licenseRegistry),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(protocolPauser), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);

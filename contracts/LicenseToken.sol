@@ -19,6 +19,9 @@ import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplat
 contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
+    ILicensingModule public immutable LICENSING_MODULE;
+    IDisputeModule public immutable DISPUTE_MODULE;
+
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
@@ -26,8 +29,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @custom:storage-location erc7201:story-protocol.LicenseToken
     struct LicenseTokenStorage {
         string imageUrl;
-        ILicensingModule licensingModule;
-        IDisputeModule disputeModule;
         uint256 totalMintedTokens;
         mapping(uint256 tokenId => LicenseTokenMetadata) licenseTokenMetadatas;
     }
@@ -37,14 +38,16 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         0x62a0d75e37bea0c3e666dc72a74112fc6af15ce635719127e380d8ca1e555d00;
 
     modifier onlyLicensingModule() {
-        if (msg.sender != address(_getLicenseTokenStorage().licensingModule)) {
+        if (msg.sender != address(LICENSING_MODULE)) {
             revert Errors.LicenseToken__CallerNotLicensingModule();
         }
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address licensingModule, address disputeModule) {
+        LICENSING_MODULE = ILicensingModule(licensingModule);
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
         _disableInitializers();
     }
 
@@ -57,28 +60,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
         _getLicenseTokenStorage().imageUrl = imageUrl;
-    }
-
-    /// @notice Sets the LicensingModule address.
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param newLicensingModule The address of the LicensingModule
-    function setLicensingModule(address newLicensingModule) external restricted {
-        if (newLicensingModule == address(0)) {
-            revert Errors.LicenseToken__ZeroLicensingModule();
-        }
-        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
-        $.licensingModule = ILicensingModule(newLicensingModule);
-    }
-
-    /// @notice Sets the DisputeModule address.
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param newDisputeModule The address of the DisputeModule
-    function setDisputeModule(address newDisputeModule) external restricted {
-        if (newDisputeModule == address(0)) {
-            revert Errors.LicenseToken__ZeroDisputeModule();
-        }
-        LicenseTokenStorage storage $ = _getLicenseTokenStorage();
-        $.disputeModule = IDisputeModule(newDisputeModule);
     }
 
     /// @dev Sets the Licensing Image URL.
@@ -207,16 +188,11 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTemplate;
     }
 
-    /// @notice Returns the canonical protocol-wide DisputeModule
-    /// @return The DisputeModule instance
-    function disputeModule() external view returns (IDisputeModule) {
-        return _getLicenseTokenStorage().disputeModule;
-    }
-
-    /// @notice Returns the canonical protocol-wide LicensingModule
-    /// @return The LicensingModule instance
-    function licensingModule() external view returns (ILicensingModule) {
-        return _getLicenseTokenStorage().licensingModule;
+    /// @notice Gets the expiration time of a License Token.
+    /// @param tokenId The ID of the License Token.
+    /// @return The expiration time of the License Token.
+    function getExpirationTime(uint256 tokenId) external view returns (uint256) {
+        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
     }
 
     /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in
@@ -224,7 +200,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @return isRevoked True if the license is revoked
     function isLicenseTokenRevoked(uint256 tokenId) public view returns (bool) {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
-        return $.disputeModule.isIpTagged($.licenseTokenMetadatas[tokenId].licensorIpId);
+        return DISPUTE_MODULE.isIpTagged($.licenseTokenMetadatas[tokenId].licensorIpId);
     }
 
     /// @notice ERC721 OpenSea metadata JSON representation of the LNFT parameters

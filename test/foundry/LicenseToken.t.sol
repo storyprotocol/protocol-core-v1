@@ -44,26 +44,6 @@ contract LicenseTokenTest is BaseTest {
         _;
     }
 
-    function test_LicenseToken_setDisputeModule() public whenCallerIsProtocolManager {
-        licenseToken.setDisputeModule(address(1));
-        assertEq(address(licenseToken.disputeModule()), address(1));
-    }
-
-    function test_LicenseToken_revert_setDisputeModule_zeroDisputeModule() public whenCallerIsProtocolManager {
-        vm.expectRevert(Errors.LicenseToken__ZeroDisputeModule.selector);
-        licenseToken.setDisputeModule(address(0));
-    }
-
-    function test_LicenseToken_setLicensingModule() public whenCallerIsProtocolManager {
-        licenseToken.setLicensingModule(address(1));
-        assertEq(address(licenseToken.licensingModule()), address(1));
-    }
-
-    function test_LicenseToken_revert_setLicensingModule_zeroLicensingModule() public whenCallerIsProtocolManager {
-        vm.expectRevert(Errors.LicenseToken__ZeroLicensingModule.selector);
-        licenseToken.setLicensingModule(address(0));
-    }
-
     function test_LicenseToken_setLicensingImageUrl() public whenCallerIsProtocolManager {
         vm.expectEmit(address(licenseToken));
         emit LicenseToken.BatchMetadataUpdate(1, 0);

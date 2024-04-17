@@ -11,6 +11,7 @@ import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
+import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../BaseModule.sol";
@@ -28,6 +29,10 @@ contract RoyaltyModule is
 {
     using ERC165Checker for address;
 
+    /// @notice Returns the canonical protocol-wide licensing module
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicensingModule public immutable LICENSING_MODULE;
+
     /// @notice Returns the canonical protocol-wide LicenseRegistry
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
@@ -37,13 +42,11 @@ contract RoyaltyModule is
     IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @dev Storage structure for the RoyaltyModule
-    /// @param licensingModule The address of the licensing module
     /// @param isWhitelistedRoyaltyPolicy Indicates if a royalty policy is whitelisted
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param royaltyPolicies Indicates the royalty policy for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
-        address licensingModule;
         mapping(address royaltyPolicy => bool isWhitelisted) isWhitelistedRoyaltyPolicy;
         mapping(address token => bool) isWhitelistedRoyaltyToken;
         mapping(address ipId => address royaltyPolicy) royaltyPolicies;
@@ -59,10 +62,12 @@ contract RoyaltyModule is
     /// @param disputeModule The address of the dispute module
     /// @param licenseRegistry The address of the license registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule, address licenseRegistry) {
+    constructor(address licensingModule, address disputeModule, address licenseRegistry) {
         if (disputeModule == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
         if (licenseRegistry == address(0)) revert Errors.RoyaltyModule__ZeroLicenseRegistry();
+        if (licensingModule == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
 
+        LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
@@ -81,17 +86,8 @@ contract RoyaltyModule is
 
     /// @notice Modifier to enforce that the caller is the licensing module
     modifier onlyLicensingModule() {
-        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
-        if (msg.sender != $.licensingModule) revert Errors.RoyaltyModule__NotAllowedCaller();
+        if (msg.sender != address(LICENSING_MODULE)) revert Errors.RoyaltyModule__NotAllowedCaller();
         _;
-    }
-
-    /// @notice Sets the licensing module
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param licensing The address of the license module
-    function setLicensingModule(address licensing) external restricted {
-        if (licensing == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
-        _getRoyaltyModuleStorage().licensingModule = licensing;
     }
 
     /// @notice Whitelist a royalty policy
@@ -237,11 +233,6 @@ contract RoyaltyModule is
         IRoyaltyPolicy(licenseRoyaltyPolicy).onRoyaltyPayment(payerAddress, receiverIpId, token, amount);
 
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount);
-    }
-
-    /// @notice Returns the licensing module address
-    function licensingModule() external view returns (address) {
-        return _getRoyaltyModuleStorage().licensingModule;
     }
 
     /// @notice Indicates if a royalty policy is whitelisted

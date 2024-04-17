@@ -52,7 +52,9 @@ contract UpgradesTest is BaseTest {
         assertFalse(immediate);
         assertEq(delay, execDelay);
 
-        address newAccessController = address(new MockAccessControllerV2());
+        address newAccessController = address(
+            new MockAccessControllerV2(address(ipAccountRegistry), address(moduleRegistry))
+        );
         vm.prank(u.bob);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             address(accessController),

@@ -109,28 +109,11 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
     }
     function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
-        address impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
+        address impl = address(
+            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry))
+        );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
         RoyaltyModule(TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, address(0))));
-    }
-
-    function test_RoyaltyModule_setLicensingModule_revert_ZeroLicensingModule() public {
-        vm.startPrank(u.admin);
-        vm.expectRevert(Errors.RoyaltyModule__ZeroLicensingModule.selector);
-        royaltyModule.setLicensingModule(address(0));
-    }
-
-    function test_RoyaltyModule_setLicensingModule() public {
-        vm.startPrank(u.admin);
-        address impl = address(new RoyaltyModule(address(disputeModule), address(licenseRegistry)));
-        RoyaltyModule testRoyaltyModule = RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
-            )
-        );
-        testRoyaltyModule.setLicensingModule(address(licensingModule));
-        assertEq(testRoyaltyModule.licensingModule(), address(licensingModule));
     }
 
     function test_RoyaltyModule_whitelistRoyaltyPolicy_revert_ZeroRoyaltyToken() public {

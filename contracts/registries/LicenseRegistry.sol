@@ -27,9 +27,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
+    ILicensingModule public immutable LICENSING_MODULE;
+    IDisputeModule public immutable DISPUTE_MODULE;
+
     /// @dev Storage of the LicenseRegistry
-    /// @param licensingModule Returns the canonical protocol-wide LicensingModule
-    /// @param disputeModule Returns the canonical protocol-wide DisputeModule
     /// @param defaultLicenseTemplate The default license template address
     /// @param defaultLicenseTermsId The default license terms ID
     /// @param registeredLicenseTemplates Registered license templates
@@ -46,8 +47,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
-        ILicensingModule licensingModule;
-        IDisputeModule disputeModule;
         address defaultLicenseTemplate;
         uint256 defaultLicenseTermsId;
         mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;
@@ -66,14 +65,16 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     bytes32 public constant EXPIRATION_TIME = "EXPIRATION_TIME";
 
     modifier onlyLicensingModule() {
-        if (msg.sender != address(_getLicenseRegistryStorage().licensingModule)) {
+        if (msg.sender != address(LICENSING_MODULE)) {
             revert Errors.LicenseRegistry__CallerNotLicensingModule();
         }
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
+    constructor(address licensingModule, address disputeModule) {
+        LICENSING_MODULE = ILicensingModule(licensingModule);
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
         _disableInitializers();
     }
 
@@ -85,28 +86,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
-    }
-
-    /// @dev Sets the DisputeModule address.
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param newDisputeModule The address of the DisputeModule
-    function setDisputeModule(address newDisputeModule) external restricted {
-        if (newDisputeModule == address(0)) {
-            revert Errors.LicenseRegistry__ZeroDisputeModule();
-        }
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.disputeModule = IDisputeModule(newDisputeModule);
-    }
-
-    /// @dev Sets the LicensingModule address.
-    /// @dev Enforced to be only callable by the protocol admin
-    /// @param newLicensingModule The address of the LicensingModule
-    function setLicensingModule(address newLicensingModule) external restricted {
-        if (newLicensingModule == address(0)) {
-            revert Errors.LicenseRegistry__ZeroLicensingModule();
-        }
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.licensingModule = ILicensingModule(newLicensingModule);
     }
 
     /// @notice Sets the default license terms that are attached to all IPs by default.
@@ -405,16 +384,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return _getMintingLicenseConfig(ipId, licenseTemplate, licenseTermsId);
     }
 
-    /// @notice Returns the canonical protocol-wide LicensingModule
-    function licensingModule() external view returns (ILicensingModule) {
-        return _getLicenseRegistryStorage().licensingModule;
-    }
-
-    /// @notice Returns the canonical protocol-wide DisputeModule
-    function disputeModule() external view returns (IDisputeModule) {
-        return _getLicenseRegistryStorage().disputeModule;
-    }
-
     /// @notice Gets the expiration time for an IP.
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.
@@ -447,7 +416,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 licenseTermsId
     ) internal view {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.disputeModule.isIpTagged(parentIpId)) {
+        if (DISPUTE_MODULE.isIpTagged(parentIpId)) {
             revert Errors.LicenseRegistry__ParentIpTagged(parentIpId);
         }
         if (childIpId == parentIpId) {

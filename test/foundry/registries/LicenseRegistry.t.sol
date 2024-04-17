@@ -56,30 +56,6 @@ contract LicenseRegistryTest is BaseTest {
         vm.label(ipAcct[5], "IPAccount5");
     }
 
-    function test_LicenseRegistry_setDisputeModule() public {
-        vm.prank(admin);
-        licenseRegistry.setDisputeModule(address(123));
-        assertEq(address(licenseRegistry.disputeModule()), address(123));
-    }
-
-    function test_LicenseRegistry_setLicensingModule() public {
-        vm.prank(admin);
-        licenseRegistry.setLicensingModule(address(123));
-        assertEq(address(licenseRegistry.licensingModule()), address(123));
-    }
-
-    function test_LicenseRegistry_setDisputeModule_revert_ZeroAddress() public {
-        vm.expectRevert(Errors.LicenseRegistry__ZeroDisputeModule.selector);
-        vm.prank(admin);
-        licenseRegistry.setDisputeModule(address(0));
-    }
-
-    function test_LicenseRegistry_setLicensingModule_revert_ZeroAddress() public {
-        vm.expectRevert(Errors.LicenseRegistry__ZeroLicensingModule.selector);
-        vm.prank(admin);
-        licenseRegistry.setLicensingModule(address(0));
-    }
-
     function test_LicenseRegistry_setDefaultLicenseTerms() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(admin);

@@ -86,14 +86,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @return A `LicenseTokenMetadata` struct containing the metadata of the specified License Token.
     function getLicenseTokenMetadata(uint256 tokenId) external view returns (LicenseTokenMetadata memory);
 
-    /// @notice Returns the canonical protocol-wide DisputeModule
-    /// @return The DisputeModule instance
-    function disputeModule() external view returns (IDisputeModule);
-
-    /// @notice Returns the canonical protocol-wide LicensingModule
-    /// @return The LicensingModule instance
-    function licensingModule() external view returns (ILicensingModule);
-
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.

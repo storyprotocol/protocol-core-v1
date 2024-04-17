@@ -4,9 +4,6 @@ pragma solidity 0.8.23;
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-import { IDisputeModule } from "./modules/dispute/IDisputeModule.sol";
-import { ILicensingModule } from "./modules/licensing/ILicensingModule.sol";
-
 /// @title ILicenseToken
 /// @notice Interface for the License Token (ERC721) NFT collection that manages License Tokens representing
 /// License Terms.

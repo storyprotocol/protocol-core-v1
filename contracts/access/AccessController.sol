@@ -153,11 +153,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         // If the caller (signer) is not the Owner, IPAccount is limited to interactions with only registered modules.
         // These interactions can be either initiating calls to these modules or receiving calls from them.
         // The IP account can also modify its own Permissions settings.
-        if (
-            to != address(this) &&
-            !MODULE_REGISTRY.isRegistered(to) &&
-            !MODULE_REGISTRY.isRegistered(signer)
-        ) {
+        if (to != address(this) && !MODULE_REGISTRY.isRegistered(to) && !MODULE_REGISTRY.isRegistered(signer)) {
             revert Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule(signer, to);
         }
 

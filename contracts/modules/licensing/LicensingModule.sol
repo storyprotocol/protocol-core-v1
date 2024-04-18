@@ -86,7 +86,7 @@ contract LicensingModule is
         address disputeModule,
         address licenseToken
     ) AccessControlled(accessController, ipAccountRegistry) {
-        if (royaltyModule == address(0))  revert Errors.LicensingModule__ZeroRoyaltyModule();
+        if (royaltyModule == address(0)) revert Errors.LicensingModule__ZeroRoyaltyModule();
         if (licenseRegistry == address(0)) revert Errors.LicensingModule__ZeroLicenseRegistry();
         if (disputeModule == address(0)) revert Errors.LicensingModule__ZeroDisputeModule();
         if (licenseToken == address(0)) revert Errors.LicensingModule__ZeroLicenseToken();

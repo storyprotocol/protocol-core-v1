@@ -487,6 +487,9 @@ library Errors {
     /// @notice Permission denied.
     error AccessController__PermissionDenied(address ipAccount, address signer, address to, bytes4 func);
 
+    /// @notice Both recipient (to) and function selectors are zero address means delegate all permissions to signer.
+    error AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Access Controlled                           //
     ////////////////////////////////////////////////////////////////////////////

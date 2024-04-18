@@ -287,11 +287,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.ALLOW
             )
         );
@@ -323,11 +321,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.DENY
             )
         );
@@ -478,11 +474,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.DENY
             )
         );
@@ -529,11 +523,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.ALLOW
             )
         );
@@ -588,11 +580,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.DENY
             )
         );
@@ -644,11 +634,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 signer,
-                address(0),
-                bytes4(0),
                 AccessPermission.ALLOW
             )
         );
@@ -779,11 +767,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 address(mockOrchestratorModule),
-                address(0),
-                bytes4(0),
                 AccessPermission.ALLOW
             )
         );
@@ -828,11 +814,9 @@ contract AccessControllerTest is BaseTest {
             address(accessController),
             0,
             abi.encodeWithSignature(
-                "setPermission(address,address,address,bytes4,uint8)",
+                "setAllPermissions(address,address,uint8)",
                 address(ipAccount),
                 address(mockOrchestratorModule),
-                address(0),
-                bytes4(0),
                 AccessPermission.ALLOW
             )
         );
@@ -1658,6 +1642,148 @@ contract AccessControllerTest is BaseTest {
                 address(ipAccount),
                 signer,
                 address(mockModule),
+                bytes4(0),
+                AccessPermission.ALLOW
+            )
+        );
+    }
+
+    function test_setAllPermissions() public {
+        address signer = vm.addr(2);
+
+        // setAllPermissions to ALLOW
+        vm.prank(owner);
+        accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.ALLOW);
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(0),
+                bytes4(0)
+            ),
+            AccessPermission.ALLOW,
+            "setAllPermissions to ALLOW failed"
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeNoReturn.selector
+            ),
+            AccessPermission.ABSTAIN,
+            "setAllPermissions to ABSTAIN failed for a specific module"
+        );
+
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+
+        // setAllPermissions to DENY
+        vm.prank(owner);
+        accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.DENY);
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(0),
+                bytes4(0)
+            ),
+            AccessPermission.DENY,
+            "setAllPermissions to DENY failed"
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeNoReturn.selector
+            ),
+            AccessPermission.ABSTAIN,
+            "setAllPermissions to ABSTAIN failed for a specific module"
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
+        );
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+
+        // setAllPermissions to ABSTAIN
+        vm.prank(owner);
+        accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.ABSTAIN);
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(0),
+                bytes4(0)
+            ),
+            AccessPermission.ABSTAIN,
+            "setAllPermissions to ABSTAIN failed"
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeNoReturn.selector
+            ),
+            AccessPermission.ABSTAIN,
+            "setAllPermissions to ABSTAIN failed for a specific module"
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
+        );
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+
+    }
+
+    function test_setPermission_revert_BothToAndSignerAreZero() public {
+        address signer = vm.addr(2);
+        // by owner
+        vm.expectRevert(Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions.selector);
+        vm.prank(owner);
+        accessController.setPermission(address(ipAccount), signer, address(0), bytes4(0), AccessPermission.ALLOW);
+        // by ipAccount
+        vm.expectRevert(Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions.selector);
+        vm.prank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                address(tokenWithdrawalModule),
+                address(0),
                 bytes4(0),
                 AccessPermission.ALLOW
             )

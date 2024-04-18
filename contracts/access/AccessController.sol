@@ -87,6 +87,10 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         }
     }
 
+    function setAllPermissions(address ipAccount, address signer, uint8 permission) external whenNotPaused {
+        _setPermission(ipAccount, signer, address(0), bytes4(0), permission);
+    }
+
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
     /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
@@ -108,27 +112,11 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         bytes4 func,
         uint8 permission
     ) public whenNotPaused {
-        // IPAccount and signer does not support wildcard permission
-        if (ipAccount == address(0)) {
-            revert Errors.AccessController__IPAccountIsZeroAddress();
-        }
-        if (signer == address(0)) {
-            revert Errors.AccessController__SignerIsZeroAddress();
-        }
-        AccessControllerStorage storage $ = _getAccessControllerStorage();
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
-            revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
-        }
-        // permission must be one of ABSTAIN, ALLOW, DENY
-        if (permission > 2) {
-            revert Errors.AccessController__PermissionIsNotValid();
-        }
-        if (ipAccount != msg.sender && IIPAccount(payable(ipAccount)).owner() != msg.sender) {
-            revert Errors.AccessController__CallerIsNotIPAccountOrOwner();
+        if (to == address(0) && func == bytes4(0)) {
+            revert Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
         }
         _setPermission(ipAccount, signer, to, func, permission);
 
-        emit PermissionSet(IIPAccount(payable(ipAccount)).owner(), ipAccount, signer, to, func, permission);
     }
 
     /// @notice Checks the permission level for a specific function call. Reverts if permission is not granted.
@@ -200,8 +188,27 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
 
     /// @dev The permission parameters will be encoded into bytes32 as key in the permissions mapping to save storage
     function _setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) internal {
+        // IPAccount and signer does not support wildcard permission
+        if (ipAccount == address(0)) {
+            revert Errors.AccessController__IPAccountIsZeroAddress();
+        }
+        if (signer == address(0)) {
+            revert Errors.AccessController__SignerIsZeroAddress();
+        }
         AccessControllerStorage storage $ = _getAccessControllerStorage();
+        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
+            revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
+        }
+        // permission must be one of ABSTAIN, ALLOW, DENY
+        if (permission > 2) {
+            revert Errors.AccessController__PermissionIsNotValid();
+        }
+        if (ipAccount != msg.sender && IIPAccount(payable(ipAccount)).owner() != msg.sender) {
+            revert Errors.AccessController__CallerIsNotIPAccountOrOwner();
+        }
         $.encodedPermissions[_encodePermission(ipAccount, signer, to, func)] = permission;
+
+        emit PermissionSet(IIPAccount(payable(ipAccount)).owner(), ipAccount, signer, to, func, permission);
     }
 
     /// @dev encode permission to hash (bytes32)

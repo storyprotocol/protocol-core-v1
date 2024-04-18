@@ -52,6 +52,8 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     /// Constructor
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address ipAccountRegistry, address moduleRegistry) {
+        if (ipAccountRegistry == address(0)) revert Errors.AccessController__ZeroIPAccountRegistry();
+        if (moduleRegistry == address(0)) revert Errors.AccessController__ZeroModuleRegistry();
         IP_ACCOUNT_REGISTRY = IIPAccountRegistry(ipAccountRegistry);
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         _disableInitializers();

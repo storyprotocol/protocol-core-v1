@@ -63,6 +63,18 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error LicenseRegistry__ZeroAccessManager();
 
+    /// @notice Zero address provided for IP Asset Registry.
+    error LicensingModule__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for Licensing Module.
+    error LicensingModule__ZeroLicenseRegistry();
+
+    /// @notice Zero address provided for Dispute Module.
+    error LicensingModule__ZeroDisputeModule();
+
+    /// @notice Zero address provided for License Token.
+    error LicensingModule__ZeroLicenseToken();
+
     /// @notice Zero address provided for Licensing Module.
     error LicenseRegistry__ZeroLicensingModule();
 
@@ -447,6 +459,12 @@ library Errors {
 
     /// @notice Zero address provided for Access Manager in initializer.
     error AccessController__ZeroAccessManager();
+
+    /// @notice Zero address provided for IP Account Registry.
+    error AccessController__ZeroIPAccountRegistry();
+
+    /// @notice Zero address provided for Module Registry.
+    error AccessController__ZeroModuleRegistry();
 
     /// @notice IP Account is zero address.
     error AccessController__IPAccountIsZeroAddress();

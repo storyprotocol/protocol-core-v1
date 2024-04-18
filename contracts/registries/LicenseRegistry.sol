@@ -73,6 +73,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address licensingModule, address disputeModule) {
+        if (licensingModule == address(0)) revert Errors.LicenseRegistry__ZeroLicensingModule();
+        if (disputeModule == address(0)) revert Errors.LicenseRegistry__ZeroDisputeModule();
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         _disableInitializers();

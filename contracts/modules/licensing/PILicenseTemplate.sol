@@ -56,6 +56,8 @@ contract PILicenseTemplate is
         address licenseRegistry,
         address royaltyModule
     ) LicensorApprovalChecker(accessController, ipAccountRegistry) {
+        if (licenseRegistry == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroLicenseRegistry();
+        if (royaltyModule == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroRoyaltyModule();
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         _disableInitializers();

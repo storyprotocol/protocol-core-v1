@@ -75,19 +75,23 @@ contract LicensingModule is
     /// @param accessController The address of the AccessController contract
     /// @param ipAccountRegistry The address of the IPAccountRegistry contract
     /// @param royaltyModule The address of the RoyaltyModule contract
-    /// @param registry The address of the LicenseRegistry contract
+    /// @param licenseRegistry The address of the LicenseRegistry contract
     /// @param disputeModule The address of the DisputeModule contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAccountRegistry,
         address royaltyModule,
-        address registry,
+        address licenseRegistry,
         address disputeModule,
         address licenseToken
     ) AccessControlled(accessController, ipAccountRegistry) {
+        if (royaltyModule == address(0))  revert Errors.LicensingModule__ZeroRoyaltyModule();
+        if (licenseRegistry == address(0)) revert Errors.LicensingModule__ZeroLicenseRegistry();
+        if (disputeModule == address(0)) revert Errors.LicensingModule__ZeroDisputeModule();
+        if (licenseToken == address(0)) revert Errors.LicensingModule__ZeroLicenseToken();
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
-        LICENSE_REGISTRY = ILicenseRegistry(registry);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_NFT = ILicenseToken(licenseToken);
         _disableInitializers();

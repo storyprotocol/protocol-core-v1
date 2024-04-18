@@ -42,4 +42,10 @@ library PILicenseTemplateErrors {
 
     /// @notice Cannot add derivative reciprocal when derivative use is disabled.
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
+
+    /// @notice Zero address provided for License Registry at initialization.
+    error PILicenseTemplate__ZeroLicenseRegistry();
+
+    /// @notice Zero address provided for Royalty Module at initialization.
+    error PILicenseTemplate__ZeroRoyaltyModule();
 }

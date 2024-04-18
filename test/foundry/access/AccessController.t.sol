@@ -1655,12 +1655,7 @@ contract AccessControllerTest is BaseTest {
         vm.prank(owner);
         accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.ALLOW);
         assertEq(
-            accessController.getPermission(
-                address(ipAccount),
-                signer,
-                address(0),
-                bytes4(0)
-            ),
+            accessController.getPermission(address(ipAccount), signer, address(0), bytes4(0)),
             AccessPermission.ALLOW,
             "setAllPermissions to ALLOW failed"
         );
@@ -1687,12 +1682,7 @@ contract AccessControllerTest is BaseTest {
         vm.prank(owner);
         accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.DENY);
         assertEq(
-            accessController.getPermission(
-                address(ipAccount),
-                signer,
-                address(0),
-                bytes4(0)
-            ),
+            accessController.getPermission(address(ipAccount), signer, address(0), bytes4(0)),
             AccessPermission.DENY,
             "setAllPermissions to DENY failed"
         );
@@ -1728,12 +1718,7 @@ contract AccessControllerTest is BaseTest {
         vm.prank(owner);
         accessController.setAllPermissions(address(ipAccount), signer, AccessPermission.ABSTAIN);
         assertEq(
-            accessController.getPermission(
-                address(ipAccount),
-                signer,
-                address(0),
-                bytes4(0)
-            ),
+            accessController.getPermission(address(ipAccount), signer, address(0), bytes4(0)),
             AccessPermission.ABSTAIN,
             "setAllPermissions to ABSTAIN failed"
         );
@@ -1764,7 +1749,6 @@ contract AccessControllerTest is BaseTest {
             address(mockModule),
             mockModule.executeSuccessfully.selector
         );
-
     }
 
     function test_setPermission_revert_BothToAndSignerAreZero() public {

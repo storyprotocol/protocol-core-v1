@@ -40,6 +40,12 @@ interface IAccessController {
     /// @param permission The new permission level
     function setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) external;
 
+    /// @notice Sets permission to a signer for all functions across all modules.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`.
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param permission The new permission.
+    function setAllPermissions(address ipAccount, address signer, uint8 permission) external;
+
     /// @notice Checks the permission level for a specific function call. Reverts if permission is not granted.
     /// Otherwise, the function is a noop.
     /// @dev This function checks the permission level for a specific function call.

@@ -87,10 +87,6 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         }
     }
 
-    function setAllPermissions(address ipAccount, address signer, uint8 permission) external whenNotPaused {
-        _setPermission(ipAccount, signer, address(0), bytes4(0), permission);
-    }
-
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
     /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
@@ -116,7 +112,14 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
             revert Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
         }
         _setPermission(ipAccount, signer, to, func, permission);
+    }
 
+    /// @notice Sets permission to a signer for all functions across all modules.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`.
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param permission The new permission.
+    function setAllPermissions(address ipAccount, address signer, uint8 permission) external whenNotPaused {
+        _setPermission(ipAccount, signer, address(0), bytes4(0), permission);
     }
 
     /// @notice Checks the permission level for a specific function call. Reverts if permission is not granted.

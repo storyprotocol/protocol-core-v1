@@ -58,6 +58,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     using StringUtil for uint256;
     using stdJson for string;
 
+    // PROXY 1967 IMPLEMENTATION STORAGE SLOTS
+    bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
     error RoleConfigError(string message);
 
     ERC6551Registry internal immutable erc6551Registry;
@@ -247,9 +250,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
             )
         );
+        require(licenseRegistryAddr == address(licenseRegistry), "Deploy: License Registry Address Mismatch");
+        require(_loadProxyImpl(address(licenseRegistry)) == impl, "LicenseRegistry Proxy Implementation Mismatch");
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
-        require(licenseRegistryAddr == address(licenseRegistry), "Deploy: License Registry Address Mismatch");
 
         contractKey = "IPAccountImpl";
         bytes memory ipAccountImplCode = abi.encodePacked(
@@ -278,9 +282,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
             )
         );
+        require(disputeModuleAddr == address(disputeModule), "Deploy: Dispute Module Address Mismatch");
+        require(_loadProxyImpl(address(disputeModule)) == impl, "DisputeModule Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy(contractKey, address(disputeModule));
-        require(disputeModuleAddr == address(disputeModule), "Deploy: Dispute Module Address Mismatch");
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
@@ -313,9 +318,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(LicensingModule.initialize, address(protocolAccessManager))
             )
         );
+        require(licensingModuleAddr == address(licensingModule), "Deploy: Licensing Module Address Mismatch");
+        require(_loadProxyImpl(address(licensingModule)) == impl, "LicensingModule Proxy Implementation Mismatch");
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
-        require(licensingModuleAddr == address(licensingModule), "Deploy: Licensing Module Address Mismatch");
 
         contractKey = "LicenseToken";
         _predeploy(contractKey);
@@ -333,9 +339,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 )
             )
         );
+        require(licenseTokenAddr == address(licenseToken), "Deploy: License Token Address Mismatch");
+        require(_loadProxyImpl(address(licenseToken)) == impl, "LicenseToken Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy(contractKey, address(licenseToken));
-        require(licenseTokenAddr == address(licenseToken), "Deploy: License Token Address Mismatch");
 
         //
         // Story-specific Non-Core Contracts
@@ -532,5 +539,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         ///////// Renounce admin role /////////
         protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
+    }
+
+    /// @dev Load the implementation address from the proxy contract
+    function _loadProxyImpl(address proxy) private view returns (address) {
+        return address(uint160(uint256(vm.load(proxy, IMPLEMENTATION_SLOT))));
     }
 }

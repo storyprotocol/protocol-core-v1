@@ -188,13 +188,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTemplate;
     }
 
-    /// @notice Gets the expiration time of a License Token.
-    /// @param tokenId The ID of the License Token.
-    /// @return The expiration time of the License Token.
-    function getExpirationTime(uint256 tokenId) external view returns (uint256) {
-        return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].expiresAt;
-    }
-
     /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in
     /// the dispute module). If the tag is removed, the license is not revoked anymore.
     /// @return isRevoked True if the license is revoked

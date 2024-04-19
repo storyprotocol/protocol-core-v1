@@ -236,7 +236,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms
         earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
-        // default value is 0, means never expired
+        // default value is 0 which means that the license never expires
         if (earliestExp != 0) _setExpirationTime(childIpId, earliestExp);
     }
 
@@ -441,6 +441,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @dev Calculate the earliest expiration time of the child IP with both parent IPs and license terms
+    /// @param earliestParentIpExp The earliest expiration time of among all parent IPs
+    /// @param licenseTemplate The address of the license template where the license terms are created
+    /// @param licenseTermsIds The license terms the child IP is registered with
     function _calculateEarliestExpireTime(
         uint256 earliestParentIpExp,
         address licenseTemplate,
@@ -451,26 +454,38 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (licenseExp > 0 && (licenseExp < earliestExp || earliestExp == 0)) earliestExp = licenseExp;
     }
 
+    /// @dev Get the expiration time of an IP
+    /// @param ipId The address of the IP
     function _getExpireTime(address ipId) internal view returns (uint256) {
         return IIPAccount(payable(ipId)).getUint256(EXPIRATION_TIME);
     }
 
+    /// @dev Check if an IP is expired now
+    /// @param ipId The address of the IP
     function _isExpiredNow(address ipId) internal view returns (bool) {
         uint256 expireTime = _getExpireTime(ipId);
         return expireTime != 0 && expireTime < block.timestamp;
     }
 
+    /// @dev Set the expiration time of an IP
+    /// @param ipId The address of the IP
+    /// @param expireTime The expiration time
     function _setExpirationTime(address ipId, uint256 expireTime) internal {
         IIPAccount(payable(ipId)).setUint256(EXPIRATION_TIME, expireTime);
         emit ExpirationTimeSet(ipId, expireTime);
     }
 
+    /// @dev Check if an IP is a derivative/child IP
+    /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
         return _getLicenseRegistryStorage().parentIps[childIpId].length() > 0;
     }
 
     /// @dev Retrieves the minting license configuration for a given license terms of the IP.
     /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
     function _getMintingLicenseConfig(
         address ipId,
         address licenseTemplate,
@@ -486,6 +501,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return $.mintingLicenseConfigsForIp[ipId];
     }
 
+    /// @dev Get the hash of the IP ID, license template, and license terms ID
+    /// @param ipId The address of the IP
+    /// @param licenseTemplate The address of the license template
+    /// @param licenseTermsId The ID of the license terms
     function _getIpLicenseHash(
         address ipId,
         address licenseTemplate,
@@ -494,6 +513,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return keccak256(abi.encode(ipId, licenseTemplate, licenseTermsId));
     }
 
+    /// @dev Check if an IP has attached given license terms
+    /// @param ipId The address of the IP
+    /// @param licenseTemplate The address of the license template
+    /// @param licenseTermsId The ID of the license terms
     function _hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
@@ -504,6 +527,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseTerms[ipId].contains(licenseTermsId);
     }
 
+    /// @dev Check if license terms has been defined in the license template
+    /// @param licenseTemplate The address of the license template
+    /// @param licenseTermsId The ID of the license terms
     function _exists(address licenseTemplate, uint256 licenseTermsId) internal view returns (bool) {
         if (!_getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate]) {
             return false;

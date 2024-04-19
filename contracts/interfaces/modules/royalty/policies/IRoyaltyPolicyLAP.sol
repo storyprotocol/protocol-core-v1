@@ -22,7 +22,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @notice Event emitted when a revenue token is added to a vault
     /// @param token The address of the revenue token
     /// @param vault The address of the vault
-    event RoyaltyTokenAddedToVault(address token, address vault);
+    event RevenueTokenAddedToVault(address token, address vault);
 
     /// @notice The state data of the LAP royalty policy
     /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents

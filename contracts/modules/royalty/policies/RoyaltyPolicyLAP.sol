@@ -172,7 +172,7 @@ contract RoyaltyPolicyLAP is
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         address destination = $.royaltyData[ipId].ipRoyaltyVault;
         if (IIpRoyaltyVault(destination).addIpRoyaltyVaultTokens(token)) {
-            emit RoyaltyTokenAddedToVault(token, destination);
+            emit RevenueTokenAddedToVault(token, destination);
         }
         IERC20(token).safeTransferFrom(caller, destination, amount);
     }

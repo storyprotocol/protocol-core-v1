@@ -233,10 +233,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
                 revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
             }
         }
-
         $.licenseTemplates[childIpId] = licenseTemplate;
-        uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
-        if (licenseExp > 0 && (licenseExp < earliestExp || earliestExp == 0)) earliestExp = licenseExp;
+        // calculate the earliest expiration time of child IP with both parent IPs and license terms
+        earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
         // default value is 0, means never expired
         if (earliestExp != 0) _setExpirationTime(childIpId, earliestExp);
     }
@@ -439,6 +438,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
                 revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
             }
         }
+    }
+
+    /// @dev Calculate the earliest expiration time of the child IP with both parent IPs and license terms
+    function _calculateEarliestExpireTime(
+        uint256 earliestParentIpExp,
+        address licenseTemplate,
+        uint256[] calldata licenseTermsIds
+    ) internal view returns (uint256 earliestExp) {
+        earliestExp = earliestParentIpExp;
+        uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
+        if (licenseExp > 0 && (licenseExp < earliestExp || earliestExp == 0)) earliestExp = licenseExp;
     }
 
     function _getExpireTime(address ipId) internal view returns (uint256) {

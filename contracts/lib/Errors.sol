@@ -75,6 +75,9 @@ library Errors {
     /// @notice Zero address provided for License Token.
     error LicensingModule__ZeroLicenseToken();
 
+    /// @notice Zero address provided for Module Registry.
+    error LicensingModule__ZeroModuleRegistry();
+
     /// @notice Zero address provided for Licensing Module.
     error LicenseRegistry__ZeroLicensingModule();
 

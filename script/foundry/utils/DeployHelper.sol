@@ -163,33 +163,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     function _deployProtocolContracts() private {
         require(address(erc20) != address(0), "Deploy: Asset Not Set");
-        bytes32 ipAccountImplSalt = keccak256(
-            abi.encode(type(IPAccountImpl).creationCode, address(this), block.timestamp)
-        );
-        address ipAccountImplAddr = Create3Deployer.getDeployed(ipAccountImplSalt);
-
-        bytes32 licenseTokenSalt = keccak256(
-            abi.encode(type(LicenseToken).creationCode, address(this), block.timestamp)
-        );
-        address licenseTokenAddr = Create3Deployer.getDeployed(licenseTokenSalt);
-
-        bytes32 licensingModuleSalt = keccak256(
-            abi.encode(type(LicensingModule).creationCode, address(this), block.timestamp)
-        );
-        address licensingModuleAddr = Create3Deployer.getDeployed(licensingModuleSalt);
-
-        bytes32 disputeModuleSalt = keccak256(
-            abi.encode(type(DisputeModule).creationCode, address(this), block.timestamp)
-        );
-        address disputeModuleAddr = Create3Deployer.getDeployed(disputeModuleSalt);
-
-        bytes32 licenseRegistrySalt = keccak256(
-            abi.encode(type(LicenseRegistry).creationCode, address(this), block.timestamp)
-        );
-        address licenseRegistryAddr = Create3Deployer.getDeployed(licenseRegistrySalt);
-
         string memory contractKey;
-
         // Core Protocol Contracts
 
         contractKey = "ProtocolAccessManager";
@@ -216,7 +190,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        impl = address(new IPAssetRegistry(address(erc6551Registry), ipAccountImplAddr));
+        impl = address(new IPAssetRegistry(address(erc6551Registry), _getDeployedAddress(type(IPAccountImpl).name)));
         ipAssetRegistry = IPAssetRegistry(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -242,15 +216,23 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
-        impl = address(new LicenseRegistry(licensingModuleAddr, disputeModuleAddr));
+        impl = address(
+            new LicenseRegistry(
+                _getDeployedAddress(type(LicensingModule).name),
+                _getDeployedAddress(type(DisputeModule).name)
+            )
+        );
         licenseRegistry = LicenseRegistry(
             TestProxyHelper.deployUUPSProxy(
-                licenseRegistrySalt,
+                _getSalt(type(LicenseRegistry).name),
                 impl,
                 abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
             )
         );
-        require(licenseRegistryAddr == address(licenseRegistry), "Deploy: License Registry Address Mismatch");
+        require(
+            _getDeployedAddress(type(LicenseRegistry).name) == address(licenseRegistry),
+            "Deploy: License Registry Address Mismatch"
+        );
         require(_loadProxyImpl(address(licenseRegistry)) == impl, "LicenseRegistry Proxy Implementation Mismatch");
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
@@ -266,9 +248,14 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             )
         );
         _predeploy(contractKey);
-        ipAccountImpl = IPAccountImpl(payable(Create3Deployer.deploy(ipAccountImplSalt, ipAccountImplCode)));
+        ipAccountImpl = IPAccountImpl(
+            payable(Create3Deployer.deploy(_getSalt(type(IPAccountImpl).name), ipAccountImplCode))
+        );
         _postdeploy(contractKey, address(ipAccountImpl));
-        require(ipAccountImplAddr == address(ipAccountImpl), "Deploy: IP Account Impl Address Mismatch");
+        require(
+            _getDeployedAddress(type(IPAccountImpl).name) == address(ipAccountImpl),
+            "Deploy: IP Account Impl Address Mismatch"
+        );
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
@@ -277,19 +264,28 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
-                disputeModuleSalt,
+                _getSalt(type(DisputeModule).name),
                 impl,
                 abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
             )
         );
-        require(disputeModuleAddr == address(disputeModule), "Deploy: Dispute Module Address Mismatch");
+        require(
+            _getDeployedAddress(type(DisputeModule).name) == address(disputeModule),
+            "Deploy: Dispute Module Address Mismatch"
+        );
         require(_loadProxyImpl(address(disputeModule)) == impl, "DisputeModule Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy(contractKey, address(disputeModule));
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
-        impl = address(new RoyaltyModule(licensingModuleAddr, address(disputeModule), address(licenseRegistry)));
+        impl = address(
+            new RoyaltyModule(
+                _getDeployedAddress(type(LicensingModule).name),
+                address(disputeModule),
+                address(licenseRegistry)
+            )
+        );
         royaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 impl,
@@ -309,17 +305,20 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                licenseTokenAddr
+                _getDeployedAddress(type(LicenseToken).name)
             )
         );
         licensingModule = LicensingModule(
             TestProxyHelper.deployUUPSProxy(
-                licensingModuleSalt,
+                _getSalt(type(LicensingModule).name),
                 impl,
                 abi.encodeCall(LicensingModule.initialize, address(protocolAccessManager))
             )
         );
-        require(licensingModuleAddr == address(licensingModule), "Deploy: Licensing Module Address Mismatch");
+        require(
+            _getDeployedAddress(type(LicensingModule).name) == address(licensingModule),
+            "Deploy: Licensing Module Address Mismatch"
+        );
         require(_loadProxyImpl(address(licensingModule)) == impl, "LicensingModule Proxy Implementation Mismatch");
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licensingModule));
@@ -329,7 +328,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(new LicenseToken(address(licensingModule), address(disputeModule)));
         licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
-                licenseTokenSalt,
+                _getSalt(type(LicenseToken).name),
                 impl,
                 abi.encodeCall(
                     LicenseToken.initialize,
@@ -340,7 +339,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 )
             )
         );
-        require(licenseTokenAddr == address(licenseToken), "Deploy: License Token Address Mismatch");
+        require(
+            _getDeployedAddress(type(LicenseToken).name) == address(licenseToken),
+            "Deploy: License Token Address Mismatch"
+        );
         require(_loadProxyImpl(address(licenseToken)) == impl, "LicenseToken Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy(contractKey, address(licenseToken));
@@ -540,6 +542,16 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         ///////// Renounce admin role /////////
         protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
+    }
+
+    /// @dev get the salt for the contract deployment with CREATE3
+    function _getSalt(string memory name) private view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(name, block.number));
+    }
+
+    /// @dev Get the deterministic deployed address of a contract with CREATE3
+    function _getDeployedAddress(string memory name) private view returns (address) {
+        return Create3Deployer.getDeployed(_getSalt(name));
     }
 
     /// @dev Load the implementation address from the proxy contract

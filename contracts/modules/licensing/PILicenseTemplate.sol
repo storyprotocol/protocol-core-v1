@@ -16,6 +16,7 @@ import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
+import { ExpiringOps } from "../../lib/ExpiringOps.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
@@ -244,10 +245,7 @@ contract PILicenseTemplate is
         }
         uint expireTime = _getExpireTime(licenseTermsIds[0], start);
         for (uint i = 1; i < licenseTermsIds.length; i++) {
-            uint newExpireTime = _getExpireTime(licenseTermsIds[i], start);
-            if (newExpireTime > 0 && (newExpireTime < expireTime || expireTime == 0)) {
-                expireTime = newExpireTime;
-            }
+            expireTime = ExpiringOps.getEarliestExpirationTime(expireTime, _getExpireTime(licenseTermsIds[i], start));
         }
         return expireTime;
     }

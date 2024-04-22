@@ -14,6 +14,7 @@ import { ILicensingModule } from "../interfaces/modules/licensing/ILicensingModu
 import { IDisputeModule } from "../interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "../lib/Errors.sol";
 import { Licensing } from "../lib/Licensing.sol";
+import { ExpiringOps } from "../lib/ExpiringOps.sol";
 import { ILicenseTemplate } from "../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
@@ -222,8 +223,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // earliest expiration time
         uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            uint256 parentExp = _getExpireTime(parentIpIds[i]);
-            if (parentExp > 0 && (parentExp < earliestExp || earliestExp == 0)) earliestExp = parentExp;
+            earliestExp = ExpiringOps.getEarliestExpirationTime(earliestExp, _getExpireTime(parentIpIds[i]));
             _verifyDerivativeFromParent(parentIpIds[i], childIpId, licenseTemplate, licenseTermsIds[i]);
             $.childIps[parentIpIds[i]].add(childIpId);
             // determine if duplicate license terms
@@ -449,9 +449,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address licenseTemplate,
         uint256[] calldata licenseTermsIds
     ) internal view returns (uint256 earliestExp) {
-        earliestExp = earliestParentIpExp;
         uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
-        if (licenseExp > 0 && (licenseExp < earliestExp || earliestExp == 0)) earliestExp = licenseExp;
+        earliestExp = ExpiringOps.getEarliestExpirationTime(earliestParentIpExp, licenseExp);
     }
 
     /// @dev Get the expiration time of an IP

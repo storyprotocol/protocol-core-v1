@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 import { IIPAccountStorage } from "./interfaces/IIPAccountStorage.sol";
 import { IModuleRegistry } from "./interfaces/registries/IModuleRegistry.sol";
 import { Errors } from "./lib/Errors.sol";
-import { ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import { ERC165, IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// @title IPAccount Storage
 /// @dev Implements the IIPAccountStorage interface for managing IPAccount's state using a namespaced storage pattern.
@@ -66,7 +66,7 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     }
 
     /// @notice ERC165 interface identifier for IIPAccountStorage
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IIPAccountStorage).interfaceId || super.supportsInterface(interfaceId);
     }
 

@@ -2,6 +2,8 @@
 // See https://github.com/storyprotocol/protocol-contracts/blob/main/StoryProtocol-AlphaTestingAgreement-17942166.3.pdf
 pragma solidity ^0.8.23;
 
+import { IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+
 /// @title IPAccount Namespaced Storage Interface
 /// @dev Provides a structured way to store IPAccount's state using a namespaced storage pattern.
 /// This interface facilitates conflict-free data writing by different Modules into the same IPAccount
@@ -15,7 +17,7 @@ pragma solidity ^0.8.23;
 /// - Every Module can read data from any namespace.
 /// - Only the owning Module (i.e., the Module whose address is used as the namespace) can write data into
 ///   its respective namespace.
-interface IIPAccountStorage {
+interface IIPAccountStorage is IERC165 {
     /// @dev Sets a bytes value under a given key within the default namespace, determined by `msg.sender`.
     /// @param key The key under which to store the value.
     /// @param value The bytes value to be stored.

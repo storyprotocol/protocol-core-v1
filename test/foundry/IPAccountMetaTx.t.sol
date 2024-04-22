@@ -73,6 +73,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         uint deadline = block.timestamp + 1000;
 
+        bytes32 expectedState = keccak256(abi.encode(ipAccount.state(),));
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(

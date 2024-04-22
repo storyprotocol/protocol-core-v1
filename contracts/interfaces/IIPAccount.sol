@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+//import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 import { IIPAccountStorage } from "./IIPAccountStorage.sol";
 
 /// @title IIPAccount
@@ -14,13 +14,13 @@ import { IIPAccountStorage } from "./IIPAccountStorage.sol";
 /// IPAccount can interact with modules by making calls as a normal transaction sender.
 /// This allows for seamless operations on the state and data of IP.
 /// IPAccount is core identity for all actions.
-interface IIPAccount is IERC6551Account, IERC721Receiver, IERC1155Receiver, IIPAccountStorage {
+interface IIPAccount is IIPAccountStorage {
     /// @notice Emitted when a transaction is executed.
     /// @param to The recipient of the transaction.
     /// @param value The amount of Ether sent.
     /// @param data The data sent along with the transaction.
     /// @param nonce The nonce of the transaction.
-    event Executed(address indexed to, uint256 value, bytes data, uint256 nonce);
+    event Executed(address indexed to, uint256 value, bytes data, bytes32 nonce);
 
     /// @notice Emitted when a transaction is executed on behalf of the signer.
     /// @param to The recipient of the transaction.
@@ -34,14 +34,14 @@ interface IIPAccount is IERC6551Account, IERC721Receiver, IERC1155Receiver, IIPA
         address indexed to,
         uint256 value,
         bytes data,
-        uint256 nonce,
+        bytes32 nonce,
         uint256 deadline,
         address indexed signer,
         bytes signature
     );
 
     /// @notice Returns the IPAccount's internal nonce for transaction ordering.
-    function state() external view returns (uint256);
+    function state() external view returns (bytes32 result);
 
     /// @notice Returns the identifier of the non-fungible token which owns the account
     /// @return chainId The EIP-155 ID of the chain the token exists on

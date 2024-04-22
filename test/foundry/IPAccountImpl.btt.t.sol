@@ -139,7 +139,7 @@ contract IPAccountImplBTT is BaseTest {
         whenSignerIsOwner
         toIsRegisteredModule
     {
-        uint256 expectedState = ipAcct.state() + 1;
+        bytes32 expectedState = keccak256(abi.encode(ipAcct.state(), abi.encodeWithSelector(ipAcct.execute.selector, to, 0, data)));
 
         vm.expectEmit(address(ipAcct));
         emit IIPAccount.Executed(to, 0, data, expectedState);
@@ -155,7 +155,7 @@ contract IPAccountImplBTT is BaseTest {
         whenSignerIsOwner
         toIsRegisteredModule
     {
-        uint256 expectedState = ipAcct.state();
+        bytes32 expectedState = keccak256(abi.encode(ipAcct.state(), abi.encodeWithSelector(ipAcct.execute.selector, to, 0, data)));
 
         vm.expectRevert("MockModule: executeRevert");
         ipAcct.execute(to, 0, data);

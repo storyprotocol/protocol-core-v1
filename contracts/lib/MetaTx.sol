@@ -20,7 +20,7 @@ library MetaTx {
         address to;
         uint256 value;
         bytes data;
-        uint256 nonce;
+        bytes32 nonce;
         uint256 deadline;
     }
 

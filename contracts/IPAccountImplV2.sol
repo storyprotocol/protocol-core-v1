@@ -8,6 +8,7 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+import { ERC6551, Receiver } from "@solady/src/accounts/ERC6551.sol";
 
 import { IAccessController } from "./interfaces/access/IAccessController.sol";
 import { IIPAccount } from "./interfaces/IIPAccount.sol";
@@ -17,13 +18,13 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
-contract IPAccountImpl is IPAccountStorage, IIPAccount {
+contract IPAccountImplV2 is ERC6551, IPAccountStorage, IIPAccount {
     address public immutable ACCESS_CONTROLLER;
 
-    /// @notice Returns the IPAccount's internal nonce for transaction ordering.
-    bytes32 public state;
+    //    /// @notice Returns the IPAccount's internal nonce for transaction ordering.
+    //    uint256 public state;
 
-    receive() external payable {}
+    receive() external payable override {}
 
     /// @notice Creates a new IPAccountImpl contract instance
     /// @dev Initializes the IPAccountImpl with an AccessController address which is stored
@@ -44,7 +45,9 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
     /// @notice Checks if the contract supports a specific interface
     /// @param interfaceId The interface identifier, as specified in ERC-165
     /// @return bool is true if the contract supports the interface, false otherwise
-    function supportsInterface(bytes4 interfaceId) public view override(IPAccountStorage, IERC165) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC6551, IPAccountStorage, IERC165) returns (bool) {
         return (interfaceId == type(IIPAccount).interfaceId ||
             interfaceId == type(IERC6551Account).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||
@@ -52,33 +55,26 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
             super.supportsInterface(interfaceId));
     }
 
+    function state() public view override(ERC6551, IIPAccount) returns (bytes32 result) {
+        return super.state();
+    }
+
     /// @notice Returns the identifier of the non-fungible token which owns the account
     /// @return chainId The EIP-155 ID of the chain the token exists on
     /// @return tokenContract The contract address of the token
     /// @return tokenId The ID of the token
-    function token() public view override returns (uint256, address, uint256) {
-        bytes memory footer = new bytes(0x60);
-        // 0x4d = 77 bytes (ERC-1167 Header, address, ERC-1167 Footer, salt)
-        // 0x60 = 96 bytes (chainId, tokenContract, tokenId)
-        //    ERC-1167 Header               (10 bytes)
-        //    <implementation (address)>    (20 bytes)
-        //    ERC-1167 Footer               (15 bytes)
-        //    <salt (uint256)>              (32 bytes)
-        //    <chainId (uint256)>           (32 bytes)
-        //    <tokenContract (address)>     (32 bytes)
-        //    <tokenId (uint256)>           (32 bytes)
-        assembly {
-            extcodecopy(address(), add(footer, 0x20), 0x4d, 0x60)
-        }
-
-        return abi.decode(footer, (uint256, address, uint256));
+    function token() public view override(ERC6551, IIPAccount) returns (uint256, address, uint256) {
+        return super.token();
     }
 
     /// @notice Checks if the signer is valid for the given data
     /// @param signer The signer to check
     /// @param data The data to check against
     /// @return The function selector if the signer is valid, 0 otherwise
-    function isValidSigner(address signer, bytes calldata data) external view returns (bytes4) {
+    function isValidSigner(
+        address signer,
+        bytes calldata data
+    ) public view override(ERC6551, IIPAccount) returns (bytes4) {
         if (_isValidSigner(signer, address(0), data)) {
             return IERC6551Account.isValidSigner.selector;
         }
@@ -88,10 +84,8 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
 
     /// @notice Returns the owner of the IP Account.
     /// @return The address of the owner.
-    function owner() public view returns (address) {
-        (uint256 chainId, address contractAddress, uint256 tokenId) = token();
-        if (chainId != block.chainid) return address(0);
-        return IERC721(contractAddress).ownerOf(tokenId);
+    function owner() public view override(ERC6551, IIPAccount) returns (address) {
+        return super.owner();
     }
 
     /// @dev Checks if the signer is valid for the given data and recipient via the AccessController permission system.
@@ -135,12 +129,12 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
             revert Errors.IPAccount__ExpiredSignature();
         }
 
-        state = keccak256(abi.encode(state, msg.data));
+        _updateState();
 
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(),
             MetaTx.getExecuteStructHash(
-                MetaTx.Execute({ to: to, value: value, data: data, nonce: state, deadline: deadline })
+                MetaTx.Execute({ to: to, value: value, data: data, nonce: state(), deadline: deadline })
             )
         );
 
@@ -149,7 +143,7 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
         }
 
         result = _execute(signer, to, value, data);
-        emit ExecutedWithSig(to, value, data, state, deadline, signer, signature);
+        emit ExecutedWithSig(to, value, data, state(), deadline, signer, signature);
     }
 
     /// @notice Executes a transaction from the IP Account.
@@ -158,31 +152,31 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
     /// @param data The data to send along with the transaction.
     /// @return result The return data from the transaction.
     function execute(address to, uint256 value, bytes calldata data) external payable returns (bytes memory result) {
-        state = keccak256(abi.encode(state, msg.data));
+        _updateState();
         result = _execute(msg.sender, to, value, data);
-        emit Executed(to, value, data, state);
+        emit Executed(to, value, data, state());
     }
-
-    /// @inheritdoc IERC721Receiver
-    function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-
-    /// @inheritdoc IERC1155Receiver
-    function onERC1155Received(address, address, uint256, uint256, bytes memory) public pure returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    /// @inheritdoc IERC1155Receiver
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] memory,
-        uint256[] memory,
-        bytes memory
-    ) public pure returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
-    }
+    //
+    //    /// @inheritdoc IERC721Receiver
+    //    function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
+    //        return this.onERC721Received.selector;
+    //    }
+    //
+    //    /// @inheritdoc IERC1155Receiver
+    //    function onERC1155Received(address, address, uint256, uint256, bytes memory) public pure returns (bytes4) {
+    //        return this.onERC1155Received.selector;
+    //    }
+    //
+    //    /// @inheritdoc IERC1155Receiver
+    //    function onERC1155BatchReceived(
+    //        address,
+    //        address,
+    //        uint256[] memory,
+    //        uint256[] memory,
+    //        bytes memory
+    //    ) public pure returns (bytes4) {
+    //        return this.onERC1155BatchReceived.selector;
+    //    }
 
     /// @dev Executes a transaction from the IP Account.
     function _execute(
@@ -201,5 +195,10 @@ contract IPAccountImpl is IPAccountStorage, IIPAccount {
                 revert(add(result, 32), mload(result))
             }
         }
+    }
+
+    function _domainNameAndVersion() internal view override returns (string memory name, string memory version) {
+        name = "Story Protocol IP Account";
+        version = "1";
     }
 }

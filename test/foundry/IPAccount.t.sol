@@ -99,8 +99,18 @@ contract IPAccountTest is BaseTest {
             abi.encodeWithSignature("executeSuccessfully(string)", "test")
         );
         assertEq("test", abi.decode(result, (string)));
-
-        assertEq(ipAccount.state(), 1);
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSelector(
+                    ipAccount.execute.selector,
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+        assertEq(ipAccount.state(), expectedState);
     }
 
     function test_IPAccount_revert_NonOwnerNoPermissionToExecute() public {

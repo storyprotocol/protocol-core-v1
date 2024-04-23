@@ -49,7 +49,15 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
-    constructor() DeployHelper(address(ERC6551_REGISTRY), address(CREATE3_DEPLOYER), address(erc20), ARBITRATION_PRICE, MAX_ROYALTY_APPROVAL) {}
+    constructor()
+        DeployHelper(
+            address(ERC6551_REGISTRY),
+            address(CREATE3_DEPLOYER),
+            address(erc20),
+            ARBITRATION_PRICE,
+            MAX_ROYALTY_APPROVAL
+        )
+    {}
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {

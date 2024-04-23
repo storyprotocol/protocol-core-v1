@@ -59,7 +59,6 @@
         "@openzeppelin/contracts": "5.0.2",
         "@openzeppelin/contracts-upgradeable": "5.0.2",
         "@openzeppelin/contracts-upgradeable-v4": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
-        "erc6551": "^0.3.1",
-        "solady": "^0.0.191"
+        "erc6551": "^0.3.1"
     }
 }

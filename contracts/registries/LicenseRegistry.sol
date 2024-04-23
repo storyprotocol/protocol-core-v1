@@ -28,7 +28,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @dev Storage of the LicenseRegistry

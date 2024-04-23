@@ -19,7 +19,9 @@ import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplat
 contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @notice Emitted for metadata updates, per EIP-4906

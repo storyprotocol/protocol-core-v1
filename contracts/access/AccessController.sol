@@ -32,7 +32,9 @@ import { Errors } from "../lib/Errors.sol";
 contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IIPAccountRegistry public immutable IP_ACCOUNT_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
     /// @dev The storage struct of AccessController.

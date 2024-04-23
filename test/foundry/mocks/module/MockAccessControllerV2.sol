@@ -14,6 +14,7 @@ contract MockAccessControllerV2 is AccessController {
     bytes32 private constant AccessControllerV2StorageLocation =
         0xf328f2cdee4ae4df23921504bfa43e3156fb4d18b23549ca0a43fd1e64947a00;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address ipAccountRegistry,
         address moduleRegistry

@@ -67,6 +67,8 @@ contract LicensingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseToken public immutable LICENSE_NFT;
 
+    /// @notice Returns the protocol-wide ModuleRegistry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensingModule")) - 1)) & ~bytes32(uint256(0xff));

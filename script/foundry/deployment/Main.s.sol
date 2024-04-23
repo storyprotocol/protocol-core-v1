@@ -40,7 +40,7 @@ contract Main is DeployHelper {
     function _run(uint256 seed) internal {
         // deploy all contracts via DeployHelper
         super.run(
-            seed,
+            seed, // create3 seed
             true, // runStorageLayoutCheck
             true // writeDeployments
         );

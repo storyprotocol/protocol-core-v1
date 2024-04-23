@@ -5,6 +5,7 @@ pragma solidity 0.8.23;
 // external
 import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
+import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol";
 
 // contract
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
@@ -32,6 +33,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     address internal dan;
 
     ERC6551Registry internal ERC6551_REGISTRY = new ERC6551Registry();
+    Create3Deployer internal CREATE3_DEPLOYER = new Create3Deployer();
     IPAccountRegistry internal ipAccountRegistry;
 
     MockERC20 internal erc20 = new MockERC20();
@@ -46,7 +48,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
-    constructor() DeployHelper(address(ERC6551_REGISTRY), address(erc20), ARBITRATION_PRICE, MAX_ROYALTY_APPROVAL) {}
+    constructor() DeployHelper(address(ERC6551_REGISTRY), address(CREATE3_DEPLOYER), address(erc20), ARBITRATION_PRICE, MAX_ROYALTY_APPROVAL) {}
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {

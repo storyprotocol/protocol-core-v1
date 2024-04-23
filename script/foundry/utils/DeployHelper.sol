@@ -52,7 +52,7 @@ import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
-import { Create3Deployer } from "test/foundry/utils/Create3Deployer.sol";
+import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 
 contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
@@ -64,6 +64,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     error RoleConfigError(string message);
 
     ERC6551Registry internal immutable erc6551Registry;
+    ICreate3Deployer internal immutable create3Deployer;
     IPAccountImpl internal ipAccountImpl;
 
     // Registry
@@ -110,11 +111,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     constructor(
         address erc6551Registry_,
+        address create3Deployer_,
         address erc20_,
         uint256 arbitrationPrice_,
         uint256 maxRoyaltyApproval_
     ) JsonDeploymentHandler("main") {
         erc6551Registry = ERC6551Registry(erc6551Registry_);
+        create3Deployer = ICreate3Deployer(create3Deployer_);
         erc20 = ERC20(erc20_);
         ARBITRATION_PRICE = arbitrationPrice_;
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
@@ -224,6 +227,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         licenseRegistry = LicenseRegistry(
             TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(LicenseRegistry).name),
                 impl,
                 abi.encodeCall(LicenseRegistry.initialize, (address(protocolAccessManager)))
@@ -249,7 +253,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         _predeploy(contractKey);
         ipAccountImpl = IPAccountImpl(
-            payable(Create3Deployer.deploy(_getSalt(type(IPAccountImpl).name), ipAccountImplCode))
+            payable(create3Deployer.deploy(_getSalt(type(IPAccountImpl).name), ipAccountImplCode))
         );
         _postdeploy(contractKey, address(ipAccountImpl));
         require(
@@ -264,6 +268,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(DisputeModule).name),
                 impl,
                 abi.encodeCall(DisputeModule.initialize, address(protocolAccessManager))
@@ -310,6 +315,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         licensingModule = LicensingModule(
             TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(LicensingModule).name),
                 impl,
                 abi.encodeCall(LicensingModule.initialize, address(protocolAccessManager))
@@ -328,6 +334,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(new LicenseToken(address(licensingModule), address(disputeModule)));
         licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(LicenseToken).name),
                 impl,
                 abi.encodeCall(
@@ -551,7 +558,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     /// @dev Get the deterministic deployed address of a contract with CREATE3
     function _getDeployedAddress(string memory name) private view returns (address) {
-        return Create3Deployer.getDeployed(_getSalt(name));
+        return create3Deployer.getDeployed(_getSalt(name));
     }
 
     /// @dev Load the implementation address from the proxy contract

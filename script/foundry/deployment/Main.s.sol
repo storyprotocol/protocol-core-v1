@@ -9,6 +9,7 @@ import { DeployHelper } from "../utils/DeployHelper.sol";
 
 contract Main is DeployHelper {
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
+    address internal CREATE3_DEPLOYER = 0x11463A2F2E8320C3fCfF2910dBDa18e2B8318473;
     // For arbitration policy
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC
     // For royalty policy
@@ -17,6 +18,7 @@ contract Main is DeployHelper {
     constructor()
         DeployHelper(
             ERC6551_REGISTRY,
+            CREATE3_DEPLOYER,
             address(0), // replaced with USDC in DeployHelper.sol
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL

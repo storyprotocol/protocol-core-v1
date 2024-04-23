@@ -34,6 +34,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     ERC6551Registry internal ERC6551_REGISTRY = new ERC6551Registry();
     Create3Deployer internal CREATE3_DEPLOYER = new Create3Deployer();
+    uint256 internal CREATE3_DEFAULT_SEED = 0;
     IPAccountRegistry internal ipAccountRegistry;
 
     MockERC20 internal erc20 = new MockERC20();
@@ -62,6 +63,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
         // deploy all contracts via DeployHelper
         super.run(
+            CREATE3_DEFAULT_SEED,
             false, // runStorageLayoutCheck
             false // writeDeploys
         );

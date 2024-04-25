@@ -33,6 +33,9 @@ library Errors {
     /// @notice Caller writing to IP Account storage is not a registered module.
     error IPAccountStorage__NotRegisteredModule(address module);
 
+    /// @notice Invalid batch lengths provided.
+    error IPAccountStorage__InvalidBatchLengths();
+
     ////////////////////////////////////////////////////////////////////////////
     //                           IP Account Registry                          //
     ////////////////////////////////////////////////////////////////////////////

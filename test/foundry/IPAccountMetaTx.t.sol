@@ -73,7 +73,17 @@ contract IPAccountMetaTxTest is BaseTest {
 
         uint deadline = block.timestamp + 1000;
 
-        bytes32 expectedState = keccak256(abi.encode(ipAccount.state(),));
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -81,7 +91,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: expectedState,
                     deadline: deadline
                 })
             )
@@ -99,7 +109,7 @@ contract IPAccountMetaTxTest is BaseTest {
         );
         assertEq("test", abi.decode(result, (string)));
 
-        assertEq(ipAccount.state(), 1);
+        assertEq(ipAccount.state(), expectedState);
     }
 
     function test_IPAccount_setPermissionWithSignature() public {
@@ -112,6 +122,36 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
+
+        bytes32 setPermissionState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(accessController),
+                    0,
+                    abi.encodeWithSignature(
+                        "setPermission(address,address,address,bytes4,uint8)",
+                        address(ipAccount),
+                        address(metaTxModule),
+                        address(module),
+                        bytes4(0),
+                        AccessPermission.ALLOW
+                    )
+                )
+            )
+        );
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                setPermissionState,
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
 
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
@@ -127,7 +167,7 @@ contract IPAccountMetaTxTest is BaseTest {
                         bytes4(0),
                         AccessPermission.ALLOW
                     ),
-                    nonce: ipAccount.state() + 1,
+                    nonce: setPermissionState,
                     deadline: deadline
                 })
             )
@@ -145,7 +185,7 @@ contract IPAccountMetaTxTest is BaseTest {
         );
         assertEq("test", abi.decode(result, (string)));
 
-        assertEq(ipAccount.state(), 2);
+        assertEq(ipAccount.state(), expectedState);
     }
 
     function test_IPAccount_setPermissionWithSignatureThenCallAccessControlledModule() public {
@@ -158,6 +198,25 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
+
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(accessController),
+                    0,
+                    abi.encodeWithSignature(
+                        "setPermission(address,address,address,bytes4,uint8)",
+                        address(ipAccount),
+                        address(metaTxModule),
+                        address(accessControlledModule),
+                        bytes4(0),
+                        AccessPermission.ALLOW
+                    )
+                )
+            )
+        );
 
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
@@ -173,7 +232,7 @@ contract IPAccountMetaTxTest is BaseTest {
                         bytes4(0),
                         AccessPermission.ALLOW
                     ),
-                    nonce: ipAccount.state() + 1,
+                    nonce: expectedState,
                     deadline: deadline
                 })
             )
@@ -191,7 +250,7 @@ contract IPAccountMetaTxTest is BaseTest {
         );
         assertEq("test", result);
 
-        assertEq(ipAccount.state(), 1);
+        assertEq(ipAccount.state(), expectedState);
     }
 
     function test_IPAccount_revert_SignatureExpired() public {
@@ -205,6 +264,19 @@ contract IPAccountMetaTxTest is BaseTest {
 
         uint deadline = 0;
 
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -212,7 +284,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -225,7 +297,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__ExpiredSignature.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_InvalidSignature() public {
@@ -239,6 +311,18 @@ contract IPAccountMetaTxTest is BaseTest {
 
         uint deadline = block.timestamp + 1000;
 
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -246,7 +330,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -259,7 +343,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__InvalidSignature.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, invalidSignature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_SignatureNotMatchExecuteTargetFunction() public {
@@ -272,7 +356,18 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -280,7 +375,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("UnMatchedFunction(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -293,7 +388,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__InvalidSignature.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_WrongSigner() public {
@@ -306,7 +401,18 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -314,7 +420,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -328,7 +434,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__InvalidSignature.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_SignatureForAnotherIPAccount() public {
@@ -381,7 +487,18 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -389,7 +506,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -411,7 +528,7 @@ contract IPAccountMetaTxTest is BaseTest {
         );
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), caller, deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_UseSignatureTwice() public {
@@ -424,7 +541,17 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -432,7 +559,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -443,12 +570,12 @@ contract IPAccountMetaTxTest is BaseTest {
         // first time pass
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 1);
+        assertEq(ipAccount.state(), newState);
         // second time fail
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__InvalidSignature.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 1);
+        assertEq(ipAccount.state(), newState);
     }
 
     function test_IPAccount_revert_signerZeroAddress() public {
@@ -461,7 +588,18 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -469,7 +607,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -482,7 +620,7 @@ contract IPAccountMetaTxTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Errors.IPAccount__InvalidSigner.selector));
         vm.prank(caller);
         metaTxModule.callAnotherModuleWithSignature(payable(address(ipAccount)), address(0), deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 
     function test_IPAccount_revert_workflowFailureWithSig() public {
@@ -495,7 +633,18 @@ contract IPAccountMetaTxTest is BaseTest {
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint deadline = block.timestamp + 1000;
-
+        bytes32 currentState = ipAccount.state();
+        bytes32 newState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
         bytes32 digest = MessageHashUtils.toTypedDataHash(
             MetaTx.calculateDomainSeparator(address(ipAccount)),
             MetaTx.getExecuteStructHash(
@@ -503,7 +652,7 @@ contract IPAccountMetaTxTest is BaseTest {
                     to: address(module),
                     value: 0,
                     data: abi.encodeWithSignature("executeSuccessfully(string)", "test"),
-                    nonce: ipAccount.state() + 1,
+                    nonce: newState,
                     deadline: deadline
                 })
             )
@@ -531,6 +680,6 @@ contract IPAccountMetaTxTest is BaseTest {
         );
         vm.prank(caller);
         metaTxModule.workflowFailureWithSignature(payable(address(ipAccount)), owner, deadline, signature);
-        assertEq(ipAccount.state(), 0);
+        assertEq(ipAccount.state(), currentState);
     }
 }

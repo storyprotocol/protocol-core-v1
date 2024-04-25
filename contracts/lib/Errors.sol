@@ -23,6 +23,9 @@ library Errors {
     /// @notice Provided calldata is invalid.
     error IPAccount__InvalidCalldata();
 
+    /// @notice Execute operation type is not supported.
+    error IPAccount__InvalidOperation();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Account Storage                          //
     ////////////////////////////////////////////////////////////////////////////

@@ -1372,12 +1372,14 @@ contract AccessControllerTest is BaseTest {
         );
         vm.prank(owner);
         mockNFT.burn(tokenId);
-        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, tokenId));
-        accessController.getPermission(
-            address(ipAccount),
-            signer,
-            address(mockModule),
-            mockModule.executeSuccessfully.selector
+        assertEq(
+            AccessPermission.ABSTAIN,
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
         );
     }
 
@@ -1406,7 +1408,15 @@ contract AccessControllerTest is BaseTest {
         vm.prank(owner);
         mockNFT.burn(tokenId);
 
-        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, tokenId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
+        );
         accessController.checkPermission(
             address(ipAccount),
             signer,

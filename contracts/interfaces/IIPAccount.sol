@@ -40,8 +40,10 @@ interface IIPAccount is IIPAccountStorage {
         bytes signature
     );
 
+    receive() external payable;
+
     /// @notice Returns the IPAccount's internal nonce for transaction ordering.
-    function state() external view returns (bytes32 result);
+    function state() external view returns (bytes32);
 
     /// @notice Returns the identifier of the non-fungible token which owns the account
     /// @return chainId The EIP-155 ID of the chain the token exists on

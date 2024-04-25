@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+import { ERC6551 } from "@solady/src/accounts/ERC6551.sol";
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
 import { Errors } from "../../contracts/lib/Errors.sol";
@@ -92,6 +93,18 @@ contract IPAccountTest is BaseTest {
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+
         vm.prank(owner);
         bytes memory result = ipAccount.execute(
             address(module),
@@ -99,17 +112,7 @@ contract IPAccountTest is BaseTest {
             abi.encodeWithSignature("executeSuccessfully(string)", "test")
         );
         assertEq("test", abi.decode(result, (string)));
-        bytes32 expectedState = keccak256(
-            abi.encode(
-                ipAccount.state(),
-                abi.encodeWithSelector(
-                    ipAccount.execute.selector,
-                    address(module),
-                    0,
-                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
-                )
-            )
-        );
+
         assertEq(ipAccount.state(), expectedState);
     }
 
@@ -175,5 +178,115 @@ contract IPAccountTest is BaseTest {
         mockNFT.safeTransferFrom(otherOwner, account, otherTokenId);
         assertEq(mockNFT.balanceOf(account), 1);
         assertEq(mockNFT.ownerOf(otherTokenId), account);
+    }
+
+    function test_IPAccount_ExecuteWithOperationType() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        vm.prank(owner, owner);
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        ERC6551 ipAccount = ERC6551(payable(account));
+
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+
+        vm.prank(owner);
+        bytes memory result = ipAccount.execute(
+            address(module),
+            0,
+            abi.encodeWithSignature("executeSuccessfully(string)", "test"),
+            0
+        );
+        assertEq("test", abi.decode(result, (string)));
+
+        assertEq(ipAccount.state(), expectedState);
+    }
+
+    function test_IPAccount_revert_ExecuteWithUnsupportedOperationType() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        vm.prank(owner, owner);
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        ERC6551 ipAccount = ERC6551(payable(account));
+
+        vm.expectRevert(Errors.IPAccount__InvalidOperation.selector);
+        vm.prank(owner);
+        bytes memory result = ipAccount.execute(
+            address(module),
+            0,
+            abi.encodeWithSignature("executeSuccessfully(string)", "test"),
+            1 // unsupported operation type
+        );
+    }
+
+    function test_IPAccount_executeBatch() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        vm.prank(owner, owner);
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        ERC6551 ipAccount = ERC6551(payable(account));
+
+        bytes32 firstState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+
+        bytes32 finalState = keccak256(
+            abi.encode(
+                firstState,
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "another test")
+                )
+            )
+        );
+
+        ERC6551.Call[] memory calls = new ERC6551.Call[](2);
+        calls[0] = ERC6551.Call({
+            target: address(module),
+            value: 0,
+            data: abi.encodeWithSignature("executeSuccessfully(string)", "test")
+        });
+        calls[1] = ERC6551.Call({
+            target: address(module),
+            value: 0,
+            data: abi.encodeWithSignature("executeSuccessfully(string)", "another test")
+        });
+        vm.prank(owner);
+        bytes[] memory results = ipAccount.executeBatch(calls, 0);
+        assertEq("test", abi.decode(results[0], (string)));
+        assertEq("another test", abi.decode(results[1], (string)));
+
+        assertEq(ipAccount.state(), finalState);
     }
 }

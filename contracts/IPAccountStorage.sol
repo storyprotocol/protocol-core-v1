@@ -6,7 +6,7 @@ import { IModuleRegistry } from "./interfaces/registries/IModuleRegistry.sol";
 import { Errors } from "./lib/Errors.sol";
 import { ERC165, IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { Multicall } from "@openzeppelin/contracts/utils/Multicall.sol";
-import { ShortString, ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
+import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// @title IPAccount Storage
 /// @dev Implements the IIPAccountStorage interface for managing IPAccount's state using a namespaced storage pattern.
 /// Inherits all functionalities from IIPAccountStorage, providing concrete implementations for the interface's methods.

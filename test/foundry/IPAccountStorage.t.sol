@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
+import { IPAccountStorage } from "../../contracts/IPAccountStorage.sol";
 import { BaseModule } from "../../contracts/modules/BaseModule.sol";
 import { Errors } from "../../contracts/lib/Errors.sol";
 
@@ -165,6 +166,21 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         vm.prank(address(licenseRegistry));
         ipAccount.setBytes32("test", "testData");
         assertEq(ipAccount.getBytes32(_toBytes32(address(licenseRegistry)), "test"), "testData");
+    }
+
+    function test_IPAccountStorage_multicall() public {
+        vm.startPrank(address(licenseRegistry));
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeWithSelector(ipAccount.setBytes.selector, bytes32("testBytes"), "testBytesData");
+        calls[1] = abi.encodeWithSelector(
+            ipAccount.setBytes32.selector,
+            bytes32("testBytes32"),
+            bytes32("testBytes32Data")
+        );
+        IPAccountStorage(address(ipAccount)).multicall(calls);
+        assertEq(ipAccount.getBytes("testBytes"), "testBytesData");
+        assertEq(ipAccount.getBytes32(_toBytes32(address(licenseRegistry)), "testBytes32"), "testBytes32Data");
+        vm.stopPrank();
     }
 
     function _toBytes32(address a) internal pure returns (bytes32) {

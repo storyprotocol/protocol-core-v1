@@ -2,7 +2,6 @@
 pragma solidity ^0.8.23;
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
-import { IPAccountStorage } from "../../contracts/IPAccountStorage.sol";
 import { BaseModule } from "../../contracts/modules/BaseModule.sol";
 import { Errors } from "../../contracts/lib/Errors.sol";
 

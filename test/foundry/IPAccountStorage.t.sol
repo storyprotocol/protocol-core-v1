@@ -186,7 +186,6 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         assertEq(results[1], "test2Data");
     }
 
-
     function test_IPAccountStorage_revert_BatchSetAndGetBytes() public {
         bytes32[] memory keys = new bytes32[](2);
         keys[0] = "test1";

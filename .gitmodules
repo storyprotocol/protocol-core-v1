@@ -4,6 +4,3 @@
 [submodule "lib/create3-deployer"]
 	path = lib/create3-deployer
 	url = https://github.com/storyprotocol/create3-deployer
-[submodule "lib/solady"]
-	path = lib/solady
-	url = https://github.com/vectorized/solady

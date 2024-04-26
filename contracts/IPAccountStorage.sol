@@ -39,12 +39,17 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         IP_ASSET_REGISTRY = ipAssetRegistry;
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @dev Sets a bytes value under a given key within the default namespace, determined by `msg.sender`.
+    /// @param key The key under which to store the value.
+    /// @param value The bytes value to be stored.
     function setBytes(bytes32 key, bytes calldata value) external onlyRegisteredModule {
         bytesData[_toBytes32(msg.sender)][key] = value;
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @notice Sets multiple `bytes` values for an array of keys within the namespace of the caller (`msg.sender`).
+    /// @param keys An array of `bytes32` keys under which the `bytes` values will be stored.
+    /// @param values An array of `bytes` values corresponding to the keys to be stored.
+    /// @dev The function requires that the arrays `keys` and `values` have the same length.
     function setBytesBatch(bytes32[] calldata keys, bytes[] calldata values) external onlyRegisteredModule {
         if (keys.length != values.length) revert Errors.IPAccountStorage__InvalidBatchLengths();
         for (uint256 i = 0; i < keys.length; i++) {
@@ -52,7 +57,12 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         }
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @notice Retrieves an array of `bytes` values corresponding to an array of keys from specified namespaces.
+    /// @param namespaces An array of `bytes32` representing the namespaces from which values are to be retrieved.
+    /// @param keys An array of `bytes32` representing the keys corresponding to the values to be retrieved.
+    /// @return values An array of `bytes` containing the values associated with the specified keys
+    /// across the given namespaces.
+    /// @dev Requires that the length of `namespaces` and `keys` arrays be the same to ensure correct data retrieval.
     function getBytesBatch(
         bytes32[] calldata namespaces,
         bytes32[] calldata keys
@@ -64,21 +74,32 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         }
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @dev Retrieves a bytes value by a given key from the default namespace.
+    /// @param key The key whose value is to be retrieved.
+    /// @return The bytes value stored under the specified key.
     function getBytes(bytes32 key) external view returns (bytes memory) {
         return bytesData[_toBytes32(msg.sender)][key];
     }
-    /// @inheritdoc IIPAccountStorage
+
+    /// @dev Retrieves a bytes value by a given key from a specified namespace.
+    /// @param namespace The namespace from which to retrieve the value.
+    /// @param key The key whose value is to be retrieved.
+    /// @return The bytes value stored under the specified key in the given namespace.
     function getBytes(bytes32 namespace, bytes32 key) external view returns (bytes memory) {
         return bytesData[namespace][key];
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @dev Sets a bytes32 value under a given key within the default namespace, determined by `msg.sender`.
+    /// @param key The key under which to store the value.
+    /// @param value The bytes32 value to be stored.
     function setBytes32(bytes32 key, bytes32 value) external onlyRegisteredModule {
         bytes32Data[_toBytes32(msg.sender)][key] = value;
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @notice Sets an array of `bytes32` values for corresponding keys within the caller's (`msg.sender`) namespace.
+    /// @param keys An array of `bytes32` keys under which the values will be stored.
+    /// @param values An array of `bytes32` values to be stored under the specified keys.
+    /// @dev The function requires that the `keys` and `values` arrays have the same length for correct mapping.
     function setBytes32Batch(bytes32[] calldata keys, bytes32[] calldata values) external onlyRegisteredModule {
         if (keys.length != values.length) revert Errors.IPAccountStorage__InvalidBatchLengths();
         for (uint256 i = 0; i < keys.length; i++) {
@@ -86,7 +107,11 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         }
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @notice Retrieves an array of `bytes32` values corresponding to specified keys across multiple namespaces.
+    /// @param namespaces An array of `bytes32` representing the namespaces from which to retrieve the values.
+    /// @param keys An array of `bytes32` keys for which values are to be retrieved.
+    /// @return values An array of `bytes32` values retrieved from the specified keys within the given namespaces.
+    /// @dev The `namespaces` and `keys` arrays must be the same length.
     function getBytes32Batch(
         bytes32[] calldata namespaces,
         bytes32[] calldata keys
@@ -98,11 +123,17 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         }
     }
 
-    /// @inheritdoc IIPAccountStorage
+    /// @dev Retrieves a bytes32 value by a given key from the default namespace.
+    /// @param key The key whose value is to be retrieved.
+    /// @return The bytes32 value stored under the specified key.
     function getBytes32(bytes32 key) external view returns (bytes32) {
         return bytes32Data[_toBytes32(msg.sender)][key];
     }
-    /// @inheritdoc IIPAccountStorage
+
+    /// @dev Retrieves a bytes32 value by a given key from a specified namespace.
+    /// @param namespace The namespace from which to retrieve the value.
+    /// @param key The key whose value is to be retrieved.
+    /// @return The bytes32 value stored under the specified key in the given namespace.
     function getBytes32(bytes32 namespace, bytes32 key) external view returns (bytes32) {
         return bytes32Data[namespace][key];
     }

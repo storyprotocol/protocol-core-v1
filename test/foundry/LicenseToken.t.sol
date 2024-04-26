@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 // contract
 import { Errors } from "../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
@@ -11,6 +13,8 @@ import { LicenseToken } from "../../contracts/LicenseToken.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";
 
 contract LicenseTokenTest is BaseTest {
+    using Strings for *;
+
     mapping(uint256 => address) internal ipAcct;
     mapping(uint256 => address) internal ipOwner;
     mapping(uint256 => uint256) internal tokenIds;
@@ -139,5 +143,44 @@ contract LicenseTokenTest is BaseTest {
         licenseToken.transferFrom(ipOwner[1], ipOwner[2], licenseTokenId);
         assertEq(licenseToken.balanceOf(ipOwner[1]), 1);
         assertEq(licenseToken.balanceOf(ipOwner[2]), 0);
+    }
+
+    function test_LicenseToken_TokenURI() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+
+        vm.prank(address(licensingModule));
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1]
+        });
+
+        string memory tokenURI = licenseToken.tokenURI(licenseTokenId);
+        /* solhint-disable */
+        bytes memory expectedURI = abi.encodePacked(
+            '{"name": "Story Protocol License #0","description": "License agreement stating the terms of a Story Protocol IPAsset","external_url": "https://protocol.storyprotocol.xyz/ipa/',
+            ipAcct[1].toHexString(),
+            '","image": "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"'
+        );
+        expectedURI = abi.encodePacked(
+            expectedURI,
+            ',"attributes": [{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
+        );
+        expectedURI = abi.encodePacked(
+            expectedURI,
+            ',{"trait_type": "Licensor", "value": "',
+            ipAcct[1].toHexString(),
+            '"},{"trait_type": "License Template", "value": "',
+            address(pilTemplate).toHexString(),
+            '"},{"trait_type": "License Terms ID", "value": "',
+            licenseTermsId.toString(),
+            '"},{"trait_type": "Transferable", "value": "true"},{"trait_type": "Revoked", "value": "false"}]}'
+        );
+        /* solhint-enable */
+        expectedURI = abi.encodePacked("data:application/json;base64,", Base64.encode(expectedURI));
+        assertEq(tokenURI, string(expectedURI));
     }
 }

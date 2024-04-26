@@ -8,6 +8,7 @@ import { Errors } from "../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { LicenseToken } from "../../contracts/LicenseToken.sol";
+import { ILicenseToken } from "../../contracts/interfaces/ILicenseToken.sol";
 
 // test
 import { BaseTest } from "./utils/BaseTest.t.sol";
@@ -182,5 +183,25 @@ contract LicenseTokenTest is BaseTest {
         /* solhint-enable */
         expectedURI = abi.encodePacked("data:application/json;base64,", Base64.encode(expectedURI));
         assertEq(tokenURI, string(expectedURI));
+    }
+
+    function test_LicenseToken_getLicenseTokenMetadata() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+
+        vm.prank(address(licensingModule));
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1]
+        });
+
+        ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
+        assertEq(lmt.licensorIpId, ipAcct[1]);
+        assertEq(lmt.licenseTemplate, address(pilTemplate));
+        assertEq(lmt.licenseTermsId, licenseTermsId);
+        assertEq(lmt.transferable, true);
     }
 }

@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## v1.1.0
+
+- Gas optimization in IpRoyaltyVault (#114)
+- Expiration time modifications
+	- Remove expiration time from License Tokens (#123)
+	- Fix expiration time of child IPs to not exceed parent IPs (#129)
+- Unified Licensing Hokk for minting fee and receiver check hooks (#115)
+- Enhance permission management and security with setAllPermissions in Access Controller (#127)
+- CREATE3 deployment for deterministic address deployment (#124, #132)
+- Migrate to Solady ERC6551 for IP Account (#133)
+- Support batch operations in IP Account Storage (#134)
+- Fix missing License Terms ID in tokenURI (#136)
+- Add issue and pull request templates (#120, #121)
+- Miscellaneous changes (#130)
+- More tests (#101)
+
+Full Changelog: [v1.0.0...v1.1.0](https://github.com/storyprotocol/protocol-core/compare/v1.0.0...v1.1.0)
+
 ## v1.0.0
 
 - Introduce new Licensing System (#33, #37, #64, #75, #94)

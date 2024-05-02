@@ -20,7 +20,7 @@ contract LicenseTokenTest is BaseTest {
     mapping(uint256 => address) internal ipOwner;
     mapping(uint256 => uint256) internal tokenIds;
 
-    uint256 internal commTermsId;
+    uint32 internal commTermsId;
 
     function setUp() public override {
         super.setUp();
@@ -107,7 +107,7 @@ contract LicenseTokenTest is BaseTest {
     }
 
     function test_LicenseToken_revert_transfer_notTransferable() public {
-        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(
+        uint32 licenseTermsId = pilTemplate.registerLicenseTerms(
             PILTerms({
                 transferable: false,
                 royaltyPolicy: address(0),
@@ -147,7 +147,7 @@ contract LicenseTokenTest is BaseTest {
     }
 
     function test_LicenseToken_TokenURI() public {
-        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
 
         vm.prank(address(licensingModule));
         uint256 licenseTokenId = licenseToken.mintLicenseTokens({
@@ -186,7 +186,7 @@ contract LicenseTokenTest is BaseTest {
     }
 
     function test_LicenseToken_getLicenseTokenMetadata() public {
-        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
 
         vm.prank(address(licensingModule));
         uint256 licenseTokenId = licenseToken.mintLicenseTokens({

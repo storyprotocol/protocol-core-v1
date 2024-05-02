@@ -5,10 +5,10 @@ pragma solidity 0.8.23;
 import { BaseLicenseTemplateUpgradeable } from "contracts/modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 
 contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
-    uint256 public licenseTermsCounter;
-    mapping(uint256 => bool) public licenseTerms;
+    uint32 public licenseTermsCounter;
+    mapping(uint32 => bool) public licenseTerms;
 
-    function registerLicenseTerms() external returns (uint256 id) {
+    function registerLicenseTerms() external returns (uint32 id) {
         id = licenseTermsCounter++;
         licenseTerms[id] = true;
     }
@@ -16,7 +16,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @notice Checks if a license terms exists.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
-    function exists(uint256 licenseTermsId) external view override returns (bool) {
+    function exists(uint32 licenseTermsId) external view override returns (bool) {
         return licenseTerms[licenseTermsId];
     }
 
@@ -28,7 +28,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @param licensorIpId The IP ID of the licensor who attached the license terms minting the license token.
     /// @return True if the minting is verified, false otherwise.
     function verifyMintLicenseToken(
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee,
         address licensorIpId,
         uint256 amount
@@ -48,7 +48,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function verifyRegisterDerivative(
         address childIpId,
         address parentIpId,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensee
     ) external override returns (bool) {
         return true;
@@ -60,7 +60,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// It ensures that the licenses of all parent IPs are compatible with each other during the registration process.
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return True if the licenses are compatible, false otherwise.
-    function verifyCompatibleLicenses(uint256[] calldata licenseTermsIds) external view override returns (bool) {
+    function verifyCompatibleLicenses(uint32[] calldata licenseTermsIds) external view override returns (bool) {
         return true;
     }
 
@@ -77,7 +77,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpIds,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address childIpOwner
     ) external override returns (bool) {
         return true;
@@ -91,7 +91,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @return currency The address of the ERC20 token, used for minting license fee and royalties.
     /// the currency token will used for pay for license token minting fee and royalties.
     function getRoyaltyPolicy(
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
         return (address(0), "", 0, address(0));
     }
@@ -99,7 +99,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @notice Checks if a license terms is transferable.
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms is transferable, false otherwise.
-    function isLicenseTransferable(uint256 licenseTermsId) external view override returns (bool) {
+    function isLicenseTransferable(uint32 licenseTermsId) external view override returns (bool) {
         return true;
     }
 
@@ -108,7 +108,7 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @param licenseTermsIds The IDs of the license terms.
     /// @return The earliest expiration time.
     function getEarlierExpireTime(
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         uint256 start
     ) external view override returns (uint256) {
         return 0;
@@ -118,13 +118,13 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @param start The start time.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The expiration time.
-    function getExpireTime(uint256 licenseTermsId, uint256 start) external view returns (uint256) {
+    function getExpireTime(uint32 licenseTermsId, uint256 start) external view returns (uint256) {
         return 0;
     }
 
     /// @notice Returns the total number of registered license terms.
     /// @return The total number of registered license terms.
-    function totalRegisteredLicenseTerms() external view returns (uint256) {
+    function totalRegisteredLicenseTerms() external view returns (uint32) {
         return licenseTermsCounter;
     }
 
@@ -139,14 +139,14 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @dev Must return OpenSea standard compliant metadata.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The JSON string of the license terms, follow the OpenSea metadata standard.
-    function toJson(uint256 licenseTermsId) public view returns (string memory) {
+    function toJson(uint32 licenseTermsId) public view returns (string memory) {
         return "";
     }
 
     /// @notice Returns the URI of the license terms.
     /// @param licenseTermsId The ID of the license terms.
     /// @return The URI of the license terms.
-    function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory) {
+    function getLicenseTermsURI(uint32 licenseTermsId) external view returns (string memory) {
         return "";
     }
 }

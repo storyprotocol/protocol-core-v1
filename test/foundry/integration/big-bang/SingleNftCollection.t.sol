@@ -29,9 +29,9 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
     uint256 internal constant mintingFee = 100 ether;
 
-    uint256 internal ncSocialRemixTermsId;
+    uint32 internal ncSocialRemixTermsId;
 
-    uint256 internal commDerivTermsId;
+    uint32 internal commDerivTermsId;
 
     function setUp() public override {
         super.setUp();
@@ -106,7 +106,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             address(licensingModule),
             0,
             abi.encodeWithSignature(
-                "attachLicenseTerms(address,address,uint256)",
+                "attachLicenseTerms(address,address,uint32)",
                 ipAcct[3],
                 address(pilTemplate),
                 ncSocialRemixTermsId

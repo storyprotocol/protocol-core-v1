@@ -16,7 +16,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
     using Strings for *;
 
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
-    uint256 internal ncSocialRemixTermsId;
+    uint32 internal ncSocialRemixTermsId;
 
     function setUp() public override {
         super.setUp();
@@ -95,7 +95,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipAcct[1];
 
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         licenseTermsIds[0] = ncSocialRemixTermsId;
 
         vm.prank(u.carl);

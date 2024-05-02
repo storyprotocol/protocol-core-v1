@@ -65,10 +65,10 @@ contract LicensingIntegrationTest is BaseIntegration {
 
     function test_LicensingIntegration_Simple() public {
         // register license terms
-        uint256 lcId1 = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint32 lcId1 = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(lcId1, 1);
 
-        uint256 lcId2 = pilTemplate.registerLicenseTerms(
+        uint32 lcId2 = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
         );
         assertEq(lcId2, 2);
@@ -89,7 +89,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), 1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 1);
 
-        (address attachedTemplate, uint256 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
+        (address attachedTemplate, uint32 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
         assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, 1);
 
@@ -106,7 +106,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         // register derivative directly
         vm.startPrank(u.bob);
         address[] memory parentIpIds = new address[](1);
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 1;
 
@@ -209,7 +209,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         erc20.mint(u.eve, 1000);
         erc20.approve(address(royaltyPolicyLAP), 100);
         parentIpIds = new address[](1);
-        licenseTermsIds = new uint256[](1);
+        licenseTermsIds = new uint32[](1);
         parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 2;
 
@@ -232,7 +232,7 @@ contract LicensingIntegrationTest is BaseIntegration {
     }
 
     function test_LicensingIntegration_revert_registerDerivative_parentIpUnmatchedLicenseTemplate() public {
-        uint256 commRemixTermsId = anotherPILTemplate.registerLicenseTerms(
+        uint32 commRemixTermsId = anotherPILTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 commercialRevShare: 100,
                 mintingFee: 1 ether,
@@ -244,7 +244,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipAcct[1];
 
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         licenseTermsIds[0] = commRemixTermsId;
 
         vm.prank(u.carl);
@@ -265,8 +265,8 @@ contract LicensingIntegrationTest is BaseIntegration {
     }
 
     function test_LicensingIntegration_revert_registerDerivative_parentIpNoLicenseTerms() public {
-        uint256 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
-        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+        uint32 ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
+        uint32 commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({
                 commercialRevShare: 100,
@@ -282,7 +282,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipAcct[1];
 
-        uint256[] memory licenseTermsIds = new uint256[](1);
+        uint32[] memory licenseTermsIds = new uint32[](1);
         licenseTermsIds[0] = commRemixTermsId;
 
         vm.prank(u.carl);

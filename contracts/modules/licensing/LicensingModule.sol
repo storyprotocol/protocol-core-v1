@@ -123,7 +123,7 @@ contract LicensingModule is
     function attachLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external verifyPermission(ipId) {
         _verifyIpNotDisputed(ipId);
         LICENSE_REGISTRY.attachLicenseTermsToIp(ipId, licenseTemplate, licenseTermsId);
@@ -152,7 +152,7 @@ contract LicensingModule is
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount,
         address receiver,
         bytes calldata royaltyContext
@@ -224,7 +224,7 @@ contract LicensingModule is
     function registerDerivative(
         address childIpId,
         address[] calldata parentIpIds,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address licenseTemplate,
         bytes calldata royaltyContext
     ) external whenNotPaused nonReentrant verifyPermission(childIpId) {
@@ -301,7 +301,7 @@ contract LicensingModule is
         // Confirm that the license token has not been revoked.
         // Validate that the owner of the derivative IP is also the owner of the license tokens.
         address childIpOwner = IIPAccount(payable(childIpId)).owner();
-        (address licenseTemplate, address[] memory parentIpIds, uint256[] memory licenseTermsIds) = LICENSE_NFT
+        (address licenseTemplate, address[] memory parentIpIds, uint32[] memory licenseTermsIds) = LICENSE_NFT
             .validateLicenseTokensForDerivative(childIpId, childIpOwner, licenseTokenIds);
 
         _verifyIpNotDisputed(childIpId);
@@ -366,7 +366,7 @@ contract LicensingModule is
     function setLicensingConfig(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) {
         if (
@@ -392,7 +392,7 @@ contract LicensingModule is
     function _payMintingFeeForAllParentIps(
         address childIpId,
         address[] calldata parentIpIds,
-        uint256[] calldata licenseTermsIds,
+        uint32[] calldata licenseTermsIds,
         address licenseTemplate,
         address childIpOwner,
         bytes calldata royaltyContext
@@ -425,7 +425,7 @@ contract LicensingModule is
         address childIpId,
         address parentIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address childIpOwner,
         bytes calldata royaltyContext
     ) private returns (address royaltyPolicy, bytes memory royaltyData) {
@@ -472,7 +472,7 @@ contract LicensingModule is
     function _payMintingFee(
         address parentIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount,
         bytes calldata royaltyContext,
         Licensing.LicensingConfig memory licensingConfig,

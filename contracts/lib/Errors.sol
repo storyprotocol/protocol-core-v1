@@ -100,10 +100,10 @@ library Errors {
     error LicenseRegistry__UnregisteredLicenseTemplate(address licenseTemplate);
 
     /// @notice License Terms or License Template not found.
-    error LicenseRegistry__LicenseTermsNotExists(address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__LicenseTermsNotExists(address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Licensor IP does not have the provided license terms attached.
-    error LicenseRegistry__LicensorIpHasNoLicenseTerms(address ipId, address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__LicensorIpHasNoLicenseTerms(address ipId, address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Invalid License Template address provided.
     error LicenseRegistry__NotLicenseTemplate(address licenseTemplate);
@@ -118,7 +118,7 @@ library Errors {
     error LicenseRegistry__ParentIpTagged(address ipId);
 
     /// @notice Parent IP does not have the provided license terms attached.
-    error LicenseRegistry__ParentIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
+    error LicenseRegistry__ParentIpHasNoLicenseTerms(address ipId, uint32 licenseTermsId);
 
     /// @notice Empty Parent IP list provided.
     error LicenseRegistry__NoParentIp();
@@ -139,13 +139,13 @@ library Errors {
     error LicenseRegistry__IndexOutOfBounds(address ipId, uint256 index, uint256 length);
 
     /// @notice Provided license template and terms ID is already attached to IP.
-    error LicenseRegistry__LicenseTermsAlreadyAttached(address ipId, address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__LicenseTermsAlreadyAttached(address ipId, address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Provided license template does not match the IP's current license template.
     error LicenseRegistry__UnmatchedLicenseTemplate(address ipId, address licenseTemplate, address newLicenseTemplate);
 
     /// @notice Provided license template and terms ID is a duplicate.
-    error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint256 licenseTermsId);
+    error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint32 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
@@ -195,7 +195,7 @@ library Errors {
     error LicensingModule__DisputedIpId();
 
     /// @notice License template and terms ID is not found.
-    error LicensingModule__LicenseTermsNotFound(address licenseTemplate, uint256 licenseTermsId);
+    error LicensingModule__LicenseTermsNotFound(address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Derivative IP cannot add license terms.
     error LicensingModule__DerivativesCannotAddLicenseTerms();
@@ -224,7 +224,7 @@ library Errors {
     /// @notice License template denied minting license token during the verification stage.
     error LicensingModule__LicenseDenyMintLicenseToken(
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         address licensorIpId
     );
 
@@ -232,7 +232,7 @@ library Errors {
     error LicensingModule__InvalidLicensingHook(address hook);
 
     /// @notice The license terms ID is invalid or license template doesn't exist.
-    error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
+    error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint32 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

@@ -84,7 +84,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
@@ -129,15 +129,11 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         address childIpId,
         address childIpOwner,
         uint256[] calldata tokenIds
-    )
-        external
-        view
-        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds)
-    {
+    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint32[] memory licenseTermsIds) {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
-        licenseTermsIds = new uint256[](tokenIds.length);
+        licenseTermsIds = new uint32[](tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
@@ -180,7 +176,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
     /// @notice Returns the ID of the license terms that are used for the given license ID
     /// @param tokenId The ID of the license token
-    function getLicenseTermsId(uint256 tokenId) external view returns (uint256) {
+    function getLicenseTermsId(uint256 tokenId) external view returns (uint32) {
         return _getLicenseTokenStorage().licenseTokenMetadatas[tokenId].licenseTermsId;
     }
 

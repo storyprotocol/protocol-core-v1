@@ -16,14 +16,14 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @notice Metadata struct for License Tokens.
     /// @param licensorIpId The ID of the licensor IP for which the License Token was minted.
-    /// @param licenseTemplate The address of the License Template associated with the License Token.
     /// @param licenseTermsId The ID of the License Terms associated with the License Token.
     /// @param transferable Whether the License Token is transferable, determined by the License Terms.
+    /// @param licenseTemplate The address of the License Template associated with the License Token.
     struct LicenseTokenMetadata {
         address licensorIpId;
-        address licenseTemplate;
-        uint256 licenseTermsId;
+        uint32 licenseTermsId;
         bool transferable;
+        address licenseTemplate;
     }
 
     /// @notice Emitted when a License Token is minted.
@@ -44,7 +44,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     function mintLicenseTokens(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
         address receiver
@@ -67,7 +67,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
 
     /// @notice Returns the ID of the license terms that are used for the given license ID
     /// @param tokenId The ID of the license token
-    function getLicenseTermsId(uint256 tokenId) external view returns (uint256);
+    function getLicenseTermsId(uint256 tokenId) external view returns (uint32);
 
     /// @notice Returns the address of the license template that is used for the given license ID
     /// @param tokenId The ID of the license token
@@ -97,5 +97,5 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         address childIpId,
         address childIpOwner,
         uint256[] calldata tokenIds
-    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds);
+    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint32[] memory licenseTermsIds);
 }

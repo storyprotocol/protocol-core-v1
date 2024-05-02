@@ -16,7 +16,7 @@ interface ILicenseRegistry {
     event LicensingConfigSetForLicense(
         address indexed ipId,
         address indexed licenseTemplate,
-        uint256 indexed licenseTermsId
+        uint32 indexed licenseTermsId
     );
 
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
@@ -28,10 +28,10 @@ interface ILicenseRegistry {
     /// @notice Sets the default license terms that are attached to all IPs by default.
     /// @param newLicenseTemplate The address of the new default license template.
     /// @param newLicenseTermsId The ID of the new default license terms.
-    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external;
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint32 newLicenseTermsId) external;
 
     /// @notice Returns the default license terms.
-    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);
+    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Registers a new license template in the Story Protocol.
     /// @param licenseTemplate The address of the license template to register.
@@ -51,7 +51,7 @@ interface ILicenseRegistry {
         address ipId,
         address[] calldata parentIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseTermsIds
+        uint32[] calldata licenseTermsIds
     ) external;
 
     /// @notice Checks if an IP is a derivative IP.
@@ -73,7 +73,7 @@ interface ILicenseRegistry {
     function verifyMintLicenseToken(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.LicensingConfig memory);
 
@@ -81,13 +81,13 @@ interface ILicenseRegistry {
     /// @param ipId The address of the IP to which the license terms are attached.
     /// @param licenseTemplate The address of the license template.
     /// @param licenseTermsId The ID of the license terms.
-    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint256 licenseTermsId) external;
+    function attachLicenseTermsToIp(address ipId, address licenseTemplate, uint32 licenseTermsId) external;
 
     /// @notice Checks if license terms exist.
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
     /// @return Whether the license terms exist.
-    function exists(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
+    function exists(address licenseTemplate, uint32 licenseTermsId) external view returns (bool);
 
     /// @notice Checks if an IP has attached any license terms.
     /// @param ipId The address of the IP to check.
@@ -97,7 +97,7 @@ interface ILicenseRegistry {
     function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (bool);
 
     /// @notice Gets the attached license terms of an IP by its index.
@@ -108,7 +108,7 @@ interface ILicenseRegistry {
     function getAttachedLicenseTerms(
         address ipId,
         uint256 index
-    ) external view returns (address licenseTemplate, uint256 licenseTermsId);
+    ) external view returns (address licenseTemplate, uint32 licenseTermsId);
 
     /// @notice Gets the count of attached license terms of an IP.
     /// @param ipId The address of the IP.
@@ -152,7 +152,7 @@ interface ILicenseRegistry {
     function getLicensingConfig(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (Licensing.LicensingConfig memory);
 
     /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
@@ -164,7 +164,7 @@ interface ILicenseRegistry {
     function setLicensingConfigForLicense(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         Licensing.LicensingConfig calldata licensingConfig
     ) external;
 

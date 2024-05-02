@@ -51,7 +51,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
         address defaultLicenseTemplate;
-        uint256 defaultLicenseTermsId;
+        uint32 defaultLicenseTermsId;
         mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;
         mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
@@ -96,7 +96,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @notice Sets the default license terms that are attached to all IPs by default.
     /// @param newLicenseTemplate The address of the new default license template.
     /// @param newLicenseTermsId The ID of the new default license terms.
-    function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external restricted {
+    function setDefaultLicenseTerms(address newLicenseTemplate, uint32 newLicenseTermsId) external restricted {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
         $.defaultLicenseTermsId = newLicenseTermsId;
@@ -128,7 +128,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function setLicensingConfigForLicense(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         Licensing.LicensingConfig calldata licensingConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
@@ -171,7 +171,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function attachLicenseTermsToIp(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external onlyLicensingModule {
         if (!_exists(licenseTemplate, licenseTermsId)) {
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
@@ -195,7 +195,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
 
         $.licenseTemplates[ipId] = licenseTemplate;
-        $.attachedLicenseTerms[ipId].add(licenseTermsId);
+        $.attachedLicenseTerms[ipId].add(uint256(licenseTermsId));
     }
 
     /// @notice Registers a derivative IP and its relationship to parent IPs.
@@ -207,7 +207,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address childIpId,
         address[] calldata parentIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseTermsIds
+        uint32[] calldata licenseTermsIds
     ) external onlyLicensingModule {
         if (parentIpIds.length == 0) {
             revert Errors.LicenseRegistry__NoParentIp();
@@ -227,7 +227,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             $.childIps[parentIpIds[i]].add(childIpId);
             // determine if duplicate license terms
             bool isNewParent = $.parentIps[childIpId].add(parentIpIds[i]);
-            bool isNewTerms = $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
+            bool isNewTerms = $.attachedLicenseTerms[childIpId].add(uint256(licenseTermsIds[i]));
             if (!isNewParent && !isNewTerms) {
                 revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
             }
@@ -248,7 +248,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function verifyMintLicenseToken(
         address licensorIpId,
         address licenseTemplate,
-        uint256 licenseTermsId,
+        uint32 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.LicensingConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
@@ -290,7 +290,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
     /// @return Whether the license terms exist.
-    function exists(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
+    function exists(address licenseTemplate, uint32 licenseTermsId) external view returns (bool) {
         return _exists(licenseTemplate, licenseTermsId);
     }
 
@@ -302,7 +302,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (bool) {
         return _hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId);
     }
@@ -315,13 +315,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function getAttachedLicenseTerms(
         address ipId,
         uint256 index
-    ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
+    ) external view returns (address licenseTemplate, uint32 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (index >= $.attachedLicenseTerms[ipId].length()) {
             revert Errors.LicenseRegistry__IndexOutOfBounds(ipId, index, $.attachedLicenseTerms[ipId].length());
         }
         licenseTemplate = $.licenseTemplates[ipId];
-        licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
+        licenseTermsId = uint32($.attachedLicenseTerms[ipId].at(index));
     }
 
     /// @notice Gets the count of attached license terms of an IP.
@@ -382,7 +382,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function getLicensingConfig(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) external view returns (Licensing.LicensingConfig memory) {
         return _getLicensingConfig(ipId, licenseTemplate, licenseTermsId);
     }
@@ -402,7 +402,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @notice Returns the default license terms.
-    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
+    function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint32 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
     }
@@ -416,7 +416,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address parentIpId,
         address childIpId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) internal view {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (DISPUTE_MODULE.isIpTagged(parentIpId)) {
@@ -433,7 +433,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             if ($.licenseTemplates[parentIpId] != licenseTemplate) {
                 revert Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate(parentIpId, licenseTemplate);
             }
-            if (!$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
+            if (!$.attachedLicenseTerms[parentIpId].contains(uint256(licenseTermsId))) {
                 revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
             }
         }
@@ -446,7 +446,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function _calculateEarliestExpireTime(
         uint256 earliestParentIpExp,
         address licenseTemplate,
-        uint256[] calldata licenseTermsIds
+        uint32[] calldata licenseTermsIds
     ) internal view returns (uint256 earliestExp) {
         uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
         earliestExp = ExpiringOps.getEarliestExpirationTime(earliestParentIpExp, licenseExp);
@@ -487,7 +487,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function _getLicensingConfig(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) internal view returns (Licensing.LicensingConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
@@ -506,7 +506,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function _getIpLicenseHash(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) internal pure returns (bytes32) {
         return keccak256(abi.encode(ipId, licenseTemplate, licenseTermsId));
     }
@@ -518,17 +518,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function _hasIpAttachedLicenseTerms(
         address ipId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint32 licenseTermsId
     ) internal view returns (bool) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseTermsId == licenseTermsId) return true;
-        return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseTerms[ipId].contains(licenseTermsId);
+        return
+            $.licenseTemplates[ipId] == licenseTemplate &&
+            $.attachedLicenseTerms[ipId].contains(uint256(licenseTermsId));
     }
 
     /// @dev Check if license terms has been defined in the license template
     /// @param licenseTemplate The address of the license template
     /// @param licenseTermsId The ID of the license terms
-    function _exists(address licenseTemplate, uint256 licenseTermsId) internal view returns (bool) {
+    function _exists(address licenseTemplate, uint32 licenseTermsId) internal view returns (bool) {
         if (!_getLicenseRegistryStorage().registeredLicenseTemplates[licenseTemplate]) {
             return false;
         }

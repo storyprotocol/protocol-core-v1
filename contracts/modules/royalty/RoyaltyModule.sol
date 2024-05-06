@@ -14,7 +14,6 @@ import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.s
 import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
-import { BaseModule } from "../BaseModule.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Story Protocol Royalty Module

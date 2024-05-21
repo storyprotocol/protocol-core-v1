@@ -503,6 +503,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(new CoreMetadataModule(address(accessController), address(ipAssetRegistry)));
         coreMetadataModule = CoreMetadataModule(
             TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(CoreMetadataModule).name),
                 impl,
                 abi.encodeCall(CoreMetadataModule.initialize, address(protocolAccessManager))
             )

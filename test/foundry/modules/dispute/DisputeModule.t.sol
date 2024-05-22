@@ -130,6 +130,12 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.whitelistDisputeTag(bytes32(0), true);
     }
 
+    function test_DisputeModule_whitelistDisputeTag_revert_NotAllowedToWhitelist() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.DisputeModule__NotAllowedToWhitelist.selector);
+        disputeModule.whitelistDisputeTag("IN_DISPUTE", true);
+    }
+
     function test_DisputeModule_whitelistDisputeTag() public {
         vm.startPrank(u.admin);
         vm.expectEmit(true, true, true, true, address(disputeModule));

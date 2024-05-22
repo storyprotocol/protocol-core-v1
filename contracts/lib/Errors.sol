@@ -259,6 +259,9 @@ library Errors {
     /// @notice Zero bytes provided for Dispute Tag.
     error DisputeModule__ZeroDisputeTag();
 
+    /// @notice IN_DISPUTE tag is not allowed to be whitelisted.
+    error DisputeModule__NotAllowedToWhitelist();
+
     /// @notice Zero bytes provided for Dispute Evidence.
     error DisputeModule__ZeroLinkToDisputeEvidence();
 

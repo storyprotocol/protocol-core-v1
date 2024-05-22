@@ -106,6 +106,7 @@ contract DisputeModule is
     /// @param allowed Indicates if the dispute tag is whitelisted or not
     function whitelistDisputeTag(bytes32 tag, bool allowed) external restricted {
         if (tag == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeTag();
+        if (tag == IN_DISPUTE) revert Errors.DisputeModule__NotAllowedToWhitelist();
 
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         $.isWhitelistedDisputeTag[tag] = allowed;

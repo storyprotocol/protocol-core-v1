@@ -509,6 +509,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 abi.encodeCall(CoreMetadataModule.initialize, address(protocolAccessManager))
             )
         );
+        require(
+            _getDeployedAddress(type(CoreMetadataModule).name) == address(coreMetadataModule),
+            "Deploy: Core Metadata Module Address Mismatch"
+        );
+        require(_loadProxyImpl(address(coreMetadataModule)) == impl, "CoreMetadataModule Proxy Implementation Mismatch");
         _postdeploy("CoreMetadataModule", address(coreMetadataModule));
 
         _predeploy("CoreMetadataViewModule");

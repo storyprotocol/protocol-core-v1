@@ -269,5 +269,20 @@ contract UpgradesTest is BaseTest {
             ),
             ProtocolAdmin.UPGRADER_ROLE
         );
+
+        (immediate, delay) = protocolAccessManager.canCall(
+            multisig,
+            address(coreMetadataModule),
+            UUPSUpgradeable.upgradeToAndCall.selector
+        );
+        assertFalse(immediate);
+        assertEq(delay, execDelay);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(coreMetadataModule),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
     }
 }

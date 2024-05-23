@@ -500,15 +500,20 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
 
         _predeploy("CoreMetadataModule");
+        impl = address(new CoreMetadataModule(address(accessController), address(ipAssetRegistry)));
         coreMetadataModule = CoreMetadataModule(
-            create3Deployer.deploy(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(CoreMetadataModule).name),
-                abi.encodePacked(
-                    type(CoreMetadataModule).creationCode,
-                    abi.encode(address(accessController), address(ipAssetRegistry))
-                )
+                impl,
+                abi.encodeCall(CoreMetadataModule.initialize, address(protocolAccessManager))
             )
         );
+        require(
+            _getDeployedAddress(type(CoreMetadataModule).name) == address(coreMetadataModule),
+            "Deploy: Core Metadata Module Address Mismatch"
+        );
+        require(_loadProxyImpl(address(coreMetadataModule)) == impl, "CoreMetadataModule Proxy Implementation Mismatch");
         _postdeploy("CoreMetadataModule", address(coreMetadataModule));
 
         _predeploy("CoreMetadataViewModule");
@@ -608,6 +613,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(coreMetadataModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyPolicyLAP

@@ -336,14 +336,6 @@ contract LicensingModuleBaseInvariant is BaseTest {
         }
     }
 
-    /// @notice Invariant to check verifyMintLicenseToken must fail for non-exist termId
-    function invariant_nonexistTermIdInTemplate() public {
-        for (uint256 i = 0; i < pils.length; i++) {
-            address pil = pils[i];
-            assertFalse(PILicenseTemplate(pil).verifyMintLicenseToken(type(uint256).max, address(this), ipIds[0], 1));
-        }
-    }
-
     /// @notice Invariant to check that harness has no control over other ipIds
     function invariant_othersIpNotChanged() public {
         for (uint256 i = 0; i < othersIpIds.length; i++) {

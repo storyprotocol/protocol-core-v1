@@ -59,10 +59,11 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         return super.token();
     }
 
-    /// @notice Checks if the signer is valid for the given data
+    /// @notice Checks if the signer is valid for executing specific actions on behalf of the IP Account.
     /// @param signer The signer to check
-    /// @param data The data to check against, the data should be encoded as abi.encode(address to, bytes calldata)
-    /// where the address is the recipient of the transaction and the bytes is the calldata pass to the recipient
+    /// @param data The data to be checked. The data should be encoded as `abi.encode(address to, bytes calldata)`,
+    /// where `address to` is the recipient and `bytes calldata` is the calldata passed to the recipient.
+    /// If `data.length == 0`, it is also considered valid, implying that the signer is valid for all actions.
     /// @return result The function selector if the signer is valid, 0 otherwise
     function isValidSigner(
         address signer,

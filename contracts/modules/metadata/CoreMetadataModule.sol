@@ -3,6 +3,9 @@ pragma solidity ^0.8.23;
 
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+// solhint-disable-next-line max-line-length
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { BaseModule } from "../BaseModule.sol";
@@ -17,10 +20,14 @@ import { ICoreMetadataModule } from "../../interfaces/modules/metadata/ICoreMeta
 ///      It implements the ICoreMetadataModule interface.
 ///      The metadata can be set and updated by the owner of the IP asset.
 ///      The metadata can be frozen to prevent further changes.
-contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule {
+contract CoreMetadataModule is
+    BaseModule,
+    AccessControlled,
+    ICoreMetadataModule,
+    AccessManagedUpgradeable,
+    UUPSUpgradeable
+{
     using IPAccountStorageOps for IIPAccount;
-
-    string public override name = CORE_METADATA_MODULE_KEY;
 
     /// @notice Modifier to ensure that metadata can only be changed when mutable.
     modifier onlyMutable(address ipId) {
@@ -33,10 +40,26 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
     /// @notice Creates a new CoreMetadataModule instance.
     /// @param accessController The address of the AccessController contract.
     /// @param ipAccountRegistry The address of the IPAccountRegistry contract.
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAccountRegistry
-    ) AccessControlled(accessController, ipAccountRegistry) {}
+    ) AccessControlled(accessController, ipAccountRegistry) {
+        _disableInitializers();
+    }
+
+    /// @notice Initializes the CoreMetadataModule contract.
+    function initialize(address accessManager) public initializer {
+        if (accessManager == address(0)) {
+            revert Errors.CoreMetadataModule__ZeroAccessManager();
+        }
+        __AccessManaged_init(accessManager);
+        __UUPSUpgradeable_init();
+    }
+
+    function name() external pure override returns (string memory) {
+        return CORE_METADATA_MODULE_KEY;
+    }
 
     /// @notice Update the nftTokenURI for an IP asset,
     /// by retrieve the latest TokenURI from IP NFT to which the IP Asset bound.
@@ -113,4 +136,8 @@ contract CoreMetadataModule is BaseModule, AccessControlled, ICoreMetadataModule
         IIPAccount(payable(ipId)).setBytes32("METADATA_HASH", metadataHash);
         emit MetadataURISet(ipId, metadataURI, metadataHash);
     }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

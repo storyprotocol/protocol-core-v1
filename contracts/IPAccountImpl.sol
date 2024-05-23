@@ -61,13 +61,23 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
 
     /// @notice Checks if the signer is valid for the given data
     /// @param signer The signer to check
-    /// @param data The data to check against
-    /// @return The function selector if the signer is valid, 0 otherwise
+    /// @param data The data to check against, the data should be encoded as abi.encode(address to, bytes calldata)
+    /// where the address is the recipient of the transaction and the bytes is the calldata pass to the recipient
+    /// @return result The function selector if the signer is valid, 0 otherwise
     function isValidSigner(
         address signer,
         bytes calldata data
-    ) public view override(ERC6551, IIPAccount) returns (bytes4) {
-        return super.isValidSigner(signer, data);
+    ) public view override(ERC6551, IIPAccount) returns (bytes4 result) {
+        result = bytes4(0);
+        address to = address(0);
+        bytes memory callData = "";
+        if (data.length > 0) {
+            if (data.length < 32) revert Errors.IPAccount__InvalidCalldata();
+            (to, callData) = abi.decode(data, (address, bytes));
+        }
+        if (this.isValidSigner(signer, to, callData)) {
+            result = IERC6551Account.isValidSigner.selector;
+        }
     }
 
     /// @notice Returns the owner of the IP Account.
@@ -86,7 +96,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     /// @param to The recipient of the transaction
     /// @param data The calldata to check against
     /// @return bool is true if the signer is valid, false otherwise
-    function _isValidSigner(address signer, address to, bytes calldata data) internal view returns (bool) {
+    function isValidSigner(address signer, address to, bytes calldata data) public view returns (bool) {
         if (data.length > 0 && data.length < 4) {
             revert Errors.IPAccount__InvalidCalldata();
         }
@@ -193,7 +203,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         uint256 value,
         bytes calldata data
     ) internal returns (bytes memory result) {
-        require(_isValidSigner(signer, to, data), "Invalid signer");
+        require(isValidSigner(signer, to, data), "Invalid signer");
 
         bool success;
         (success, result) = to.call{ value: value }(data);
@@ -228,7 +238,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         bytes32 extraData,
         bytes calldata context
     ) internal view override returns (bool) {
-        return _isValidSigner(signer, address(uint160(uint256(extraData))), context);
+        return isValidSigner(signer, address(uint160(uint256(extraData))), context);
     }
 
     /// @dev Override Solady EIP712 function and return EIP712 domain name for IPAccount.

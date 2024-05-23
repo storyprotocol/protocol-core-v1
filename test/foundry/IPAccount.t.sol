@@ -116,6 +116,79 @@ contract IPAccountTest is BaseTest {
         assertEq(ipAccount.state(), expectedState);
     }
 
+    function test_IPAccount_isValidSigner() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        IIPAccount ipAccount = IIPAccount(payable(account));
+
+        // test isValidSigner with non-owner and empty data
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                address(module),
+                address(0),
+                bytes4(0)
+            )
+        );
+        ipAccount.isValidSigner(address(module), "");
+
+        // test isValidSigner with owner and empty data
+        assertEq(ipAccount.isValidSigner(owner, ""), IERC6551Account.isValidSigner.selector);
+
+        // test isValidSigner with owner and encoded "to" address and "calldata" as data
+        bytes memory data = abi.encode(address(module), abi.encodeWithSignature("executeSuccessfully(string)", "test"));
+        assertEq(ipAccount.isValidSigner(owner, data), IERC6551Account.isValidSigner.selector);
+
+        // test isValidSigner with non-owner and encoded "to" address and "calldata" as data
+        address nonOwner = vm.addr(2);
+        vm.prank(nonOwner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                nonOwner,
+                address(module),
+                module.executeSuccessfully.selector
+            )
+        );
+        ipAccount.isValidSigner(nonOwner, data);
+
+        // Transfer token to new owner and make sure account owner changes
+        vm.prank(owner);
+        mockNFT.transferFrom(owner, nonOwner, tokenId);
+        assertEq(ipAccount.isValidSigner(nonOwner, data), IERC6551Account.isValidSigner.selector);
+    }
+
+    function test_IPAccount_isValidSigner_revert_InvalidInputs() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+
+        IIPAccount ipAccount = IIPAccount(payable(account));
+
+        // test isValidSigner with owner and empty data
+        vm.expectRevert(Errors.IPAccount__InvalidCalldata.selector);
+        ipAccount.isValidSigner(address(module), bytes("123"));
+
+        vm.expectRevert(Errors.IPAccount__InvalidCalldata.selector);
+        ipAccount.isValidSigner(address(module), bytes("123456789"));
+
+        vm.expectRevert();
+        ipAccount.isValidSigner(address(module), abi.encode(address(0x123)));
+
+        vm.expectRevert();
+        ipAccount.isValidSigner(address(module), abi.encodeWithSignature("executeSuccessfully(string)", "test"));
+    }
+
     function test_IPAccount_revert_NonOwnerNoPermissionToExecute() public {
         address owner = vm.addr(1);
         uint256 tokenId = 100;

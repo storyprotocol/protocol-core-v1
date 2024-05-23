@@ -135,7 +135,7 @@ contract IPAccountPermissionlessInvariants is BaseTest {
 contract IPAccountPermissionlessNoNftInvariants is IPAccountPermissionlessInvariants {
     function setUp() public override {
         super.setUp();
-        address _ipAccount = ipAccountRegistry.registerIpAccount(100, address(200), 300);
+        address _ipAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(200), 300);
         super.afterSetUp(_ipAccount);
     }
 

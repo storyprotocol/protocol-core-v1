@@ -116,4 +116,16 @@ contract ProtocolPauseAdminTest is BaseTest {
         protocolPauser.unpause();
         assertFalse(protocolPauser.isAllProtocolPaused());
     }
+
+    function test_ProtocolPauseAdmin_notPaused_ifNoPausables() public {
+        vm.startPrank(u.admin);
+        protocolPauser.removePausable(address(accessController));
+        protocolPauser.removePausable(address(disputeModule));
+        protocolPauser.removePausable(address(licensingModule));
+        protocolPauser.removePausable(address(royaltyModule));
+        protocolPauser.removePausable(address(royaltyPolicyLAP));
+        protocolPauser.removePausable(address(ipAssetRegistry));
+        vm.stopPrank();
+        assertFalse(protocolPauser.isAllProtocolPaused());
+    }
 }

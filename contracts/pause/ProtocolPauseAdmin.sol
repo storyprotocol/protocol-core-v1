@@ -74,6 +74,9 @@ contract ProtocolPauseAdmin is IProtocolPauseAdmin, AccessManaged {
     /// @notice Checks if all pausable contracts are paused.
     function isAllProtocolPaused() external view returns (bool) {
         uint256 length = _pausables.length();
+        if (length == 0) {
+            return false;
+        }
         for (uint256 i = 0; i < length; i++) {
             if (!ProtocolPausableUpgradeable(_pausables.at(i)).paused()) {
                 return false;

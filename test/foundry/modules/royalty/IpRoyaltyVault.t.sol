@@ -168,6 +168,15 @@ contract TestIpRoyaltyVault is BaseTest {
         );
     }
 
+    function test_IpRoyaltyVault_ClaimRevenueByTokenBatch_revert_Paused() public {
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, new address[](0));
+    }
+
     function test_IpRoyaltyVault_ClaimRevenueByTokenBatch() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
@@ -215,6 +224,15 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(linkClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(LINK)), expectedAmount);
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(LINK)), true);
+    }
+
+    function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch_revert_Paused() public {
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
     }
 
     function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch() public {
@@ -268,7 +286,7 @@ contract TestIpRoyaltyVault is BaseTest {
         ipRoyaltyVault.snapshot();
     }
 
-    function test_IpRoyaltyVault_Snapshot_revert_paused() public {
+    function test_IpRoyaltyVault_Snapshot_revert_Paused() public {
         // payment is made to vault
         vm.stopPrank();
         vm.prank(u.admin);
@@ -348,11 +366,17 @@ contract TestIpRoyaltyVault is BaseTest {
         ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
 
         ipRoyaltyVault.collectRoyaltyTokens(address(5));
+        ipRoyaltyVault.collectAccruedTokens(address(5), tokens);
         ipRoyaltyVault.collectRoyaltyTokens(address(11));
+        ipRoyaltyVault.collectAccruedTokens(address(11), tokens);
         ipRoyaltyVault.collectRoyaltyTokens(address(12));
+        ipRoyaltyVault.collectAccruedTokens(address(12), tokens);
         ipRoyaltyVault.collectRoyaltyTokens(address(6));
+        ipRoyaltyVault.collectAccruedTokens(address(6), tokens);
         ipRoyaltyVault.collectRoyaltyTokens(address(13));
+        ipRoyaltyVault.collectAccruedTokens(address(13), tokens);
         ipRoyaltyVault.collectRoyaltyTokens(address(14));
+        ipRoyaltyVault.collectAccruedTokens(address(14), tokens);
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
@@ -372,6 +396,15 @@ contract TestIpRoyaltyVault is BaseTest {
     function test_IpRoyaltyVault_CollectRoyaltyTokens_ClaimerNotAnAncestor() public {
         vm.expectRevert(Errors.IpRoyaltyVault__ClaimerNotAnAncestor.selector);
         ipRoyaltyVault.collectRoyaltyTokens(address(0));
+    }
+
+    function test_IpRoyaltyVault_CollectRoyaltyTokens_revert_Paused() public {
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyPolicyLAP.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.collectRoyaltyTokens(address(5));
     }
 
     function test_IpRoyaltyVault_CollectRoyaltyTokens() public {
@@ -404,8 +437,6 @@ contract TestIpRoyaltyVault is BaseTest {
 
         ipRoyaltyVault.collectRoyaltyTokens(address(5));
 
-        assertEq(USDC.balanceOf(address(5)) - userUsdcBalanceBefore, accruedCollectableRevenue);
-        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), accruedCollectableRevenue);
         assertEq(ipRoyaltyVault.isCollectedByAncestor(address(5)), true);
         assertEq(
             contractRTBalBefore - IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault)),
@@ -413,30 +444,54 @@ contract TestIpRoyaltyVault is BaseTest {
         );
         assertEq(IERC20(address(ipRoyaltyVault)).balanceOf(address(5)) - userRTBalBefore, parentRoyalty);
         assertEq(unclaimedRoyaltyTokensBefore - ipRoyaltyVault.unclaimedRoyaltyTokens(), parentRoyalty);
-        assertEq(
-            ancestorsVaultAmountBefore - ipRoyaltyVault.ancestorsVaultAmount(address(USDC)),
-            accruedCollectableRevenue
-        );
     }
 
-    function test_IpRoyaltyVault_claimRevenue_revert_paused() public {
+    function test_IpRoyaltyVault_CollectAccruedTokens_revert_Paused() public {
         vm.stopPrank();
         vm.prank(u.admin);
         royaltyPolicyLAP.pause();
 
         vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
-
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, new address[](0));
+        ipRoyaltyVault.collectAccruedTokens(address(5), new address[](0));
     }
 
-    function test_IpRoyaltyVault_collectRoyaltyTokens_revert_paused() public {
-        vm.stopPrank();
-        vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
+    function test_IpRoyaltyVault_CollectAccruedTokens() public {
+        uint256 parentRoyalty = 5 * 10 ** 5;
+        uint256 royaltyAmount = 100000 * 10 ** 6;
+        uint256 accruedCollectableRevenue = (royaltyAmount * 5 * 10 ** 5) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
 
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        // payment is made to vault
+        USDC.mint(address(3), royaltyAmount); // 100k USDC
+        vm.startPrank(address(3));
+        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
+        vm.stopPrank();
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
+
+        // collect royalty tokens
         ipRoyaltyVault.collectRoyaltyTokens(address(5));
+
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(USDC);
+
+        uint256 userUsdcBalanceBefore = USDC.balanceOf(address(5));
+        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 ancestorsVaultAmountBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
+        uint256 collectableAmountBefore = ipRoyaltyVault.collectableAmount(address(5), address(USDC));
+
+        ipRoyaltyVault.collectAccruedTokens(address(5), tokens);
+
+        uint256 userUsdcBalanceAfter = USDC.balanceOf(address(5));
+        uint256 contractUsdcBalanceAfter = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 ancestorsVaultAmountAfter = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
+        uint256 collectableAmountAfter = ipRoyaltyVault.collectableAmount(address(5), address(USDC));
+
+        assertEq(userUsdcBalanceAfter - userUsdcBalanceBefore, accruedCollectableRevenue);
+        assertEq(contractUsdcBalanceBefore - contractUsdcBalanceAfter, accruedCollectableRevenue);
+        assertEq(ancestorsVaultAmountBefore - ancestorsVaultAmountAfter, accruedCollectableRevenue);
+        assertEq(collectableAmountAfter, 0);
     }
 }

@@ -65,6 +65,11 @@ interface IIpRoyaltyVault {
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
     function collectRoyaltyTokens(address ancestorIpId) external;
 
+    /// @notice Collect the accrued tokens (if any)
+    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
+    /// @param tokens The list of revenue tokens to claim
+    function collectAccruedTokens(address ancestorIpId, address[] calldata tokens) external;
+
     /// @notice The ip id to whom this royalty vault belongs to
     /// @return The ip id address
     function ipId() external view returns (address);
@@ -78,6 +83,11 @@ interface IIpRoyaltyVault {
     /// @notice The amount of revenue token in the ancestors vault
     /// @param token The address of the revenue token
     function ancestorsVaultAmount(address token) external view returns (uint256);
+
+    /// @notice The amount of revenue tokens that can be collected by the ancestor
+    /// @param ancestorIpId The ancestor ipId address
+    /// @param token The address of the revenue token
+    function collectableAmount(address ancestorIpId, address token) external view returns (uint256);
 
     /// @notice Indicates whether the ancestor has collected the royalty tokens
     /// @param ancestorIpId The ancestor ipId address

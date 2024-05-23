@@ -28,6 +28,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param unclaimedRoyaltyTokens The amount of unclaimed royalty tokens
     /// @param lastSnapshotTimestamp The last snapshotted timestamp
     /// @param ancestorsVaultAmount The amount of revenue token in the ancestors vault
+    /// @param collectableAmount The amount of revenue tokens that can be collected by the ancestor
     /// @param isCollectedByAncestor Indicates whether the ancestor has collected the royalty tokens
     /// @param claimVaultAmount Amount of revenue token in the claim vault
     /// @param claimableAtSnapshot Amount of revenue token claimable at a given snapshot
@@ -40,6 +41,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint32 unclaimedRoyaltyTokens;
         uint40 lastSnapshotTimestamp;
         mapping(address token => uint256 amount) ancestorsVaultAmount;
+        mapping(address ancestorIpId => mapping(address token => uint256 amount)) collectableAmount;
         mapping(address ancestorIpId => bool) isCollectedByAncestor;
         mapping(address token => uint256 amount) claimVaultAmount;
         mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
@@ -231,13 +233,41 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         // transfer royalty tokens to the ancestor
         IERC20Upgradeable(address(this)).safeTransfer(ancestorIpId, ancestorsRoyalties[index]);
 
-        // collect accrued revenue tokens (if any)
-        _collectAccruedTokens(ancestorsRoyalties[index], ancestorIpId);
+        // save the amount of revenue tokens that are collectable by the ancestor
+        address[] memory tokenList = $.tokens.values();
+        uint256 unclaimedTokens = $.unclaimedRoyaltyTokens;
+        for (uint256 i = 0; i < tokenList.length; ++i) {
+            // the only case in which unclaimedRoyaltyTokens can be 0 is when the vault is empty and everyone claimed
+            // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
+            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] * ancestorsRoyalties[index]) /
+                unclaimedTokens;
+            if (collectAmount == 0) continue;
+
+            $.collectableAmount[ancestorIpId][tokenList[i]] += collectAmount;
+        }
 
         $.isCollectedByAncestor[ancestorIpId] = true;
         $.unclaimedRoyaltyTokens -= ancestorsRoyalties[index];
 
         emit RoyaltyTokensCollected(ancestorIpId, ancestorsRoyalties[index]);
+    }
+
+    /// @notice Collect the accrued tokens (if any)
+    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
+    /// @param tokens The list of revenue tokens to claim
+    function collectAccruedTokens(address ancestorIpId, address[] calldata tokens) external nonReentrant whenNotPaused {
+        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
+
+        if (DISPUTE_MODULE.isIpTagged($.ipId)) revert Errors.IpRoyaltyVault__IpTagged();
+
+        for (uint256 i = 0; i < tokens.length; ++i) {
+            uint256 collectAmount = $.collectableAmount[ancestorIpId][tokens[i]];
+            $.ancestorsVaultAmount[tokens[i]] -= collectAmount;
+            $.collectableAmount[ancestorIpId][tokens[i]] -= collectAmount;
+            IERC20Upgradeable(tokens[i]).safeTransfer(ancestorIpId, collectAmount);
+
+            emit RevenueTokenClaimed(ancestorIpId, tokens[i], collectAmount);
+        }
     }
 
     /// @notice A function to calculate the amount of revenue token claimable by a token holder at certain snapshot
@@ -255,28 +285,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint256 totalSupply = totalSupplyAt(snapshotId) - $.unclaimedAtSnapshot[snapshotId];
         uint256 claimableToken = $.claimableAtSnapshot[snapshotId][token];
         return $.isClaimedAtSnapshot[snapshotId][account][token] ? 0 : (balance * claimableToken) / totalSupply;
-    }
-
-    /// @dev Collect the accrued tokens (if any)
-    /// @param royaltyTokensToClaim The amount of royalty tokens being claimed by the ancestor
-    /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
-    function _collectAccruedTokens(uint256 royaltyTokensToClaim, address ancestorIpId) internal {
-        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
-
-        address[] memory tokenList = $.tokens.values();
-
-        for (uint256 i = 0; i < tokenList.length; ++i) {
-            // the only case in which unclaimedRoyaltyTokens can be 0 is when the vault is empty and everyone claimed
-            // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
-            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] * royaltyTokensToClaim) /
-                $.unclaimedRoyaltyTokens;
-            if (collectAmount == 0) continue;
-
-            $.ancestorsVaultAmount[tokenList[i]] -= collectAmount;
-            IERC20Upgradeable(tokenList[i]).safeTransfer(ancestorIpId, collectAmount);
-
-            emit RevenueTokenClaimed(ancestorIpId, tokenList[i], collectAmount);
-        }
     }
 
     /// @notice The ip id to whom this royalty vault belongs to
@@ -299,6 +307,13 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param token The address of the revenue token
     function ancestorsVaultAmount(address token) external view returns (uint256) {
         return _getIpRoyaltyVaultStorage().ancestorsVaultAmount[token];
+    }
+
+    /// @notice The amount of revenue tokens that can be collected by the ancestor
+    /// @param ancestorIpId The ancestor ipId address
+    /// @param token The address of the revenue token
+    function collectableAmount(address ancestorIpId, address token) external view returns (uint256) {
+        return _getIpRoyaltyVaultStorage().collectableAmount[ancestorIpId][token];
     }
 
     /// @notice Indicates whether the ancestor has collected the royalty tokens

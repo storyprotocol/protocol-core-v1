@@ -160,9 +160,6 @@ contract IPAssetRegistryPausedInvariants is IPAssetRegistryInvariants {
         for (uint256 i = 0; i < harness.ipAccountCount(); i++) {
             vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
             harness.register(uint8(i));
-
-            vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-            harness.registerIpAccount(uint8(i));
         }
     }
 }

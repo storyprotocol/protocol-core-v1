@@ -45,15 +45,17 @@ contract IPAssetRegistryHarness is Test {
     function register(uint8 index) public {
         vm.warp(10000);
         IPAccount memory ipAccount = ipAccounts[index];
-        ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
-        registered++;
+        try ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId) {
+            registered++;
+        } catch Error(string memory) {
+            // ignore
+        }
     }
 
     function registerIpAccount(uint8 index) public {
         vm.warp(10000);
         IPAccount memory ipAccount = ipAccounts[index];
         ipAssetRegistry.registerIpAccount(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
-        registered++;
     }
 }
 

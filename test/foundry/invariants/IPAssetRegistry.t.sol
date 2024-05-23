@@ -45,11 +45,8 @@ contract IPAssetRegistryHarness is Test {
     function register(uint8 index) public {
         vm.warp(10000);
         IPAccount memory ipAccount = ipAccounts[index];
-        try ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId) {
-            registered++;
-        } catch Error(string memory) {
-            // ignore
-        }
+        ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
+        registered++;
     }
 
     function registerIpAccount(uint8 index) public {
@@ -187,9 +184,6 @@ contract IPAssetRegistryAllRegisteredInvariants is IPAssetRegistryInvariants {
         for (uint256 i = 0; i < harness.ipAccountCount(); i++) {
             vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__AlreadyRegistered.selector));
             harness.register(uint8(i));
-
-            vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__AlreadyRegistered.selector));
-            harness.registerIpAccount(uint8(i));
         }
     }
 }

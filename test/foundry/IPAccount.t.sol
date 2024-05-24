@@ -126,18 +126,6 @@ contract IPAccountTest is BaseTest {
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
-        // test isValidSigner with non-owner and empty data
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.AccessController__PermissionDenied.selector,
-                address(ipAccount),
-                address(module),
-                address(0),
-                bytes4(0)
-            )
-        );
-        ipAccount.isValidSigner(address(module), "");
-
         // test isValidSigner with owner and empty data
         assertEq(ipAccount.isValidSigner(owner, ""), IERC6551Account.isValidSigner.selector);
 
@@ -145,21 +133,13 @@ contract IPAccountTest is BaseTest {
         bytes memory data = abi.encode(address(module), abi.encodeWithSignature("executeSuccessfully(string)", "test"));
         assertEq(ipAccount.isValidSigner(owner, data), IERC6551Account.isValidSigner.selector);
 
-        // test isValidSigner with non-owner and encoded "to" address and "calldata" as data
-        address nonOwner = vm.addr(2);
-        vm.prank(nonOwner);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.AccessController__PermissionDenied.selector,
-                address(ipAccount),
-                nonOwner,
-                address(module),
-                module.executeSuccessfully.selector
-            )
+        assertEq(
+            ipAccount.isValidSigner(owner, abi.encode(address(module), "")),
+            IERC6551Account.isValidSigner.selector
         );
-        ipAccount.isValidSigner(nonOwner, data);
 
         // Transfer token to new owner and make sure account owner changes
+        address nonOwner = vm.addr(2);
         vm.prank(owner);
         mockNFT.transferFrom(owner, nonOwner, tokenId);
         assertEq(ipAccount.isValidSigner(nonOwner, data), IERC6551Account.isValidSigner.selector);
@@ -175,7 +155,6 @@ contract IPAccountTest is BaseTest {
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
-        // test isValidSigner with owner and empty data
         vm.expectRevert(Errors.IPAccount__InvalidCalldata.selector);
         ipAccount.isValidSigner(address(module), bytes("123"));
 
@@ -187,6 +166,36 @@ contract IPAccountTest is BaseTest {
 
         vm.expectRevert();
         ipAccount.isValidSigner(address(module), abi.encodeWithSignature("executeSuccessfully(string)", "test"));
+
+        vm.expectRevert(Errors.IPAccount__InvalidCalldata.selector);
+        ipAccount.isValidSigner(owner, abi.encode(address(module), bytes("123")));
+
+        // test isValidSigner with non-owner and empty data
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                address(module),
+                address(0),
+                bytes4(0)
+            )
+        );
+        ipAccount.isValidSigner(address(module), "");
+
+        // test isValidSigner with non-owner and encoded "to" address and "calldata" as data
+        bytes memory data = abi.encode(address(module), abi.encodeWithSignature("executeSuccessfully(string)", "test"));
+        address nonOwner = vm.addr(2);
+        vm.prank(nonOwner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                nonOwner,
+                address(module),
+                module.executeSuccessfully.selector
+            )
+        );
+        ipAccount.isValidSigner(nonOwner, data);
     }
 
     function test_IPAccount_revert_NonOwnerNoPermissionToExecute() public {

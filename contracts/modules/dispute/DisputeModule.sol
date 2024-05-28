@@ -313,7 +313,7 @@ contract DisputeModule is
     /// @notice Resolves a dispute after it has been judged
     /// @param disputeId The dispute id
     /// @param data The data to resolve the dispute
-    function resolveDispute(uint256 disputeId, bytes calldata data) external {
+    function resolveDispute(uint256 disputeId, bytes calldata data) external nonReentrant {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 

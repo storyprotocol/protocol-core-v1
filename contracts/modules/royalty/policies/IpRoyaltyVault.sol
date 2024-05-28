@@ -197,7 +197,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
     /// @param token The revenue token to claim
-    function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external nonReentrant whenNotPaused {
+    function claimRevenueBySnapshotBatch(
+        uint256[] memory snapshotIds,
+        address token
+    ) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         uint256 claimableToken;

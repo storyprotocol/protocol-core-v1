@@ -368,7 +368,7 @@ contract LicensingModule is
         address licenseTemplate,
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
-    ) external verifyPermission(ipId) {
+    ) external verifyPermission(ipId) whenNotPaused {
         if (
             licensingConfig.licensingHook != address(0) &&
             (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||

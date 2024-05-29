@@ -614,6 +614,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
+        
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
@@ -1273,6 +1274,25 @@ contract LicensingModuleTest is BaseTest {
         );
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), 0, licensingConfig);
+    }
+
+    function test_LicensingModule_setLicensingConfig_revert_paused() public {
+        vm.prank(u.admin);
+        licensingModule.pause();
+
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0x123))
+        });
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
     }
 
     function test_LicensingModule_mintLicenseTokens_revert_licensingHookRevert() public {

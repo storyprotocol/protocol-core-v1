@@ -117,7 +117,7 @@ contract PILicenseTemplate is
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the license terms exists, false otherwise.
     function exists(uint256 licenseTermsId) external view override returns (bool) {
-        return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
+        return _exists(licenseTermsId);
     }
 
     /// @notice Verifies the minting of a license token.
@@ -133,6 +133,7 @@ contract PILicenseTemplate is
         address licensorIpId,
         uint256
     ) external override nonReentrant returns (bool) {
+        if (!_exists(licenseTermsId)) return false;
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         // If the policy defines no reciprocal derivatives are allowed (no derivatives of derivatives),
         // and we are mintingFromADerivative we don't allow minting
@@ -476,6 +477,10 @@ contract PILicenseTemplate is
         return start + terms.expiration;
     }
 
+    /// @dev Checks if a license terms exists.
+    function _exists(uint256 licenseTermsId) internal view returns (bool) {
+        return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
+    }
     ////////////////////////////////////////////////////////////////////////////
     //                         Upgrades related                               //
     ////////////////////////////////////////////////////////////////////////////

@@ -48,6 +48,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
+    address internal constant TREASURY_ADDRESS = address(200);
 
     constructor()
         DeployHelper(
@@ -55,7 +56,8 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
             address(CREATE3_DEPLOYER),
             address(erc20),
             ARBITRATION_PRICE,
-            MAX_ROYALTY_APPROVAL
+            MAX_ROYALTY_APPROVAL,
+            TREASURY_ADDRESS
         )
     {}
 

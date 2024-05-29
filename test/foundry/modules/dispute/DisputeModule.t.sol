@@ -55,7 +55,7 @@ contract DisputeModuleTest is BaseTest {
         arbitrationPolicySP2 = ArbitrationPolicySP(
             TestProxyHelper.deployUUPSProxy(
                 impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, address(protocolAccessManager))
+                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager), TREASURY_ADDRESS))
             )
         );
 
@@ -424,7 +424,7 @@ contract DisputeModuleTest is BaseTest {
         uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
 
         assertEq(ipAccount1USDCBalanceAfter - ipAccount1USDCBalanceBefore, 0);
-        assertEq(arbitrationPolicySPUSDCBalanceBefore - arbitrationPolicySPUSDCBalanceAfter, 0);
+        assertEq(arbitrationPolicySPUSDCBalanceBefore - arbitrationPolicySPUSDCBalanceAfter, ARBITRATION_PRICE);
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32(0));
         assertFalse(disputeModule.isIpTagged(ipAddr));

@@ -107,6 +107,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // keep private to avoid conflict with inheriting contracts
     uint256 private immutable ARBITRATION_PRICE;
     uint256 private immutable MAX_ROYALTY_APPROVAL;
+    address private immutable TREASURY_ADDRESS;
 
     // DeployHelper variable
     bool private writeDeploys;
@@ -116,13 +117,15 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         address create3Deployer_,
         address erc20_,
         uint256 arbitrationPrice_,
-        uint256 maxRoyaltyApproval_
+        uint256 maxRoyaltyApproval_,
+        address treasury_
     ) JsonDeploymentHandler("main") {
         erc6551Registry = ERC6551Registry(erc6551Registry_);
         create3Deployer = ICreate3Deployer(create3Deployer_);
         erc20 = ERC20(erc20_);
         ARBITRATION_PRICE = arbitrationPrice_;
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
+        TREASURY_ADDRESS = treasury_;
 
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
@@ -413,7 +416,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 create3Deployer,
                 _getSalt(type(ArbitrationPolicySP).name),
                 impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, address(protocolAccessManager))
+                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager), TREASURY_ADDRESS))
             )
         );
         require(

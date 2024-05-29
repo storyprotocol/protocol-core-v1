@@ -13,6 +13,7 @@ contract Main is DeployHelper {
     uint256 internal CREATE3_DEFAULT_SEED = 0;
     // For arbitration policy
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC
+    address internal constant TREASURY_ADDRESS = address(200);
     // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
@@ -22,7 +23,8 @@ contract Main is DeployHelper {
             CREATE3_DEPLOYER,
             address(0), // replaced with USDC in DeployHelper.sol
             ARBITRATION_PRICE,
-            MAX_ROYALTY_APPROVAL
+            MAX_ROYALTY_APPROVAL,
+            TREASURY_ADDRESS
         )
     {}
 

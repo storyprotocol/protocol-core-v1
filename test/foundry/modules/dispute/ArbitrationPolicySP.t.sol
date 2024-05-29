@@ -97,7 +97,7 @@ contract TestArbitrationPolicySP is BaseTest {
         assertEq(arbitrationPolicySP.ARBITRATION_PRICE(), arbitrationPrice);
     }
 
-    function test_ArbitrationPolicySP_revert_ZeroAccessManager() public {
+    function test_ArbitrationPolicySP_initialize_revert_ZeroAccessManager() public {
         address disputeModule = address(1);
         address paymentToken = address(2);
         uint256 arbitrationPrice = 1000;
@@ -106,8 +106,43 @@ contract TestArbitrationPolicySP is BaseTest {
 
         vm.expectRevert(Errors.ArbitrationPolicySP__ZeroAccessManager.selector);
         arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(ArbitrationPolicySP.initialize, address(0)))
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(ArbitrationPolicySP.initialize, (address(0), TREASURY_ADDRESS))
+            )
         );
+    }
+
+    function test_ArbitrationPolicySP_initialize_revert_ZeroTreasury() public {
+        address disputeModule = address(1);
+        address paymentToken = address(2);
+        address accessManager = address(3);
+        uint256 arbitrationPrice = 1000;
+
+        address impl = address(new ArbitrationPolicySP(address(disputeModule), paymentToken, arbitrationPrice));
+
+        vm.expectRevert(Errors.ArbitrationPolicySP__ZeroTreasury.selector);
+        arbitrationPolicySP = ArbitrationPolicySP(
+            TestProxyHelper.deployUUPSProxy(
+                impl,
+                abi.encodeCall(ArbitrationPolicySP.initialize, (accessManager, address(0)))
+            )
+        );
+    }
+
+    function test_ArbitrationPolicySP_setTreasury_revert_ZeroTreasury() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.ArbitrationPolicySP__ZeroTreasury.selector);
+        arbitrationPolicySP.setTreasury(address(0));
+    }
+
+    function test_ArbitrationPolicySP_setTreasury() public {
+        address newTreasuryAddress = address(1);
+
+        vm.startPrank(u.admin);
+        assertEq(arbitrationPolicySP.treasury(), TREASURY_ADDRESS);
+        arbitrationPolicySP.setTreasury(newTreasuryAddress);
+        assertEq(arbitrationPolicySP.treasury(), newTreasuryAddress);
     }
 
     function test_ArbitrationPolicySP_onRaiseDispute_NotDisputeModule() public {
@@ -173,41 +208,22 @@ contract TestArbitrationPolicySP is BaseTest {
         // set dispute judgement
         uint256 ipAccount1USDCBalanceBefore = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceBefore = USDC.balanceOf(address(arbitrationPolicySP));
+        uint256 treasuryUSDCBalanceBefore = USDC.balanceOf(TREASURY_ADDRESS);
 
         vm.startPrank(arbitrationRelayer);
         disputeModule.setDisputeJudgement(1, false, "");
 
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
         uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
+        uint256 treasuryUSDCBalanceAfter = USDC.balanceOf(TREASURY_ADDRESS);
 
         assertEq(ipAccount1USDCBalanceAfter - ipAccount1USDCBalanceBefore, 0);
-        assertEq(arbitrationPolicySPUSDCBalanceBefore - arbitrationPolicySPUSDCBalanceAfter, 0);
+        assertEq(arbitrationPolicySPUSDCBalanceBefore - arbitrationPolicySPUSDCBalanceAfter, ARBITRATION_PRICE);
+        assertEq(treasuryUSDCBalanceAfter - treasuryUSDCBalanceBefore, ARBITRATION_PRICE);
     }
 
     function test_ArbitrationPolicySP_onDisputeCancel_NotDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicySP__NotDisputeModule.selector);
         arbitrationPolicySP.onDisputeCancel(address(1), 1, new bytes(0));
-    }
-
-    function test_ArbitrationPolicySP_governanceWithdraw() public {
-        // send USDC to arbitration policy
-        uint256 mintAmount = 10000 * 10 ** 6;
-        USDC.mint(address(arbitrationPolicySP), mintAmount);
-
-        uint256 arbitrationPolicySPUSDCBalanceBefore = USDC.balanceOf(address(arbitrationPolicySP));
-        uint256 governanceUSDCBalanceBefore = USDC.balanceOf(u.admin);
-
-        vm.expectEmit(true, true, true, true, address(arbitrationPolicySP));
-        emit GovernanceWithdrew(mintAmount);
-
-        vm.startPrank(u.admin);
-        arbitrationPolicySP.governanceWithdraw();
-        vm.stopPrank();
-
-        uint256 governanceUSDCBalanceAfter = USDC.balanceOf(u.admin);
-        uint256 arbitrationPolicySPUSDCBalanceAfter = USDC.balanceOf(address(arbitrationPolicySP));
-
-        assertEq(governanceUSDCBalanceAfter - governanceUSDCBalanceBefore, mintAmount);
-        assertEq(arbitrationPolicySPUSDCBalanceBefore - arbitrationPolicySPUSDCBalanceAfter, mintAmount);
     }
 }

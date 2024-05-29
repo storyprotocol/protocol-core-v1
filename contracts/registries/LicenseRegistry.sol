@@ -216,6 +216,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if ($.parentIps[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);
         }
+        if ($.childIps[childIpId].length() > 0) {
+            revert Errors.LicenseRegistry__DerivativeIpAlreadyHasChild(childIpId);
+        }
         if ($.attachedLicenseTerms[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense(childIpId);
         }

@@ -131,6 +131,9 @@ library Errors {
     /// @notice Provided derivative IP already has license terms attached.
     error LicenseRegistry__DerivativeIpAlreadyHasLicense(address childIpId);
 
+    /// @notice Provided derivative IP has already had child IP.
+    error LicenseRegistry__DerivativeIpAlreadyHasChild(address childIpId);
+
     /// @notice Provided derivative IP is already registered.
     error LicenseRegistry__DerivativeAlreadyRegistered(address childIpId);
 

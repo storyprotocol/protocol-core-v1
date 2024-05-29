@@ -3,10 +3,6 @@ pragma solidity 0.8.23;
 
 /// @title Arbitration Policy Interface
 interface IArbitrationPolicy {
-    /// @notice Event emitted when governance withdraws
-    /// @param amount The amount withdrawn
-    event GovernanceWithdrew(uint256 amount);
-
     /// @notice Returns the protocol-wide dispute module address
     function DISPUTE_MODULE() external view returns (address);
 
@@ -15,6 +11,14 @@ interface IArbitrationPolicy {
 
     /// @notice Returns the arbitration price
     function ARBITRATION_PRICE() external view returns (uint256);
+
+    /// @notice Returns the treasury address
+    function treasury() external view returns (address);
+
+    /// @notice Allows governance set the treasury address
+    /// @dev Enforced to be only callable by the governance protocol admin
+    /// @param newTreasury The new address of the treasury
+    function setTreasury(address newTreasury) external;
 
     /// @notice Executes custom logic on raising dispute.
     /// @dev Enforced to be only callable by the DisputeModule.
@@ -42,8 +46,4 @@ interface IArbitrationPolicy {
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to resolve the dispute
     function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external;
-
-    /// @notice Allows governance address to withdraw
-    /// @dev Enforced to be only callable by the governance protocol admin.
-    function governanceWithdraw() external;
 }

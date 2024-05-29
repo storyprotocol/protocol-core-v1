@@ -27,6 +27,16 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     uint256 public immutable ARBITRATION_PRICE;
 
+    /// @dev Storage structure for the ArbitrationPolicySP
+    /// @custom:storage-location erc7201:story-protocol.ArbitrationPolicySP
+    struct ArbitrationPolicySPStorage {
+        address treasury;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.ArbitrationPolicySP")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant ArbitrationPolicySPStorageLocation =
+        0x8b56c510cd155da0a5980302e158a4f212510ffd8eb3a4388303109171a91800;
+
     /// @notice Restricts the calls to the DisputeModule
     modifier onlyDisputeModule() {
         if (msg.sender != DISPUTE_MODULE) revert Errors.ArbitrationPolicySP__NotDisputeModule();
@@ -49,14 +59,28 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         _disableInitializers();
     }
 
-    /// @notice initializer for this implementation contract
+    /// @notice Allows governance set the treasury address
+    /// @dev Enforced to be only callable by the governance protocol admin
+    /// @param newTreasury The new address of the treasury
+    function setTreasury(address newTreasury) external restricted {
+        if (newTreasury == address(0)) revert Errors.ArbitrationPolicySP__ZeroTreasury();
+
+        ArbitrationPolicySPStorage storage $ = _getArbitrationPolicySPStorage();
+        $.treasury = newTreasury;
+    }
+
+    /// @notice Initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
-    function initialize(address accessManager) public initializer {
-        if (accessManager == address(0)) {
-            revert Errors.ArbitrationPolicySP__ZeroAccessManager();
-        }
+    /// @param newTreasury The new address of the treasury
+    function initialize(address accessManager, address newTreasury) public initializer {
+        if (accessManager == address(0)) revert Errors.ArbitrationPolicySP__ZeroAccessManager();
+        if (newTreasury == address(0)) revert Errors.ArbitrationPolicySP__ZeroTreasury();
+
         __AccessManaged_init(accessManager);
         __UUPSUpgradeable_init();
+
+        ArbitrationPolicySPStorage storage $ = _getArbitrationPolicySPStorage();
+        $.treasury = newTreasury;
     }
 
     /// @notice Executes custom logic on raising dispute
@@ -77,6 +101,9 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
         if (decision) {
             (, address disputeInitiator, , , , , ) = IDisputeModule(DISPUTE_MODULE).disputes(disputeId);
             IERC20(PAYMENT_TOKEN).safeTransfer(disputeInitiator, ARBITRATION_PRICE);
+        } else {
+            ArbitrationPolicySPStorage storage $ = _getArbitrationPolicySPStorage();
+            IERC20(PAYMENT_TOKEN).safeTransfer($.treasury, ARBITRATION_PRICE);
         }
     }
 
@@ -94,16 +121,21 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     /// @param data The arbitrary data used to resolve the dispute
     function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {}
 
-    /// @notice Allows governance address to withdraw
-    /// @dev Enforced to be only callable by the governance protocol admin
-    function governanceWithdraw() external restricted {
-        uint256 balance = IERC20(PAYMENT_TOKEN).balanceOf(address(this));
-        IERC20(PAYMENT_TOKEN).safeTransfer(msg.sender, balance);
-
-        emit GovernanceWithdrew(balance);
+    /// @notice Returns the treasury address
+    /// @return The treasury address
+    function treasury() external view returns (address) {
+        ArbitrationPolicySPStorage storage $ = _getArbitrationPolicySPStorage();
+        return $.treasury;
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
+
+    /// @dev Returns the storage struct of ArbitrationPolicySP
+    function _getArbitrationPolicySPStorage() private pure returns (ArbitrationPolicySPStorage storage $) {
+        assembly {
+            $.slot := ArbitrationPolicySPStorageLocation
+        }
+    }
 }

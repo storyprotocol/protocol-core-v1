@@ -338,6 +338,18 @@ contract PILicenseTemplateTest is BaseTest {
         assertFalse(result);
     }
 
+    function test_PILicenseTemplate_verifyMintLicenseToken_LicenseTermsIdNonExist() public {
+        uint256 nonExistCommUseTermsId = 999;
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = nonExistCommUseTermsId;
+
+        bool result = pilTemplate.verifyMintLicenseToken(nonExistCommUseTermsId, ipOwner[2], ipAcct[1], 1);
+        assertFalse(result);
+    }
+
     // test verifyRegisterDerivative
     function test_PILicenseTemplate_verifyRegisterDerivative() public {
         uint256 commUseTermsId = pilTemplate.registerLicenseTerms(

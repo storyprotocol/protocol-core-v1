@@ -7,8 +7,6 @@ import { Errors } from "../../../contracts/lib/Errors.sol";
 
 import { MockModule } from "../mocks/module/MockModule.sol";
 import { MockOrchestratorModule } from "../mocks/module/MockOrchestratorModule.sol";
-import { MockERC1155 } from "../mocks/token/MockERC1155.sol";
-import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";

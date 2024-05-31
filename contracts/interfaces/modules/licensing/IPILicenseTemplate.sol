@@ -28,7 +28,7 @@ import { ILicenseTemplate } from "../../../interfaces/modules/licensing/ILicense
 struct PILTerms {
     bool transferable;
     address royaltyPolicy;
-    uint256 mintingFee;
+    uint256 defaultMintingFee;
     uint256 expiration;
     bool commercialUse;
     bool commercialAttribution;

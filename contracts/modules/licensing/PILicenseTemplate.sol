@@ -463,6 +463,7 @@ contract PILicenseTemplate is
         for (uint256 i = 1; i < licenseTermsIds.length; i++) {
             if ($.licenseTerms[licenseTermsIds[i]].commercialUse != commercial) return false;
             if ($.licenseTerms[licenseTermsIds[i]].derivativesReciprocal != derivativesReciprocal) return false;
+            if (derivativesReciprocal && licenseTermsIds[0] != licenseTermsIds[i]) return false;
         }
         return true;
     }

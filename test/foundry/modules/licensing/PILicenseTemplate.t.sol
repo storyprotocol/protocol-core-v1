@@ -261,7 +261,7 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
         PILTerms memory terms = pilTemplate.getLicenseTerms(commUseTermsId);
-        assertEq(terms.mintingFee, 100);
+        assertEq(terms.defaultMintingFee, 100);
         assertEq(terms.currency, address(erc20));
         assertEq(terms.royaltyPolicy, address(royaltyPolicyLAP));
     }

@@ -19,7 +19,7 @@ contract IPAccountRegistryTest is BaseTest {
     }
 
     function test_IPAccountRegistry_registerIpAccount() public {
-        address ipAccountAddr = ipAccountRegistry.registerIpAccount(chainId, tokenAddress, tokenId);
+        address ipAccountAddr = ipAssetRegistry.register(chainId, tokenAddress, tokenId);
 
         address registryComputedAddress = ipAccountRegistry.ipAccount(chainId, tokenAddress, tokenId);
         assertEq(ipAccountAddr, registryComputedAddress);
@@ -31,6 +31,6 @@ contract IPAccountRegistryTest is BaseTest {
         assertEq(tokenAddress_, tokenAddress);
         assertEq(tokenId_, tokenId);
 
-        assertTrue(ipAccountRegistry.isRegistered(chainId, tokenAddress, tokenId));
+        assertTrue(ipAssetRegistry.isRegistered(ipAccountAddr));
     }
 }

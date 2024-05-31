@@ -67,7 +67,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -117,7 +117,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -193,7 +193,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -258,7 +258,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -305,7 +305,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -351,7 +351,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -396,7 +396,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -442,13 +442,13 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
         uint256 tokenId2 = 101;
         mockNFT.mintId(owner, tokenId2);
-        address account2 = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId2);
+        address account2 = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId2);
         IIPAccount ipAccount2 = IIPAccount(payable(account2));
 
         uint deadline = block.timestamp + 1000;
@@ -482,7 +482,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -536,7 +536,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -583,7 +583,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 
@@ -628,7 +628,7 @@ contract IPAccountMetaTxTest is BaseTest {
 
         mockNFT.mintId(owner, tokenId);
 
-        address account = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
 
         IIPAccount ipAccount = IIPAccount(payable(account));
 

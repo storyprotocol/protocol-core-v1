@@ -22,7 +22,7 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         address owner = vm.addr(1);
         uint256 tokenId = 100;
         mockNFT.mintId(owner, tokenId);
-        ipAccount = IIPAccount(payable(ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId)));
+        ipAccount = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId)));
         vm.startPrank(admin);
         moduleRegistry.registerModule("MockModule", address(module));
         moduleRegistry.registerModule("IPAccountStorageTest", address(this));

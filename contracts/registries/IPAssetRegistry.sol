@@ -65,7 +65,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausabl
         address tokenContract,
         uint256 tokenId
     ) external whenNotPaused returns (address id) {
-        id = registerIpAccount(chainid, tokenContract, tokenId);
+        id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 
         if (bytes(ipAccount.getString("NAME")).length != 0) {

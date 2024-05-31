@@ -36,8 +36,8 @@ contract TokenWithdrawalModuleTest is BaseTest {
         mockNFT.mintId(alice, 1);
         mockNFT.mintId(alice, 2);
 
-        ipAcct1 = IIPAccount(payable(ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), 1)));
-        ipAcct2 = IIPAccount(payable(ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), 2)));
+        ipAcct1 = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 1)));
+        ipAcct2 = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 2)));
 
         vm.label(address(ipAcct1), "IPAccount1");
         vm.label(address(ipAcct2), "IPAccount2");

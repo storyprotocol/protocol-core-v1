@@ -26,7 +26,7 @@ contract AccessControllerTest is BaseTest {
         super.setUp();
 
         mockNFT.mintId(owner, tokenId);
-        address deployedAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address deployedAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
         ipAccount = IIPAccount(payable(deployedAccount));
 
         mockModule = new MockModule(address(ipAccountRegistry), address(moduleRegistry), "MockModule");

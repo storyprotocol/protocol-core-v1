@@ -32,7 +32,7 @@ contract IPAccountImplBTT is BaseTest {
 
         ipOwner = u.alice;
         mockNFT.mintId(ipOwner, tokenId);
-        ipAcct = IIPAccount(payable(ipAssetRegistry.registerIpAccount(chainId, address(mockNFT), tokenId)));
+        ipAcct = IIPAccount(payable(ipAssetRegistry.register(chainId, address(mockNFT), tokenId)));
     }
 
     function test_IPAccountImpl_supportsInterface() public {

@@ -19,7 +19,7 @@ contract AccessControlledTest is BaseTest {
         super.setUp();
 
         mockNFT.mintId(owner, tokenId);
-        address deployedAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        address deployedAccount = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
         ipAccount = IIPAccount(payable(deployedAccount));
 
         mockModule = new MockAccessControlledModule(
@@ -117,7 +117,7 @@ contract AccessControlledTest is BaseTest {
 
     function test_AccessControlled_revert_callIpAccountOrPermissionFunction_withOtherIpAccount() public {
         mockNFT.mintId(owner, 101);
-        address otherIpAccountAddr = ipAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), 101);
+        address otherIpAccountAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 101);
         IIPAccount otherIpAccount = IIPAccount(payable(otherIpAccountAddr));
         vm.expectRevert(
             abi.encodeWithSelector(

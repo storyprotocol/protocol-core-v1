@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
-import { IIPAccountRegistry } from "contracts/interfaces/registries/IIPAccountRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";

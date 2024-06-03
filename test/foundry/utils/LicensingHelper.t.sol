@@ -85,7 +85,7 @@ contract LicensingHelper {
             PILTerms({
                 transferable: transferable,
                 royaltyPolicy: address(royaltyPolicyLAP),
-                mintingFee: 1 ether,
+                defaultMintingFee: 1 ether,
                 expiration: 0,
                 commercialUse: true,
                 commercialAttribution: false,
@@ -112,7 +112,7 @@ contract LicensingHelper {
             PILTerms({
                 transferable: transferable,
                 royaltyPolicy: address(0),
-                mintingFee: 0,
+                defaultMintingFee: 0,
                 expiration: 0,
                 commercialUse: false,
                 commercialAttribution: false,

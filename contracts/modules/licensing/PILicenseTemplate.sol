@@ -222,7 +222,7 @@ contract PILicenseTemplate is
         uint256 licenseTermsId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-        return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
+        return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.defaultMintingFee, terms.currency);
     }
 
     /// @notice Checks if a license terms is transferable.

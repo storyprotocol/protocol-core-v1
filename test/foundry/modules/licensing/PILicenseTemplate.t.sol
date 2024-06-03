@@ -418,6 +418,22 @@ contract PILicenseTemplateTest is BaseTest {
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
         assertTrue(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
+
+        uint256 anotherCommRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 200,
+                commercialRevShare: 20,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(erc20)
+            })
+        );
+        licenseTermsIds[0] = commRemixTermsId;
+        licenseTermsIds[1] = anotherCommRemixTermsId;
+        assertFalse(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
+
+        licenseTermsIds[0] = commRemixTermsId;
+        licenseTermsIds[1] = commRemixTermsId;
+        assertTrue(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
     }
 
     // test verifyRegisterDerivativeForAllParents

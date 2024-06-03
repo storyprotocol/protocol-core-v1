@@ -102,7 +102,7 @@ library PILFlavors {
             PILTerms({
                 transferable: true,
                 royaltyPolicy: address(0),
-                mintingFee: 0,
+                defaultMintingFee: 0,
                 expiration: 0,
                 commercialUse: false,
                 commercialAttribution: false,
@@ -126,7 +126,7 @@ library PILFlavors {
             PILTerms({
                 transferable: true,
                 royaltyPolicy: address(0),
-                mintingFee: 0,
+                defaultMintingFee: 0,
                 expiration: 0,
                 commercialUse: false,
                 commercialAttribution: false,
@@ -154,7 +154,7 @@ library PILFlavors {
             PILTerms({
                 transferable: true,
                 royaltyPolicy: royaltyPolicy,
-                mintingFee: mintingFee,
+                defaultMintingFee: mintingFee,
                 expiration: 0,
                 commercialUse: true,
                 commercialAttribution: true,
@@ -183,7 +183,7 @@ library PILFlavors {
             PILTerms({
                 transferable: true,
                 royaltyPolicy: royaltyPolicy,
-                mintingFee: mintingFee,
+                defaultMintingFee: mintingFee,
                 expiration: 0,
                 commercialUse: true,
                 commercialAttribution: true,

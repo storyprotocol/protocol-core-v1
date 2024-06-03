@@ -43,7 +43,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             PILTerms({
                 transferable: true,
                 royaltyPolicy: address(royaltyPolicyLAP),
-                mintingFee: mintingFee,
+                defaultMintingFee: mintingFee,
                 expiration: 0,
                 commercialUse: true,
                 commercialAttribution: false,

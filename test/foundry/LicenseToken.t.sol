@@ -111,7 +111,7 @@ contract LicenseTokenTest is BaseTest {
             PILTerms({
                 transferable: false,
                 royaltyPolicy: address(0),
-                mintingFee: 0,
+                defaultMintingFee: 0,
                 expiration: 0,
                 commercialUse: false,
                 commercialAttribution: false,

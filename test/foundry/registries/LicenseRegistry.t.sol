@@ -12,6 +12,7 @@ import { MockLicenseTemplate } from "../mocks/module/MockLicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../../contracts/lib/IPAccountStorageOps.sol";
 import { Licensing } from "../../../contracts/lib/Licensing.sol";
 import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { ILicenseRegistry } from "contracts/interfaces/registries/ILicenseRegistry.sol";
 
 // test
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
@@ -59,11 +60,24 @@ contract LicenseRegistryTest is BaseTest {
 
     function test_LicenseRegistry_setDefaultLicenseTerms() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.expectEmit();
+        emit ILicenseRegistry.DefaultLicenseTermsSet(address(pilTemplate), socialRemixTermsId);
         vm.prank(admin);
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), socialRemixTermsId);
         (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = licenseRegistry.getDefaultLicenseTerms();
         assertEq(defaultLicenseTemplate, address(pilTemplate));
         assertEq(defaultLicenseTermsId, socialRemixTermsId);
+    }
+
+    function test_LicenseRegistry_setDefaultLicenseTerms_revert() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicenseRegistry__LicenseTermsNotExists.selector, address(pilTemplate), 999)
+        );
+        vm.prank(admin);
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), 999);
+        vm.expectRevert(Errors.LicenseRegistry__ZeroLicenseTemplate.selector);
+        vm.prank(admin);
+        licenseRegistry.setDefaultLicenseTerms(address(0), 999);
     }
 
     // test registerLicenseTemplate

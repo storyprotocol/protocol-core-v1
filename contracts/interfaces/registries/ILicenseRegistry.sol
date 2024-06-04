@@ -19,6 +19,9 @@ interface ILicenseRegistry {
         uint256 indexed licenseTermsId
     );
 
+    /// @notice Emitted when set new default license terms.
+    event DefaultLicenseTermsSet(address licenseTemplate, uint256 licenseTermsId);
+
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
     event LicensingConfigSetForIP(address indexed ipId, Licensing.LicensingConfig licensingConfig);
 

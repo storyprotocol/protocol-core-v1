@@ -97,9 +97,16 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param newLicenseTemplate The address of the new default license template.
     /// @param newLicenseTermsId The ID of the new default license terms.
     function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external restricted {
+        if (newLicenseTemplate == address(0)) {
+            revert Errors.LicenseRegistry__ZeroLicenseTemplate();
+        }
+        if (!_exists(newLicenseTemplate, newLicenseTermsId)) {
+            revert Errors.LicenseRegistry__LicenseTermsNotExists(newLicenseTemplate, newLicenseTermsId);
+        }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
         $.defaultLicenseTermsId = newLicenseTermsId;
+        emit DefaultLicenseTermsSet(newLicenseTemplate, newLicenseTermsId);
     }
 
     /// @notice Registers a new license template in the Story Protocol.

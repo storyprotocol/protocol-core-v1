@@ -152,6 +152,9 @@ library Errors {
     /// @notice Provided license template and terms ID is a duplicate.
     error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice Zero address provided for License Template.
+    error LicenseRegistry__ZeroLicenseTemplate();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

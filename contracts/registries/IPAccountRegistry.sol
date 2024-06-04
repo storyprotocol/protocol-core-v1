@@ -25,6 +25,7 @@ abstract contract IPAccountRegistry is IIPAccountRegistry {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address erc6551Registry, address ipAccountImpl) {
         if (ipAccountImpl == address(0)) revert Errors.IPAccountRegistry_ZeroIpAccountImpl();
+        if (erc6551Registry == address(0)) revert Errors.IPAccountRegistry_ZeroERC6551Registry();
         IP_ACCOUNT_IMPL = ipAccountImpl;
         IP_ACCOUNT_SALT = bytes32(0);
         ERC6551_PUBLIC_REGISTRY = erc6551Registry;

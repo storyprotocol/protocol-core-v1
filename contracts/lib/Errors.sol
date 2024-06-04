@@ -48,6 +48,9 @@ library Errors {
     /// @notice Zero address provided for IP Account implementation.
     error IPAccountRegistry_ZeroIpAccountImpl();
 
+    /// @notice Zero address provided for ERC6551 Registry.
+    error IPAccountRegistry_ZeroERC6551Registry();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

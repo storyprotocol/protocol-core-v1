@@ -4,8 +4,13 @@ pragma solidity 0.8.23;
 import { IPAccountImpl } from "../../../contracts/IPAccountImpl.sol";
 import { IPAccountChecker } from "../../../contracts/lib/registries/IPAccountChecker.sol";
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
+import { Errors } from "contracts/lib/Errors.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
+
+contract MockIPAccountRegistry is IPAccountRegistry {
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+}
 
 contract IPAccountRegistryTest is BaseTest {
     using IPAccountChecker for IPAccountRegistry;
@@ -32,5 +37,12 @@ contract IPAccountRegistryTest is BaseTest {
         assertEq(tokenId_, tokenId);
 
         assertTrue(ipAccountRegistry.isRegistered(chainId, tokenAddress, tokenId));
+    }
+
+    function test_IPAccountRegistry_constructor_revert() public {
+        vm.expectRevert(Errors.IPAccountRegistry_ZeroERC6551Registry.selector);
+        new MockIPAccountRegistry(address(0), address(123));
+        vm.expectRevert(Errors.IPAccountRegistry_ZeroIpAccountImpl.selector);
+        new MockIPAccountRegistry(address(123), address(0));
     }
 }

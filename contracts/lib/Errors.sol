@@ -38,6 +38,15 @@ library Errors {
     /// @notice Caller writing to IP Account storage is not a registered module.
     error IPAccountStorage__NotRegisteredModule(address module);
 
+    /// @notice Zero address provided for IP Asset Registry.
+    error IPAccountStorage__ZeroIpAssetRegistry();
+
+    /// @notice Zero address provided for License Registry.
+    error IPAccountStorage__ZeroLicenseRegistry();
+
+    /// @notice Zero address provided for Module Registry.
+    error IPAccountStorage__ZeroModuleRegistry();
+
     /// @notice Invalid batch lengths provided.
     error IPAccountStorage__InvalidBatchLengths();
 

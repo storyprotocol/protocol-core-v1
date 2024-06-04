@@ -34,6 +34,9 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     }
 
     constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
+        if (ipAssetRegistry == address(0)) revert Errors.IPAccountStorage__ZeroIpAssetRegistry();
+        if (licenseRegistry == address(0)) revert Errors.IPAccountStorage__ZeroLicenseRegistry();
+        if (moduleRegistry == address(0)) revert Errors.IPAccountStorage__ZeroModuleRegistry();
         MODULE_REGISTRY = moduleRegistry;
         LICENSE_REGISTRY = licenseRegistry;
         IP_ASSET_REGISTRY = ipAssetRegistry;

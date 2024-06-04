@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
 import { BaseModule } from "../../contracts/modules/BaseModule.sol";
 import { Errors } from "../../contracts/lib/Errors.sol";
+import { IPAccountStorage } from "../../contracts/IPAccountStorage.sol";
 
 import { MockModule } from "./mocks/module/MockModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";
@@ -233,6 +234,15 @@ contract IPAccountStorageTest is BaseTest, BaseModule {
         namespaces[0] = _toBytes32(address(this));
         vm.expectRevert(Errors.IPAccountStorage__InvalidBatchLengths.selector);
         ipAccount.getBytes32Batch(namespaces, keys);
+    }
+
+    function test_IPAccountStorage_constructor_revert() public {
+        vm.expectRevert(Errors.IPAccountStorage__ZeroIpAssetRegistry.selector);
+        new IPAccountStorage(address(0), address(123), address(456));
+        vm.expectRevert(Errors.IPAccountStorage__ZeroLicenseRegistry.selector);
+        new IPAccountStorage(address(123), address(0), address(456));
+        vm.expectRevert(Errors.IPAccountStorage__ZeroModuleRegistry.selector);
+        new IPAccountStorage(address(123), address(456), address(0));
     }
 
     function _toBytes32(address a) internal pure returns (bytes32) {

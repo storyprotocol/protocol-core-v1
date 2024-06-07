@@ -139,7 +139,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         writeDeploys = writeDeploys_;
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        if (runStorageLayoutCheck) super.run();
+        if (runStorageLayoutCheck) _validate();
 
         _beginBroadcast(); // BroadcastManager.s.sol
 

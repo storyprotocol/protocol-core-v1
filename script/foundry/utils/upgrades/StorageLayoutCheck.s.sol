@@ -20,14 +20,11 @@ contract StorageLayoutChecker is Script {
 
     using strings for *;
 
-    function run() virtual public {
-        _validate();
-    }
 
     /// @notice Runs the storage layout check
     /// @dev For simplicity and efficiency, we check all the upgradeablecontracts in the project
     /// instead of going 1 by 1 using ffi.
-    function _validate() private {
+    function _validate() internal {
         string[] memory inputs = _buildValidateCommand();
         Vm.FfiResult memory result = Utils.runAsBashCommand(inputs);
         string memory stdout = string(result.stdout);

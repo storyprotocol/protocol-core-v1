@@ -29,6 +29,13 @@ contract BroadcastManager is Script {
             relayer = vm.envAddress("SEPOLIA_RELAYER_ADDRESS");
             upgraderExecDelay = 10 minutes;
             vm.startBroadcast(deployerPrivateKey);
+        } else if (block.chainid == vm.envUint("CHAIN_ID")) {
+            deployerPrivateKey = vm.envUint("CHAIN_ADMIN_ADDRESS");
+            deployer = vm.addr(deployerPrivateKey);
+            multisig = vm.envAddress("CHAIN_MULTISIG_ADDRESS");
+            // relayer = vm.envAddress("CHAIN_RELAYER_ADDRESS");
+            upgraderExecDelay = 10 minutes;
+            vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 31337) {
             Users memory u = UsersLib.createMockUsers(vm);
             // DeployHelper.sol will set the final admin as the multisig, so we do this for coherence

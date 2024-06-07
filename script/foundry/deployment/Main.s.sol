@@ -29,7 +29,7 @@ contract Main is DeployHelper {
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run() public virtual override {
+    function run() public virtual {
         _run(CREATE3_DEFAULT_SEED);
     }
 
@@ -41,7 +41,7 @@ contract Main is DeployHelper {
         // deploy all contracts via DeployHelper
         super.run(
             seed, // create3 seed
-            true, // runStorageLayoutCheck
+            false, // runStorageLayoutCheck
             true // writeDeployments
         );
         _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json

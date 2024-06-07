@@ -14,20 +14,15 @@ contract JsonDeploymentHandler is Script {
     string private output;
     string private readJson;
     string private chainId;
-    string private key;
-    string private internalKey = "key";
+    string private internalKey = "main";
 
     constructor(string memory _key) {
         chainId = (block.chainid).toString();
-        key = _key;
+        internalKey = _key;
     }
 
-    function _readAddress(string memory readPath) internal view returns (address) {
-        try vm.parseJsonAddress(readJson, readPath) returns (address addr) {
-            return addr;
-        } catch {
-            return address(0);
-        }
+    function _readAddress(string memory key) internal view returns (address) {
+        return vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", key));
     }
 
     function _readDeployment() internal {
@@ -38,7 +33,7 @@ contract JsonDeploymentHandler is Script {
     }
 
     function _writeAddress(string memory contractKey, address newAddress) internal {
-        output = vm.serializeAddress(internalKey, contractKey, newAddress);
+        output = vm.serializeAddress("", contractKey, newAddress);
     }
 
     function _writeToJson(string memory contractKey, string memory value) internal {
@@ -46,6 +41,6 @@ contract JsonDeploymentHandler is Script {
     }
 
     function _writeDeployment() internal {
-        vm.writeJson(output, string.concat("./deploy-out/deployment-", chainId, ".json"), string.concat(".", key));
+        vm.writeJson(output, string.concat("./deploy-out/deployment-", chainId, ".json"), string.concat(".", internalKey));
     }
 }

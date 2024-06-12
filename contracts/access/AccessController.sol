@@ -29,6 +29,7 @@ import { Errors } from "../lib/Errors.sol";
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/access/AccessController.sol:AccessController
 contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 

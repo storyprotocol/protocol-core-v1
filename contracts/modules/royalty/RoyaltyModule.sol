@@ -20,6 +20,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
 ///         derivative IP.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/modules/royalty/RoyaltyModule.sol:RoyaltyModule
 contract RoyaltyModule is
     IRoyaltyModule,
     ProtocolPausableUpgradeable,

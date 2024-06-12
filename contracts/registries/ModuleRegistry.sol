@@ -14,6 +14,7 @@ import { MODULE_TYPE_DEFAULT } from "../lib/modules/Module.sol";
 
 /// @title ModuleRegistry
 /// @notice This contract is used to register and track modules in the protocol.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/registries/ModuleRegistry.sol:ModuleRegistry
 contract ModuleRegistry is IModuleRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;

@@ -33,6 +33,7 @@ import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol
 /// - Attaching license terms to IP assets
 /// - Minting license Tokens
 /// - Registering derivatives
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/modules/licensing/LicensingModule.sol:LicensingModule
 contract LicensingModule is
     AccessControlled,
     ILicensingModule,

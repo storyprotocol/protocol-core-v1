@@ -22,6 +22,7 @@ import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLice
 import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
 
 /// @title PILicenseTemplate
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/modules/licensing/PILicenseTemplate.sol:PILicenseTemplate
 contract PILicenseTemplate is
     BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,

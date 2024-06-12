@@ -21,6 +21,7 @@ import { IIPAccount } from "../interfaces/IIPAccount.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/registries/LicenseRegistry.sol:LicenseRegistry
 contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;

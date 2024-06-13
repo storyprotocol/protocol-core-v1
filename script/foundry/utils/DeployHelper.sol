@@ -167,6 +167,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
+    function _getSalt(string memory name) internal view returns (bytes32 salt) {
+        salt = keccak256(abi.encode(name, create3SaltSeed));
+    }
+
     function _deployProtocolContracts() private {
         require(address(erc20) != address(0), "Deploy: Asset Not Set");
         string memory contractKey;
@@ -658,11 +662,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         ///////// Renounce admin role /////////
         protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
-    }
-
-    /// @dev get the salt for the contract deployment with CREATE3
-    function _getSalt(string memory name) private view returns (bytes32 salt) {
-        salt = keccak256(abi.encode(name, create3SaltSeed));
     }
 
     /// @dev Get the deterministic deployed address of a contract with CREATE3

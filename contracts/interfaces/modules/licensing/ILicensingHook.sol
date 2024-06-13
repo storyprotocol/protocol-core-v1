@@ -32,7 +32,8 @@ interface ILicensingHook is IModule {
         bytes calldata hookData
     ) external returns (uint256 totalMintingFee);
 
-    /// @notice This function is called when the LicensingModule mints license tokens.
+    /// @notice This function is called before finalizing LicensingModule.registerDerivative(), after calling
+    /// LicenseRegistry.registerDerivative().
     /// @dev The hook can be used to implement various checks and determine the minting price.
     /// The hook should revert if the registering of derivative is not allowed.
     /// @param childIpId The derivative IP ID.

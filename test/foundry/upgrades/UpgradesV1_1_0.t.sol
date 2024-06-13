@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-// pragma solidity 0.8.23;
+pragma solidity 0.8.23;
 
 // import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 // import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";

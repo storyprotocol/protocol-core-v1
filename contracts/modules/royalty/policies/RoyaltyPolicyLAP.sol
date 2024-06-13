@@ -16,6 +16,7 @@ import { ProtocolPausableUpgradeable } from "../../../pause/ProtocolPausableUpgr
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
+// solhint-disable-next-line max-line-length
 /// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol:RoyaltyPolicyLAP
 contract RoyaltyPolicyLAP is
     IRoyaltyPolicyLAP,

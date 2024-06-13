@@ -19,7 +19,6 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 /// @notice The Story Protocol's implementation of the IPAccount.
 /// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/IPAccountImpl.sol:IPAccountImpl
 contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
-
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable ACCESS_CONTROLLER;
 

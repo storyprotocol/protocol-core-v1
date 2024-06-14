@@ -31,6 +31,12 @@ library PILicenseTemplateErrors {
     /// @notice Cannot add commercial royalty policy when commercial use is disabled.
     error PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
 
+    /// @notice Cannot add commercial revenue ceiling when commercial use is disabled.
+    error PILicenseTemplate__CommercialDisabled_CantAddRevCelling();
+
+    /// @notice Royalty policy is required when commercial use is enabled.
+    error PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling();
+
     /// @notice Royalty policy is required when commercial use is enabled.
     error PILicenseTemplate__CommercialEnabled_RoyaltyPolicyRequired();
 
@@ -42,6 +48,9 @@ library PILicenseTemplateErrors {
 
     /// @notice Cannot add derivative reciprocal when derivative use is disabled.
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
+
+    /// @notice Cannot add derivative revenue share when derivative use is disabled.
+    error PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling();
 
     /// @notice Zero address provided for License Registry at initialization.
     error PILicenseTemplate__ZeroLicenseRegistry();

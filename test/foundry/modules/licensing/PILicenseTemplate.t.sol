@@ -133,6 +133,28 @@ contract PILicenseTemplateTest is BaseTest {
 
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
     }
+
+    function test_PILicenseTemplate_revert_registerRevCeiling() public {
+        PILTerms memory terms = PILFlavors.defaultValuesLicenseTerms();
+        terms.commercialRevCelling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCelling.selector);
+        pilTemplate.registerLicenseTerms(terms);
+
+        terms.commercialRevCelling = 0;
+        terms.derivativeRevCelling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling.selector);
+        pilTemplate.registerLicenseTerms(terms);
+
+        terms.commercialRevCelling = 0;
+        terms.commercialUse = true;
+        terms.royaltyPolicy = address(royaltyPolicyLAP);
+        terms.currency = address(erc20);
+        terms.derivativesAllowed = false;
+        terms.derivativeRevCelling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling.selector);
+        pilTemplate.registerLicenseTerms(terms);
+    }
+
     // register license terms twice
     function test_PILicenseTemplate_registerLicenseTerms_twice() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());

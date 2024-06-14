@@ -393,6 +393,12 @@ contract PILicenseTemplate is
             if (terms.commercialRevShare > 0) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevShare();
             }
+            if (terms.commercialRevCelling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCelling();
+            }
+            if (terms.derivativeRevCelling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling();
+            }
             if (terms.royaltyPolicy != address(0)) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
             }
@@ -422,6 +428,9 @@ contract PILicenseTemplate is
             }
             if (terms.derivativesReciprocal) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
+            }
+            if (terms.derivativeRevCelling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling();
             }
         }
     }

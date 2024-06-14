@@ -142,7 +142,9 @@ contract PILicenseTemplateTest is BaseTest {
 
         terms.commercialRevCeiling = 0;
         terms.derivativeRevCeiling = 10;
-        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling.selector);
+        vm.expectRevert(
+            PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling.selector
+        );
         pilTemplate.registerLicenseTerms(terms);
 
         terms.commercialRevCeiling = 0;
@@ -151,7 +153,9 @@ contract PILicenseTemplateTest is BaseTest {
         terms.currency = address(erc20);
         terms.derivativesAllowed = false;
         terms.derivativeRevCeiling = 10;
-        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling.selector);
+        vm.expectRevert(
+            PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling.selector
+        );
         pilTemplate.registerLicenseTerms(terms);
     }
 

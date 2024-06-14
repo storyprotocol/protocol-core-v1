@@ -160,7 +160,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(royaltyPolicyLAP));
         emit SnapshotIntervalSet(100);
-        
+
         royaltyPolicyLAP.setSnapshotInterval(100);
         assertEq(royaltyPolicyLAP.getSnapshotInterval(), 100);
     }

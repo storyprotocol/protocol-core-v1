@@ -112,13 +112,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         emit LicenseTemplateRegistered(licenseTemplate);
     }
 
-    /// @notice Sets the expiration time for an IP.
-    /// @param ipId The address of the IP.
-    /// @param expireTime The new expiration time, 0 means never expired.
-    function setExpireTime(address ipId, uint256 expireTime) external onlyLicensingModule {
-        _setExpirationTime(ipId, expireTime);
-    }
-
     /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
     /// @dev This function can only be called by the LicensingModule.
     /// @param ipId The address of the IP for which the configuration is being set.

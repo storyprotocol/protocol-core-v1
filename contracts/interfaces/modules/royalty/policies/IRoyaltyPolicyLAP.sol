@@ -24,6 +24,14 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param vault The address of the vault
     event RevenueTokenAddedToVault(address token, address vault);
 
+    /// @notice Event emitted when the snapshot interval is set
+    /// @param interval The snapshot interval
+    event SnapshotIntervalSet(uint256 interval);
+
+    /// @notice Event emitted when the ip royalty vault beacon is set
+    /// @param beacon The address of the ip royalty vault beacon
+    event IpRoyaltyVaultBeaconSet(address beacon);
+
     /// @notice The state data of the LAP royalty policy
     /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
     /// @param ipRoyaltyVault The ip royalty vault address

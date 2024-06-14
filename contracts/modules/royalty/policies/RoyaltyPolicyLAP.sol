@@ -91,6 +91,8 @@ contract RoyaltyPolicyLAP is
     function setSnapshotInterval(uint256 timestampInterval) public restricted {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.snapshotInterval = timestampInterval;
+
+        emit SnapshotIntervalSet(timestampInterval);
     }
 
     /// @dev Set the ip royalty vault beacon
@@ -100,6 +102,8 @@ contract RoyaltyPolicyLAP is
         if (beacon == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         $.ipRoyaltyVaultBeacon = beacon;
+
+        emit IpRoyaltyVaultBeaconSet(beacon);
     }
 
     /// @dev Upgrades the ip royalty vault beacon

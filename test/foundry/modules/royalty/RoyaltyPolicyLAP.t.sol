@@ -8,6 +8,9 @@ import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { IAccessManaged } from "@openzeppelin/contracts/access/manager/IAccessManaged.sol";
 
 contract TestRoyaltyPolicyLAP is BaseTest {
+    event SnapshotIntervalSet(uint256 interval);
+    event IpRoyaltyVaultBeaconSet(address beacon);
+
     RoyaltyPolicyLAP internal testRoyaltyPolicyLAP;
 
     address[] internal MAX_ANCESTORS_ = new address[](14);
@@ -154,6 +157,10 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
     function test_RoyaltyPolicyLAP_setSnapshotInterval() public {
         vm.startPrank(u.admin);
+
+        vm.expectEmit(true, true, true, true, address(royaltyPolicyLAP));
+        emit SnapshotIntervalSet(100);
+        
         royaltyPolicyLAP.setSnapshotInterval(100);
         assertEq(royaltyPolicyLAP.getSnapshotInterval(), 100);
     }
@@ -171,6 +178,10 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
     function test_RoyaltyPolicyLAP_setIpRoyaltyVaultBeacon() public {
         vm.startPrank(u.admin);
+
+        vm.expectEmit(true, true, true, true, address(royaltyPolicyLAP));
+        emit IpRoyaltyVaultBeaconSet(address(1));
+
         royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(1));
         assertEq(royaltyPolicyLAP.getIpRoyaltyVaultBeacon(), address(1));
     }

@@ -92,12 +92,12 @@ contract LicensingHelper {
                 commercializerChecker: address(0),
                 commercializerCheckerData: "",
                 commercialRevShare: commercialRevShare,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: derivatives,
                 derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: reciprocal,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(erc20),
                 uri: ""
             });
@@ -119,12 +119,12 @@ contract LicensingHelper {
                 commercializerChecker: address(0),
                 commercializerCheckerData: "",
                 commercialRevShare: 0,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: derivatives,
                 derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: reciprocal,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(0),
                 uri: ""
             });

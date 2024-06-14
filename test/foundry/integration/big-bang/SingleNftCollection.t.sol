@@ -51,12 +51,12 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 // Gated via balance > 1 of mockGatedNft
                 commercializerCheckerData: abi.encode(address(mockGatedNft)),
                 commercialRevShare: derivCheapFlexibleRevShare,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: true,
                 derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: false,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(erc20),
                 uri: ""
             })

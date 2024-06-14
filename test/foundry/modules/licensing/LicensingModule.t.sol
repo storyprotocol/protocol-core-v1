@@ -182,12 +182,12 @@ contract LicensingModuleTest is BaseTest {
             commercializerChecker: address(0),
             commercializerCheckerData: "",
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -426,12 +426,12 @@ contract LicensingModuleTest is BaseTest {
             commercializerChecker: address(0),
             commercializerCheckerData: "",
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1036,12 +1036,12 @@ contract LicensingModuleTest is BaseTest {
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1085,12 +1085,12 @@ contract LicensingModuleTest is BaseTest {
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1132,12 +1132,12 @@ contract LicensingModuleTest is BaseTest {
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });

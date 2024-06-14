@@ -342,8 +342,8 @@ contract PILicenseTemplate is
                     '{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": ',
                     terms.commercialRevShare.toString(),
                     "},",
-                    '{"trait_type": "Commercial Revenue Celling", "value": ',
-                    terms.commercialRevCelling.toString(),
+                    '{"trait_type": "Commercial Revenue Ceiling", "value": ',
+                    terms.commercialRevCeiling.toString(),
                     "},",
                     '{"trait_type": "Commercializer Check", "value": "',
                     terms.commercializerChecker.toHexString(),
@@ -366,8 +366,8 @@ contract PILicenseTemplate is
                     '{"trait_type": "Derivatives Attribution", "value": "',
                     terms.derivativesAttribution ? "true" : "false",
                     '"},',
-                    '{"trait_type": "Derivatives Revenue Celling", "value": ',
-                    terms.derivativeRevCelling.toString(),
+                    '{"trait_type": "Derivatives Revenue Ceiling", "value": ',
+                    terms.derivativeRevCeiling.toString(),
                     "},",
                     '{"trait_type": "Derivatives Approval", "value": "',
                     terms.derivativesApproval ? "true" : "false",
@@ -393,11 +393,11 @@ contract PILicenseTemplate is
             if (terms.commercialRevShare > 0) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevShare();
             }
-            if (terms.commercialRevCelling > 0) {
-                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCelling();
+            if (terms.commercialRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCeiling();
             }
-            if (terms.derivativeRevCelling > 0) {
-                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling();
+            if (terms.derivativeRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling();
             }
             if (terms.royaltyPolicy != address(0)) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
@@ -429,8 +429,8 @@ contract PILicenseTemplate is
             if (terms.derivativesReciprocal) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
             }
-            if (terms.derivativeRevCelling > 0) {
-                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling();
+            if (terms.derivativeRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling();
             }
         }
     }

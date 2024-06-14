@@ -118,12 +118,12 @@ contract LicenseTokenTest is BaseTest {
                 commercializerChecker: address(0),
                 commercializerCheckerData: "",
                 commercialRevShare: 0,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: true,
                 derivativesAttribution: true,
                 derivativesApproval: false,
                 derivativesReciprocal: true,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(USDC),
                 uri: ""
             })
@@ -168,7 +168,7 @@ contract LicenseTokenTest is BaseTest {
         );
         expectedURI = abi.encodePacked(
             expectedURI,
-            ',"attributes": [{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
+            ',"attributes": [{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
         );
         expectedURI = abi.encodePacked(
             expectedURI,

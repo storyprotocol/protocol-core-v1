@@ -15,14 +15,14 @@ import { ILicenseTemplate } from "../../../interfaces/modules/licensing/ILicense
 /// then no restrictions is enforced.
 /// @param commercializerCheckerData The data to be passed to the commercializer checker contract.
 /// @param commercialRevShare Percentage of revenue that must be shared with the licensor.
-/// @param commercialRevCelling The maximum revenue that can be generated from the commercial use of the work.
+/// @param commercialRevCeiling The maximum revenue that can be generated from the commercial use of the work.
 /// @param derivativesAllowed Indicates whether the licensee can create derivatives of his work or not.
 /// @param derivativesAttribution Indicates whether attribution is required for derivatives of the work or not.
 /// @param derivativesApproval Indicates whether the licensor must approve derivatives of the work before they can be
 /// linked to the licensor IP ID or not.
 /// @param derivativesReciprocal Indicates whether the licensee must license derivatives of the work under the
 /// same terms or not.
-/// @param derivativeRevCelling The maximum revenue that can be generated from the derivative use of the work.
+/// @param derivativeRevCeiling The maximum revenue that can be generated from the derivative use of the work.
 /// @param currency The ERC20 token to be used to pay the minting fee. the token must be registered in story protocol.
 /// @param uri The URI of the license terms, which can be used to fetch the offchain license terms.
 struct PILTerms {
@@ -35,12 +35,12 @@ struct PILTerms {
     address commercializerChecker;
     bytes commercializerCheckerData;
     uint32 commercialRevShare;
-    uint256 commercialRevCelling;
+    uint256 commercialRevCeiling;
     bool derivativesAllowed;
     bool derivativesAttribution;
     bool derivativesApproval;
     bool derivativesReciprocal;
-    uint256 derivativeRevCelling;
+    uint256 derivativeRevCeiling;
     address currency;
     string uri;
 }

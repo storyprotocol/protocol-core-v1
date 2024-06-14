@@ -136,22 +136,22 @@ contract PILicenseTemplateTest is BaseTest {
 
     function test_PILicenseTemplate_revert_registerRevCeiling() public {
         PILTerms memory terms = PILFlavors.defaultValuesLicenseTerms();
-        terms.commercialRevCelling = 10;
-        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCelling.selector);
+        terms.commercialRevCeiling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCeiling.selector);
         pilTemplate.registerLicenseTerms(terms);
 
-        terms.commercialRevCelling = 0;
-        terms.derivativeRevCelling = 10;
-        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling.selector);
+        terms.commercialRevCeiling = 0;
+        terms.derivativeRevCeiling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling.selector);
         pilTemplate.registerLicenseTerms(terms);
 
-        terms.commercialRevCelling = 0;
+        terms.commercialRevCeiling = 0;
         terms.commercialUse = true;
         terms.royaltyPolicy = address(royaltyPolicyLAP);
         terms.currency = address(erc20);
         terms.derivativesAllowed = false;
-        terms.derivativeRevCelling = 10;
-        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling.selector);
+        terms.derivativeRevCeiling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling.selector);
         pilTemplate.registerLicenseTerms(terms);
     }
 
@@ -593,7 +593,7 @@ contract PILicenseTemplateTest is BaseTest {
     function _DefaultToJson() internal pure returns (string memory) {
         /* solhint-disable */
         return
-            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
+            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
         /* solhint-enable */
     }
 }

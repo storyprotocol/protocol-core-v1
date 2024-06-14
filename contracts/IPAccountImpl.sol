@@ -7,6 +7,7 @@ import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
+import { IERC6551Executable } from "erc6551/interfaces/IERC6551Executable.sol";
 import { ERC6551, Receiver } from "@solady/src/accounts/ERC6551.sol";
 
 import { IAccessController } from "./interfaces/access/IAccessController.sol";
@@ -48,6 +49,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
             interfaceId == type(IERC6551Account).interfaceId ||
             interfaceId == type(IERC1155Receiver).interfaceId ||
             interfaceId == type(IERC721Receiver).interfaceId ||
+            interfaceId == type(IERC6551Executable).interfaceId ||
             super.supportsInterface(interfaceId));
     }
 

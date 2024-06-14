@@ -13,7 +13,7 @@ library MetaTx {
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     /// @dev Execute type hash.
     bytes32 public constant EXECUTE =
-        keccak256("Execute(address to,uint256 value,bytes data,uint256 nonce,uint256 deadline)");
+        keccak256("Execute(address to,uint256 value,bytes data,bytes32 nonce,uint256 deadline)");
 
     /// @dev Structure for the Execute type.
     struct Execute {

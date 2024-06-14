@@ -82,7 +82,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.registerLicenseTemplate(address(0x123));
     }
 
-
     function test_LicenseRegistry_setLicensingConfigForLicense() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         Licensing.LicensingConfig memory mintingLicenseConfig = Licensing.LicensingConfig({
@@ -266,7 +265,7 @@ contract LicenseRegistryTest is BaseTest {
     function test_LicenseRegistry_isExpiredNow() public {
         LicenseRegistryHarness lrHarness = _useLicenseRegistryHarness();
         vm.startPrank(address(licensingModule));
-        
+
         lrHarness.setExpirationTime(ipAcct[1], block.timestamp + 100);
         lrHarness.setExpirationTime(ipAcct[2], block.timestamp + 200);
         vm.warp(block.timestamp + 101);
@@ -382,10 +381,7 @@ contract LicenseRegistryTest is BaseTest {
         // solhint-disable-next-line unused-vars
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             address(licenseRegistry),
-            abi.encodeCall(
-                UUPSUpgradeable.upgradeToAndCall,
-                (lrHarnessImpl, "")
-            ),
+            abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (lrHarnessImpl, "")),
             0 // earliest time possible, upgraderExecDelay
         );
         vm.warp(upgraderExecDelay + 1);

@@ -9,7 +9,6 @@ import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol
 
 // contract
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
-import { LicenseRegistry } from "../../../contracts/registries/LicenseRegistry.sol";
 
 // test
 import { DeployHelper } from "../../../script/foundry/utils/DeployHelper.sol";
@@ -19,7 +18,6 @@ import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
 import { LicenseRegistryHarness } from "../mocks/module/LicenseRegistryHarness.sol";
-import { TestProxyHelper } from "./TestProxyHelper.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities
@@ -92,12 +90,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         dealMockAssets();
 
         ipAccountRegistry = IPAccountRegistry(ipAssetRegistry);
-        lrHarnessImpl = address(
-            new LicenseRegistryHarness(
-                address(licensingModule),
-                address(disputeModule)
-            )
-        );
+        lrHarnessImpl = address(new LicenseRegistryHarness(address(licensingModule), address(disputeModule)));
     }
 
     function dealMockAssets() public {

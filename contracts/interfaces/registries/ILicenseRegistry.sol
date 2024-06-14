@@ -175,11 +175,6 @@ interface ILicenseRegistry {
     /// @param licensingConfig The MintingLicenseConfig to be set for all licenses under the given IP.
     function setLicensingConfigForIp(address ipId, Licensing.LicensingConfig calldata licensingConfig) external;
 
-    /// @notice Sets the expiration time for an IP.
-    /// @param ipId The address of the IP.
-    /// @param expireTime The new expiration time, 0 means never expired.
-    function setExpireTime(address ipId, uint256 expireTime) external;
-
     /// @notice Gets the expiration time for an IP.
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.

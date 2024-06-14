@@ -457,6 +457,25 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.balanceOf(ipOwner2), 1);
     }
 
+    function test_LicensingModule_mintLicenseTokens_revert_licensorIpNotRegistered() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector)
+        );
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: address(0x123),
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: address(0x777),
+            royaltyContext: ""
+        });
+    }
+
+
     function test_LicensingModule_mintLicenseTokens_revert_invalidInputs() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.prank(ipOwner1);

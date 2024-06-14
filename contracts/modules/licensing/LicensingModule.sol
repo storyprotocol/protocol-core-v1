@@ -163,7 +163,9 @@ contract LicensingModule is
         if (receiver == address(0)) {
             revert Errors.LicensingModule__ReceiverZeroAddress();
         }
-
+        if (!IP_ACCOUNT_REGISTRY.isIpAccount(licensorIpId)) {
+            revert Errors.LicensingModule__LicensorIpNotRegistered();
+        }
         _verifyIpNotDisputed(licensorIpId);
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,

@@ -196,6 +196,9 @@ library Errors {
     /// @notice Mint amount is zero.
     error LicensingModule__MintAmountZero();
 
+    /// @notice minting a license for non-registered IP.
+    error LicensingModule__LicensorIpNotRegistered();
+
     /// @notice IP is dispute tagged.
     error LicensingModule__DisputedIpId();
 

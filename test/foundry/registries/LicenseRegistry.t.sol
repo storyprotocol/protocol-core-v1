@@ -3,6 +3,7 @@ pragma solidity 0.8.23;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
 import { IIPAccount } from "../../../contracts/interfaces/IIPAccount.sol";
@@ -16,6 +17,7 @@ import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILic
 // test
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
+import { LicenseRegistryHarness } from "../mocks/module/LicenseRegistryHarness.sol";
 
 contract LicenseRegistryTest is BaseTest {
     using Strings for *;
@@ -80,15 +82,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.registerLicenseTemplate(address(0x123));
     }
 
-    function test_LicenseRegistry_setExpireTime() public {
-        vm.prank(address(licensingModule));
-        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 100);
-        assertEq(licenseRegistry.getExpireTime(ipAcct[1]), block.timestamp + 100);
-        assertEq(
-            IIPAccount(payable(ipAcct[1])).getUint256(address(licenseRegistry), licenseRegistry.EXPIRATION_TIME()),
-            block.timestamp + 100
-        );
-    }
 
     function test_LicenseRegistry_setLicensingConfigForLicense() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
@@ -271,29 +264,32 @@ contract LicenseRegistryTest is BaseTest {
     }
 
     function test_LicenseRegistry_isExpiredNow() public {
+        LicenseRegistryHarness lrHarness = _useLicenseRegistryHarness();
         vm.startPrank(address(licensingModule));
-        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 100);
-        licenseRegistry.setExpireTime(ipAcct[2], block.timestamp + 200);
+        
+        lrHarness.setExpirationTime(ipAcct[1], block.timestamp + 100);
+        lrHarness.setExpirationTime(ipAcct[2], block.timestamp + 200);
         vm.warp(block.timestamp + 101);
-        assertTrue(licenseRegistry.isExpiredNow(ipAcct[1]));
-        assertFalse(licenseRegistry.isExpiredNow(ipAcct[2]));
-        assertFalse(licenseRegistry.isExpiredNow(ipAcct[3]));
+        assertTrue(lrHarness.isExpiredNow(ipAcct[1]));
+        assertFalse(lrHarness.isExpiredNow(ipAcct[2]));
+        assertFalse(lrHarness.isExpiredNow(ipAcct[3]));
         vm.warp(block.timestamp + 201);
-        assertTrue(licenseRegistry.isExpiredNow(ipAcct[1]));
-        assertTrue(licenseRegistry.isExpiredNow(ipAcct[2]));
-        assertFalse(licenseRegistry.isExpiredNow(ipAcct[3]));
+        assertTrue(lrHarness.isExpiredNow(ipAcct[1]));
+        assertTrue(lrHarness.isExpiredNow(ipAcct[2]));
+        assertFalse(lrHarness.isExpiredNow(ipAcct[3]));
         vm.stopPrank();
     }
 
     function test_LicenseRegistry_revert_verifyMintLicenseToken_parentIpExpired() public {
+        LicenseRegistryHarness lrHarness = _useLicenseRegistryHarness();
         vm.startPrank(address(licensingModule));
-        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 100);
+        lrHarness.setExpirationTime(ipAcct[1], block.timestamp + 100);
 
         vm.warp(block.timestamp + 101);
-        assertTrue(licenseRegistry.isExpiredNow(ipAcct[1]));
+        assertTrue(lrHarness.isExpiredNow(ipAcct[1]));
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__ParentIpExpired.selector, ipAcct[1]));
-        licenseRegistry.verifyMintLicenseToken({
+        lrHarness.verifyMintLicenseToken({
             licensorIpId: ipAcct[1],
             licenseTemplate: address(pilTemplate),
             licenseTermsId: 1, // dones't need to exist for this test case
@@ -302,8 +298,9 @@ contract LicenseRegistryTest is BaseTest {
     }
 
     function test_LicenseRegistry_registerDerivativeIp_parentIpExpireFirst() public {
+        LicenseRegistryHarness lrHarness = _useLicenseRegistryHarness();
         vm.prank(address(licensingModule));
-        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 100);
+        lrHarness.setExpirationTime(ipAcct[1], block.timestamp + 100);
         PILTerms memory terms1 = PILFlavors.nonCommercialSocialRemixing();
         terms1.expiration = 200;
         uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
@@ -339,8 +336,9 @@ contract LicenseRegistryTest is BaseTest {
     }
 
     function test_LicenseRegistry_registerDerivativeIp_termsExpireFirst() public {
+        LicenseRegistryHarness lrHarness = _useLicenseRegistryHarness();
         vm.prank(address(licensingModule));
-        licenseRegistry.setExpireTime(ipAcct[1], block.timestamp + 500);
+        lrHarness.setExpirationTime(ipAcct[1], block.timestamp + 500);
         PILTerms memory terms1 = PILFlavors.nonCommercialSocialRemixing();
         terms1.expiration = 0;
         uint256 termsId1 = pilTemplate.registerLicenseTerms(terms1);
@@ -377,5 +375,23 @@ contract LicenseRegistryTest is BaseTest {
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
+    }
+
+    function _useLicenseRegistryHarness() internal returns (LicenseRegistryHarness) {
+        vm.prank(u.admin);
+        // solhint-disable-next-line unused-vars
+        (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
+            address(licenseRegistry),
+            abi.encodeCall(
+                UUPSUpgradeable.upgradeToAndCall,
+                (lrHarnessImpl, "")
+            ),
+            0 // earliest time possible, upgraderExecDelay
+        );
+        vm.warp(upgraderExecDelay + 1);
+
+        vm.prank(u.admin);
+        licenseRegistry.upgradeToAndCall(address(lrHarnessImpl), "");
+        return LicenseRegistryHarness(address(licenseRegistry));
     }
 }

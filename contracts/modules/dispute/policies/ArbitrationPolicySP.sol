@@ -81,14 +81,14 @@ contract ArbitrationPolicySP is IArbitrationPolicy, AccessManagedUpgradeable, UU
     }
 
     /// @notice Executes custom logic on disputing cancel
-    /// @dev Enforced to be only callable by the DisputeModule
+    /// @dev Enforced to be only callable by the DisputeModule and purposedly left empty
     /// @param caller Address of the caller
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to cancel the dispute
     function onDisputeCancel(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {}
 
     /// @notice Executes custom logic on resolving dispute
-    /// @dev Enforced to be only callable by the DisputeModule
+    /// @dev Enforced to be only callable by the DisputeModule and purposedly left empty
     /// @param caller Address of the caller
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to resolve the dispute

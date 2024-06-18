@@ -14,6 +14,7 @@ import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol"
 import { MockLicensingHook } from "../../mocks/module/MockLicensingHook.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
 
 // test
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
@@ -897,6 +898,50 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
     }
 
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_ownedByDelegator() public {
+        vm.prank(ipOwner3);
+        accessController.setAllPermissions(ipId3, ipOwner2, AccessPermission.ALLOW);
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+    }
+
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_ownedByChildIp() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipId3,
+            royaltyContext: ""
+        });
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+    }
+
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_notLicensee() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
@@ -915,7 +960,13 @@ contract LicensingModuleTest is BaseTest {
         licenseTokens[0] = lcTokenId;
 
         vm.expectRevert(
-            abi.encodeWithSelector(Errors.LicenseToken__NotLicenseTokenOwner.selector, lcTokenId, ipOwner3, ipOwner2)
+            abi.encodeWithSelector(
+                Errors.LicenseToken__CallerAndChildIPNotTokenOwner.selector,
+                lcTokenId,
+                ipOwner3,
+                ipId3,
+                ipOwner2
+            )
         );
         vm.prank(ipOwner3);
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");

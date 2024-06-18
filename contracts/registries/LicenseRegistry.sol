@@ -202,9 +202,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address licenseTemplate,
         uint256[] calldata licenseTermsIds
     ) external onlyLicensingModule {
-        if (parentIpIds.length == 0) {
-            revert Errors.LicenseRegistry__NoParentIp();
-        }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.parentIps[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);

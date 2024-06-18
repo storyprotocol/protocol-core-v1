@@ -370,23 +370,6 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
     }
 
-    function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {
-        // raise dispute
-        vm.startPrank(ipAccount1);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
-        vm.stopPrank();
-
-        // set dispute judgement
-        vm.startPrank(arbitrationRelayer);
-        disputeModule.setDisputeJudgement(1, true, "");
-
-        vm.startPrank(address(licensingModule));
-
-        vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
-        royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(royaltyPolicyLAP), address(USDC), 100);
-    }
-
     function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyToken() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
         address receiverIpId = address(2);

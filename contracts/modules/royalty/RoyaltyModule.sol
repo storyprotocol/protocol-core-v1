@@ -223,8 +223,6 @@ contract RoyaltyModule is
     ) external onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
-        if (DISPUTE_MODULE.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
-        if (licenseRoyaltyPolicy == address(0)) revert Errors.RoyaltyModule__NoRoyaltyPolicySet();
         if (!$.isWhitelistedRoyaltyPolicy[licenseRoyaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedRoyaltyPolicy();
         if (LICENSE_REGISTRY.isExpiredNow(receiverIpId)) revert Errors.RoyaltyModule__IpIsExpired();

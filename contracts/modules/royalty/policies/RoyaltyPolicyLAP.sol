@@ -217,11 +217,7 @@ contract RoyaltyPolicyLAP is
     /// @param ipId The to initialize the policy for
     /// @param parentIpIds The parent ipIds that the children ipId is being linked to (if any)
     /// @param licenseData The license data custom to each the royalty policy
-    function _initPolicy(
-        address ipId,
-        address[] memory parentIpIds,
-        bytes[] memory licenseData
-    ) internal onlyRoyaltyModule {
+    function _initPolicy(address ipId, address[] memory parentIpIds, bytes[] memory licenseData) internal {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         // decode license data
         uint32[] memory parentRoyalties = new uint32[](parentIpIds.length);

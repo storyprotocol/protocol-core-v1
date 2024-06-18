@@ -9,6 +9,7 @@ import { IModule } from "../base/IModule.sol";
 /// IP owners can configure the hook to a specific license terms or all licenses of an IP Asset.
 /// @dev Developers can create a contract that implements this interface to implement various checks
 /// and determine the minting price.
+/// Initially, the hooks must be registered as modules in the ModuleRegistry.
 interface ILicensingHook is IModule {
     /// @notice This function is called when the LicensingModule mints license tokens.
     /// @dev The hook can be used to implement various checks and determine the minting price.

@@ -438,6 +438,13 @@ contract PILicenseTemplate is
             return false;
         }
 
+        //  reciprocal derivatives must be true, if want to allow derivatives of derivatives
+        if (LICENSE_REGISTRY.isDerivativeIp(parentIpId)) {
+            if (!terms.derivativesReciprocal) {
+                return false;
+            }
+        }
+
         // If the policy defines the licensor must approve derivatives, check if the
         // derivative is approved by the licensor
         if (terms.derivativesApproval && !isDerivativeApproved(parentIpId, licenseTermsId, childIpId)) {

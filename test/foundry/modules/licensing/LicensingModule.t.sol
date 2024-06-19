@@ -1175,6 +1175,37 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
     }
 
+    function test_LicensingModule_registerDerivative_revert_NotAllowDerivativesReciprocal() public {
+        // register license terms allow derivative but not allow derivative of derivative
+        PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
+        // not allow derivative of derivative
+        terms.derivativesReciprocal = false;
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+
+        // register derivative
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), socialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+
+        // register derivative of derivative, should revert
+        parentIpIds = new address[](1);
+        parentIpIds[0] = ipId2;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicenseNotCompatibleForDerivative.selector, ipId3)
+        );
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+    }
+
     function test_LicensingModule_setLicensingConfig() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         MockLicensingHook licensingHook = new MockLicensingHook();

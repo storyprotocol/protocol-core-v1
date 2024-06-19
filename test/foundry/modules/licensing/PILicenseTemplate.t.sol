@@ -352,6 +352,28 @@ contract PILicenseTemplateTest is BaseTest {
         assertTrue(result);
     }
 
+    // test verifyRegisterDerivative
+    function test_PILicenseTemplate_verifyRegisterDerivative_NotDerivativesReciprocal() public {
+        // register license terms allow derivative but not allow derivative of derivative
+        PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
+        terms.derivativesReciprocal = false;
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+
+        // register derivative
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), socialRemixTermsId);
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+        vm.prank(ipOwner[2]);
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+
+        // checking register derivative of derivative, expect false
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[3], ipAcct[2], socialRemixTermsId, ipOwner[3]);
+        assertFalse(result);
+    }
+
     function test_PILicenseTemplate_verifyRegisterDerivative_WithApproval() public {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;

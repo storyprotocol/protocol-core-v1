@@ -136,7 +136,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
         $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.LicensingConfig({
-            isSet: true,
+            isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData
@@ -156,7 +156,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.licensingConfigsForIp[ipId] = Licensing.LicensingConfig({
-            isSet: true,
+            isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData

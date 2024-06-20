@@ -611,6 +611,57 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTermsId, termsId);
     }
 
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_privateLicense() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId), false);
+
+        assertEq(licenseToken.ownerOf(lcTokenId), ipOwner2);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.totalMintedTokens(), 1);
+        assertEq(licenseToken.totalSupply(), 1);
+        assertEq(licenseToken.balanceOf(ipOwner2), 1);
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId), false);
+
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 1);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipId1, 0), ipId2);
+        assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
+        assertEq(licenseRegistry.getParentIpCount(ipId2), 1);
+        assertEq(licenseToken.totalSupply(), 0);
+        assertEq(licenseToken.totalMintedTokens(), 1);
+        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
+        licenseToken.ownerOf(lcTokenId);
+
+        (address licenseTemplate, uint256 licenseTermsId) = licenseRegistry.getAttachedLicenseTerms(ipId2, 0);
+        assertEq(licenseTemplate, address(pilTemplate));
+        assertEq(licenseTermsId, termsId);
+    }
+
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);

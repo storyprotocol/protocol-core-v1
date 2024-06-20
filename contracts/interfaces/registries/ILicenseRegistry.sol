@@ -47,11 +47,13 @@ interface ILicenseRegistry {
     /// @param parentIpIds An array of addresses of the parent IPs.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
+    /// @param isUsingLicenseToken Whether the derivative IP is registered with license tokens.
     function registerDerivativeIp(
         address ipId,
         address[] calldata parentIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseTermsIds
+        uint256[] calldata licenseTermsIds,
+        bool isUsingLicenseToken
     ) external;
 
     /// @notice Checks if an IP is a derivative IP.

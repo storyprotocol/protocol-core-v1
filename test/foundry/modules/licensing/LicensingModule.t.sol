@@ -1454,7 +1454,6 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
     }
 
-
     function test_LicensingModule_registerDerivative_resetToDefaultMintingFee() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

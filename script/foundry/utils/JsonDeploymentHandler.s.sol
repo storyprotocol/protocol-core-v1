@@ -28,8 +28,10 @@ contract JsonDeploymentHandler is Script {
     function _readDeployment() internal {
         string memory root = vm.projectRoot();
         string memory filePath = string.concat("/deploy-out/deployment-", (block.chainid).toString(), ".json");
+        console2.log(string.concat("Reading deployment file: ", filePath));
         string memory path = string.concat(root, filePath);
         readJson = vm.readFile(path);
+        console2.log(readJson);
     }
 
     function _readAddress(string memory key) internal view returns (address) {
@@ -63,6 +65,7 @@ contract JsonDeploymentHandler is Script {
         console2.log(string.concat("Reading ", key, "..."));
         address proxy = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-NewImpl")));
         address newImpl = vm.parseJsonAddress(readJson, string.concat(".", internalKey, string.concat(key, "-NewImpl")));
+
         return UpgradedImplHelper.UpgradeProposal({key: key, proxy: proxy, newImpl: newImpl});
     }
 

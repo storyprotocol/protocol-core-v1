@@ -5,20 +5,30 @@ pragma solidity ^0.8.23;
 import { console2 } from "forge-std/console2.sol";
 
 contract UpgradedImplHelper {
-
     struct UpgradeProposal {
         string key;
         address proxy;
         address newImpl;
+        // bytes initCall; TODO
     }
 
     // Upgrade tracking
     UpgradeProposal[] public upgradeProposals;
 
-    function _addProposal(string memory key, address proxy, address newImpl) internal {
+    function _addProposal(
+        string memory key,
+        address proxy,
+        address newImpl
+    ) internal {
         require(proxy != address(0), "UpgradeImplHelper: Invalid proxy address");
         require(newImpl != address(0), "UpgradeImplHelper: Invalid new implementation address");
-        upgradeProposals.push(UpgradeProposal({key: key, proxy: proxy, newImpl: newImpl}));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: key,
+                proxy: proxy,
+                newImpl: newImpl
+            })
+        );
     }
 
     function _logUpgradeProposals() internal view {

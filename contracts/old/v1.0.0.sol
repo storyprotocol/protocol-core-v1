@@ -4510,7 +4510,7 @@ library Errors {
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
-contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
+contract AccessController_V1_0_0 is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 
     /// @dev The storage struct of AccessController.
@@ -5733,7 +5733,7 @@ library IPAccountStorageOps {
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausableUpgradeable, UUPSUpgradeable {
+contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
@@ -9339,7 +9339,7 @@ interface ILicenseTemplate is IERC165 {
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
-contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
+contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -10969,7 +10969,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
 
 
 /// @title LicenseToken aka LNFT
-contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
+contract LicenseToken_V1_0_0 is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @notice Emitted for metadata updates, per EIP-4906
@@ -11468,7 +11468,7 @@ string constant CORE_METADATA_VIEW_MODULE_KEY = "CORE_METADATA_VIEW_MODULE";
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
 ///         derivative IP.
-contract RoyaltyModule is
+contract RoyaltyModule_V1_0_0 is
     IRoyaltyModule,
     ProtocolPausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -11862,7 +11862,7 @@ interface IHookModule is IModule {
 /// - Attaching license terms to IP assets
 /// - Minting license Tokens
 /// - Registering derivatives
-contract LicensingModule is
+contract LicensingModule_V1_0_0 is
     AccessControlled,
     ILicensingModule,
     BaseModule,
@@ -11882,7 +11882,7 @@ contract LicensingModule is
 
     /// @notice Returns the canonical protocol-wide RoyaltyModule
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    RoyaltyModule public immutable ROYALTY_MODULE;
+    RoyaltyModule_V1_0_0 public immutable ROYALTY_MODULE;
 
     /// @notice Returns the canonical protocol-wide LicenseRegistry
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -11915,7 +11915,7 @@ contract LicensingModule is
         address disputeModule,
         address licenseToken
     ) AccessControlled(accessController, ipAccountRegistry) {
-        ROYALTY_MODULE = RoyaltyModule(royaltyModule);
+        ROYALTY_MODULE = RoyaltyModule_V1_0_0(royaltyModule);
         LICENSE_REGISTRY = ILicenseRegistry(registry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_NFT = ILicenseToken(licenseToken);
@@ -12540,7 +12540,7 @@ abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
 }
 
 /// @title PILicenseTemplate
-contract PILicenseTemplate is
+contract PILicenseTemplate_V1_0_0 is
     BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,
     LicensorApprovalChecker,
@@ -13601,7 +13601,7 @@ contract UpgradeableBeacon is IBeacon, Ownable {
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
-contract RoyaltyPolicyLAP is
+contract RoyaltyPolicyLAP_V1_0_0 is
     IRoyaltyPolicyLAP,
     ProtocolPausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -13958,3 +13958,1359 @@ contract RoyaltyPolicyLAP is
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }
 
+/// @title IPAccount Storage
+/// @dev Implements the IIPAccountStorage interface for managing IPAccount's state using a namespaced storage pattern.
+/// Inherits all functionalities from IIPAccountStorage, providing concrete implementations for the interface's methods.
+/// This contract allows Modules to store and retrieve data in a structured and conflict-free manner
+/// by utilizing namespaces, where the default namespace is determined by the
+/// `msg.sender` (the caller Module's address).
+contract IPAccountStorage is ERC165, IIPAccountStorage {
+    using ShortStrings for *;
+
+    address public immutable MODULE_REGISTRY;
+    address public immutable LICENSE_REGISTRY;
+    address public immutable IP_ASSET_REGISTRY;
+
+    mapping(bytes32 => mapping(bytes32 => bytes)) public bytesData;
+    mapping(bytes32 => mapping(bytes32 => bytes32)) public bytes32Data;
+
+    modifier onlyRegisteredModule() {
+        if (
+            msg.sender != IP_ASSET_REGISTRY &&
+            msg.sender != LICENSE_REGISTRY &&
+            !IModuleRegistry(MODULE_REGISTRY).isRegistered(msg.sender)
+        ) {
+            revert Errors.IPAccountStorage__NotRegisteredModule(msg.sender);
+        }
+        _;
+    }
+
+    constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
+        MODULE_REGISTRY = moduleRegistry;
+        LICENSE_REGISTRY = licenseRegistry;
+        IP_ASSET_REGISTRY = ipAssetRegistry;
+    }
+
+    /// @inheritdoc IIPAccountStorage
+    function setBytes(bytes32 key, bytes calldata value) external onlyRegisteredModule {
+        bytesData[_toBytes32(msg.sender)][key] = value;
+    }
+    /// @inheritdoc IIPAccountStorage
+    function getBytes(bytes32 key) external view returns (bytes memory) {
+        return bytesData[_toBytes32(msg.sender)][key];
+    }
+    /// @inheritdoc IIPAccountStorage
+    function getBytes(bytes32 namespace, bytes32 key) external view returns (bytes memory) {
+        return bytesData[namespace][key];
+    }
+
+    /// @inheritdoc IIPAccountStorage
+    function setBytes32(bytes32 key, bytes32 value) external onlyRegisteredModule {
+        bytes32Data[_toBytes32(msg.sender)][key] = value;
+    }
+    /// @inheritdoc IIPAccountStorage
+    function getBytes32(bytes32 key) external view returns (bytes32) {
+        return bytes32Data[_toBytes32(msg.sender)][key];
+    }
+    /// @inheritdoc IIPAccountStorage
+    function getBytes32(bytes32 namespace, bytes32 key) external view returns (bytes32) {
+        return bytes32Data[namespace][key];
+    }
+
+    /// @notice ERC165 interface identifier for IIPAccountStorage
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return interfaceId == type(IIPAccountStorage).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function _toBytes32(string memory s) internal pure returns (bytes32) {
+        return ShortString.unwrap(s.toShortString());
+    }
+
+    function _toBytes32(address a) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(a)));
+    }
+}
+
+
+/**
+ * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
+ *
+ * These functions can be used to verify that a message was signed by the holder
+ * of the private keys of a given address.
+ */
+library ECDSA {
+    enum RecoverError {
+        NoError,
+        InvalidSignature,
+        InvalidSignatureLength,
+        InvalidSignatureS
+    }
+
+    /**
+     * @dev The signature derives the `address(0)`.
+     */
+    error ECDSAInvalidSignature();
+
+    /**
+     * @dev The signature has an invalid length.
+     */
+    error ECDSAInvalidSignatureLength(uint256 length);
+
+    /**
+     * @dev The signature has an S value that is in the upper half order.
+     */
+    error ECDSAInvalidSignatureS(bytes32 s);
+
+    /**
+     * @dev Returns the address that signed a hashed message (`hash`) with `signature` or an error. This will not
+     * return address(0) without also returning an error description. Errors are documented using an enum (error type)
+     * and a bytes32 providing additional information about the error.
+     *
+     * If no error is returned, then the address can be used for verification purposes.
+     *
+     * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+     * this function rejects them by requiring the `s` value to be in the lower
+     * half order, and the `v` value to be either 27 or 28.
+     *
+     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
+     * verification to be secure: it is possible to craft signatures that
+     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
+     * this is by receiving a hash of the original message (which may otherwise
+     * be too long), and then calling {MessageHashUtils-toEthSignedMessageHash} on it.
+     *
+     * Documentation for signature generation:
+     * - with https://web3js.readthedocs.io/en/v1.3.4/web3-eth-accounts.html#sign[Web3.js]
+     * - with https://docs.ethers.io/v5/api/signer/#Signer-signMessage[ethers]
+     */
+    function tryRecover(bytes32 hash, bytes memory signature) internal pure returns (address, RecoverError, bytes32) {
+        if (signature.length == 65) {
+            bytes32 r;
+            bytes32 s;
+            uint8 v;
+            // ecrecover takes the signature parameters, and the only way to get them
+            // currently is to use assembly.
+            /// @solidity memory-safe-assembly
+            assembly {
+                r := mload(add(signature, 0x20))
+                s := mload(add(signature, 0x40))
+                v := byte(0, mload(add(signature, 0x60)))
+            }
+            return tryRecover(hash, v, r, s);
+        } else {
+            return (address(0), RecoverError.InvalidSignatureLength, bytes32(signature.length));
+        }
+    }
+
+    /**
+     * @dev Returns the address that signed a hashed message (`hash`) with
+     * `signature`. This address can then be used for verification purposes.
+     *
+     * The `ecrecover` EVM precompile allows for malleable (non-unique) signatures:
+     * this function rejects them by requiring the `s` value to be in the lower
+     * half order, and the `v` value to be either 27 or 28.
+     *
+     * IMPORTANT: `hash` _must_ be the result of a hash operation for the
+     * verification to be secure: it is possible to craft signatures that
+     * recover to arbitrary addresses for non-hashed data. A safe way to ensure
+     * this is by receiving a hash of the original message (which may otherwise
+     * be too long), and then calling {MessageHashUtils-toEthSignedMessageHash} on it.
+     */
+    function recover(bytes32 hash, bytes memory signature) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, signature);
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Overload of {ECDSA-tryRecover} that receives the `r` and `vs` short-signature fields separately.
+     *
+     * See https://eips.ethereum.org/EIPS/eip-2098[EIP-2098 short signatures]
+     */
+    function tryRecover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address, RecoverError, bytes32) {
+        unchecked {
+            bytes32 s = vs & bytes32(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
+            // We do not check for an overflow here since the shift operation results in 0 or 1.
+            uint8 v = uint8((uint256(vs) >> 255) + 27);
+            return tryRecover(hash, v, r, s);
+        }
+    }
+
+    /**
+     * @dev Overload of {ECDSA-recover} that receives the `r and `vs` short-signature fields separately.
+     */
+    function recover(bytes32 hash, bytes32 r, bytes32 vs) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, r, vs);
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Overload of {ECDSA-tryRecover} that receives the `v`,
+     * `r` and `s` signature fields separately.
+     */
+    function tryRecover(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (address, RecoverError, bytes32) {
+        // EIP-2 still allows signature malleability for ecrecover(). Remove this possibility and make the signature
+        // unique. Appendix F in the Ethereum Yellow paper (https://ethereum.github.io/yellowpaper/paper.pdf), defines
+        // the valid range for s in (301): 0 < s < secp256k1n ÷ 2 + 1, and for v in (302): v ∈ {27, 28}. Most
+        // signatures from current libraries generate a unique signature with an s-value in the lower half order.
+        //
+        // If your library generates malleable signatures, such as s-values in the upper range, calculate a new s-value
+        // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
+        // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
+        // these malleable signatures as well.
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return (address(0), RecoverError.InvalidSignatureS, s);
+        }
+
+        // If the signature is valid (and not malleable), return the signer address
+        address signer = ecrecover(hash, v, r, s);
+        if (signer == address(0)) {
+            return (address(0), RecoverError.InvalidSignature, bytes32(0));
+        }
+
+        return (signer, RecoverError.NoError, bytes32(0));
+    }
+
+    /**
+     * @dev Overload of {ECDSA-recover} that receives the `v`,
+     * `r` and `s` signature fields separately.
+     */
+    function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal pure returns (address) {
+        (address recovered, RecoverError error, bytes32 errorArg) = tryRecover(hash, v, r, s);
+        _throwError(error, errorArg);
+        return recovered;
+    }
+
+    /**
+     * @dev Optionally reverts with the corresponding custom error according to the `error` argument provided.
+     */
+    function _throwError(RecoverError error, bytes32 errorArg) private pure {
+        if (error == RecoverError.NoError) {
+            return; // no error: do nothing
+        } else if (error == RecoverError.InvalidSignature) {
+            revert ECDSAInvalidSignature();
+        } else if (error == RecoverError.InvalidSignatureLength) {
+            revert ECDSAInvalidSignatureLength(uint256(errorArg));
+        } else if (error == RecoverError.InvalidSignatureS) {
+            revert ECDSAInvalidSignatureS(errorArg);
+        }
+    }
+}
+
+/**
+ * @dev Signature message hash utilities for producing digests to be consumed by {ECDSA} recovery or signing.
+ *
+ * The library provides methods for generating a hash of a message that conforms to the
+ * https://eips.ethereum.org/EIPS/eip-191[EIP 191] and https://eips.ethereum.org/EIPS/eip-712[EIP 712]
+ * specifications.
+ */
+library MessageHashUtils {
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x45` (`personal_sign` messages).
+     *
+     * The digest is calculated by prefixing a bytes32 `messageHash` with
+     * `"\x19Ethereum Signed Message:\n32"` and hashing the result. It corresponds with the
+     * hash signed when using the https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`] JSON-RPC method.
+     *
+     * NOTE: The `messageHash` parameter is intended to be the result of hashing a raw message with
+     * keccak256, although any bytes32 value can be safely used because the final digest will
+     * be re-hashed.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toEthSignedMessageHash(bytes32 messageHash) internal pure returns (bytes32 digest) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(0x00, "\x19Ethereum Signed Message:\n32") // 32 is the bytes-length of messageHash
+            mstore(0x1c, messageHash) // 0x1c (28) is the length of the prefix
+            digest := keccak256(0x00, 0x3c) // 0x3c is the length of the prefix (0x1c) + messageHash (0x20)
+        }
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x45` (`personal_sign` messages).
+     *
+     * The digest is calculated by prefixing an arbitrary `message` with
+     * `"\x19Ethereum Signed Message:\n" + len(message)` and hashing the result. It corresponds with the
+     * hash signed when using the https://eth.wiki/json-rpc/API#eth_sign[`eth_sign`] JSON-RPC method.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toEthSignedMessageHash(bytes memory message) internal pure returns (bytes32) {
+        return
+            keccak256(bytes.concat("\x19Ethereum Signed Message:\n", bytes(Strings.toString(message.length)), message));
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-191 signed data with version
+     * `0x00` (data with intended validator).
+     *
+     * The digest is calculated by prefixing an arbitrary `data` with `"\x19\x00"` and the intended
+     * `validator` address. Then hashing the result.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toDataWithIntendedValidatorHash(address validator, bytes memory data) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(hex"19_00", validator, data));
+    }
+
+    /**
+     * @dev Returns the keccak256 digest of an EIP-712 typed data (EIP-191 version `0x01`).
+     *
+     * The digest is calculated from a `domainSeparator` and a `structHash`, by prefixing them with
+     * `\x19\x01` and hashing the result. It corresponds to the hash signed by the
+     * https://eips.ethereum.org/EIPS/eip-712[`eth_signTypedData`] JSON-RPC method as part of EIP-712.
+     *
+     * See {ECDSA-recover}.
+     */
+    function toTypedDataHash(bytes32 domainSeparator, bytes32 structHash) internal pure returns (bytes32 digest) {
+        /// @solidity memory-safe-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, hex"19_01")
+            mstore(add(ptr, 0x02), domainSeparator)
+            mstore(add(ptr, 0x22), structHash)
+            digest := keccak256(ptr, 0x42)
+        }
+    }
+}
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/SignatureChecker.sol)
+
+// OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/ECDSA.sol)
+
+
+// OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC1271.sol)
+
+/**
+ * @dev Interface of the ERC1271 standard signature validation method for
+ * contracts as defined in https://eips.ethereum.org/EIPS/eip-1271[ERC-1271].
+ */
+interface IERC1271 {
+    /**
+     * @dev Should return whether the signature provided is valid for the provided data
+     * @param hash      Hash of the data to be signed
+     * @param signature Signature byte array associated with _data
+     */
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4 magicValue);
+}
+
+/**
+ * @dev Signature verification helper that can be used instead of `ECDSA.recover` to seamlessly support both ECDSA
+ * signatures from externally owned accounts (EOAs) as well as ERC1271 signatures from smart contract wallets like
+ * Argent and Safe Wallet (previously Gnosis Safe).
+ */
+library SignatureChecker {
+    /**
+     * @dev Checks if a signature is valid for a given signer and data hash. If the signer is a smart contract, the
+     * signature is validated against that smart contract using ERC1271, otherwise it's validated using `ECDSA.recover`.
+     *
+     * NOTE: Unlike ECDSA signatures, contract signatures are revocable, and the outcome of this function can thus
+     * change through time. It could return true at block N and false at block N+1 (or the opposite).
+     */
+    function isValidSignatureNow(address signer, bytes32 hash, bytes memory signature) internal view returns (bool) {
+        (address recovered, ECDSA.RecoverError error, ) = ECDSA.tryRecover(hash, signature);
+        return
+            (error == ECDSA.RecoverError.NoError && recovered == signer) ||
+            isValidERC1271SignatureNow(signer, hash, signature);
+    }
+
+    /**
+     * @dev Checks if a signature is valid for a given signer and data hash. The signature is validated
+     * against the signer smart contract using ERC1271.
+     *
+     * NOTE: Unlike ECDSA signatures, contract signatures are revocable, and the outcome of this function can thus
+     * change through time. It could return true at block N and false at block N+1 (or the opposite).
+     */
+    function isValidERC1271SignatureNow(
+        address signer,
+        bytes32 hash,
+        bytes memory signature
+    ) internal view returns (bool) {
+        (bool success, bytes memory result) = signer.staticcall(
+            abi.encodeCall(IERC1271.isValidSignature, (hash, signature))
+        );
+        return (success &&
+            result.length >= 32 &&
+            abi.decode(result, (bytes32)) == bytes32(IERC1271.isValidSignature.selector));
+    }
+}
+
+/// @title MetaTx
+/// @dev This library provides functions for handling meta transactions in the Story Protocol.
+library MetaTx {
+    /// @dev Version of the EIP712 domain.
+    string public constant EIP712_DOMAIN_VERSION = "1";
+    /// @dev Hash of the EIP712 domain version.
+    bytes32 public constant EIP712_DOMAIN_VERSION_HASH = keccak256(bytes(EIP712_DOMAIN_VERSION));
+    /// @dev EIP712 domain type hash.
+    bytes32 public constant EIP712_DOMAIN =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    /// @dev Execute type hash.
+    bytes32 public constant EXECUTE =
+        keccak256("Execute(address to,uint256 value,bytes data,uint256 nonce,uint256 deadline)");
+
+    /// @dev Structure for the Execute type.
+    struct Execute {
+        address to;
+        uint256 value;
+        bytes data;
+        uint256 nonce;
+        uint256 deadline;
+    }
+
+    /// @dev Calculates the EIP712 domain separator for the current contract.
+    /// @return The EIP712 domain separator.
+    function calculateDomainSeparator() internal view returns (bytes32) {
+        return calculateDomainSeparator(address(this));
+    }
+
+    /// @dev Calculates the EIP712 domain separator for a given IP account.
+    /// @param ipAccount The IP account for which to calculate the domain separator.
+    /// @return The EIP712 domain separator.
+    function calculateDomainSeparator(address ipAccount) internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    EIP712_DOMAIN,
+                    keccak256("Story Protocol IP Account"),
+                    EIP712_DOMAIN_VERSION_HASH,
+                    block.chainid,
+                    ipAccount
+                )
+            );
+    }
+
+    /// @dev Calculates the EIP712 struct hash of an Execute.
+    /// @param execute The Execute to hash.
+    /// @return The EIP712 struct hash of the Execute.
+    function getExecuteStructHash(Execute memory execute) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    MetaTx.EXECUTE,
+                    execute.to,
+                    execute.value,
+                    keccak256(execute.data),
+                    execute.nonce,
+                    execute.deadline
+                )
+            );
+    }
+}
+
+
+/// @title IPAccountImpl
+/// @notice The Story Protocol's implementation of the IPAccount.
+contract IPAccountImpl_V1_0_0 is IPAccountStorage, IIPAccount {
+    address public immutable ACCESS_CONTROLLER;
+
+    /// @notice Returns the IPAccount's internal nonce for transaction ordering.
+    uint256 public state;
+
+    receive() external payable override(IERC6551Account) {}
+
+    /// @notice Creates a new IPAccountImpl contract instance
+    /// @dev Initializes the IPAccountImpl with an AccessController address which is stored
+    /// in the implementation code's storage.
+    /// This means that each cloned IPAccount will inherently use the same AccessController
+    /// without the need for individual configuration.
+    /// @param accessController The address of the AccessController contract to be used for permission checks
+    constructor(
+        address accessController,
+        address ipAssetRegistry,
+        address licenseRegistry,
+        address moduleRegistry
+    ) IPAccountStorage(ipAssetRegistry, licenseRegistry, moduleRegistry) {
+        if (accessController == address(0)) revert Errors.IPAccount__ZeroAccessController();
+        ACCESS_CONTROLLER = accessController;
+    }
+
+    /// @notice Checks if the contract supports a specific interface
+    /// @param interfaceId The interface identifier, as specified in ERC-165
+    /// @return bool is true if the contract supports the interface, false otherwise
+    function supportsInterface(bytes4 interfaceId) public view override(IPAccountStorage, IERC165) returns (bool) {
+        return (interfaceId == type(IIPAccount).interfaceId ||
+            interfaceId == type(IERC6551Account).interfaceId ||
+            interfaceId == type(IERC1155Receiver).interfaceId ||
+            interfaceId == type(IERC721Receiver).interfaceId ||
+            super.supportsInterface(interfaceId));
+    }
+
+    /// @notice Returns the identifier of the non-fungible token which owns the account
+    /// @return chainId The EIP-155 ID of the chain the token exists on
+    /// @return tokenContract The contract address of the token
+    /// @return tokenId The ID of the token
+    function token() public view override returns (uint256, address, uint256) {
+        bytes memory footer = new bytes(0x60);
+        // 0x4d = 77 bytes (ERC-1167 Header, address, ERC-1167 Footer, salt)
+        // 0x60 = 96 bytes (chainId, tokenContract, tokenId)
+        //    ERC-1167 Header               (10 bytes)
+        //    <implementation (address)>    (20 bytes)
+        //    ERC-1167 Footer               (15 bytes)
+        //    <salt (uint256)>              (32 bytes)
+        //    <chainId (uint256)>           (32 bytes)
+        //    <tokenContract (address)>     (32 bytes)
+        //    <tokenId (uint256)>           (32 bytes)
+        assembly {
+            extcodecopy(address(), add(footer, 0x20), 0x4d, 0x60)
+        }
+
+        return abi.decode(footer, (uint256, address, uint256));
+    }
+
+    /// @notice Checks if the signer is valid for the given data
+    /// @param signer The signer to check
+    /// @param data The data to check against
+    /// @return The function selector if the signer is valid, 0 otherwise
+    function isValidSigner(address signer, bytes calldata data) external view returns (bytes4) {
+        if (_isValidSigner(signer, address(0), data)) {
+            return IERC6551Account.isValidSigner.selector;
+        }
+
+        return bytes4(0);
+    }
+
+    /// @notice Returns the owner of the IP Account.
+    /// @return The address of the owner.
+    function owner() public view returns (address) {
+        (uint256 chainId, address contractAddress, uint256 tokenId) = token();
+        if (chainId != block.chainid) return address(0);
+        return IERC721(contractAddress).ownerOf(tokenId);
+    }
+
+    /// @dev Checks if the signer is valid for the given data and recipient via the AccessController permission system.
+    /// @param signer The signer to check
+    /// @param to The recipient of the transaction
+    /// @param data The calldata to check against
+    /// @return bool is true if the signer is valid, false otherwise
+    function _isValidSigner(address signer, address to, bytes calldata data) internal view returns (bool) {
+        if (data.length > 0 && data.length < 4) {
+            revert Errors.IPAccount__InvalidCalldata();
+        }
+        bytes4 selector = bytes4(0);
+        if (data.length >= 4) {
+            selector = bytes4(data[:4]);
+        }
+        // the check will revert if permission is denied
+        IAccessController(ACCESS_CONTROLLER).checkPermission(address(this), signer, to, selector);
+        return true;
+    }
+
+    /// @notice Executes a transaction from the IP Account on behalf of the signer.
+    /// @param to The recipient of the transaction.
+    /// @param value The amount of Ether to send.
+    /// @param data The data to send along with the transaction.
+    /// @param signer The signer of the transaction.
+    /// @param deadline The deadline of the transaction signature.
+    /// @param signature The signature of the transaction, EIP-712 encoded.
+    function executeWithSig(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        address signer,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable returns (bytes memory result) {
+        if (signer == address(0)) {
+            revert Errors.IPAccount__InvalidSigner();
+        }
+
+        if (deadline < block.timestamp) {
+            revert Errors.IPAccount__ExpiredSignature();
+        }
+
+        ++state;
+
+        bytes32 digest = MessageHashUtils.toTypedDataHash(
+            MetaTx.calculateDomainSeparator(),
+            MetaTx.getExecuteStructHash(
+                MetaTx.Execute({ to: to, value: value, data: data, nonce: state, deadline: deadline })
+            )
+        );
+
+        if (!SignatureChecker.isValidSignatureNow(signer, digest, signature)) {
+            revert Errors.IPAccount__InvalidSignature();
+        }
+
+        result = _execute(signer, to, value, data);
+        emit ExecutedWithSig(to, value, data, state, deadline, signer, signature);
+    }
+
+    /// @notice Executes a transaction from the IP Account.
+    /// @param to The recipient of the transaction.
+    /// @param value The amount of Ether to send.
+    /// @param data The data to send along with the transaction.
+    /// @return result The return data from the transaction.
+    function execute(address to, uint256 value, bytes calldata data) external payable returns (bytes memory result) {
+        ++state;
+        result = _execute(msg.sender, to, value, data);
+        emit Executed(to, value, data, state);
+    }
+
+    /// @inheritdoc IERC721Receiver
+    function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
+        return this.onERC721Received.selector;
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155Received(address, address, uint256, uint256, bytes memory) public pure returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    /// @inheritdoc IERC1155Receiver
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] memory,
+        uint256[] memory,
+        bytes memory
+    ) public pure returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    /// @dev Executes a transaction from the IP Account.
+    function _execute(
+        address signer,
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) internal returns (bytes memory result) {
+        require(_isValidSigner(signer, to, data), "Invalid signer");
+
+        bool success;
+        (success, result) = to.call{ value: value }(data);
+
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
+    }
+}
+
+/// @notice Library for working with Openzeppelin's ShortString data types.
+library ShortStringOps {
+    using ShortStrings for *;
+    using Strings for *;
+
+    /// @dev Convert string to bytes32 using ShortString
+    function stringToBytes32(string memory s) internal pure returns (bytes32) {
+        return ShortString.unwrap(s.toShortString());
+    }
+}
+
+
+/**
+ * @dev Provides a function to batch together multiple calls in a single external call.
+ *
+ * Consider any assumption about calldata validation performed by the sender may be violated if it's not especially
+ * careful about sending transactions invoking {multicall}. For example, a relay address that filters function
+ * selectors won't filter calls nested within a {multicall} operation.
+ *
+ * NOTE: Since 5.0.1 and 4.9.4, this contract identifies non-canonical contexts (i.e. `msg.sender` is not {_msgSender}).
+ * If a non-canonical context is identified, the following self `delegatecall` appends the last bytes of `msg.data`
+ * to the subcall. This makes it safe to use with {ERC2771Context}. Contexts that don't affect the resolution of
+ * {_msgSender} are not propagated to subcalls.
+ */
+abstract contract MulticallUpgradeable is Initializable, ContextUpgradeable {
+    function __Multicall_init() internal onlyInitializing {
+    }
+
+    function __Multicall_init_unchained() internal onlyInitializing {
+    }
+    /**
+     * @dev Receives and executes a batch of function calls on this contract.
+     * @custom:oz-upgrades-unsafe-allow-reachable delegatecall
+     */
+    function multicall(bytes[] calldata data) external virtual returns (bytes[] memory results) {
+        bytes memory context = msg.sender == _msgSender()
+            ? new bytes(0)
+            : msg.data[msg.data.length - _contextSuffixLength():];
+
+        results = new bytes[](data.length);
+        for (uint256 i = 0; i < data.length; i++) {
+            results[i] = Address.functionDelegateCall(address(this), bytes.concat(data[i], context));
+        }
+        return results;
+    }
+}
+
+/// @title Arbitration Policy Interface
+interface IArbitrationPolicy {
+    /// @notice Event emitted when governance withdraws
+    /// @param amount The amount withdrawn
+    event GovernanceWithdrew(uint256 amount);
+
+    /// @notice Returns the protocol-wide dispute module address
+    function DISPUTE_MODULE() external view returns (address);
+
+    /// @notice Returns the payment token address
+    function PAYMENT_TOKEN() external view returns (address);
+
+    /// @notice Returns the arbitration price
+    function ARBITRATION_PRICE() external view returns (uint256);
+
+    /// @notice Executes custom logic on raising dispute.
+    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @param caller Address of the caller
+    /// @param data The arbitrary data used to raise the dispute
+    function onRaiseDispute(address caller, bytes calldata data) external;
+
+    /// @notice Executes custom logic on disputing judgement.
+    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @param disputeId The dispute id
+    /// @param decision The decision of the dispute
+    /// @param data The arbitrary data used to set the dispute judgement
+    function onDisputeJudgement(uint256 disputeId, bool decision, bytes calldata data) external;
+
+    /// @notice Executes custom logic on disputing cancel.
+    /// @dev Enforced to be only callable by the DisputeModule.
+    /// @param caller Address of the caller
+    /// @param disputeId The dispute id
+    /// @param data The arbitrary data used to cancel the dispute
+    function onDisputeCancel(address caller, uint256 disputeId, bytes calldata data) external;
+
+    /// @notice Executes custom logic on resolving dispute
+    /// @dev Enforced to be only callable by the DisputeModule
+    /// @param caller Address of the caller
+    /// @param disputeId The dispute id
+    /// @param data The arbitrary data used to resolve the dispute
+    function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external;
+
+    /// @notice Allows governance address to withdraw
+    /// @dev Enforced to be only callable by the governance protocol admin.
+    function governanceWithdraw() external;
+}
+
+
+
+/// @title Dispute Module
+/// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes
+/// through arbitration by judges.
+contract DisputeModule_V1_0_0 is
+    IDisputeModule,
+    BaseModule,
+    ProtocolPausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    AccessControlled,
+    UUPSUpgradeable,
+    MulticallUpgradeable
+{
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
+    /// @dev Storage for DisputeModule
+    /// @param disputeCounter The dispute ID counter
+    /// @param baseArbitrationPolicy The address of the base arbitration policy
+    /// @param disputes Returns the dispute information for a given dispute id
+    /// @param isWhitelistedDisputeTag Indicates if a dispute tag is whitelisted
+    /// @param isWhitelistedArbitrationPolicy Indicates if an arbitration policy is whitelisted
+    /// @param isWhitelistedArbitrationRelayer Indicates if an arbitration relayer
+    /// is whitelisted for a given arbitration policy
+    /// @param arbitrationPolicies Arbitration policy for a given ipId
+    /// @param successfulDisputesPerIp Counter of successful disputes per ipId
+    /// @custom:storage-location erc7201:story-protocol.DisputeModule
+    struct DisputeModuleStorage {
+        uint256 disputeCounter;
+        address baseArbitrationPolicy;
+        mapping(uint256 => Dispute) disputes;
+        mapping(bytes32 => bool) isWhitelistedDisputeTag;
+        mapping(address => bool) isWhitelistedArbitrationPolicy;
+        mapping(address => mapping(address => bool)) isWhitelistedArbitrationRelayer;
+        mapping(address => address) arbitrationPolicies;
+        mapping(address => uint256) successfulDisputesPerIp;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.DisputeModule")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant DisputeModuleStorageLocation =
+        0x682945c2d364b4630e68ffe0854d372acb0c4ff549a1e3dbc6f878bd8da0c800;
+
+    string public constant override name = DISPUTE_MODULE_KEY;
+
+    /// @notice Tag to represent the dispute is in dispute state waiting for judgement
+    bytes32 public constant IN_DISPUTE = bytes32("IN_DISPUTE");
+
+    /// @notice Protocol-wide IP asset registry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
+
+    /// @notice Protocol-wide license registry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
+
+    /// Constructor
+    /// @param accessController The address of the access controller
+    /// @param ipAssetRegistry The address of the asset registry
+    /// @param licenseRegistry The address of the license registry
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(
+        address accessController,
+        address ipAssetRegistry,
+        address licenseRegistry
+    ) AccessControlled(accessController, ipAssetRegistry) {
+        if (licenseRegistry == address(0)) revert Errors.DisputeModule__ZeroLicenseRegistry();
+        if (ipAssetRegistry == address(0)) revert Errors.DisputeModule__ZeroIPAssetRegistry();
+        if (accessController == address(0)) revert Errors.DisputeModule__ZeroAccessController();
+
+        IP_ASSET_REGISTRY = IIPAssetRegistry(ipAssetRegistry);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+        _disableInitializers();
+    }
+
+    /// @notice Initializer for this implementation contract
+    /// @param accessManager The address of the protocol admin roles contract
+    function initialize(address accessManager) external initializer {
+        if (accessManager == address(0)) {
+            revert Errors.DisputeModule__ZeroAccessManager();
+        }
+        __ProtocolPausable_init(accessManager);
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
+        __Multicall_init();
+    }
+
+    /// @notice Whitelists a dispute tag
+    /// @param tag The dispute tag
+    /// @param allowed Indicates if the dispute tag is whitelisted or not
+    function whitelistDisputeTag(bytes32 tag, bool allowed) external restricted {
+        if (tag == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeTag();
+
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        $.isWhitelistedDisputeTag[tag] = allowed;
+
+        emit TagWhitelistUpdated(tag, allowed);
+    }
+
+    /// @notice Whitelists an arbitration policy
+    /// @param arbitrationPolicy The address of the arbitration policy
+    /// @param allowed Indicates if the arbitration policy is whitelisted or not
+    function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external restricted {
+        if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
+
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        $.isWhitelistedArbitrationPolicy[arbitrationPolicy] = allowed;
+
+        emit ArbitrationPolicyWhitelistUpdated(arbitrationPolicy, allowed);
+    }
+
+    /// @notice Whitelists an arbitration relayer for a given arbitration policy
+    /// @param arbitrationPolicy The address of the arbitration policy
+    /// @param arbPolicyRelayer The address of the arbitration relayer
+    /// @param allowed Indicates if the arbitration relayer is whitelisted or not
+    function whitelistArbitrationRelayer(
+        address arbitrationPolicy,
+        address arbPolicyRelayer,
+        bool allowed
+    ) external restricted {
+        if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
+        if (arbPolicyRelayer == address(0)) revert Errors.DisputeModule__ZeroArbitrationRelayer();
+
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        $.isWhitelistedArbitrationRelayer[arbitrationPolicy][arbPolicyRelayer] = allowed;
+
+        emit ArbitrationRelayerWhitelistUpdated(arbitrationPolicy, arbPolicyRelayer, allowed);
+    }
+
+    /// @notice Sets the base arbitration policy
+    /// @param arbitrationPolicy The address of the arbitration policy
+    function setBaseArbitrationPolicy(address arbitrationPolicy) external restricted {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy])
+            revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
+
+        $.baseArbitrationPolicy = arbitrationPolicy;
+
+        emit DefaultArbitrationPolicyUpdated(arbitrationPolicy);
+    }
+
+    /// @notice Sets the arbitration policy for an ipId
+    /// @param ipId The ipId
+    /// @param arbitrationPolicy The address of the arbitration policy
+    function setArbitrationPolicy(address ipId, address arbitrationPolicy) external verifyPermission(ipId) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy])
+            revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
+
+        $.arbitrationPolicies[ipId] = arbitrationPolicy;
+
+        emit ArbitrationPolicySet(ipId, arbitrationPolicy);
+    }
+
+    /// @notice Raises a dispute on a given ipId
+    /// @param targetIpId The ipId that is the target of the dispute
+    /// @param linkToDisputeEvidence The link of the dispute evidence
+    /// @param targetTag The target tag of the dispute
+    /// @param data The data to initialize the policy
+    /// @return disputeId The id of the newly raised dispute
+    function raiseDispute(
+        address targetIpId,
+        string memory linkToDisputeEvidence,
+        bytes32 targetTag,
+        bytes calldata data
+    ) external nonReentrant whenNotPaused returns (uint256) {
+        if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
+
+        bytes32 linkToDisputeEvidenceBytes = ShortStringOps.stringToBytes32(linkToDisputeEvidence);
+        if (linkToDisputeEvidenceBytes == bytes32(0)) revert Errors.DisputeModule__ZeroLinkToDisputeEvidence();
+
+        address arbitrationPolicy = $.arbitrationPolicies[targetIpId];
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
+
+        uint256 disputeId = ++$.disputeCounter;
+
+        $.disputes[disputeId] = Dispute({
+            targetIpId: targetIpId,
+            disputeInitiator: msg.sender,
+            arbitrationPolicy: arbitrationPolicy,
+            linkToDisputeEvidence: linkToDisputeEvidenceBytes,
+            targetTag: targetTag,
+            currentTag: IN_DISPUTE,
+            parentDisputeId: 0
+        });
+
+        IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(msg.sender, data);
+
+        emit DisputeRaised(
+            disputeId,
+            targetIpId,
+            msg.sender,
+            arbitrationPolicy,
+            linkToDisputeEvidenceBytes,
+            targetTag,
+            data
+        );
+
+        return disputeId;
+    }
+
+    /// @notice Sets the dispute judgement on a given dispute. Only whitelisted arbitration relayers can call to judge.
+    /// @param disputeId The dispute id
+    /// @param decision The decision of the dispute
+    /// @param data The data to set the dispute judgement
+    function setDisputeJudgement(
+        uint256 disputeId,
+        bool decision,
+        bytes calldata data
+    ) external nonReentrant whenNotPaused {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+
+        Dispute memory dispute = $.disputes[disputeId];
+
+        if (dispute.currentTag != IN_DISPUTE) revert Errors.DisputeModule__NotInDisputeState();
+        if (!$.isWhitelistedArbitrationRelayer[dispute.arbitrationPolicy][msg.sender]) {
+            revert Errors.DisputeModule__NotWhitelistedArbitrationRelayer();
+        }
+
+        if (decision) {
+            $.disputes[disputeId].currentTag = dispute.targetTag;
+            $.successfulDisputesPerIp[dispute.targetIpId]++;
+        } else {
+            $.disputes[disputeId].currentTag = bytes32(0);
+        }
+
+        IArbitrationPolicy(dispute.arbitrationPolicy).onDisputeJudgement(disputeId, decision, data);
+
+        emit DisputeJudgementSet(disputeId, decision, data);
+    }
+
+    /// @notice Cancels an ongoing dispute
+    /// @param disputeId The dispute id
+    /// @param data The data to cancel the dispute
+    function cancelDispute(uint256 disputeId, bytes calldata data) external nonReentrant {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        Dispute memory dispute = $.disputes[disputeId];
+
+        if (dispute.currentTag != IN_DISPUTE) revert Errors.DisputeModule__NotInDisputeState();
+        if (msg.sender != dispute.disputeInitiator) revert Errors.DisputeModule__NotDisputeInitiator();
+
+        IArbitrationPolicy(dispute.arbitrationPolicy).onDisputeCancel(msg.sender, disputeId, data);
+
+        $.disputes[disputeId].currentTag = bytes32(0);
+
+        emit DisputeCancelled(disputeId, data);
+    }
+
+    /// @notice Tags a derivative if a parent has been tagged with an infringement tag
+    /// @param parentIpId The infringing parent ipId
+    /// @param derivativeIpId The derivative ipId
+    /// @param parentDisputeId The dispute id that tagged the parent ipId as infringing
+    function tagDerivativeIfParentInfringed(
+        address parentIpId,
+        address derivativeIpId,
+        uint256 parentDisputeId
+    ) external whenNotPaused {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+
+        Dispute memory parentDispute = $.disputes[parentDisputeId];
+        if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
+
+        // a dispute current tag prior to being resolved can be in 3 states - IN_DISPUTE, 0, or a tag (ie. "PLAGIARISM)
+        // by restricting IN_DISPUTE and 0 - it is ensire the parent has been tagged before resolving dispute
+        if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
+            revert Errors.DisputeModule__ParentNotTagged();
+
+        if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
+
+        address arbitrationPolicy = $.arbitrationPolicies[derivativeIpId];
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
+
+        uint256 disputeId = ++$.disputeCounter;
+
+        $.disputes[disputeId] = Dispute({
+            targetIpId: derivativeIpId,
+            disputeInitiator: msg.sender,
+            arbitrationPolicy: arbitrationPolicy,
+            linkToDisputeEvidence: "",
+            targetTag: parentDispute.currentTag,
+            currentTag: parentDispute.currentTag,
+            parentDisputeId: parentDisputeId
+        });
+
+        $.successfulDisputesPerIp[derivativeIpId]++;
+
+        emit DerivativeTaggedOnParentInfringement(
+            parentIpId,
+            derivativeIpId,
+            parentDisputeId,
+            parentDispute.currentTag
+        );
+    }
+
+    /// @notice Resolves a dispute after it has been judged
+    /// @param disputeId The dispute id
+    /// @param data The data to resolve the dispute
+    function resolveDispute(uint256 disputeId, bytes calldata data) external {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        Dispute memory dispute = $.disputes[disputeId];
+
+        // there are two types of disputes - those that are subject to judgment and those that are not
+        // the way to distinguish is by whether dispute.parentDisputeId is 0 or higher than 0
+        // for the former - only the dispute initiator can resolve
+        if (dispute.parentDisputeId == 0 && msg.sender != dispute.disputeInitiator)
+            revert Errors.DisputeModule__NotDisputeInitiator();
+        // for the latter - resolving is permissionless as long as the parent dispute has been resolved
+        if (dispute.parentDisputeId > 0 && $.disputes[dispute.parentDisputeId].currentTag != bytes32(0))
+            revert Errors.DisputeModule__ParentDisputeNotResolved();
+
+        if (dispute.currentTag == IN_DISPUTE || dispute.currentTag == bytes32(0))
+            revert Errors.DisputeModule__NotAbleToResolve();
+
+        $.successfulDisputesPerIp[dispute.targetIpId]--;
+        $.disputes[disputeId].currentTag = bytes32(0);
+
+        IArbitrationPolicy(dispute.arbitrationPolicy).onResolveDispute(msg.sender, disputeId, data);
+
+        emit DisputeResolved(disputeId);
+    }
+
+    /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)
+    /// @param ipId The ipId
+    /// @return isTagged True if the ipId is tagged
+    function isIpTagged(address ipId) external view returns (bool) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.successfulDisputesPerIp[ipId] > 0;
+    }
+
+    /// @notice Dispute ID counter
+    function disputeCounter() external view returns (uint256) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.disputeCounter;
+    }
+
+    /// @notice The address of the base arbitration policy
+    function baseArbitrationPolicy() external view returns (address) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.baseArbitrationPolicy;
+    }
+
+    /// @notice Returns the dispute information for a given dispute id
+    /// @param disputeId The dispute id
+    /// @return targetIpId The ipId that is the target of the dispute
+    /// @return disputeInitiator The address of the dispute initiator
+    /// @return arbitrationPolicy The address of the arbitration policy
+    /// @return linkToDisputeEvidence The link of the dispute summary
+    /// @return targetTag The target tag of the dispute
+    /// @return currentTag The current tag of the dispute
+    /// @return parentDisputeId The parent dispute id
+    function disputes(
+        uint256 disputeId
+    )
+        external
+        view
+        returns (
+            address targetIpId,
+            address disputeInitiator,
+            address arbitrationPolicy,
+            bytes32 linkToDisputeEvidence,
+            bytes32 targetTag,
+            bytes32 currentTag,
+            uint256 parentDisputeId
+        )
+    {
+        Dispute memory dispute = _getDisputeModuleStorage().disputes[disputeId];
+        return (
+            dispute.targetIpId,
+            dispute.disputeInitiator,
+            dispute.arbitrationPolicy,
+            dispute.linkToDisputeEvidence,
+            dispute.targetTag,
+            dispute.currentTag,
+            dispute.parentDisputeId
+        );
+    }
+
+    /// @notice Indicates if a dispute tag is whitelisted
+    /// @param tag The dispute tag
+    /// @return allowed Indicates if the dispute tag is whitelisted
+    function isWhitelistedDisputeTag(bytes32 tag) external view returns (bool allowed) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.isWhitelistedDisputeTag[tag];
+    }
+
+    /// @notice Indicates if an arbitration policy is whitelisted
+    /// @param arbitrationPolicy The address of the arbitration policy
+    /// @return allowed Indicates if the arbitration policy is whitelisted
+    function isWhitelistedArbitrationPolicy(address arbitrationPolicy) external view returns (bool allowed) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.isWhitelistedArbitrationPolicy[arbitrationPolicy];
+    }
+
+    /// @notice Indicates if an arbitration relayer is whitelisted for a given arbitration policy
+    /// @param arbitrationPolicy The address of the arbitration policy
+    /// @param arbitrationRelayer The address of the arbitration relayer
+    /// @return allowed Indicates if the arbitration relayer is whitelisted
+    function isWhitelistedArbitrationRelayer(
+        address arbitrationPolicy,
+        address arbitrationRelayer
+    ) external view returns (bool allowed) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
+    }
+
+    /// @notice Arbitration policy for a given ipId
+    /// @param ipId The ipId
+    /// @return policy The address of the arbitration policy
+    function arbitrationPolicies(address ipId) external view returns (address policy) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        return $.arbitrationPolicies[ipId];
+    }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
+
+    /// @dev Returns the storage struct of DisputeModule.
+    function _getDisputeModuleStorage() private pure returns (DisputeModuleStorage storage $) {
+        assembly {
+            $.slot := DisputeModuleStorageLocation
+        }
+    }
+}
+
+/// @title PILFlavors Library
+/// @notice Provides a set of predefined PILTerms configurations for different licensing scenarios
+/// See the text: https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf
+library PILFlavors {
+    bytes public constant EMPTY_BYTES = "";
+
+    /// @notice Gets the default values of PIL terms
+    function defaultValuesLicenseTerms() internal pure returns (PILTerms memory) {
+        return _defaultPIL();
+    }
+
+    /// @notice Helper method to get licenseTermsId for the defaultValuesLicenseTerms() configuration
+    /// @param pilTemplate The address of the PILicenseTemplate
+    /// @return The licenseTermsId for the defaultValuesLicenseTerms() configuration, 0 if not registered
+    function getDefaultValuesLicenseTermsId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_defaultPIL());
+    }
+
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
+    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-1-non-commercial-social-remixing
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
+    function nonCommercialSocialRemixing() internal returns (PILTerms memory) {
+        return _nonComSocialRemixingPIL();
+    }
+
+    /// @notice Helper method to get the licenseTermsId for the nonCommercialSocialRemixing() configuration
+    /// @param pilTemplate The address of the PILicenseTemplate
+    /// @return The licenseTermsId for the nonCommercialSocialRemixing() configuration, 0 if not registered
+    function getNonCommercialSocialRemixingId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_nonComSocialRemixingPIL());
+    }
+
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
+    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-2-commercial-use
+    /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
+    /// @param currencyToken The token to be used to pay the minting fee
+    /// @param royaltyPolicy The address of the royalty licenseTerms to be used by the license template.
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
+    function commercialUse(
+        uint256 mintingFee,
+        address currencyToken,
+        address royaltyPolicy
+    ) internal returns (PILTerms memory) {
+        return _commercialUsePIL(mintingFee, currencyToken, royaltyPolicy);
+    }
+
+    /// @notice Helper method to get the licenseTermsId for the commercialUse() configuration
+    /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
+    /// @param currencyToken The token to be used to pay the minting fee
+    /// @return The licenseTermsId for the commercialUse() configuration, 0 if not registered
+    function getCommercialUseId(
+        IPILicenseTemplate pilTemplate,
+        uint256 mintingFee,
+        address currencyToken,
+        address royaltyPolicy
+    ) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_commercialUsePIL(mintingFee, currencyToken, royaltyPolicy));
+    }
+
+    /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor, as described in:
+    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-3-commercial-remix
+    /// @param commercialRevShare The percentage of the revenue that the commercializer will share
+    /// with the parent creator, with 1 decimal (e.g. 10 means 1%)
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
+    function commercialRemix(
+        uint256 mintingFee,
+        uint32 commercialRevShare,
+        address royaltyPolicy,
+        address currencyToken
+    ) internal pure returns (PILTerms memory) {
+        return _commercialRemixPIL(mintingFee, commercialRevShare, royaltyPolicy, currencyToken);
+    }
+
+    /// @notice Helper method to get the licenseTermsId for the commercialRemix() configuration from LicensingModule
+    /// @param pilTemplate The address of the PILicenseTemplate
+    /// @param commercialRevShare The percentage of the revenue that the commercializer will share with the
+    /// parent creator, with 1 decimal (e.g. 10 means 1%)
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @return The licenseTermsId for the commercialRemix() configuration, 0 if not registered
+    function getCommercialRemixId(
+        IPILicenseTemplate pilTemplate,
+        uint256 mintingFee,
+        uint32 commercialRevShare,
+        address royaltyPolicy,
+        address currencyToken
+    ) internal view returns (uint256) {
+        return
+            pilTemplate.getLicenseTermsId(
+                _commercialRemixPIL(mintingFee, commercialRevShare, royaltyPolicy, currencyToken)
+            );
+    }
+
+    /// @notice Gets the default values of PIL terms
+    function _defaultPIL() private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: false,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCelling: 0,
+                currency: address(0),
+                uri: ""
+            });
+    }
+
+    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor
+    function _nonComSocialRemixingPIL() private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                mintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCelling: 0,
+                currency: address(0),
+                uri: ""
+            });
+    }
+
+    /// @notice Gets the values to create a Commercial Use licenseTerms flavor
+    function _commercialUsePIL(
+        uint256 mintingFee,
+        address currencyToken,
+        address royaltyPolicy
+    ) private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                mintingFee: mintingFee,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCelling: 0,
+                currency: currencyToken,
+                uri: ""
+            });
+    }
+
+    /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor
+    function _commercialRemixPIL(
+        uint256 mintingFee,
+        uint32 commercialRevShare,
+        address royaltyPolicy,
+        address currencyToken
+    ) private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                mintingFee: mintingFee,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: commercialRevShare,
+                commercialRevCelling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCelling: 0,
+                currency: currencyToken,
+                uri: ""
+            });
+    }
+}

@@ -17,7 +17,7 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
-/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/IPAccountImpl.sol:IPAccountImpl
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:IPAccountImpl_V1_0_0
 contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable ACCESS_CONTROLLER;
@@ -226,7 +226,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     /// @param extraData The extra data to check against, it should bethe address of the recipient for IPAccount
     /// @param context The context for validating the signer
     /// @return bool is true if the signer is valid, false otherwise
-    function _isValidSigner(address signer, bytes32 extraData, bytes calldata context) internal view returns (bool) {
+    function _isValidSigner(address signer, bytes32 extraData, bytes calldata context) override internal view returns (bool) {
         return _isValidSigner(signer, address(uint160(uint256(extraData))), context);
     }
 

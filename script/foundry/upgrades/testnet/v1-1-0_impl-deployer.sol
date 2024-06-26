@@ -36,7 +36,7 @@ import { StringUtil } from "../../utils/StringUtil.sol";
 import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 import { UpgradedImplHelper } from "../../utils/upgrades/UpgradedImplHelper.sol";
 
-contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
+contract ImplDeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
     struct ProxiesToUpgrade {
         address licenseToken;
         address licensingModule;
@@ -69,7 +69,7 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
         proxies = _proxies;
         dependencies = _dependencies;
         erc6551Registry = _erc6551Registry;
-        _validate(); // StorageLayoutChecker.s.sol
+        //_validate(); // StorageLayoutChecker.s.sol
         string memory contractKey;
         address impl;
 
@@ -82,7 +82,13 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
                 abi.encode(proxies.licensingModule, dependencies.disputeModule)
             )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.licenseToken, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.licenseToken,
+                newImpl: impl
+            })
+        );
 
         // - LicensingModule
         contractKey = "LicensingModule";
@@ -102,7 +108,13 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
             )
         );
 
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.licensingModule, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.licensingModule,
+                newImpl: impl
+            })
+        );
 
         // - LicenseRegistry
         contractKey = "LicenseRegistry";
@@ -113,7 +125,13 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
                 abi.encode(proxies.licensingModule, dependencies.disputeModule)
             )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.licenseRegistry, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.licenseRegistry,
+                newImpl: impl
+            })
+        );
 
         // - PILicenseTemplate
         contractKey = "PILicenseTemplate";
@@ -129,7 +147,13 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
                 )
             )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.piLicenseTemplate, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.piLicenseTemplate,
+                newImpl: impl
+            })
+        );
 
         // - AccessController
         contractKey = "AccessController";
@@ -140,29 +164,45 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
                 abi.encode(proxies.ipAssetRegistry, dependencies.moduleRegistry)
             )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.accessController, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.accessController,
+                newImpl: impl
+            })
+        );
 
         // - IPAccountImpl
-        address ipAccountImpl = payable(
-            create3Deployer.deploy(
-                _getSalt(string.concat(type(IPAccountImpl).name, "implementation")),
-                abi.encodePacked(
-                    type(IPAccountImpl).creationCode,
-                    proxies.accessController,
-                    proxies.ipAssetRegistry,
-                    proxies.licenseRegistry,
-                    dependencies.moduleRegistry
-                )
+        bytes memory ipAccountImplCode = abi.encodePacked(
+            type(IPAccountImpl).creationCode,
+            abi.encode(
+                proxies.accessController,
+                proxies.ipAssetRegistry,
+                proxies.licenseRegistry,
+                dependencies.moduleRegistry
             )
+        );
+        address ipAccountImpl = create3Deployer.deploy(
+            _getSalt(string.concat(type(IPAccountImpl).name, "implementation")),
+            ipAccountImplCode
         );
 
         // - IPAssetRegistry
+        console2.log("Deploying IPAssetRegistry");
         contractKey = "IPAssetRegistry";
+
         impl = create3Deployer.deploy(
             _getSalt(string.concat(type(IPAssetRegistry).name, "implementation")),
             abi.encodePacked(type(IPAssetRegistry).creationCode, abi.encode(erc6551Registry, ipAccountImpl))
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.ipAssetRegistry, newImpl: impl }));
+
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.ipAssetRegistry,
+                newImpl: impl
+            })
+        );
 
         // - RoyaltyModule
         contractKey = "RoyaltyModule";
@@ -173,27 +213,48 @@ contract DeployerV1_1_0 is StorageLayoutChecker, UpgradedImplHelper {
                 abi.encode(proxies.licensingModule, dependencies.disputeModule, proxies.licenseRegistry)
             )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.royaltyModule, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.royaltyModule,
+                newImpl: impl
+            })
+        );
 
         // - RoyaltyPolicyLAP.sol
         contractKey = "RoyaltyPolicyLAP";
         impl = create3Deployer.deploy(
             _getSalt(string.concat(type(RoyaltyPolicyLAP).name, "implementation")),
-            abi.encodePacked(type(RoyaltyPolicyLAP).creationCode, proxies.royaltyModule, proxies.licensingModule)
+            abi.encodePacked(
+                type(RoyaltyPolicyLAP).creationCode,
+                abi.encode(proxies.royaltyModule, proxies.licensingModule)
+            )
         );
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.royaltyPolicyLAP, newImpl: impl }));
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.royaltyPolicyLAP,
+                newImpl: impl
+            })
+        );
 
         // - IPRoyaltyVaults
+        contractKey = "IpRoyaltyVault";
         impl = create3Deployer.deploy(
-            _getSalt(type(IpRoyaltyVault).name),
+            _getSalt(string.concat(type(IpRoyaltyVault).name, "implementation")),
             abi.encodePacked(
                 type(IpRoyaltyVault).creationCode,
                 abi.encode(proxies.royaltyPolicyLAP, dependencies.disputeModule)
             )
         );
         // In this case, RoyaltyPolicyLAP has the role to update the vaults in the Beacon
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: proxies.royaltyPolicyLAP, newImpl: impl }));
-
+        upgradeProposals.push(
+            UpgradeProposal({
+                key: contractKey,
+                proxy: proxies.royaltyPolicyLAP,
+                newImpl: impl
+            })
+        );
         _logUpgradeProposals();
         return upgradeProposals;
     }

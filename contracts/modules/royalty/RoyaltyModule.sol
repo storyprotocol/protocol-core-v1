@@ -20,7 +20,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
 ///         derivative IP.
-/// @custom:oz-upgrades-from contracts/old/v1.0.0/contracts/modules/royalty/RoyaltyModule.sol:RoyaltyModule
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:RoyaltyModule_V1_0_0
 contract RoyaltyModule is
     IRoyaltyModule,
     ProtocolPausableUpgradeable,
@@ -48,6 +48,8 @@ contract RoyaltyModule is
     /// @param royaltyPolicies Indicates the royalty policy for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
+        /// @custom:oz-renamed-from licensingModule
+        address deprecated_licensingModule;
         mapping(address royaltyPolicy => bool isWhitelisted) isWhitelistedRoyaltyPolicy;
         mapping(address token => bool) isWhitelistedRoyaltyToken;
         mapping(address ipId => address royaltyPolicy) royaltyPolicies;

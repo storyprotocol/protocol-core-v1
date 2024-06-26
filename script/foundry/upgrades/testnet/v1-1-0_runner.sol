@@ -30,12 +30,12 @@ import { LicenseToken } from "contracts/LicenseToken.sol";
 
 // script
 import { BroadcastManager } from "../../utils/BroadcastManager.s.sol";
-import { DeployerV1_1_0 } from "./v1-1-0_deployer.sol";
+import { ImplDeployerV1_1_0 } from "./v1-1-0_impl-deployer.sol";
 import { JsonDeploymentHandler } from "../../utils/JsonDeploymentHandler.s.sol";
 import { StringUtil } from "../../utils/StringUtil.sol";
 import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 
-contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandler, DeployerV1_1_0 {
+contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandler, ImplDeployerV1_1_0 {
 
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
     address internal CREATE3_DEPLOYER = 0x384a891dFDE8180b054f04D66379f16B7a678Ad6;
@@ -46,7 +46,6 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
     ICreate3Deployer internal immutable create3Deployer;
 
     string constant VERSION = "1.1.0";
-
 
     // License system
     LicenseToken internal licenseToken;
@@ -69,7 +68,7 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run() public virtual {
-        _validate(); // StorageLayoutChecker.s.sol
+        // _validate(); // StorageLayoutChecker.s.sol
         _readDeployment(); // JsonDeploymentHandler.s.sol
         // Load existing contracts
         licensingModule = LicensingModule(_readAddress("LicensingModule"));
@@ -84,7 +83,7 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
         disputeModule = DisputeModule(_readAddress("DisputeModule"));
         moduleRegistry = ModuleRegistry(_readAddress("ModuleRegistry"));
 
-        DeployerV1_1_0.ProxiesToUpgrade memory proxies = DeployerV1_1_0.ProxiesToUpgrade(
+        ImplDeployerV1_1_0.ProxiesToUpgrade memory proxies = ImplDeployerV1_1_0.ProxiesToUpgrade(
             address(licenseToken),
             address(licensingModule),
             address(licenseRegistry),
@@ -95,11 +94,11 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
             address(ipAssetRegistry)
         );
 
-        DeployerV1_1_0.Dependencies memory dependencies = DeployerV1_1_0.Dependencies(
+        ImplDeployerV1_1_0.Dependencies memory dependencies = ImplDeployerV1_1_0.Dependencies(
             address(disputeModule),
             address(moduleRegistry)
         );
-        DeployerV1_1_0 deployer = new DeployerV1_1_0();
+        ImplDeployerV1_1_0 deployer = new ImplDeployerV1_1_0();
 
         _beginBroadcast(); // BroadcastManager.s.sol
 

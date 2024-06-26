@@ -18,13 +18,15 @@ import { StringUtil } from "../../utils/StringUtil.sol";
 import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 import { UpgradedImplHelper } from "../../utils/upgrades/UpgradedImplHelper.sol";
 
-contract ImplUpgraderV1_1_0 is Script, BroadcastManager, JsonDeploymentHandler {
+contract UpgradeExecV1_1_0 is Script, BroadcastManager, JsonDeploymentHandler {
 
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
     address internal CREATE3_DEPLOYER = 0x384a891dFDE8180b054f04D66379f16B7a678Ad6;
     uint256 internal CREATE3_DEFAULT_SEED = 0;
     // PROXY 1967 IMPLEMENTATION STORAGE SLOTS
     bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    enum UpgradeModes { SCHEDULE, EXECUTE }
+    UpgradeModes constant mode = UpgradeModes.EXECUTE;
 
     ICreate3Deployer internal immutable create3Deployer;
 
@@ -53,7 +55,7 @@ contract ImplUpgraderV1_1_0 is Script, BroadcastManager, JsonDeploymentHandler {
         _performUpgrade("IPAssetRegistry");
 
         // - IPRoyaltyVaults
-        UpgradedImplHelper.UpgradeProposal memory p = _readUpgradeProposal("IpRoyaltyVaultImpl");
+        UpgradedImplHelper.UpgradeProposal memory p = _readUpgradeProposal("IpRoyaltyVault");
         royaltyPolicyLAP = RoyaltyPolicyLAP(p.proxy);
         royaltyPolicyLAP.upgradeVaults(p.newImpl);
         // TODO: Check if the vaults are correctly set

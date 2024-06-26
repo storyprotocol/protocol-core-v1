@@ -226,7 +226,11 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     /// @param extraData The extra data to check against, it should bethe address of the recipient for IPAccount
     /// @param context The context for validating the signer
     /// @return bool is true if the signer is valid, false otherwise
-    function _isValidSigner(address signer, bytes32 extraData, bytes calldata context) override internal view returns (bool) {
+    function _isValidSigner(
+        address signer,
+        bytes32 extraData,
+        bytes calldata context
+    ) internal view override returns (bool) {
         return _isValidSigner(signer, address(uint160(uint256(extraData))), context);
     }
 

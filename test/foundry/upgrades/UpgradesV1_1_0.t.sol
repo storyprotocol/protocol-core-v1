@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-
 import { DeployHelper_V1_1_0 } from "./DeployHelper_V1_1_0.sol";
 import { ImplDeployerV1_1_0, UpgradedImplHelper } from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
 import { Users, UsersLib } from "../utils/Users.t.sol";
@@ -24,7 +23,6 @@ import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol
 
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
-
 
 contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     /// @dev Users struct to abstract away user management when testing
@@ -65,7 +63,6 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     uint256 termsId;
     bytes32[] tokenURIs;
     bytes32 tag;
-    
 
     ImplDeployerV1_1_0 implDeployer;
 
@@ -78,7 +75,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             MAX_ROYALTY_APPROVAL
         )
     {}
-    
+
     function setUp() public {
         implDeployer = new ImplDeployerV1_1_0();
     }
@@ -97,7 +94,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         USDC = erc20;
         LINK = erc20bb;
         mockNFT = new MockERC721("Ape");
-        dealMockAssets();    
+        dealMockAssets();
 
         super.run(0, false, true);
 
@@ -106,7 +103,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         return;
 
         // 2) Deploy new (V1.1.0) implementations
-        
+
         ImplDeployerV1_1_0.ProxiesToUpgrade memory proxies = ImplDeployerV1_1_0.ProxiesToUpgrade(
             address(licenseToken),
             address(licensingModule),
@@ -117,13 +114,19 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             address(royaltyPolicyLAP),
             address(ipAssetRegistry)
         );
-        
+
         ImplDeployerV1_1_0.Dependencies memory dependencies = ImplDeployerV1_1_0.Dependencies(
             address(disputeModule),
             address(moduleRegistry)
         );
 
-        UpgradedImplHelper.UpgradeProposal[] memory proposals = implDeployer.deploy(create3Deployer, 0, address(erc6551Registry), proxies, dependencies);
+        UpgradedImplHelper.UpgradeProposal[] memory proposals = implDeployer.deploy(
+            create3Deployer,
+            0,
+            address(erc6551Registry),
+            proxies,
+            dependencies
+        );
 
         // 3) Upgrade
         vm.prank(u.admin);
@@ -189,13 +192,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
 
         vm.startPrank(derivativeOwner);
         USDC.approve(address(royaltyPolicyLAP), 2 ether);
-        licensingModule.registerDerivative(
-           address(derivIpa),
-           parentIpIds,
-           licenseTermsIds,
-           address(pilTemplate),
-           ""
-        );
+        licensingModule.registerDerivative(address(derivIpa), parentIpIds, licenseTermsIds, address(pilTemplate), "");
         vm.stopPrank();
 
         //// Royalty
@@ -215,8 +212,6 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         console2.log(address(disputeModule.IP_ASSET_REGISTRY()));
 
         disputeModule.raiseDispute(address(ipa), "evidence", tag, "");
-
-
     }
 
     function upgrade(UpgradedImplHelper.UpgradeProposal memory prop) internal {
@@ -231,69 +226,60 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
 
     function upgradeUUPS(UpgradedImplHelper.UpgradeProposal memory prop) internal {
         console2.log(address(protocolAccessManager));
-        (bool immediate, uint32 delay) = protocolAccessManager.canCall(u.admin, address(prop.proxy), UUPSUpgradeable.upgradeToAndCall.selector);
-
-        console2.log(
-            string.concat(
-                "Can call schedule: ",
-                immediate ? "true" : "false"
-            )
+        (bool immediate, uint32 delay) = protocolAccessManager.canCall(
+            u.admin,
+            address(prop.proxy),
+            UUPSUpgradeable.upgradeToAndCall.selector
         );
+
+        console2.log(string.concat("Can call schedule: ", immediate ? "true" : "false"));
         console2.log("with delay");
         console2.log(delay);
 
-        (immediate, delay) = protocolAccessManager.canCall(u.admin, address(protocolAccessManager), AccessManager.schedule.selector);
-
-        console2.log(
-            string.concat(
-                "Can call upgrade: ",
-                immediate ? "true" : "false"
-            )
+        (immediate, delay) = protocolAccessManager.canCall(
+            u.admin,
+            address(protocolAccessManager),
+            AccessManager.schedule.selector
         );
+
+        console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
         console2.log("with delay");
         console2.log(delay);
 
         vm.prank(u.admin);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             prop.proxy,
-            abi.encodeCall(
-                UUPSUpgradeable.upgradeToAndCall,
-                (prop.newImpl, "")
-            ),
+            abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (prop.newImpl, "")),
             0 // earliest time possible, upgraderExecDelay
         );
         uint48 schedule = protocolAccessManager.getSchedule(operationId);
-        
 
-        (immediate, delay) = protocolAccessManager.canCall(u.admin, address(prop.proxy), UUPSUpgradeable.upgradeToAndCall.selector);
-        vm.warp(block.timestamp + delay + 1);
-        console2.log(
-            string.concat(
-                "Can call upgrade: ",
-                immediate ? "true" : "false"
-            )
+        (immediate, delay) = protocolAccessManager.canCall(
+            u.admin,
+            address(prop.proxy),
+            UUPSUpgradeable.upgradeToAndCall.selector
         );
+        vm.warp(block.timestamp + delay + 1);
+        console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
         console2.log("with delay");
         console2.log(delay);
 
         vm.prank(u.admin);
-        UUPSUpgradeable(prop.proxy).upgradeToAndCall(
-            prop.newImpl,
-            ""
-        );
+        UUPSUpgradeable(prop.proxy).upgradeToAndCall(prop.newImpl, "");
     }
 
     function upgradeVaults(UpgradedImplHelper.UpgradeProposal memory prop) internal {
         vm.prank(u.admin);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             prop.proxy,
-            abi.encodeCall(
-                RoyaltyPolicyLAP.upgradeVaults,
-                prop.newImpl
-            ),
+            abi.encodeCall(RoyaltyPolicyLAP.upgradeVaults, prop.newImpl),
             0 // earliest time possible, upgraderExecDelay
         );
-        (bool immediate, uint32 delay) = protocolAccessManager.canCall(u.admin, address(prop.proxy), RoyaltyPolicyLAP.upgradeVaults.selector);
+        (bool immediate, uint32 delay) = protocolAccessManager.canCall(
+            u.admin,
+            address(prop.proxy),
+            RoyaltyPolicyLAP.upgradeVaults.selector
+        );
 
         vm.warp(block.timestamp + delay + 1);
         vm.prank(u.admin);

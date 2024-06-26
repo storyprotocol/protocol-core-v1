@@ -79,7 +79,7 @@ library Address {
             revert AddressInsufficientBalance(address(this));
         }
 
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success, ) = recipient.call{ value: amount }("");
         if (!success) {
             revert FailedInnerCall();
         }
@@ -120,7 +120,7 @@ library Address {
         if (address(this).balance < value) {
             revert AddressInsufficientBalance(address(this));
         }
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
         return verifyCallResultFromTarget(target, success, returndata);
     }
 
@@ -793,11 +793,9 @@ abstract contract UUPSUpgradeable is Initializable, IERC1822Proxiable {
         _;
     }
 
-    function __UUPSUpgradeable_init() internal onlyInitializing {
-    }
+    function __UUPSUpgradeable_init() internal onlyInitializing {}
 
-    function __UUPSUpgradeable_init_unchained() internal onlyInitializing {
-    }
+    function __UUPSUpgradeable_init_unchained() internal onlyInitializing {}
     /**
      * @dev Implementation of the ERC1822 {proxiableUUID} function. This returns the storage slot used by the
      * implementation. It is used to validate the implementation's compatibility when performing an upgrade.
@@ -1204,10 +1202,7 @@ interface IERC6551Account {
      * @return tokenContract The contract address of the token
      * @return tokenId       The ID of the token
      */
-    function token()
-        external
-        view
-        returns (uint256 chainId, address tokenContract, uint256 tokenId);
+    function token() external view returns (uint256 chainId, address tokenContract, uint256 tokenId);
 
     /**
      * @dev Returns a value that SHOULD be modified each time the account changes state.
@@ -1232,10 +1227,7 @@ interface IERC6551Account {
      * @param  context    Additional data used to determine whether the signer is valid
      * @return magicValue Magic value indicating whether the signer is valid
      */
-    function isValidSigner(address signer, bytes calldata context)
-        external
-        view
-        returns (bytes4 magicValue);
+    function isValidSigner(address signer, bytes calldata context) external view returns (bytes4 magicValue);
 }
 
 // See https://github.com/storyprotocol/protocol-contracts/blob/main/StoryProtocol-AlphaTestingAgreement-17942166.3.pdf
@@ -3528,11 +3520,9 @@ interface IAccessManager {
  * This contract is only required for intermediate, library-like contracts.
  */
 abstract contract ContextUpgradeable is Initializable {
-    function __Context_init() internal onlyInitializing {
-    }
+    function __Context_init() internal onlyInitializing {}
 
-    function __Context_init_unchained() internal onlyInitializing {
-    }
+    function __Context_init_unchained() internal onlyInitializing {}
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }
@@ -3558,12 +3548,12 @@ abstract contract AccessManagedUpgradeable is Initializable, ContextUpgradeable,
     /// @custom:storage-location erc7201:openzeppelin.storage.AccessManaged
     struct AccessManagedStorage {
         address _authority;
-
         bool _consumingSchedule;
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.AccessManaged")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant AccessManagedStorageLocation = 0xf3177357ab46d8af007ab3fdb9af81da189e1068fefdc0073dca88a2cab40a00;
+    bytes32 private constant AccessManagedStorageLocation =
+        0xf3177357ab46d8af007ab3fdb9af81da189e1068fefdc0073dca88a2cab40a00;
 
     function _getAccessManagedStorage() private pure returns (AccessManagedStorage storage $) {
         assembly {
@@ -3687,7 +3677,8 @@ abstract contract PausableUpgradeable is Initializable, ContextUpgradeable {
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Pausable")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant PausableStorageLocation = 0xcd5ed15c6e187e77e9aee88184c21f4f2182ab5827cb3b7e07fbedcd63f03300;
+    bytes32 private constant PausableStorageLocation =
+        0xcd5ed15c6e187e77e9aee88184c21f4f2182ab5827cb3b7e07fbedcd63f03300;
 
     function _getPausableStorage() private pure returns (PausableStorage storage $) {
         assembly {
@@ -4716,7 +4707,6 @@ contract AccessController_V1_0_0 is IAccessController, ProtocolPausableUpgradeab
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }
 
-
 /**
  * @dev Required interface of an ERC721 compliant contract.
  */
@@ -4869,7 +4859,6 @@ interface IERC721Metadata is IERC721 {
     function tokenURI(uint256 tokenId) external view returns (string memory);
 }
 
-
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/math/SignedMath.sol)
 
 /**
@@ -4998,7 +4987,6 @@ library Strings {
     }
 }
 
-
 /// @title Interface for IP Account Registry
 /// @notice This interface manages the registration and tracking of IP Accounts
 interface IIPAssetRegistry is IIPAccountRegistry {
@@ -5044,9 +5032,7 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     function isRegistered(address id) external view returns (bool);
 }
 
-
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)
-
 
 interface IERC6551Registry {
     /**
@@ -5096,7 +5082,6 @@ interface IERC6551Registry {
         uint256 tokenId
     ) external view returns (address account);
 }
-
 
 /// @title IPAccountRegistry
 /// @notice This contract is responsible for managing the registration and tracking of IP Accounts.
@@ -5866,8 +5851,6 @@ contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry, Protocol
     }
 }
 
-
-
 /**
  * @dev Library for managing
  * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
@@ -6241,8 +6224,6 @@ library EnumerableSet {
     }
 }
 
-
-
 // solhint-disable-next-line max-line-length
 
 // OpenZeppelin Contracts (last updated v4.9.0) (security/ReentrancyGuard.sol)
@@ -6312,7 +6293,7 @@ library AddressUpgradeable {
     function sendValue(address payable recipient, uint256 amount) internal {
         require(address(this).balance >= amount, "Address: insufficient balance");
 
-        (bool success, ) = recipient.call{value: amount}("");
+        (bool success, ) = recipient.call{ value: amount }("");
         require(success, "Address: unable to send value, recipient may have reverted");
     }
 
@@ -6380,7 +6361,7 @@ library AddressUpgradeable {
         string memory errorMessage
     ) internal returns (bytes memory) {
         require(address(this).balance >= value, "Address: insufficient balance for call");
-        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        (bool success, bytes memory returndata) = target.call{ value: value }(data);
         return verifyCallResultFromTarget(target, success, returndata, errorMessage);
     }
 
@@ -6490,8 +6471,6 @@ library AddressUpgradeable {
         }
     }
 }
-
-
 
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
@@ -6682,8 +6661,6 @@ interface IERC20MetadataUpgradeable is IERC20Upgradeable {
      */
     function decimals() external view returns (uint8);
 }
-
-
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -7576,7 +7553,10 @@ library ArraysUpgradeable {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(address[] storage arr, uint256 pos) internal pure returns (StorageSlotUpgradeable.AddressSlot storage) {
+    function unsafeAccess(
+        address[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlotUpgradeable.AddressSlot storage) {
         bytes32 slot;
         // We use assembly to calculate the storage slot of the element at index `pos` of the dynamic array `arr`
         // following https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#mappings-and-dynamic-arrays.
@@ -7594,7 +7574,10 @@ library ArraysUpgradeable {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(bytes32[] storage arr, uint256 pos) internal pure returns (StorageSlotUpgradeable.Bytes32Slot storage) {
+    function unsafeAccess(
+        bytes32[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlotUpgradeable.Bytes32Slot storage) {
         bytes32 slot;
         // We use assembly to calculate the storage slot of the element at index `pos` of the dynamic array `arr`
         // following https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#mappings-and-dynamic-arrays.
@@ -7612,7 +7595,10 @@ library ArraysUpgradeable {
      *
      * WARNING: Only use if you are certain `pos` is lower than the array length.
      */
-    function unsafeAccess(uint256[] storage arr, uint256 pos) internal pure returns (StorageSlotUpgradeable.Uint256Slot storage) {
+    function unsafeAccess(
+        uint256[] storage arr,
+        uint256 pos
+    ) internal pure returns (StorageSlotUpgradeable.Uint256Slot storage) {
         bytes32 slot;
         // We use assembly to calculate the storage slot of the element at index `pos` of the dynamic array `arr`
         // following https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#mappings-and-dynamic-arrays.
@@ -7724,11 +7710,9 @@ abstract contract ERC20SnapshotUpgradeable is Initializable, ERC20Upgradeable {
      */
     event Snapshot(uint256 id);
 
-    function __ERC20Snapshot_init() internal onlyInitializing {
-    }
+    function __ERC20Snapshot_init() internal onlyInitializing {}
 
-    function __ERC20Snapshot_init_unchained() internal onlyInitializing {
-    }
+    function __ERC20Snapshot_init_unchained() internal onlyInitializing {}
     /**
      * @dev Creates a new snapshot and returns its snapshot id.
      *
@@ -8085,7 +8069,9 @@ library SafeERC20Upgradeable {
 
         (bool success, bytes memory returndata) = address(token).call(data);
         return
-            success && (returndata.length == 0 || abi.decode(returndata, (bool))) && AddressUpgradeable.isContract(address(token));
+            success &&
+            (returndata.length == 0 || abi.decode(returndata, (bool))) &&
+            AddressUpgradeable.isContract(address(token));
     }
 }
 
@@ -8852,8 +8838,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     }
 }
 
-
-
 /// @title Licensing
 /// @notice Types and constants used by the licensing related contracts
 library Licensing {
@@ -9195,8 +9179,6 @@ interface ILicensingModule is IModule {
     ) external;
 }
 
-
-
 // OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC165.sol)
 
 /// @title ILicenseTemplate
@@ -9334,8 +9316,6 @@ interface ILicenseTemplate is IERC165 {
         address childIpOwner
     ) external returns (bool);
 }
-
-
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
@@ -9952,7 +9932,6 @@ library Base64 {
     }
 }
 
-
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/introspection/ERC165.sol)
 
 /**
@@ -9968,11 +9947,9 @@ library Base64 {
  * ```
  */
 abstract contract ERC165Upgradeable is Initializable, IERC165 {
-    function __ERC165_init() internal onlyInitializing {
-    }
+    function __ERC165_init() internal onlyInitializing {}
 
-    function __ERC165_init_unchained() internal onlyInitializing {
-    }
+    function __ERC165_init_unchained() internal onlyInitializing {}
     /**
      * @dev See {IERC165-supportsInterface}.
      */
@@ -10146,23 +10123,25 @@ interface IERC1155Errors {
  * the Metadata extension, but not including the Enumerable extension, which is available separately as
  * {ERC721Enumerable}.
  */
-abstract contract ERC721Upgradeable is Initializable, ContextUpgradeable, ERC165Upgradeable, IERC721, IERC721Metadata, IERC721Errors {
+abstract contract ERC721Upgradeable is
+    Initializable,
+    ContextUpgradeable,
+    ERC165Upgradeable,
+    IERC721,
+    IERC721Metadata,
+    IERC721Errors
+{
     using Strings for uint256;
 
     /// @custom:storage-location erc7201:openzeppelin.storage.ERC721
     struct ERC721Storage {
         // Token name
         string _name;
-
         // Token symbol
         string _symbol;
-
         mapping(uint256 tokenId => address) _owners;
-
         mapping(address owner => uint256) _balances;
-
         mapping(uint256 tokenId => address) _tokenApprovals;
-
         mapping(address owner => mapping(address operator => bool)) _operatorApprovals;
     }
 
@@ -10191,7 +10170,9 @@ abstract contract ERC721Upgradeable is Initializable, ContextUpgradeable, ERC165
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165Upgradeable, IERC165) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165Upgradeable, IERC165) returns (bool) {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
@@ -10676,13 +10657,13 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
     struct ERC721EnumerableStorage {
         mapping(address owner => mapping(uint256 index => uint256)) _ownedTokens;
         mapping(uint256 tokenId => uint256) _ownedTokensIndex;
-
         uint256[] _allTokens;
         mapping(uint256 tokenId => uint256) _allTokensIndex;
     }
 
     // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ERC721Enumerable")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant ERC721EnumerableStorageLocation = 0x645e039705490088daad89bae25049a34f4a9072d398537b1ab2425f24cbed00;
+    bytes32 private constant ERC721EnumerableStorageLocation =
+        0x645e039705490088daad89bae25049a34f4a9072d398537b1ab2425f24cbed00;
 
     function _getERC721EnumerableStorage() private pure returns (ERC721EnumerableStorage storage $) {
         assembly {
@@ -10702,15 +10683,15 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
      */
     error ERC721EnumerableForbiddenBatchMint();
 
-    function __ERC721Enumerable_init() internal onlyInitializing {
-    }
+    function __ERC721Enumerable_init() internal onlyInitializing {}
 
-    function __ERC721Enumerable_init_unchained() internal onlyInitializing {
-    }
+    function __ERC721Enumerable_init_unchained() internal onlyInitializing {}
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721Upgradeable) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC721Upgradeable) returns (bool) {
         return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -10852,7 +10833,6 @@ abstract contract ERC721EnumerableUpgradeable is Initializable, ERC721Upgradeabl
     }
 }
 
-
 /// @title ILicenseToken
 /// @notice Interface for the License Token (ERC721) NFT collection that manages License Tokens representing
 /// License Terms.
@@ -10966,7 +10946,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         uint256[] calldata tokenIds
     ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds);
 }
-
 
 /// @title LicenseToken aka LNFT
 contract LicenseToken_V1_0_0 is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
@@ -11293,8 +11272,6 @@ contract LicenseToken_V1_0_0 is ILicenseToken, ERC721EnumerableUpgradeable, Acce
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }
 
-
-
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/introspection/ERC165.sol)
 
 /**
@@ -11439,8 +11416,6 @@ interface IRoyaltyModule is IModule {
     ) external;
 }
 
-
-
 // Default Module Type, all modules in this type by default
 string constant MODULE_TYPE_DEFAULT = "MODULE";
 
@@ -11461,9 +11436,6 @@ string constant CORE_METADATA_MODULE_KEY = "CORE_METADATA_MODULE";
 string constant CORE_METADATA_VIEW_MODULE_KEY = "CORE_METADATA_VIEW_MODULE";
 
 // OpenZeppelin Contracts (last updated v5.0.1) (utils/Context.sol)
-
-
-
 
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module allows to set royalty policies an IP asset and pay royalties as a
@@ -11731,8 +11703,6 @@ contract RoyaltyModule_V1_0_0 is
     }
 }
 
-
-
 /// @title AccessControlled
 /// @notice Provides a base contract for access control functionalities.
 /// @dev This abstract contract implements basic access control mechanisms with an emphasis
@@ -11816,8 +11786,6 @@ abstract contract AccessControlled {
     }
 }
 
-
-
 /// @title IMintingFeeModule
 /// @notice This interface is used to determine the minting fee of a license token.
 /// IP owners can configure the MintingFeeModule to a specific license terms or all licenses of an IP Asset.
@@ -11855,7 +11823,6 @@ interface IHookModule is IModule {
     /// @param configData The configuration data for the hook.
     function validateConfig(bytes calldata configData) external view;
 }
-
 
 /// @title Licensing Module
 /// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
@@ -12287,7 +12254,6 @@ contract LicensingModule_V1_0_0 is
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }
 
-
 /// @title PILicenseTemplate Errors Library
 /// @notice Library for all PILicenseTemplate related contract errors.
 library PILicenseTemplateErrors {
@@ -12330,8 +12296,6 @@ library PILicenseTemplateErrors {
     /// @notice Cannot add derivative reciprocal when derivative use is disabled.
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
 }
-
-
 
 /// @notice This struct defines the terms for a Programmable IP License (PIL).
 /// These terms can be attached to IP Assets. The legal document of the PIL can be found in this repository.
@@ -12396,8 +12360,6 @@ interface IPILicenseTemplate is ILicenseTemplate {
     function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms);
 }
 
-
-
 // contracts
 
 abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, Initializable {
@@ -12452,7 +12414,6 @@ abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, In
         }
     }
 }
-
 
 /// @title LicensorApprovalChecker
 /// @notice Manages the approval of derivative IP accounts by the parentIp. Used to verify
@@ -13011,8 +12972,6 @@ contract PILicenseTemplate_V1_0_0 is
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }
 
-
-
 // OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/IERC20.sol)
 
 /**
@@ -13180,7 +13139,6 @@ interface IERC20Permit {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 }
 
-
 /**
  * @title SafeERC20
  * @dev Wrappers around ERC20 operations that throw on failure (when the token
@@ -13290,8 +13248,6 @@ library SafeERC20 {
         return success && (returndata.length == 0 || abi.decode(returndata, (bool))) && address(token).code.length > 0;
     }
 }
-
-
 
 // OpenZeppelin Contracts (last updated v5.0.0) (proxy/beacon/BeaconProxy.sol)
 
@@ -13597,7 +13553,6 @@ contract UpgradeableBeacon is IBeacon, Ownable {
         emit Upgraded(newImplementation);
     }
 }
-
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
@@ -14031,7 +13986,6 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
     }
 }
 
-
 /**
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
  *
@@ -14286,7 +14240,6 @@ library MessageHashUtils {
 
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/cryptography/ECDSA.sol)
 
-
 // OpenZeppelin Contracts (last updated v5.0.0) (interfaces/IERC1271.sol)
 
 /**
@@ -14405,7 +14358,6 @@ library MetaTx {
             );
     }
 }
-
 
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
@@ -14607,7 +14559,6 @@ library ShortStringOps {
     }
 }
 
-
 /**
  * @dev Provides a function to batch together multiple calls in a single external call.
  *
@@ -14621,11 +14572,9 @@ library ShortStringOps {
  * {_msgSender} are not propagated to subcalls.
  */
 abstract contract MulticallUpgradeable is Initializable, ContextUpgradeable {
-    function __Multicall_init() internal onlyInitializing {
-    }
+    function __Multicall_init() internal onlyInitializing {}
 
-    function __Multicall_init_unchained() internal onlyInitializing {
-    }
+    function __Multicall_init_unchained() internal onlyInitializing {}
     /**
      * @dev Receives and executes a batch of function calls on this contract.
      * @custom:oz-upgrades-unsafe-allow-reachable delegatecall
@@ -14689,8 +14638,6 @@ interface IArbitrationPolicy {
     /// @dev Enforced to be only callable by the governance protocol admin.
     function governanceWithdraw() external;
 }
-
-
 
 /// @title Dispute Module
 /// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes

@@ -26,7 +26,7 @@ import {
     TOKEN_WITHDRAWAL_MODULE_KEY,
     CORE_METADATA_MODULE_KEY,
     CORE_METADATA_VIEW_MODULE_KEY,
-    IPAccountRegistry,
+    IPAccountRegistry_V1_0_0,
     IPAssetRegistry_V1_0_0,
     LicenseRegistry_V1_0_0,
     LicensingModule_V1_0_0,
@@ -36,8 +36,9 @@ import {
     MODULE_TYPE_HOOK,
     IModule,
     IHookModule,
-    IpRoyaltyVault,
-    PILicenseTemplate_V1_0_0, PILTerms,
+    IpRoyaltyVault_V1_0_0,
+    PILicenseTemplate_V1_0_0,
+    PILTerms,
     LicenseToken_V1_0_0
 } from "../../../contracts/old/v1.0.0.sol";
 
@@ -94,7 +95,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
     ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP_V1_0_0 internal royaltyPolicyLAP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
-    IpRoyaltyVault internal ipRoyaltyVaultImpl;
+    IpRoyaltyVault_V1_0_0 internal ipRoyaltyVaultImpl;
 
     // Access Control
     AccessManager internal protocolAccessManager; // protocol roles
@@ -232,7 +233,9 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        impl = address(new IPAssetRegistry_V1_0_0(address(erc6551Registry), _getDeployedAddress(type(IPAccountImpl_V1_0_0).name)));
+        impl = address(
+            new IPAssetRegistry_V1_0_0(address(erc6551Registry), _getDeployedAddress(type(IPAccountImpl_V1_0_0).name))
+        );
         ipAssetRegistry = IPAssetRegistry_V1_0_0(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -249,7 +252,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(ipAssetRegistry));
 
-        IPAccountRegistry ipAccountRegistry = IPAccountRegistry(address(ipAssetRegistry));
+        IPAccountRegistry_V1_0_0 ipAccountRegistry = IPAccountRegistry_V1_0_0(address(ipAssetRegistry));
 
         contractKey = "AccessController";
         _predeploy(contractKey);
@@ -274,9 +277,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
 
         contractKey = "LicenseRegistry";
         _predeploy(contractKey);
-        impl = address(
-            new LicenseRegistry_V1_0_0()
-        );
+        impl = address(new LicenseRegistry_V1_0_0());
         licenseRegistry = LicenseRegistry_V1_0_0(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -338,12 +339,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
 
         contractKey = "RoyaltyModule";
         _predeploy(contractKey);
-        impl = address(
-            new RoyaltyModule_V1_0_0(
-                address(disputeModule),
-                address(licenseRegistry)
-            )
-        );
+        impl = address(new RoyaltyModule_V1_0_0(address(disputeModule), address(licenseRegistry)));
         royaltyModule = RoyaltyModule_V1_0_0(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -492,11 +488,11 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         _postdeploy("PILicenseTemplate", address(pilTemplate));
 
         _predeploy("IpRoyaltyVaultImpl");
-        ipRoyaltyVaultImpl = IpRoyaltyVault(
+        ipRoyaltyVaultImpl = IpRoyaltyVault_V1_0_0(
             create3Deployer.deploy(
-                _getSalt(type(IpRoyaltyVault).name),
+                _getSalt(type(IpRoyaltyVault_V1_0_0).name),
                 abi.encodePacked(
-                    type(IpRoyaltyVault).creationCode,
+                    type(IpRoyaltyVault_V1_0_0).creationCode,
                     abi.encode(address(royaltyPolicyLAP), address(disputeModule))
                 )
             )
@@ -508,7 +504,10 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         ipRoyaltyVaultBeacon = UpgradeableBeacon(
             create3Deployer.deploy(
                 _getSalt(type(UpgradeableBeacon).name),
-                abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(address(ipRoyaltyVaultImpl), deployer))
+                abi.encodePacked(
+                    type(UpgradeableBeacon).creationCode,
+                    abi.encode(address(ipRoyaltyVaultImpl), deployer)
+                )
             )
         );
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
@@ -624,7 +623,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        
+
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyPolicyLAP
         selectors = new bytes4[](2);

@@ -5086,7 +5086,7 @@ interface IERC6551Registry {
 /// @title IPAccountRegistry
 /// @notice This contract is responsible for managing the registration and tracking of IP Accounts.
 /// It leverages a public ERC6551 registry to deploy IPAccount contracts.
-abstract contract IPAccountRegistry is IIPAccountRegistry {
+abstract contract IPAccountRegistry_V1_0_0 is IIPAccountRegistry {
     /// @notice Returns the IPAccount implementation address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable IP_ACCOUNT_IMPL;
@@ -5718,7 +5718,7 @@ library IPAccountStorageOps {
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry, ProtocolPausableUpgradeable, UUPSUpgradeable {
+contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry_V1_0_0, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
@@ -5735,7 +5735,7 @@ contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry, Protocol
         0x987c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry_V1_0_0(erc6551Registry, ipAccountImpl) {
         _disableInitializers();
     }
 
@@ -8510,7 +8510,7 @@ library ArrayUtils {
 
 /// @title Ip Royalty Vault
 /// @notice Defines the logic for claiming royalty tokens and revenue tokens for a given IP
-contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, ReentrancyGuardUpgradeable {
+contract IpRoyaltyVault_V1_0_0 is IIpRoyaltyVault, ERC20SnapshotUpgradeable, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using SafeERC20Upgradeable for IERC20Upgradeable;
 

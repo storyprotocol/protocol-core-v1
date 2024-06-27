@@ -23,7 +23,7 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol";
 
-// solhint-disable-next-line no-console
+// solhint-disable no-console
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 

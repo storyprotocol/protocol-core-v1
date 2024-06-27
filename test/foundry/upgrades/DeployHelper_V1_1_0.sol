@@ -31,7 +31,6 @@ import {
     DisputeModule_V1_0_0,
     IpRoyaltyVault_V1_0_0,
     PILicenseTemplate_V1_0_0,
-    PILTerms,
     LicenseToken_V1_0_0
 } from "../../../contracts/old/v1.0.0.sol";
 

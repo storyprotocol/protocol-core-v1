@@ -5722,7 +5722,12 @@ library IPAccountStorageOps {
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
 // solhint-disable-next-line
-contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry_V1_0_0, ProtocolPausableUpgradeable, UUPSUpgradeable {
+contract IPAssetRegistry_V1_0_0 is
+    IIPAssetRegistry,
+    IPAccountRegistry_V1_0_0,
+    ProtocolPausableUpgradeable,
+    UUPSUpgradeable
+{
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;

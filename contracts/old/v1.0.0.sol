@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
+/* solhint-disable max-line-length */
 
 // OpenZeppelin Contracts (last updated v5.0.0) (proxy/utils/UUPSUpgradeable.sol)
 
@@ -1695,6 +1696,7 @@ library Math {
         }
     }
 
+    /* solhint-disable */
     /**
      * @dev Return the log in base 2 of a positive value rounded towards zero.
      * Returns 0 if given 0.
@@ -1736,6 +1738,7 @@ library Math {
         }
         return result;
     }
+    /* solhint-enable */
 
     /**
      * @dev Return the log in base 2, following the selected rounding direction, of a positive value.
@@ -5718,6 +5721,7 @@ library IPAccountStorageOps {
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
+// solhint-disable-next-line
 contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry_V1_0_0, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using ERC165Checker for address;
     using Strings for *;
@@ -5735,7 +5739,10 @@ contract IPAssetRegistry_V1_0_0 is IIPAssetRegistry, IPAccountRegistry_V1_0_0, P
         0x987c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry_V1_0_0(erc6551Registry, ipAccountImpl) {
+    constructor(
+        address erc6551Registry,
+        address ipAccountImpl
+    ) IPAccountRegistry_V1_0_0(erc6551Registry, ipAccountImpl) {
         _disableInitializers();
     }
 
@@ -15261,3 +15268,4 @@ library PILFlavors {
             });
     }
 }
+/* solhint-enable avoid-tx-origin */

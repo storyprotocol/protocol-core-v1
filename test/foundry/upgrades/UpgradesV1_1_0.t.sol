@@ -2,7 +2,10 @@
 pragma solidity 0.8.23;
 
 import { DeployHelper_V1_1_0 } from "./DeployHelper_V1_1_0.sol";
-import { ImplDeployerV1_1_0, UpgradedImplHelper } from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
+import {
+    ImplDeployerV1_1_0,
+    UpgradedImplHelper
+} from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
 import { Users, UsersLib } from "../utils/Users.t.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
@@ -18,9 +21,9 @@ import { ShortStringOps } from "contracts/lib/ShortStringOps.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol";
 
+// solhint-disable-next-line no-console
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 

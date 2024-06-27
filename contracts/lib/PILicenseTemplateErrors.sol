@@ -32,10 +32,10 @@ library PILicenseTemplateErrors {
     error PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
 
     /// @notice Cannot add commercial revenue ceiling when commercial use is disabled.
-    error PILicenseTemplate__CommercialDisabled_CantAddRevCelling();
+    error PILicenseTemplate__CommercialDisabled_CantAddRevCeiling();
 
     /// @notice Royalty policy is required when commercial use is enabled.
-    error PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCelling();
+    error PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling();
 
     /// @notice Royalty policy is required when commercial use is enabled.
     error PILicenseTemplate__CommercialEnabled_RoyaltyPolicyRequired();
@@ -50,7 +50,7 @@ library PILicenseTemplateErrors {
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
 
     /// @notice Cannot add derivative revenue share when derivative use is disabled.
-    error PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCelling();
+    error PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling();
 
     /// @notice Zero address provided for License Registry at initialization.
     error PILicenseTemplate__ZeroLicenseRegistry();

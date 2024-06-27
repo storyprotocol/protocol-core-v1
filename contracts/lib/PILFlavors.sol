@@ -109,12 +109,12 @@ library PILFlavors {
                 commercializerChecker: address(0),
                 commercializerCheckerData: EMPTY_BYTES,
                 commercialRevShare: 0,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: false,
                 derivativesAttribution: false,
                 derivativesApproval: false,
                 derivativesReciprocal: false,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(0),
                 uri: ""
             });
@@ -133,12 +133,12 @@ library PILFlavors {
                 commercializerChecker: address(0),
                 commercializerCheckerData: EMPTY_BYTES,
                 commercialRevShare: 0,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: true,
                 derivativesAttribution: true,
                 derivativesApproval: false,
                 derivativesReciprocal: true,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: address(0),
                 uri: ""
             });
@@ -161,12 +161,12 @@ library PILFlavors {
                 commercializerChecker: address(0),
                 commercializerCheckerData: EMPTY_BYTES,
                 commercialRevShare: 0,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: true,
                 derivativesAttribution: true,
                 derivativesApproval: false,
                 derivativesReciprocal: false,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: currencyToken,
                 uri: ""
             });
@@ -190,12 +190,12 @@ library PILFlavors {
                 commercializerChecker: address(0),
                 commercializerCheckerData: EMPTY_BYTES,
                 commercialRevShare: commercialRevShare,
-                commercialRevCelling: 0,
+                commercialRevCeiling: 0,
                 derivativesAllowed: true,
                 derivativesAttribution: true,
                 derivativesApproval: false,
                 derivativesReciprocal: true,
-                derivativeRevCelling: 0,
+                derivativeRevCeiling: 0,
                 currency: currencyToken,
                 uri: ""
             });

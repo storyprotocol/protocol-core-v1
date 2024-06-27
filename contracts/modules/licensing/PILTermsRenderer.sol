@@ -4,22 +4,9 @@ pragma solidity 0.8.23;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-// solhint-disable-next-line max-line-length
-import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
-import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
-import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
-import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
-import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
-import { ExpiringOps } from "../../lib/ExpiringOps.sol";
-import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
-import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
-import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
+import { PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 /// @title PILicenseTemplate
 contract PILTermsRenderer {
@@ -29,7 +16,6 @@ contract PILTermsRenderer {
     /// @param terms The PIL terms to encode
     /// @return The JSON string
     function termsToJson(PILTerms memory terms) external pure returns (string memory) {
-
         /* solhint-disable */
         // Follows the OpenSea standard for JSON metadata.
         // **Attributions**

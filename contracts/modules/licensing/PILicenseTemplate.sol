@@ -49,7 +49,6 @@ contract PILicenseTemplate is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     PILTermsRenderer public immutable TERMS_RENDERER;
 
-
     // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
         0xc6c6991297bc120d0383f0017fab72b8ca34fd4849ed6478dbaac67a33c3a700;

@@ -633,7 +633,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
-        
+
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         uint256 lcTokenId = licensingModule.mintLicenseTokens({

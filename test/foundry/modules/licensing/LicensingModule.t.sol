@@ -462,9 +462,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector));
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
             licensorIpId: address(0x123),
             licenseTemplate: address(pilTemplate),
@@ -474,7 +472,6 @@ contract LicensingModuleTest is BaseTest {
             royaltyContext: ""
         });
     }
-
 
     function test_LicensingModule_mintLicenseTokens_revert_invalidInputs() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());

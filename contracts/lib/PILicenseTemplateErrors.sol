@@ -49,7 +49,7 @@ library PILicenseTemplateErrors {
     /// @notice Cannot add derivative reciprocal when derivative use is disabled.
     error PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
 
-    /// @notice Cannot add derivative revenue share when derivative use is disabled.
+    /// @notice Cannot add derivative revenue ceiling when derivative use is disabled.
     error PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling();
 
     /// @notice Zero address provided for License Registry at initialization.

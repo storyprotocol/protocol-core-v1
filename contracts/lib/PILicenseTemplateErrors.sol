@@ -34,7 +34,7 @@ library PILicenseTemplateErrors {
     /// @notice Cannot add commercial revenue ceiling when commercial use is disabled.
     error PILicenseTemplate__CommercialDisabled_CantAddRevCeiling();
 
-    /// @notice Royalty policy is required when commercial use is enabled.
+    /// @notice Cannot add derivative rev ceiling share when commercial use is disabled.
     error PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling();
 
     /// @notice Royalty policy is required when commercial use is enabled.

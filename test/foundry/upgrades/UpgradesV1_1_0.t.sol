@@ -2,10 +2,8 @@
 pragma solidity 0.8.23;
 
 import { DeployHelper_V1_1_0 } from "./DeployHelper_V1_1_0.sol";
-import {
-    ImplDeployerV1_1_0,
-    UpgradedImplHelper
-} from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
+// solhint-disable-next-line max-line-length
+import { ImplDeployerV1_1_0, UpgradedImplHelper } from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
 import { Users, UsersLib } from "../utils/Users.t.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";

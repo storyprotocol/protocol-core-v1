@@ -13,26 +13,8 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
-import {
-    AccessController_V1_0_0,
-    IPAccountImpl_V1_0_0,
-    DISPUTE_MODULE_KEY,
-    ROYALTY_MODULE_KEY,
-    LICENSING_MODULE_KEY,
-    TOKEN_WITHDRAWAL_MODULE_KEY,
-    CORE_METADATA_MODULE_KEY,
-    CORE_METADATA_VIEW_MODULE_KEY,
-    IPAccountRegistry_V1_0_0,
-    IPAssetRegistry_V1_0_0,
-    LicenseRegistry_V1_0_0,
-    LicensingModule_V1_0_0,
-    RoyaltyModule_V1_0_0,
-    RoyaltyPolicyLAP_V1_0_0,
-    DisputeModule_V1_0_0,
-    IpRoyaltyVault_V1_0_0,
-    PILicenseTemplate_V1_0_0,
-    LicenseToken_V1_0_0
-} from "../../../contracts/old/v1.0.0.sol";
+// solhint-disable-next-line max-line-length
+import { AccessController_V1_0_0, IPAccountImpl_V1_0_0, DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY, IPAccountRegistry_V1_0_0, IPAssetRegistry_V1_0_0, LicenseRegistry_V1_0_0, LicensingModule_V1_0_0, RoyaltyModule_V1_0_0, RoyaltyPolicyLAP_V1_0_0, DisputeModule_V1_0_0, IpRoyaltyVault_V1_0_0, PILicenseTemplate_V1_0_0, LicenseToken_V1_0_0 } from "../../../contracts/old/v1.0.0.sol";
 
 import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";

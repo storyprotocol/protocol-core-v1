@@ -20,6 +20,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 /// @title Dispute Module
 /// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes
 /// through arbitration by judges.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:DisputeModule_V1_0_0
 contract DisputeModule is
     IDisputeModule,
     BaseModule,

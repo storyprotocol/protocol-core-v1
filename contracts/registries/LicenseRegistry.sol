@@ -21,6 +21,7 @@ import { IIPAccount } from "../interfaces/IIPAccount.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:LicenseRegistry_V1_0_0
 contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
     using ERC165Checker for address;
@@ -50,6 +51,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
+        /// @custom:oz-renamed-from licensingModule
+        ILicensingModule deprecated_licensingModule;
+        /// @custom:oz-renamed-from disputeModule
+        IDisputeModule deprecated_disputeModule;
         address defaultLicenseTemplate;
         uint256 defaultLicenseTermsId;
         mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;

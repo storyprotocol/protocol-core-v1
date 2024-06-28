@@ -29,6 +29,7 @@ import { Errors } from "../lib/Errors.sol";
 /// - setPermission: Sets the permission for a specific function call.
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:AccessController_V1_0_0
 contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAccountRegistry;
 
@@ -45,6 +46,10 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     /// @custom:storage-location erc7201:story-protocol.AccessController
     struct AccessControllerStorage {
         mapping(bytes32 => uint8) encodedPermissions;
+        /// @custom:oz-renamed-from ipAccountRegistry
+        address deprecated_ipAccountRegistry;
+        /// @custom:oz-renamed-from moduleRegistry
+        address deprecated_moduleRegistry;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.AccessController")) - 1)) & ~bytes32(uint256(0xff));

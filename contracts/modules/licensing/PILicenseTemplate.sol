@@ -23,6 +23,7 @@ import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpe
 import { PILTermsRenderer } from "./PILTermsRenderer.sol";
 
 /// @title PILicenseTemplate
+/// @custom:oz-upgrades-from contracts/old/v1.0.0.sol:PILicenseTemplate_V1_0_0
 contract PILicenseTemplate is
     BaseLicenseTemplateUpgradeable,
     IPILicenseTemplate,

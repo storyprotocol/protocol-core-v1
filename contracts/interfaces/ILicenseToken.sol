@@ -24,6 +24,10 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         address licenseTemplate;
         uint256 licenseTermsId;
         bool transferable;
+        /// @custom:oz-renamed-from mintedAt
+        uint256 deprecated_mintedAt;
+        /// @custom:oz-renamed-from expiresAt
+        uint256 deprecated_expiresAt;
     }
 
     /// @notice Emitted when a License Token is minted.

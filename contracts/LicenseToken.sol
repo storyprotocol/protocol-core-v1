@@ -16,6 +16,7 @@ import { Errors } from "./lib/Errors.sol";
 import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplate.sol";
 
 /// @title LicenseToken aka LNFT
+/// NOTE, we skip the upgrade check
 contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
@@ -31,6 +32,10 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @custom:storage-location erc7201:story-protocol.LicenseToken
     struct LicenseTokenStorage {
         string imageUrl;
+        /// @custom:oz-renamed-from licensingModule
+        address deprecated_licensingModule;
+        /// @custom:oz-renamed-from disputeModule
+        address deprecated_disputeModule;
         uint256 totalMintedTokens;
         mapping(uint256 tokenId => LicenseTokenMetadata) licenseTokenMetadatas;
     }
@@ -93,7 +98,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
             licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
             licenseTermsId: licenseTermsId,
-            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId)
+            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
+            deprecated_mintedAt: 0,
+            deprecated_expiresAt: 0
         });
 
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();

@@ -8,13 +8,16 @@ import { Users, UsersLib } from "../utils/Users.t.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
 
-import { LicensingModule_V1_0_0, PILTerms, PILFlavors } from "contracts/old/v1.0.0.sol";
+import { LicensingModule_V1_0_0, PILTerms, PILFlavors, IRoyaltyPolicyLAP, IIpRoyaltyVault } from "contracts/old/v1.0.0.sol";
 
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
+import { IIPAccountStorage } from "contracts/interfaces/IIPAccountStorage.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ShortStringOps } from "contracts/lib/ShortStringOps.sol";
+import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
+import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
 
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
@@ -48,6 +51,8 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     MockERC20 internal LINK; // alias for erc20bb
     MockERC721 internal mockNFT;
 
+    using IPAccountStorageOps for IIPAccount;
+
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
 
@@ -64,6 +69,15 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     uint256 termsId;
     bytes32[] tokenURIs;
     bytes32 tag;
+    bytes32 evidence;
+    string ipaName;
+    string ipaUri;
+    uint256 ipaRegistrationDate;
+    string derivIpaName;
+    string derivIpaUri;
+    uint256 derivIpaRegistrationDate;
+    IRoyaltyPolicyLAP.LAPRoyaltyData ipaRoyaltyData;
+    IRoyaltyPolicyLAP.LAPRoyaltyData derivIpaRoyaltyData;
 
     ImplDeployerV1_1_0 implDeployer;
 
@@ -98,10 +112,9 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         dealMockAssets();
 
         super.run(0, false, true);
-
+        
         // 1) Set up state
         setState();
-        return;
 
         // 2) Deploy new (V1.1.0) implementations
 
@@ -137,17 +150,26 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         }
 
         // 4) Test state
+        testState();
+
     }
 
     function setState() internal {
-        // Register First IPA
+        // Register IPAs
         mockNFT.mintId(ipaOwner, 1);
         mockNFT.mintId(derivativeOwner, 2);
-
-        ipa = IIPAccount(payable(ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), 1)));
+    
+        ipa = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 1)));
         assertTrue(ipAssetRegistry.isRegistered(address(ipa)));
-        derivIpa = IIPAccount(payable(ipAssetRegistry.registerIpAccount(block.chainid, address(mockNFT), 2)));
+        ipaName = ipa.getString("NAME");
+        ipaUri = ipa.getString("URI");
+        ipaRegistrationDate = ipa.getUint256("REGISTRATION_DATE");
+
+        derivIpa = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 2)));
         assertTrue(ipAssetRegistry.isRegistered(address(derivIpa)));
+        derivIpaName = derivIpa.getString("NAME");
+        derivIpaUri = derivIpa.getString("URI");
+        derivIpaRegistrationDate = derivIpa.getUint256("REGISTRATION_DATE");
 
         // Set Permissions
         vm.prank(ipaOwner);
@@ -200,19 +222,140 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         vm.startPrank(u.bob);
         USDC.approve(address(royaltyPolicyLAP), 1 ether);
         royaltyModule.payRoyaltyOnBehalf(address(ipa), address(derivIpa), address(USDC), 1 ether);
+        (bool unlinkable, address vault, uint32 stack, address[] memory ancestors, uint32[] memory ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
+
+        ipaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(
+            unlinkable,
+            vault,
+            stack,
+            ancestors,
+            ancestorsRoyalty
+        );
         vm.stopPrank();
 
+        (unlinkable, vault, stack, ancestors, ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(derivIpa));
+
+        derivIpaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(
+            unlinkable,
+            vault,
+            stack,
+            ancestors,
+            ancestorsRoyalty
+        );
+
+        // TODO: claim tokens to check Royalty balance storage
+        // vm.prank(ipaRoyaltyData.ipRoyaltyVault);
+        //IIpRoyaltyVault(ipaRoyaltyData.ipRoyaltyVault).collectRoyaltyTokens(address(ipa));
+        
         //// Disputes
         vm.startPrank(u.admin);
         tag = ShortStringOps.stringToBytes32("test");
         disputeModule.whitelistDisputeTag(tag, true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), relayer, true);
-        console2.log("Is registered");
-        console2.log(ipAssetRegistry.isRegistered(address(ipa)));
-        console2.log(address(ipAssetRegistry));
-        console2.log(address(disputeModule.IP_ASSET_REGISTRY()));
+        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), rel, true);
+        vm.stopPrank();
+        evidence = ShortStringOps.stringToBytes32("evidence");
 
-        disputeModule.raiseDispute(address(ipa), "evidence", tag, "");
+        vm.startPrank(u.carl);
+        USDC.approve(address(arbitrationPolicySP), 1000000 ether);
+        uint256 disputeId = disputeModule.raiseDispute(address(ipa), "evidence", tag, "");
+        vm.stopPrank();
+        vm.prank(rel);
+        disputeModule.setDisputeJudgement(disputeId, true, "");
+        vm.prank(u.carl);
+        disputeModule.tagDerivativeIfParentInfringed(address(ipa), address(derivIpa), disputeId);
+
+        // Pause
+        vm.prank(u.admin);
+        protocolPauser.pause();
+
+    }
+
+    function testState() internal {
+        
+        // IPAccountImpl
+        assertEq(ipa.owner(), ipaOwner);
+        assertEq(ipaName, ipa.getString("NAME"));
+        assertEq(ipaUri, ipa.getString("URI"));
+        assertEq(ipaRegistrationDate, ipa.getUint256("REGISTRATION_DATE"));
+
+        assertEq(derivIpa.owner(), derivativeOwner);
+        assertEq(derivIpaName, derivIpa.getString("NAME"));
+        assertEq(derivIpaUri, derivIpa.getString("URI"));
+        assertEq(derivIpaRegistrationDate, derivIpa.getUint256("REGISTRATION_DATE"));
+
+        // Access Control
+        assertEq(accessController.getPermission(address(ipa), signer, address(licensingModule), LicensingModule_V1_0_0.attachLicenseTerms.selector), AccessPermission.ALLOW);
+
+        // IPAssetRegistry
+        assertEq(ipAssetRegistry.totalSupply(), 2);
+        // NOTE: We need to fix this, upgrading IPAssetRegistry should keep the versions
+        //assertEq(ipAssetRegistry.isRegistered(address(ipa)), true);
+        //assertEq(ipAssetRegistry.isRegistered(address(derivIpa)), true);
+        assertTrue(ipAssetRegistry.paused());
+
+        // DisputeModule
+        assertTrue(disputeModule.paused());
+        assertEq(disputeModule.isIpTagged(address(ipa)), true);
+        assertEq(disputeModule.isIpTagged(address(derivIpa)), true);
+        assertEq(disputeModule.disputeCounter(), 2);
+        assertEq(disputeModule.baseArbitrationPolicy(), address(arbitrationPolicySP));
+
+        (
+            address targetIpId,
+            address disputeInitiator,
+            address arbitrationPolicy,
+            bytes32 linkToDisputeEvidence,
+            bytes32 targetTag,
+            bytes32 currentTag,
+            uint256 parentDisputeId
+        ) = disputeModule.disputes(1);
+        assertEq(targetIpId, address(ipa));
+        assertEq(disputeInitiator, address(u.carl));
+        assertEq(arbitrationPolicy, address(arbitrationPolicySP));
+        assertEq(linkToDisputeEvidence, evidence);
+        assertEq(targetTag, tag);
+        assertEq(currentTag, tag);
+        assertEq(parentDisputeId, 0);
+
+        (
+            targetIpId,
+            disputeInitiator,
+            arbitrationPolicy,
+            linkToDisputeEvidence,
+            targetTag,
+            currentTag,
+            parentDisputeId
+        ) = disputeModule.disputes(2);
+        assertEq(targetIpId, address(derivIpa));
+        assertEq(disputeInitiator, address(u.carl));
+        assertEq(arbitrationPolicy, address(arbitrationPolicySP));
+        assertEq(linkToDisputeEvidence, bytes32(0));
+        assertEq(targetTag, tag);
+        assertEq(currentTag, tag);
+        assertEq(parentDisputeId, 1);
+
+        // RoyaltyModule
+        assertTrue(royaltyModule.paused());
+        assertTrue(royaltyModule.isWhitelistedRoyaltyPolicy(address(royaltyPolicyLAP)));
+        assertTrue(royaltyModule.isWhitelistedRoyaltyToken(address(erc20)));
+        // TODO: check
+        //assertEq(royaltyModule.royaltyPolicies(address(ipa)), address(royaltyPolicyLAP));
+        //assertEq(royaltyModule.royaltyPolicies(address(derivIpa)), address(royaltyPolicyLAP));
+        // RoyaltyPolicyLAP
+        assertTrue(royaltyPolicyLAP.paused());
+        IRoyaltyPolicyLAP.LAPRoyaltyData memory data = royaltyPolicyLAP.getRoyaltyData(address(ipa));
+        assertEq(royaltyPolicyLAP.getRoyaltyData(address(ipa)), ipaRoyaltyData);
+        // IpRoyaltyVault
+
+        
+        // License system
+        // LicenseRegistry_V1_0_0 internal licenseRegistry;
+        // LicensingModule_V1_0_0 internal licensingModule;
+        // LicenseToken_V1_0_0 internal licenseToken;
+        // PILicenseTemplate_V1_0_0 internal pilTemplate;
+
+        // Disputes
+
     }
 
     function upgrade(UpgradedImplHelper.UpgradeProposal memory prop) internal {

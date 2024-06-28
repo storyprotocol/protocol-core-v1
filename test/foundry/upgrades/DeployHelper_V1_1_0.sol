@@ -133,6 +133,8 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         if (deployerIsAdmin) {
             revert RoleConfigError("Deployer did not renounce admin role");
         }
+        
+
         (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
 
@@ -145,9 +147,13 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         if (!multisigUpgrader) {
             revert RoleConfigError("Multisig upgrader role not granted");
         }
+        
 
         if (writeDeploys) _writeDeployment();
+        
+
         _endBroadcast(); // BroadcastManager.s.sol
+        
     }
 
     function _getSalt(string memory name) internal view returns (bytes32 salt) {

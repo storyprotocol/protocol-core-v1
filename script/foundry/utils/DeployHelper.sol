@@ -34,7 +34,6 @@ import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { TokenWithdrawalModule } from "contracts/modules/external/TokenWithdrawalModule.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
@@ -82,7 +81,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     // External Module
     CoreMetadataViewModule internal coreMetadataViewModule;
-    TokenWithdrawalModule internal tokenWithdrawalModule;
 
     // Policy
     ArbitrationPolicySP internal arbitrationPolicySP;
@@ -531,17 +529,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
 
-        _predeploy("TokenWithdrawalModule");
-        tokenWithdrawalModule = TokenWithdrawalModule(
-            create3Deployer.deploy(
-                _getSalt(type(TokenWithdrawalModule).name),
-                abi.encodePacked(
-                    type(TokenWithdrawalModule).creationCode,
-                    abi.encode(address(accessController), address(ipAccountRegistry))
-                )
-            )
-        );
-        _postdeploy("TokenWithdrawalModule", address(tokenWithdrawalModule));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -572,7 +559,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
         moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
         moduleRegistry.registerModule(CORE_METADATA_VIEW_MODULE_KEY, address(coreMetadataViewModule));
-        moduleRegistry.registerModule(TOKEN_WITHDRAWAL_MODULE_KEY, address(tokenWithdrawalModule));
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);

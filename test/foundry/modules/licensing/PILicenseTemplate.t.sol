@@ -133,6 +133,32 @@ contract PILicenseTemplateTest is BaseTest {
 
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
     }
+
+    function test_PILicenseTemplate_revert_registerRevCeiling() public {
+        PILTerms memory terms = PILFlavors.defaultValuesLicenseTerms();
+        terms.commercialRevCeiling = 10;
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCeiling.selector);
+        pilTemplate.registerLicenseTerms(terms);
+
+        terms.commercialRevCeiling = 0;
+        terms.derivativeRevCeiling = 10;
+        vm.expectRevert(
+            PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling.selector
+        );
+        pilTemplate.registerLicenseTerms(terms);
+
+        terms.commercialRevCeiling = 0;
+        terms.commercialUse = true;
+        terms.royaltyPolicy = address(royaltyPolicyLAP);
+        terms.currency = address(erc20);
+        terms.derivativesAllowed = false;
+        terms.derivativeRevCeiling = 10;
+        vm.expectRevert(
+            PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling.selector
+        );
+        pilTemplate.registerLicenseTerms(terms);
+    }
+
     // register license terms twice
     function test_PILicenseTemplate_registerLicenseTerms_twice() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
@@ -261,7 +287,7 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
         PILTerms memory terms = pilTemplate.getLicenseTerms(commUseTermsId);
-        assertEq(terms.mintingFee, 100);
+        assertEq(terms.defaultMintingFee, 100);
         assertEq(terms.currency, address(erc20));
         assertEq(terms.royaltyPolicy, address(royaltyPolicyLAP));
     }
@@ -364,6 +390,28 @@ contract PILicenseTemplateTest is BaseTest {
         assertTrue(result);
     }
 
+    // test verifyRegisterDerivative
+    function test_PILicenseTemplate_verifyRegisterDerivative_NotDerivativesReciprocal() public {
+        // register license terms allow derivative but not allow derivative of derivative
+        PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
+        terms.derivativesReciprocal = false;
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+
+        // register derivative
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), socialRemixTermsId);
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+        vm.prank(ipOwner[2]);
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+
+        // checking register derivative of derivative, expect false
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[3], ipAcct[2], socialRemixTermsId, ipOwner[3]);
+        assertFalse(result);
+    }
+
     function test_PILicenseTemplate_verifyRegisterDerivative_WithApproval() public {
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
         terms.derivativesApproval = true;
@@ -429,6 +477,22 @@ contract PILicenseTemplateTest is BaseTest {
 
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
+        assertTrue(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
+
+        uint256 anotherCommRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 200,
+                commercialRevShare: 20,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(erc20)
+            })
+        );
+        licenseTermsIds[0] = commRemixTermsId;
+        licenseTermsIds[1] = anotherCommRemixTermsId;
+        assertFalse(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
+
+        licenseTermsIds[0] = commRemixTermsId;
+        licenseTermsIds[1] = commRemixTermsId;
         assertTrue(pilTemplate.verifyCompatibleLicenses(licenseTermsIds));
     }
 
@@ -571,7 +635,7 @@ contract PILicenseTemplateTest is BaseTest {
     function _DefaultToJson() internal pure returns (string memory) {
         /* solhint-disable */
         return
-            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Celling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Celling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
+            '{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Check", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
         /* solhint-enable */
     }
 }

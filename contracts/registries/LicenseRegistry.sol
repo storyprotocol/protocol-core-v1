@@ -97,9 +97,16 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param newLicenseTemplate The address of the new default license template.
     /// @param newLicenseTermsId The ID of the new default license terms.
     function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external restricted {
+        if (newLicenseTemplate == address(0)) {
+            revert Errors.LicenseRegistry__ZeroLicenseTemplate();
+        }
+        if (!_exists(newLicenseTemplate, newLicenseTermsId)) {
+            revert Errors.LicenseRegistry__LicenseTermsNotExists(newLicenseTemplate, newLicenseTermsId);
+        }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.defaultLicenseTemplate = newLicenseTemplate;
         $.defaultLicenseTermsId = newLicenseTermsId;
+        emit DefaultLicenseTermsSet(newLicenseTemplate, newLicenseTermsId);
     }
 
     /// @notice Registers a new license template in the Story Protocol.
@@ -129,7 +136,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
         $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing.LicensingConfig({
-            isSet: true,
+            isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData
@@ -149,7 +156,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         $.licensingConfigsForIp[ipId] = Licensing.LicensingConfig({
-            isSet: true,
+            isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData
@@ -196,11 +203,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param parentIpIds An array of addresses of the parent IPs.
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
+    /// @param isUsingLicenseToken Whether the derivative IP is registered with license tokens.
     function registerDerivativeIp(
         address childIpId,
         address[] calldata parentIpIds,
         address licenseTemplate,
-        uint256[] calldata licenseTermsIds
+        uint256[] calldata licenseTermsIds,
+        bool isUsingLicenseToken
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.parentIps[childIpId].length() > 0) {
@@ -216,7 +225,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             earliestExp = ExpiringOps.getEarliestExpirationTime(earliestExp, _getExpireTime(parentIpIds[i]));
-            _verifyDerivativeFromParent(parentIpIds[i], childIpId, licenseTemplate, licenseTermsIds[i]);
+            _verifyDerivativeFromParent(
+                parentIpIds[i],
+                childIpId,
+                licenseTemplate,
+                licenseTermsIds[i],
+                isUsingLicenseToken
+            );
             $.childIps[parentIpIds[i]].add(childIpId);
             // determine if duplicate license terms
             bool isNewParent = $.parentIps[childIpId].add(parentIpIds[i]);
@@ -405,11 +420,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the child IP
     /// @param licenseTemplate The address of the license template where the license terms are created
     /// @param licenseTermsId The license terms the child IP is registered with
+    /// @param isUsingLicenseToken Whether the child IP is registered with license tokens
     function _verifyDerivativeFromParent(
         address parentIpId,
         address childIpId,
         address licenseTemplate,
-        uint256 licenseTermsId
+        uint256 licenseTermsId,
+        bool isUsingLicenseToken
     ) internal view {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (DISPUTE_MODULE.isIpTagged(parentIpId)) {
@@ -423,10 +440,14 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
         // childIp can only register with default license terms or the license terms attached to the parent IP
         if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsId) {
-            if ($.licenseTemplates[parentIpId] != licenseTemplate) {
+            address pLicenseTemplate = $.licenseTemplates[parentIpId];
+            if (
+                (isUsingLicenseToken && pLicenseTemplate != address(0) && pLicenseTemplate != licenseTemplate) ||
+                (!isUsingLicenseToken && pLicenseTemplate != licenseTemplate)
+            ) {
                 revert Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate(parentIpId, licenseTemplate);
             }
-            if (!$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
+            if (!isUsingLicenseToken && !$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
                 revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
             }
         }

@@ -20,6 +20,7 @@ import { ExpiringOps } from "../../lib/ExpiringOps.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
+import { PILTermsRenderer } from "./PILTermsRenderer.sol";
 
 /// @title PILicenseTemplate
 contract PILicenseTemplate is
@@ -45,6 +46,8 @@ contract PILicenseTemplate is
     ILicenseRegistry public immutable LICENSE_REGISTRY;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    PILTermsRenderer public immutable TERMS_RENDERER;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
@@ -61,6 +64,7 @@ contract PILicenseTemplate is
         if (royaltyModule == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroRoyaltyModule();
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+        TERMS_RENDERER = new PILTermsRenderer();
         _disableInitializers();
     }
 
@@ -223,7 +227,7 @@ contract PILicenseTemplate is
         uint256 licenseTermsId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-        return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
+        return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.defaultMintingFee, terms.currency);
     }
 
     /// @notice Checks if a license terms is transferable.
@@ -299,85 +303,7 @@ contract PILicenseTemplate is
     /// @return The JSON string of the license terms, follow the OpenSea metadata standard.
     function toJson(uint256 licenseTermsId) public view returns (string memory) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-
-        /* solhint-disable */
-        // Follows the OpenSea standard for JSON metadata.
-        // **Attributions**
-        string memory json = string(
-            abi.encodePacked(
-                '{"trait_type": "Expiration", "value": "',
-                terms.expiration == 0 ? "never" : terms.expiration.toString(),
-                '"},',
-                '{"trait_type": "Currency", "value": "',
-                terms.currency.toHexString(),
-                '"},',
-                '{"trait_type": "URI", "value": "',
-                terms.uri,
-                '"},',
-                // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
-                _policyCommercialTraitsToJson(terms),
-                _policyDerivativeTraitsToJson(terms)
-            )
-        );
-
-        // NOTE: (above) last trait added by LicenseTemplate should have a comma at the end.
-
-        /* solhint-enable */
-
-        return json;
-    }
-
-    /// @dev Encodes the commercial traits of PIL policy into a JSON string for OpenSea
-    function _policyCommercialTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
-        /* solhint-disable */
-        return
-            string(
-                abi.encodePacked(
-                    '{"trait_type": "Commercial Use", "value": "',
-                    terms.commercialUse ? "true" : "false",
-                    '"},',
-                    '{"trait_type": "Commercial Attribution", "value": "',
-                    terms.commercialAttribution ? "true" : "false",
-                    '"},',
-                    '{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": ',
-                    terms.commercialRevShare.toString(),
-                    "},",
-                    '{"trait_type": "Commercial Revenue Celling", "value": ',
-                    terms.commercialRevCelling.toString(),
-                    "},",
-                    '{"trait_type": "Commercializer Check", "value": "',
-                    terms.commercializerChecker.toHexString(),
-                    // Skip on commercializerCheckerData as it's bytes as irrelevant for the user metadata
-                    '"},'
-                )
-            );
-        /* solhint-enable */
-    }
-
-    /// @dev Encodes the derivative traits of PILTerm into a JSON string for OpenSea
-    function _policyDerivativeTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
-        /* solhint-disable */
-        return
-            string(
-                abi.encodePacked(
-                    '{"trait_type": "Derivatives Allowed", "value": "',
-                    terms.derivativesAllowed ? "true" : "false",
-                    '"},',
-                    '{"trait_type": "Derivatives Attribution", "value": "',
-                    terms.derivativesAttribution ? "true" : "false",
-                    '"},',
-                    '{"trait_type": "Derivatives Revenue Celling", "value": ',
-                    terms.derivativeRevCelling.toString(),
-                    "},",
-                    '{"trait_type": "Derivatives Approval", "value": "',
-                    terms.derivativesApproval ? "true" : "false",
-                    '"},',
-                    '{"trait_type": "Derivatives Reciprocal", "value": "',
-                    terms.derivativesReciprocal ? "true" : "false",
-                    '"},'
-                )
-            );
-        /* solhint-enable */
+        return TERMS_RENDERER.termsToJson(terms);
     }
 
     /// @dev Checks the configuration of commercial use and throws if the policy is not compliant
@@ -392,6 +318,12 @@ contract PILicenseTemplate is
             }
             if (terms.commercialRevShare > 0) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevShare();
+            }
+            if (terms.commercialRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRevCeiling();
+            }
+            if (terms.derivativeRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddDerivativeRevCeiling();
             }
             if (terms.royaltyPolicy != address(0)) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddRoyaltyPolicy();
@@ -423,6 +355,9 @@ contract PILicenseTemplate is
             if (terms.derivativesReciprocal) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddReciprocal();
             }
+            if (terms.derivativeRevCeiling > 0) {
+                revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddDerivativeRevCeiling();
+            }
         }
     }
 
@@ -437,6 +372,13 @@ contract PILicenseTemplate is
 
         if (!terms.derivativesAllowed) {
             return false;
+        }
+
+        //  reciprocal derivatives must be true, if want to allow derivatives of derivatives
+        if (LICENSE_REGISTRY.isDerivativeIp(parentIpId)) {
+            if (!terms.derivativesReciprocal) {
+                return false;
+            }
         }
 
         // If the policy defines the licensor must approve derivatives, check if the
@@ -464,6 +406,7 @@ contract PILicenseTemplate is
         for (uint256 i = 1; i < licenseTermsIds.length; i++) {
             if ($.licenseTerms[licenseTermsIds[i]].commercialUse != commercial) return false;
             if ($.licenseTerms[licenseTermsIds[i]].derivativesReciprocal != derivativesReciprocal) return false;
+            if (derivativesReciprocal && licenseTermsIds[0] != licenseTermsIds[i]) return false;
         }
         return true;
     }

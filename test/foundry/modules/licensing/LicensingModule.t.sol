@@ -14,6 +14,7 @@ import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol"
 import { MockLicensingHook } from "../../mocks/module/MockLicensingHook.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
 
 // test
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
@@ -175,19 +176,19 @@ contract LicensingModuleTest is BaseTest {
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
+            defaultMintingFee: 0,
             expiration: 10 days,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(0),
             commercializerCheckerData: "",
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -419,19 +420,19 @@ contract LicensingModuleTest is BaseTest {
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
+            defaultMintingFee: 0,
             expiration: 10 days,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(0),
             commercializerCheckerData: "",
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -462,9 +463,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
-        vm.expectRevert(
-            abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector));
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
             licensorIpId: address(0x123),
             licenseTemplate: address(pilTemplate),
@@ -474,7 +473,6 @@ contract LicensingModuleTest is BaseTest {
             royaltyContext: ""
         });
     }
-
 
     function test_LicensingModule_mintLicenseTokens_revert_invalidInputs() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
@@ -630,10 +628,61 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTermsId, termsId);
     }
 
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_privateLicense() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId), false);
+
+        assertEq(licenseToken.ownerOf(lcTokenId), ipOwner2);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), termsId);
+        assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
+        assertEq(licenseToken.getLicensorIpId(lcTokenId), ipId1);
+        assertEq(licenseToken.totalMintedTokens(), 1);
+        assertEq(licenseToken.totalSupply(), 1);
+        assertEq(licenseToken.balanceOf(ipOwner2), 1);
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId), false);
+
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
+        assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
+        assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipId1), false);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 1);
+        assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
+        assertEq(licenseRegistry.getDerivativeIp(ipId1, 0), ipId2);
+        assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
+        assertEq(licenseRegistry.getParentIpCount(ipId2), 1);
+        assertEq(licenseToken.totalSupply(), 0);
+        assertEq(licenseToken.totalMintedTokens(), 1);
+        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, lcTokenId));
+        licenseToken.ownerOf(lcTokenId);
+
+        (address licenseTemplate, uint256 licenseTermsId) = licenseRegistry.getAttachedLicenseTerms(ipId2, 0);
+        assertEq(licenseTemplate, address(pilTemplate));
+        assertEq(licenseTermsId, termsId);
+    }
+
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
-        
+
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
@@ -754,20 +803,19 @@ contract LicensingModuleTest is BaseTest {
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_ParentExpired() public {
-        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         PILTerms memory expiredTerms = PILFlavors.nonCommercialSocialRemixing();
         expiredTerms.expiration = 10 days;
         uint256 expiredTermsId = pilTemplate.registerLicenseTerms(expiredTerms);
 
         vm.prank(ipOwner1);
-        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), expiredTermsId);
         vm.prank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), expiredTermsId);
 
         uint256 lcTokenId1 = licensingModule.mintLicenseTokens({
             licensorIpId: ipId1,
             licenseTemplate: address(pilTemplate),
-            licenseTermsId: termsId,
+            licenseTermsId: expiredTermsId,
             amount: 1,
             receiver: ipOwner3,
             royaltyContext: ""
@@ -783,7 +831,7 @@ contract LicensingModuleTest is BaseTest {
         });
 
         assertEq(licenseToken.ownerOf(lcTokenId1), ipOwner3);
-        assertEq(licenseToken.getLicenseTermsId(lcTokenId1), termsId);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId1), expiredTermsId);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId1), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId1), ipId1);
 
@@ -802,9 +850,8 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner3);
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(pilTemplate), termsId), true);
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(pilTemplate), expiredTermsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 2);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId3), false);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId3), 0);
@@ -825,16 +872,7 @@ contract LicensingModuleTest is BaseTest {
 
         (address licenseTemplate, uint256 licenseTermsId) = licenseRegistry.getAttachedLicenseTerms(ipId3, 0);
         assertEq(licenseTemplate, address(pilTemplate));
-        assertEq(licenseTermsId, termsId);
-        (address anotherLicenseTemplate, uint256 anotherLicenseTermsId) = licenseRegistry.getAttachedLicenseTerms(
-            ipId3,
-            1
-        );
-        assertEq(anotherLicenseTemplate, address(pilTemplate));
-        assertEq(anotherLicenseTermsId, expiredTermsId);
-        uint256[] memory licenseTerms = new uint256[](2);
-        licenseTerms[0] = termsId;
-        licenseTerms[1] = expiredTermsId;
+        assertEq(licenseTermsId, expiredTermsId);
 
         assertEq(licenseRegistry.getExpireTime(ipId3), block.timestamp + 10 days, "IPA has unexpected expiration time");
         vm.warp(5 days);
@@ -842,7 +880,7 @@ contract LicensingModuleTest is BaseTest {
         uint256 lcTokenId3 = licensingModule.mintLicenseTokens({
             licensorIpId: ipId3,
             licenseTemplate: address(pilTemplate),
-            licenseTermsId: termsId,
+            licenseTermsId: expiredTermsId,
             amount: 1,
             receiver: ipOwner5,
             royaltyContext: ""
@@ -954,6 +992,50 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
     }
 
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_ownedByDelegator() public {
+        vm.prank(ipOwner3);
+        accessController.setAllPermissions(ipId3, ipOwner2, AccessPermission.ALLOW);
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+    }
+
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_ownedByChildIp() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipId3,
+            royaltyContext: ""
+        });
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
+    }
+
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_notLicensee() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         vm.prank(ipOwner1);
@@ -972,7 +1054,13 @@ contract LicensingModuleTest is BaseTest {
         licenseTokens[0] = lcTokenId;
 
         vm.expectRevert(
-            abi.encodeWithSelector(Errors.LicenseToken__NotLicenseTokenOwner.selector, lcTokenId, ipOwner3, ipOwner2)
+            abi.encodeWithSelector(
+                Errors.LicenseToken__CallerAndChildIPNotTokenOwner.selector,
+                lcTokenId,
+                ipOwner3,
+                ipId3,
+                ipOwner2
+            )
         );
         vm.prank(ipOwner3);
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
@@ -1029,19 +1117,19 @@ contract LicensingModuleTest is BaseTest {
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
+            defaultMintingFee: 0,
             expiration: 0,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1078,19 +1166,19 @@ contract LicensingModuleTest is BaseTest {
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
+            defaultMintingFee: 0,
             expiration: 0,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1125,19 +1213,19 @@ contract LicensingModuleTest is BaseTest {
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: 0,
+            defaultMintingFee: 0,
             expiration: 0,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(tokenGatedHook),
             commercializerCheckerData: abi.encode(address(gatedNftBar)),
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(0x123),
             uri: ""
         });
@@ -1232,6 +1320,37 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
     }
 
+    function test_LicensingModule_registerDerivative_revert_NotAllowDerivativesReciprocal() public {
+        // register license terms allow derivative but not allow derivative of derivative
+        PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();
+        // not allow derivative of derivative
+        terms.derivativesReciprocal = false;
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(terms);
+
+        // register derivative
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), socialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+
+        // register derivative of derivative, should revert
+        parentIpIds = new address[](1);
+        parentIpIds[0] = ipId2;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicenseNotCompatibleForDerivative.selector, ipId3)
+        );
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+    }
+
     function test_LicensingModule_setLicensingConfig() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         MockLicensingHook licensingHook = new MockLicensingHook();
@@ -1268,6 +1387,55 @@ contract LicensingModuleTest is BaseTest {
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).hookData,
             abi.encode(address(0x123))
         );
+    }
+
+    function test_LicensingModule_UnsetLicensingConfig() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0x123))
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, true);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(
+            licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).licensingHook,
+            address(licensingHook)
+        );
+        assertEq(
+            licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).hookData,
+            abi.encode(address(0x123))
+        );
+
+        licensingConfig.isSet = false;
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, false);
+
+        licensingConfig.isSet = true;
+        vm.prank(ipOwner2);
+        licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
+        assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, true);
+        assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(
+            licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).licensingHook,
+            address(licensingHook)
+        );
+        assertEq(
+            licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).hookData,
+            abi.encode(address(0x123))
+        );
+
+        licensingConfig.isSet = false;
+        vm.prank(ipOwner2);
+        licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
+        assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, false);
     }
 
     function test_LicensingModule_setLicensingConfig_revert_invalidTermsId() public {
@@ -1479,6 +1647,82 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
         assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
         assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
+    }
+
+    function test_LicensingModule_registerDerivative_resetToDefaultMintingFee() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 300,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 999999,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0x123))
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        vm.startPrank(ipOwner2);
+        erc20.mint(ipOwner2, 1000);
+        erc20.approve(address(royaltyPolicyLAP), 100);
+
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = ipId1;
+        licenseTermsIds[0] = termsId;
+
+        vm.expectEmit();
+        emit ILicensingModule.DerivativeRegistered(
+            ipOwner2,
+            ipId2,
+            new uint256[](0),
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate)
+        );
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        vm.stopPrank();
+
+        assertEq(erc20.balanceOf(ipOwner2), 900);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
+        assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
+        assertEq(licenseRegistry.getParentIp(ipId2, 0), ipId1);
+
+        // reset to default minting fee
+        Licensing.LicensingConfig memory licensingConfig2 = Licensing.LicensingConfig({
+            isSet: false,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: abi.encode(address(0))
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig2);
+
+        vm.startPrank(ipOwner2);
+        erc20.approve(address(royaltyPolicyLAP), 300);
+        uint256 licenseTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: ""
+        });
+        vm.stopPrank();
+        assertEq(erc20.balanceOf(ipOwner2), 900 - 300);
+        assertEq(licenseToken.ownerOf(licenseTokenId), ipOwner2);
     }
 
     function test_LicensingModule_registerDerivative_revert_licensingHookRevert() public {

@@ -118,16 +118,16 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.
+    /// @param caller The address of the caller who register derivative with the given tokens.
     /// @param childIpId The ID of the derivative IP.
-    /// @param childIpOwner The address of the owner of the derivative IP.
     /// @param tokenIds An array of IDs of the License Tokens to validate for the derivative
     /// IP to register as derivative of the licensor IPs which minted the license tokens.
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
     /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
     function validateLicenseTokensForDerivative(
+        address caller,
         address childIpId,
-        address childIpOwner,
         uint256[] calldata tokenIds
     )
         external
@@ -141,8 +141,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
-            if (ownerOf(tokenIds[i]) != childIpOwner) {
-                revert Errors.LicenseToken__NotLicenseTokenOwner(tokenIds[i], childIpOwner, ownerOf(tokenIds[i]));
+            address tokenOwner = ownerOf(tokenIds[i]);
+            if (ownerOf(tokenIds[i]) != caller && tokenOwner != childIpId) {
+                revert Errors.LicenseToken__CallerAndChildIPNotTokenOwner(tokenIds[i], caller, childIpId, tokenOwner);
             }
             if (licenseTemplate != ltm.licenseTemplate) {
                 revert Errors.LicenseToken__AllLicenseTokensMustFromSameLicenseTemplate(

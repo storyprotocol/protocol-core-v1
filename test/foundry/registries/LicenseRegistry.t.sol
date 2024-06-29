@@ -13,6 +13,7 @@ import { MockLicenseTemplate } from "../mocks/module/MockLicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../../contracts/lib/IPAccountStorageOps.sol";
 import { Licensing } from "../../../contracts/lib/Licensing.sol";
 import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { ILicenseRegistry } from "contracts/interfaces/registries/ILicenseRegistry.sol";
 
 // test
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
@@ -61,11 +62,24 @@ contract LicenseRegistryTest is BaseTest {
 
     function test_LicenseRegistry_setDefaultLicenseTerms() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.expectEmit();
+        emit ILicenseRegistry.DefaultLicenseTermsSet(address(pilTemplate), socialRemixTermsId);
         vm.prank(admin);
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), socialRemixTermsId);
         (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = licenseRegistry.getDefaultLicenseTerms();
         assertEq(defaultLicenseTemplate, address(pilTemplate));
         assertEq(defaultLicenseTermsId, socialRemixTermsId);
+    }
+
+    function test_LicenseRegistry_setDefaultLicenseTerms_revert() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicenseRegistry__LicenseTermsNotExists.selector, address(pilTemplate), 999)
+        );
+        vm.prank(admin);
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), 999);
+        vm.expectRevert(Errors.LicenseRegistry__ZeroLicenseTemplate.selector);
+        vm.prank(admin);
+        licenseRegistry.setDefaultLicenseTerms(address(0), 999);
     }
 
     // test registerLicenseTemplate
@@ -166,6 +180,25 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.attachLicenseTermsToIp(ipAcct[2], address(pilTemplate), defaultTermsId);
     }
 
+    function test_LicenseRegistry_registerDerivativeIp_revert_parentsArrayEmpty() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(admin);
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), socialRemixTermsId);
+
+        address[] memory parentIpIds = new address[](0);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+        vm.expectRevert(Errors.LicenseRegistry__NoParentIp.selector);
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[2],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
+    }
+
     // test getAttachedLicenseTerms
     function test_LicenseRegistry_getAttachedLicenseTerms_revert_OutOfIndex() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
@@ -223,7 +256,107 @@ contract LicenseRegistryTest is BaseTest {
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = socialRemixTermsId;
         vm.prank(address(licensingModule));
-        licenseRegistry.registerDerivativeIp(ipAcct[3], parentIpIds, address(pilTemplate), licenseTermsIds);
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
+        // test registerDerivativeIp using licenseToken
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[5],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: true
+        });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_unattachedLicenseTerm_usingLicenseToken() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), socialRemixTermsId);
+        vm.prank(ipOwner[2]);
+        licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), socialRemixTermsId);
+
+        uint256 commercialRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
+        );
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[2];
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = commercialRemixTermsId;
+        licenseTermsIds[1] = commercialRemixTermsId;
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: true
+        });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_parentNoLicenseTemplate_usingLicenseToken() public {
+        uint256 commercialRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
+        );
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[2];
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = commercialRemixTermsId;
+        licenseTermsIds[1] = commercialRemixTermsId;
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: true
+        });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_unmatchLicenseTemplate_usingLicenseToken() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), socialRemixTermsId);
+        vm.prank(ipOwner[2]);
+        licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), socialRemixTermsId);
+
+        MockLicenseTemplate pilTemplate2 = new MockLicenseTemplate();
+        vm.prank(admin);
+        licenseRegistry.registerLicenseTemplate(address(pilTemplate2));
+        uint256 mockTermsId = pilTemplate2.registerLicenseTerms();
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipAcct[1];
+        parentIpIds[1] = ipAcct[2];
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = mockTermsId;
+        licenseTermsIds[1] = mockTermsId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate.selector,
+                ipAcct[1],
+                address(pilTemplate2)
+            )
+        );
+
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate2),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: true
+        });
     }
 
     function test_LicenseRegistry_registerDerivativeIp_revert_DuplicateLicense() public {
@@ -246,7 +379,66 @@ contract LicenseRegistryTest is BaseTest {
             )
         );
         vm.prank(address(licensingModule));
-        licenseRegistry.registerDerivativeIp(ipAcct[2], parentIpIds, address(pilTemplate), licenseTermsIds);
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[2],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_revert_UnattachedLicenseTemplate() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = socialRemixTermsId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate.selector,
+                ipAcct[1],
+                address(pilTemplate)
+            )
+        );
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[2],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
+    }
+
+    function test_LicenseRegistry_registerDerivativeIp_revert_UnattachedLicenseTermsId() public {
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), socialRemixTermsId);
+        uint256 commercialRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
+        );
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipAcct[1];
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = commercialRemixTermsId;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__ParentIpHasNoLicenseTerms.selector,
+                ipAcct[1],
+                commercialRemixTermsId
+            )
+        );
+        vm.prank(address(licensingModule));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[2],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
     }
 
     function test_LicenseRegistry_isExpiredNow() public {
@@ -306,7 +498,13 @@ contract LicenseRegistryTest is BaseTest {
         licenseTermsIds[0] = termsId1;
         licenseTermsIds[1] = termsId2;
         vm.prank(address(licensingModule));
-        licenseRegistry.registerDerivativeIp(ipAcct[3], parentIpIds, address(pilTemplate), licenseTermsIds);
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
 
         assertEq(licenseRegistry.getExpireTime(ipAcct[1]), block.timestamp + 100, "ipAcct[1] expire time is incorrect");
         assertEq(licenseRegistry.getExpireTime(ipAcct[2]), 0, "ipAcct[2] expire time is incorrect");
@@ -344,8 +542,13 @@ contract LicenseRegistryTest is BaseTest {
         licenseTermsIds[0] = termsId1;
         licenseTermsIds[1] = termsId2;
         vm.prank(address(licensingModule));
-        licenseRegistry.registerDerivativeIp(ipAcct[3], parentIpIds, address(pilTemplate), licenseTermsIds);
-
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
         assertEq(licenseRegistry.getExpireTime(ipAcct[1]), block.timestamp + 500, "ipAcct[1] expire time is incorrect");
         assertEq(licenseRegistry.getExpireTime(ipAcct[2]), 0, "ipAcct[2] expire time is incorrect");
         assertEq(licenseRegistry.getExpireTime(ipAcct[3]), block.timestamp + 400, "ipAcct[3] expire time is incorrect");

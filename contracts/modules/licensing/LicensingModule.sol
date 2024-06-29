@@ -258,7 +258,7 @@ contract LicensingModule is
         // Set the derivative IP as a derivative of the parent IPs.
         // Set the expiration timestamp for the derivative IP by invoking the license template to calculate
         // the earliest expiration time among all license terms.
-        LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds);
+        LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, false);
         // Process the payment for the minting fee.
         (address commonRoyaltyPolicy, bytes[] memory royaltyDatas) = _payMintingFeeForAllParentIps(
             childIpId,
@@ -304,7 +304,7 @@ contract LicensingModule is
         // Validate that the owner of the derivative IP is also the owner of the license tokens.
         address childIpOwner = IIPAccount(payable(childIpId)).owner();
         (address licenseTemplate, address[] memory parentIpIds, uint256[] memory licenseTermsIds) = LICENSE_NFT
-            .validateLicenseTokensForDerivative(childIpId, childIpOwner, licenseTokenIds);
+            .validateLicenseTokensForDerivative(msg.sender, childIpId, licenseTokenIds);
 
         _verifyIpNotDisputed(childIpId);
 
@@ -325,7 +325,7 @@ contract LicensingModule is
         // Set the derivative IP as a derivative of the parent IPs.
         // Set the expiration timestamp for the derivative IP to match the earliest expiration time of
         // all license terms.
-        LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds);
+        LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
         // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
         address commonRoyaltyPolicy = address(0);

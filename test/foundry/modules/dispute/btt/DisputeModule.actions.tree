@@ -38,7 +38,7 @@ DisputeModule.sol:actions
 │                   ├── it should call arbitration policy hook
 │                   ├── it should emit an event
 │                   └── it should succeed
-├── when cancelling dispute
+├── when canceling dispute
 │   ├── when dispute ID is not IN_DISPUTE
 │   │   └── it should revert
 │   └── when dispute ID is IN_DISPUTE

@@ -167,6 +167,9 @@ library Errors {
     /// @notice Provided license template and terms ID is a duplicate.
     error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice Zero address provided for License Template.
+    error LicenseRegistry__ZeroLicenseTemplate();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -189,8 +192,13 @@ library Errors {
     /// @notice License token is not transferable.
     error LicenseToken__NotTransferable();
 
-    /// @notice License token is not owned by the caller.
-    error LicenseToken__NotLicenseTokenOwner(uint256 tokenId, address iPowner, address tokenOwner);
+    /// @notice License token is not owned by the either caller or child IP.
+    error LicenseToken__CallerAndChildIPNotTokenOwner(
+        uint256 tokenId,
+        address caller,
+        address childIpIp,
+        address actualTokenOwner
+    );
 
     /// @notice All license tokens must be from the same license template.
     error LicenseToken__AllLicenseTokensMustFromSameLicenseTemplate(

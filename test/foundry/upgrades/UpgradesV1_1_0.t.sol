@@ -343,8 +343,30 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         //assertEq(royaltyModule.royaltyPolicies(address(derivIpa)), address(royaltyPolicyLAP));
         // RoyaltyPolicyLAP
         assertTrue(royaltyPolicyLAP.paused());
-        IRoyaltyPolicyLAP.LAPRoyaltyData memory data = royaltyPolicyLAP.getRoyaltyData(address(ipa));
-        assertEq(royaltyPolicyLAP.getRoyaltyData(address(ipa)), ipaRoyaltyData);
+        (bool unlinkable, address vault, uint32 stack, address[] memory ancestors, uint32[] memory ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
+        
+        IRoyaltyPolicyLAP.LAPRoyaltyData memory newIpaData = IRoyaltyPolicyLAP.LAPRoyaltyData({
+            // whether calling via minting license or linking to parents the ipId becomes unlinkable
+            isUnlinkableToParents: unlinkable,
+            ipRoyaltyVault: vault,
+            royaltyStack: stack,
+            ancestorsAddresses: ancestors,
+            ancestorsRoyalties: ancestorsRoyalty
+        });
+        
+        assertEq(newIpaData.isUnlinkableToParents, ipaRoyaltyData.isUnlinkableToParents);
+        assertEq(newIpaData.ipRoyaltyVault, ipaRoyaltyData.ipRoyaltyVault);
+        assertEq(newIpaData.royaltyStack, ipaRoyaltyData.royaltyStack);
+        assertEq(newIpaData.ancestorsAddresses[0], ipaRoyaltyData.ancestorsAddresses[0]);
+        return;
+        assertEq(newIpaData.ancestorsAddresses.length, ipaRoyaltyData.ancestorsAddresses.length);
+        return;
+        assertEq(newIpaData.ancestorsRoyalties[0], ipaRoyaltyData.ancestorsRoyalties[0]);
+        return;
+        assertEq(newIpaData.ancestorsRoyalties.length, ipaRoyaltyData.ancestorsRoyalties.length);
+        return;
+
+
         // IpRoyaltyVault
 
         

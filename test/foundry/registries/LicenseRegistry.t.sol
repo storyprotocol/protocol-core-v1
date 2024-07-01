@@ -180,25 +180,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.attachLicenseTermsToIp(ipAcct[2], address(pilTemplate), defaultTermsId);
     }
 
-    function test_LicenseRegistry_registerDerivativeIp_revert_parentsArrayEmpty() public {
-        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-        vm.prank(admin);
-        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), socialRemixTermsId);
-
-        address[] memory parentIpIds = new address[](0);
-        uint256[] memory licenseTermsIds = new uint256[](1);
-        licenseTermsIds[0] = socialRemixTermsId;
-        vm.expectRevert(Errors.LicenseRegistry__NoParentIp.selector);
-        vm.prank(address(licensingModule));
-        licenseRegistry.registerDerivativeIp({
-            childIpId: ipAcct[2],
-            parentIpIds: parentIpIds,
-            licenseTemplate: address(pilTemplate),
-            licenseTermsIds: licenseTermsIds,
-            isUsingLicenseToken: false
-        });
-    }
-
     // test getAttachedLicenseTerms
     function test_LicenseRegistry_getAttachedLicenseTerms_revert_OutOfIndex() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());

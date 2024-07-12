@@ -6,7 +6,7 @@
 - Expiration time modifications
 	- Remove expiration time from License Tokens (#123)
 	- Fix expiration time of child IPs to not exceed parent IPs (#129)
-- Unified Licensing Hokk for minting fee and receiver check hooks (#115)
+- Unified Licensing Hook for minting fee and receiver check hooks (#115)
 - Enhance permission management and security with setAllPermissions in Access Controller (#127)
 - CREATE3 deployment for deterministic address deployment (#124, #132)
 - Migrate to Solady ERC6551 for IP Account (#133)
@@ -45,7 +45,7 @@ Full Changelog: [v1.0.0...v1.1.0](https://github.com/storyprotocol/protocol-core
 - Bolster testing (#36, #52, #64, #85, #111)
 - CREATE3 for deterministic address deployments (#104)
 - Miscellaneous configs (#50), code cleanup (#52, #112) and structure (#56, #85), and pkg bump (#34)
-- Enhanec CI/CD (#72, #92)
+- Enhance CI/CD (#72, #92)
 
 Full Changelog: [v1.0.0-rc.1...v1.0.0](https://github.com/storyprotocol/protocol-core/compare/v1.0.0-rc.1...v1.0.0)
 

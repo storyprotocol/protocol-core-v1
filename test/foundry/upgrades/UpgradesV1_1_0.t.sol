@@ -7,19 +7,16 @@ import { ImplDeployerV1_1_0, UpgradedImplHelper } from "../../../script/foundry/
 import { Users, UsersLib } from "../utils/Users.t.sol";
 import { MockERC20 } from "../mocks/token/MockERC20.sol";
 import { MockERC721 } from "../mocks/token/MockERC721.sol";
-
-import { LicensingModule_V1_0_0, Licensing_V1_0_0, PILTerms_V1_0_0, PILFlavors, IRoyaltyPolicyLAP, IIpRoyaltyVault } from "contracts/old/v1.0.0.sol";
+// solhint-disable-next-line max-line-length
+import { LicensingModule_V1_0_0, Licensing_V1_0_0, PILTerms_V1_0_0, PILFlavors, IRoyaltyPolicyLAP } from "contracts/old/v1.0.0.sol";
 
 import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IIPAccountStorage } from "contracts/interfaces/IIPAccountStorage.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ShortStringOps } from "contracts/lib/ShortStringOps.sol";
 import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
-import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
-import { Licensing } from "contracts/lib/Licensing.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { PILicenseTemplate } from "contracts/modules/licensing/PILicenseTemplate.sol";

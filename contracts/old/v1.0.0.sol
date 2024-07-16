@@ -4043,13 +4043,13 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error LicenseRegistry__ZeroAccessManager();
 
-    /// @notice Zero address provided for Licensing Module.
+    /// @notice Zero address provided for Licensing_V1_0_0 Module.
     error LicenseRegistry__ZeroLicensingModule();
 
     /// @notice Zero address provided for Dispute Module.
     error LicenseRegistry__ZeroDisputeModule();
 
-    /// @notice Caller is not the Licensing Module.
+    /// @notice Caller is not the Licensing_V1_0_0 Module.
     error LicenseRegistry__CallerNotLicensingModule();
 
     /// @notice Emitted when trying to transfer a license that is not transferable (by policy)
@@ -4113,13 +4113,13 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error LicenseToken__ZeroAccessManager();
 
-    /// @notice Zero address provided for Licensing Module.
+    /// @notice Zero address provided for Licensing_V1_0_0 Module.
     error LicenseToken__ZeroLicensingModule();
 
     /// @notice Zero address provided for Dispute Module.
     error LicenseToken__ZeroDisputeModule();
 
-    /// @notice Caller is not the Licensing Module.
+    /// @notice Caller is not the Licensing_V1_0_0 Module.
     error LicenseToken__CallerNotLicensingModule();
 
     /// @notice License token is revoked.
@@ -4141,7 +4141,7 @@ library Errors {
     );
 
     ////////////////////////////////////////////////////////////////////////////
-    //                           Licensing Module                             //
+    //                           Licensing_V1_0_0 Module                             //
     ////////////////////////////////////////////////////////////////////////////
 
     /// @notice Zero address provided for Access Manager in initializer.
@@ -4280,7 +4280,7 @@ library Errors {
     /// @notice Zero address provided for License Registry.
     error RoyaltyModule__ZeroLicenseRegistry();
 
-    /// @notice Zero address provided for Licensing Module.
+    /// @notice Zero address provided for Licensing_V1_0_0 Module.
     error RoyaltyModule__ZeroLicensingModule();
 
     /// @notice Zero address provided for Royalty Policy.
@@ -4329,7 +4329,7 @@ library Errors {
     /// @notice Zero address provided for Royalty Module.
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
 
-    /// @notice Zero address provided for Licensing Module.
+    /// @notice Zero address provided for Licensing_V1_0_0 Module.
     error RoyaltyPolicyLAP__ZeroLicensingModule();
 
     /// @notice Caller is not the Royalty Module.
@@ -8850,9 +8850,9 @@ contract IpRoyaltyVault_V1_0_0 is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Ree
     }
 }
 
-/// @title Licensing
-/// @notice Types and constants used by the licensing related contracts
-library Licensing {
+/// @title Licensing_V1_0_0
+/// @notice Types and constants used by the Licensing_V1_0_0 related contracts
+library Licensing_V1_0_0 {
     /// @notice This struct is used by IP owners to define the configuration
     /// when others are minting license tokens of their IP through the LicensingModule.
     /// When the `mintLicenseTokens` function of LicensingModule is called, the LicensingModule will read
@@ -8878,7 +8878,7 @@ library Licensing {
 /// @notice This contract is responsible for maintaining relationships between IPs and their licenses,
 /// parent and derivative IPs, registering License Templates, setting default licenses,
 /// and managing royalty policies and currency tokens.
-/// It serves as a central point for managing the licensing states within the Story Protocol ecosystem.
+/// It serves as a central point for managing the Licensing_V1_0_0 states within the Story Protocol ecosystem.
 interface ILicenseRegistry {
     /// @notice Emitted when a new license template is registered.
     event LicenseTemplateRegistered(address indexed licenseTemplate);
@@ -8891,7 +8891,7 @@ interface ILicenseRegistry {
     );
 
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
-    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing.MintingLicenseConfig mintingLicenseConfig);
+    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing_V1_0_0.MintingLicenseConfig mintingLicenseConfig);
 
     /// @notice Emitted when an expiration time is set for an IP.
     event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
@@ -8946,7 +8946,7 @@ interface ILicenseRegistry {
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseConfig memory);
+    ) external view returns (Licensing_V1_0_0.MintingLicenseConfig memory);
 
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
@@ -9024,7 +9024,7 @@ interface ILicenseRegistry {
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseConfig memory);
+    ) external view returns (Licensing_V1_0_0.MintingLicenseConfig memory);
 
     /// @notice Sets the minting license configuration for a specific license attached to a specific IP.
     /// @dev This function can only be called by the LicensingModule.
@@ -9036,7 +9036,7 @@ interface ILicenseRegistry {
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing_V1_0_0.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
     /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
@@ -9046,7 +9046,7 @@ interface ILicenseRegistry {
     /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
     function setMintingLicenseConfigForIp(
         address ipId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing_V1_0_0.MintingLicenseConfig calldata mintingLicenseConfig
     ) external;
 
     /// @notice Sets the expiration time for an IP.
@@ -9075,7 +9075,7 @@ interface IModule is IERC165 {
 /// @notice This interface defines the entry point for users to manage licenses in the Story Protocol.
 /// It defines the workflow of license actions and coordinates among all license components and dependent components,
 /// like RoyaltyModule.
-/// The Licensing Module is responsible for attaching license terms to an IP, minting license tokens,
+/// The Licensing_V1_0_0 Module is responsible for attaching license terms to an IP, minting license tokens,
 /// and registering derivatives.
 interface ILicensingModule is IModule {
     /// @notice Emitted when new license terms are attached to an IP.
@@ -9289,7 +9289,7 @@ interface ILicenseTemplate is IERC165 {
 
     /// @notice Verifies the registration of a derivative.
     /// @dev This function is invoked by the LicensingModule during the registration of a derivative work
-    //// to ensure compliance with the parent intellectual property's licensing terms.
+    //// to ensure compliance with the parent intellectual property's Licensing_V1_0_0 terms.
     /// It verifies whether the derivative's registration is permitted under those terms.
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpId The IP ID of the parent.
@@ -9366,8 +9366,8 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
-        mapping(bytes32 ipLicenseHash => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigs;
-        mapping(address ipId => Licensing.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
+        mapping(bytes32 ipLicenseHash => Licensing_V1_0_0.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigs;
+        mapping(address ipId => Licensing_V1_0_0.MintingLicenseConfig mintingLicenseConfig) mintingLicenseConfigsForIp;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -9456,13 +9456,13 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing_V1_0_0.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing
+        $.mintingLicenseConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)] = Licensing_V1_0_0
             .MintingLicenseConfig({
                 isSet: true,
                 mintingFee: mintingLicenseConfig.mintingFee,
@@ -9481,10 +9481,10 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
     /// @param mintingLicenseConfig The MintingLicenseConfig to be set for all licenses under the given IP.
     function setMintingLicenseConfigForIp(
         address ipId,
-        Licensing.MintingLicenseConfig calldata mintingLicenseConfig
+        Licensing_V1_0_0.MintingLicenseConfig calldata mintingLicenseConfig
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.mintingLicenseConfigsForIp[ipId] = Licensing.MintingLicenseConfig({
+        $.mintingLicenseConfigsForIp[ipId] = Licensing_V1_0_0.MintingLicenseConfig({
             isSet: true,
             mintingFee: mintingLicenseConfig.mintingFee,
             mintingFeeModule: mintingLicenseConfig.mintingFeeModule,
@@ -9579,7 +9579,7 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
         address licenseTemplate,
         uint256 licenseTermsId,
         bool isMintedByIpOwner
-    ) external view returns (Licensing.MintingLicenseConfig memory) {
+    ) external view returns (Licensing_V1_0_0.MintingLicenseConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (_isExpiredNow(licensorIpId)) {
             revert Errors.LicenseRegistry__ParentIpExpired(licensorIpId);
@@ -9712,7 +9712,7 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) external view returns (Licensing.MintingLicenseConfig memory) {
+    ) external view returns (Licensing_V1_0_0.MintingLicenseConfig memory) {
         return _getMintingLicenseConfig(ipId, licenseTemplate, licenseTermsId);
     }
 
@@ -9798,7 +9798,7 @@ contract LicenseRegistry_V1_0_0 is ILicenseRegistry, AccessManagedUpgradeable, U
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId
-    ) internal view returns (Licensing.MintingLicenseConfig memory) {
+    ) internal view returns (Licensing_V1_0_0.MintingLicenseConfig memory) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
@@ -11025,9 +11025,9 @@ contract LicenseToken_V1_0_0 is ILicenseToken, ERC721EnumerableUpgradeable, Acce
         $.disputeModule = IDisputeModule(newDisputeModule);
     }
 
-    /// @dev Sets the Licensing Image URL.
+    /// @dev Sets the Licensing_V1_0_0 Image URL.
     /// @dev Enforced to be only callable by the protocol admin
-    /// @param url The URL of the Licensing Image
+    /// @param url The URL of the Licensing_V1_0_0 Image
     function setLicensingImageUrl(string calldata url) external restricted {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         $.imageUrl = url;
@@ -11343,12 +11343,12 @@ interface IRoyaltyModule is IModule {
     /// @param amount The amount paid
     event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
 
-    /// @notice Sets the licensing module
+    /// @notice Sets the Licensing_V1_0_0 module
     /// @dev Enforced to be only callable by the protocol admin
-    /// @param licensing The address of the license module
-    function setLicensingModule(address licensing) external;
+    /// @param Licensing_V1_0_0 The address of the license module
+    function setLicensingModule(address Licensing_V1_0_0) external;
 
-    /// @notice Returns the licensing module address
+    /// @notice Returns the Licensing_V1_0_0 module address
     function licensingModule() external view returns (address);
 
     /// @notice Indicates if a royalty policy is whitelisted
@@ -11470,7 +11470,7 @@ contract RoyaltyModule_V1_0_0 is
     IDisputeModule public immutable DISPUTE_MODULE;
 
     /// @dev Storage structure for the RoyaltyModule
-    /// @param licensingModule The address of the licensing module
+    /// @param licensingModule The address of the Licensing_V1_0_0 module
     /// @param isWhitelistedRoyaltyPolicy Indicates if a royalty policy is whitelisted
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param royaltyPolicies Indicates the royalty policy for a given IP asset
@@ -11512,14 +11512,14 @@ contract RoyaltyModule_V1_0_0 is
         __UUPSUpgradeable_init();
     }
 
-    /// @notice Modifier to enforce that the caller is the licensing module
+    /// @notice Modifier to enforce that the caller is the Licensing_V1_0_0 module
     modifier onlyLicensingModule() {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (msg.sender != $.licensingModule) revert Errors.RoyaltyModule__NotAllowedCaller();
         _;
     }
 
-    /// @notice Sets the licensing module
+    /// @notice Sets the Licensing_V1_0_0 module
     /// @dev Enforced to be only callable by the protocol admin
     /// @param licensing The address of the license module
     function setLicensingModule(address licensing) external restricted {
@@ -11604,7 +11604,7 @@ contract RoyaltyModule_V1_0_0 is
             // if the parent node has a royalty policy set, then the derivative node should have the same royalty
             // policy if the parent node does not have a royalty policy set, then the derivative node can set any type
             // of royalty policy as long as the children ip obtained and is burning all licenses with that royalty type
-            // from each parent (was checked in licensing module before calling this function)
+            // from each parent (was checked in Licensing_V1_0_0 module before calling this function)
             if (parentRoyaltyPolicy != royaltyPolicy && parentRoyaltyPolicy != address(0))
                 revert Errors.RoyaltyModule__IncompatibleRoyaltyPolicy();
         }
@@ -11672,7 +11672,7 @@ contract RoyaltyModule_V1_0_0 is
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount);
     }
 
-    /// @notice Returns the licensing module address
+    /// @notice Returns the Licensing_V1_0_0 module address
     function licensingModule() external view returns (address) {
         return _getRoyaltyModuleStorage().licensingModule;
     }
@@ -11836,8 +11836,8 @@ interface IHookModule is IModule {
     function validateConfig(bytes calldata configData) external view;
 }
 
-/// @title Licensing Module
-/// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
+/// @title Licensing_V1_0_0 Module
+/// @notice Licensing_V1_0_0 module is the main entry point for the Licensing_V1_0_0 system. It is responsible for:
 /// - Attaching license terms to IP assets
 /// - Minting license Tokens
 /// - Registering derivatives
@@ -11963,7 +11963,7 @@ contract LicensingModule_V1_0_0 is
 
         _verifyIpNotDisputed(licensorIpId);
 
-        Licensing.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.verifyMintLicenseToken(
+        Licensing_V1_0_0.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,
@@ -12161,7 +12161,7 @@ contract LicensingModule_V1_0_0 is
         // pay minting fee for all parent IPs
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             uint256 lcId = licenseTermsIds[i];
-            Licensing.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.getMintingLicenseConfig(
+            Licensing_V1_0_0.MintingLicenseConfig memory mlc = LICENSE_REGISTRY.getMintingLicenseConfig(
                 parentIpIds[i],
                 licenseTemplate,
                 lcId
@@ -12209,7 +12209,7 @@ contract LicensingModule_V1_0_0 is
         uint256 licenseTermsId,
         uint256 amount,
         bytes calldata royaltyContext,
-        Licensing.MintingLicenseConfig memory mlc
+        Licensing_V1_0_0.MintingLicenseConfig memory mlc
     ) private returns (address royaltyPolicy, bytes memory royaltyData) {
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         uint256 mintingFee = 0;
@@ -12236,7 +12236,7 @@ contract LicensingModule_V1_0_0 is
     /// @param mintingFeeSetByLicenseTerms The minting fee set by the license terms.
     /// @param amount The amount of license tokens to mint.
     function _getTotalMintingFee(
-        Licensing.MintingLicenseConfig memory mintingLicenseConfig,
+        Licensing_V1_0_0.MintingLicenseConfig memory mintingLicenseConfig,
         address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
@@ -12331,7 +12331,7 @@ library PILicenseTemplateErrors {
 /// @param derivativeRevCelling The maximum revenue that can be generated from the derivative use of the work.
 /// @param currency The ERC20 token to be used to pay the minting fee. the token must be registered in story protocol.
 /// @param uri The URI of the license terms, which can be used to fetch the offchain license terms.
-struct PILTerms {
+struct PILTerms_V1_0_0 {
     bool transferable;
     address royaltyPolicy;
     uint256 mintingFee;
@@ -12357,19 +12357,19 @@ struct PILTerms {
 /// The legal document of the PIL can be found in this repository.
 interface IPILicenseTemplate is ILicenseTemplate {
     /// @notice Registers new license terms.
-    /// @param terms The PILTerms to register.
+    /// @param terms The PILTerms_V1_0_0 to register.
     /// @return selectedLicenseTermsId The ID of the newly registered license terms.
-    function registerLicenseTerms(PILTerms calldata terms) external returns (uint256 selectedLicenseTermsId);
+    function registerLicenseTerms(PILTerms_V1_0_0 calldata terms) external returns (uint256 selectedLicenseTermsId);
 
     /// @notice Gets the ID of the given license terms.
-    /// @param terms The PILTerms to get the ID for.
+    /// @param terms The PILTerms_V1_0_0 to get the ID for.
     /// @return selectedLicenseTermsId The ID of the given license terms.
-    function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 selectedLicenseTermsId);
+    function getLicenseTermsId(PILTerms_V1_0_0 calldata terms) external view returns (uint256 selectedLicenseTermsId);
 
     /// @notice Gets license terms of the given ID.
     /// @param selectedLicenseTermsId The ID of the license terms.
-    /// @return terms The PILTerms associate with the given ID.
-    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms);
+    /// @return terms The PILTerms_V1_0_0 associate with the given ID.
+    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms_V1_0_0 memory terms);
 }
 
 // contracts
@@ -12429,7 +12429,7 @@ abstract contract BaseLicenseTemplateUpgradeable is ILicenseTemplate, ERC165, In
 
 /// @title LicensorApprovalChecker
 /// @notice Manages the approval of derivative IP accounts by the parentIp. Used to verify
-/// licensing terms like "Derivatives With Approval" in PIL.
+/// Licensing_V1_0_0 terms like "Derivatives With Approval" in PIL.
 abstract contract LicensorApprovalChecker is AccessControlled, Initializable {
     /// @notice Emits when a derivative IP account is approved by the parentIp.
     /// @param licenseTermsId The ID of the license waiting for approval
@@ -12527,7 +12527,7 @@ contract PILicenseTemplate_V1_0_0 is
     /// @dev Storage structure for the PILicenseTemplate
     /// @custom:storage-location erc7201:story-protocol.PILicenseTemplate
     struct PILicenseTemplateStorage {
-        mapping(uint256 licenseTermsId => PILTerms) licenseTerms;
+        mapping(uint256 licenseTermsId => PILTerms_V1_0_0) licenseTerms;
         mapping(bytes32 licenseTermsHash => uint256 licenseTermsId) hashedLicenseTerms;
         uint256 licenseTermsCounter;
     }
@@ -12570,9 +12570,9 @@ contract PILicenseTemplate_V1_0_0 is
     /// @notice Registers new license terms and return the ID of the newly registered license terms.
     /// @dev The license terms are hashed and the hash is used to check if the terms are already registered.
     /// It will return existing ID if the terms are already registered.
-    /// @param terms The PILTerms to register.
+    /// @param terms The PILTerms_V1_0_0 to register.
     /// @return id The ID of the newly registered license terms.
-    function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint256 id) {
+    function registerLicenseTerms(PILTerms_V1_0_0 calldata terms) external nonReentrant returns (uint256 id) {
         if (terms.royaltyPolicy != address(0) && !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(terms.royaltyPolicy)) {
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
         }
@@ -12622,7 +12622,7 @@ contract PILicenseTemplate_V1_0_0 is
         address licensorIpId,
         uint256
     ) external override nonReentrant returns (bool) {
-        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        PILTerms_V1_0_0 memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         // If the policy defines no reciprocal derivatives are allowed (no derivatives of derivatives),
         // and we are mintingFromADerivative we don't allow minting
         if (LICENSE_REGISTRY.isDerivativeIp(licensorIpId)) {
@@ -12647,7 +12647,7 @@ contract PILicenseTemplate_V1_0_0 is
 
     /// @notice Verifies the registration of a derivative.
     /// @dev This function is invoked by the LicensingModule during the registration of a derivative work
-    //// to ensure compliance with the parent IP's licensing terms.
+    //// to ensure compliance with the parent IP's Licensing_V1_0_0 terms.
     /// It verifies whether the derivative's registration is permitted under those terms.
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpId The IP ID of the parent.
@@ -12710,7 +12710,7 @@ contract PILicenseTemplate_V1_0_0 is
     function getRoyaltyPolicy(
         uint256 licenseTermsId
     ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
-        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        PILTerms_V1_0_0 memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         return (terms.royaltyPolicy, abi.encode(terms.commercialRevShare), terms.mintingFee, terms.currency);
     }
 
@@ -12751,16 +12751,16 @@ contract PILicenseTemplate_V1_0_0 is
     }
 
     /// @notice Gets the ID of the given license terms.
-    /// @param terms The PILTerms to get the ID for.
+    /// @param terms The PILTerms_V1_0_0 to get the ID for.
     /// @return selectedLicenseTermsId The ID of the given license terms.
-    function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 selectedLicenseTermsId) {
+    function getLicenseTermsId(PILTerms_V1_0_0 calldata terms) external view returns (uint256 selectedLicenseTermsId) {
         return _getPILicenseTemplateStorage().hashedLicenseTerms[keccak256(abi.encode(terms))];
     }
 
     /// @notice Gets license terms of the given ID.
     /// @param selectedLicenseTermsId The ID of the license terms.
-    /// @return terms The PILTerms associate with the given ID.
-    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms memory terms) {
+    /// @return terms The PILTerms_V1_0_0 associate with the given ID.
+    function getLicenseTerms(uint256 selectedLicenseTermsId) external view returns (PILTerms_V1_0_0 memory terms) {
         return _getPILicenseTemplateStorage().licenseTerms[selectedLicenseTermsId];
     }
 
@@ -12789,7 +12789,7 @@ contract PILicenseTemplate_V1_0_0 is
     /// @param licenseTermsId The ID of the license terms.
     /// @return The JSON string of the license terms, follow the OpenSea metadata standard.
     function toJson(uint256 licenseTermsId) public view returns (string memory) {
-        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        PILTerms_V1_0_0 memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
 
         /* solhint-disable */
         // Follows the OpenSea standard for JSON metadata.
@@ -12819,7 +12819,7 @@ contract PILicenseTemplate_V1_0_0 is
     }
 
     /// @dev Encodes the commercial traits of PIL policy into a JSON string for OpenSea
-    function _policyCommercialTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
+    function _policyCommercialTraitsToJson(PILTerms_V1_0_0 memory terms) internal pure returns (string memory) {
         /* solhint-disable */
         return
             string(
@@ -12846,7 +12846,7 @@ contract PILicenseTemplate_V1_0_0 is
     }
 
     /// @dev Encodes the derivative traits of PILTerm into a JSON string for OpenSea
-    function _policyDerivativeTraitsToJson(PILTerms memory terms) internal pure returns (string memory) {
+    function _policyDerivativeTraitsToJson(PILTerms_V1_0_0 memory terms) internal pure returns (string memory) {
         /* solhint-disable */
         return
             string(
@@ -12873,7 +12873,7 @@ contract PILicenseTemplate_V1_0_0 is
 
     /// @dev Checks the configuration of commercial use and throws if the policy is not compliant
     // solhint-disable-next-line code-complexity
-    function _verifyCommercialUse(PILTerms calldata terms) internal view {
+    function _verifyCommercialUse(PILTerms_V1_0_0 calldata terms) internal view {
         if (!terms.commercialUse) {
             if (terms.commercialAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddAttribution();
@@ -12903,7 +12903,7 @@ contract PILicenseTemplate_V1_0_0 is
     }
 
     /// @dev notice Checks the configuration of derivative parameters and throws if the policy is not compliant
-    function _verifyDerivatives(PILTerms calldata terms) internal pure {
+    function _verifyDerivatives(PILTerms_V1_0_0 calldata terms) internal pure {
         if (!terms.derivativesAllowed) {
             if (terms.derivativesAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddAttribution();
@@ -12924,7 +12924,7 @@ contract PILicenseTemplate_V1_0_0 is
         uint256 licenseTermsId,
         address licensee
     ) internal returns (bool) {
-        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        PILTerms_V1_0_0 memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
 
         if (!terms.derivativesAllowed) {
             return false;
@@ -12961,7 +12961,7 @@ contract PILicenseTemplate_V1_0_0 is
 
     /// @dev Calculate and returns the expiration time based given start time and license terms.
     function _getExpireTime(uint256 licenseTermsId, uint256 start) internal view returns (uint) {
-        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        PILTerms_V1_0_0 memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         if (terms.expiration == 0) {
             return 0;
         }
@@ -15079,13 +15079,13 @@ contract DisputeModule_V1_0_0 is
 }
 
 /// @title PILFlavors Library
-/// @notice Provides a set of predefined PILTerms configurations for different licensing scenarios
+/// @notice Provides a set of predefined PILTerms_V1_0_0 configurations for different Licensing_V1_0_0 scenarios
 /// See the text: https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf
 library PILFlavors {
     bytes public constant EMPTY_BYTES = "";
 
     /// @notice Gets the default values of PIL terms
-    function defaultValuesLicenseTerms() internal pure returns (PILTerms memory) {
+    function defaultValuesLicenseTerms() internal pure returns (PILTerms_V1_0_0 memory) {
         return _defaultPIL();
     }
 
@@ -15097,9 +15097,9 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-1-non-commercial-social-remixing
+    /// https://docs.storyprotocol.xyz/docs/Licensing_V1_0_0-presets-flavors#flavor-1-non-commercial-social-remixing
     /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
-    function nonCommercialSocialRemixing() internal returns (PILTerms memory) {
+    function nonCommercialSocialRemixing() internal returns (PILTerms_V1_0_0 memory) {
         return _nonComSocialRemixingPIL();
     }
 
@@ -15111,7 +15111,7 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-2-commercial-use
+    /// https://docs.storyprotocol.xyz/docs/Licensing_V1_0_0-presets-flavors#flavor-2-commercial-use
     /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
     /// @param currencyToken The token to be used to pay the minting fee
     /// @param royaltyPolicy The address of the royalty licenseTerms to be used by the license template.
@@ -15120,7 +15120,7 @@ library PILFlavors {
         uint256 mintingFee,
         address currencyToken,
         address royaltyPolicy
-    ) internal returns (PILTerms memory) {
+    ) internal returns (PILTerms_V1_0_0 memory) {
         return _commercialUsePIL(mintingFee, currencyToken, royaltyPolicy);
     }
 
@@ -15138,7 +15138,7 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-3-commercial-remix
+    /// https://docs.storyprotocol.xyz/docs/Licensing_V1_0_0-presets-flavors#flavor-3-commercial-remix
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share
     /// with the parent creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
@@ -15148,7 +15148,7 @@ library PILFlavors {
         uint32 commercialRevShare,
         address royaltyPolicy,
         address currencyToken
-    ) internal pure returns (PILTerms memory) {
+    ) internal pure returns (PILTerms_V1_0_0 memory) {
         return _commercialRemixPIL(mintingFee, commercialRevShare, royaltyPolicy, currencyToken);
     }
 
@@ -15172,9 +15172,9 @@ library PILFlavors {
     }
 
     /// @notice Gets the default values of PIL terms
-    function _defaultPIL() private pure returns (PILTerms memory) {
+    function _defaultPIL() private pure returns (PILTerms_V1_0_0 memory) {
         return
-            PILTerms({
+            PILTerms_V1_0_0({
                 transferable: true,
                 royaltyPolicy: address(0),
                 mintingFee: 0,
@@ -15196,9 +15196,9 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor
-    function _nonComSocialRemixingPIL() private pure returns (PILTerms memory) {
+    function _nonComSocialRemixingPIL() private pure returns (PILTerms_V1_0_0 memory) {
         return
-            PILTerms({
+            PILTerms_V1_0_0({
                 transferable: true,
                 royaltyPolicy: address(0),
                 mintingFee: 0,
@@ -15224,9 +15224,9 @@ library PILFlavors {
         uint256 mintingFee,
         address currencyToken,
         address royaltyPolicy
-    ) private pure returns (PILTerms memory) {
+    ) private pure returns (PILTerms_V1_0_0 memory) {
         return
-            PILTerms({
+            PILTerms_V1_0_0({
                 transferable: true,
                 royaltyPolicy: royaltyPolicy,
                 mintingFee: mintingFee,
@@ -15253,9 +15253,9 @@ library PILFlavors {
         uint32 commercialRevShare,
         address royaltyPolicy,
         address currencyToken
-    ) private pure returns (PILTerms memory) {
+    ) private pure returns (PILTerms_V1_0_0 memory) {
         return
-            PILTerms({
+            PILTerms_V1_0_0({
                 transferable: true,
                 royaltyPolicy: royaltyPolicy,
                 mintingFee: mintingFee,

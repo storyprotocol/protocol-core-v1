@@ -5,7 +5,6 @@ pragma solidity 0.8.23;
 // OpenZeppelin Contracts (last updated v5.0.0) (proxy/utils/UUPSUpgradeable.sol)
 
 // OpenZeppelin Contracts (last updated v5.0.0) (interfaces/draft-IERC1822.sol)
-import { console2 } from "forge-std/console2.sol";
 /**
  * @dev ERC1822: Universal Upgradeable Proxy Standard (UUPS) documents a method for upgradeability through a simplified
  * proxy whose upgrades are fully controlled by the current implementation.
@@ -8891,7 +8890,10 @@ interface ILicenseRegistry {
     );
 
     /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
-    event MintingLicenseConfigSetForIP(address indexed ipId, Licensing_V1_0_0.MintingLicenseConfig mintingLicenseConfig);
+    event MintingLicenseConfigSetForIP(
+        address indexed ipId,
+        Licensing_V1_0_0.MintingLicenseConfig mintingLicenseConfig
+    );
 
     /// @notice Emitted when an expiration time is set for an IP.
     event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
@@ -14910,9 +14912,6 @@ contract DisputeModule_V1_0_0 is
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
 
         Dispute memory parentDispute = $.disputes[parentDisputeId];
-        console2.log("parentDisputeId", parentDisputeId);
-        console2.log("parentDispute.targetIpId", parentDispute.targetIpId);
-        console2.log("parentIpId", parentIpId);
         if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
 
         // a dispute current tag prior to being resolved can be in 3 states - IN_DISPUTE, 0, or a tag (ie. "PLAGIARISM)

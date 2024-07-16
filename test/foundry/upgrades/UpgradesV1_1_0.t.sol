@@ -120,7 +120,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         dealMockAssets();
 
         super.run(0, false, true);
-        
+
         // 1) Set up state
         setState();
 
@@ -159,14 +159,13 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
 
         // 4) Test state
         testState();
-
     }
 
     function setState() internal {
         // Register IPAs
         mockNFT.mintId(ipaOwner, 1);
         mockNFT.mintId(derivativeOwner, 2);
-    
+
         ipa = IIPAccount(payable(ipAssetRegistry.register(block.chainid, address(mockNFT), 1)));
         assertTrue(ipAssetRegistry.isRegistered(address(ipa)));
         ipaName = ipa.getString("NAME");
@@ -235,7 +234,9 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         vm.stopPrank();
         // TODO: how to set this?
         // vm.prank(address(licensingModule));
-        // licenseRegistry.setMintingLicenseConfigForLicense(address(derivIpa), address(pilTemplate), defaultTermsId, derivIpaLicConfig);
+        // licenseRegistry.setMintingLicenseConfigForLicense(
+        // address(derivIpa), address(pilTemplate), defaultTermsId, derivIpaLicConfig
+        // );
 
         // Register Derivative
         address[] memory parentIpIds = new address[](1);
@@ -252,30 +253,24 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         vm.startPrank(u.bob);
         USDC.approve(address(royaltyPolicyLAP), 1 ether);
         royaltyModule.payRoyaltyOnBehalf(address(ipa), address(derivIpa), address(USDC), 1 ether);
-        (bool unlinkable, address vault, uint32 stack, address[] memory ancestors, uint32[] memory ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
+        (
+            bool unlinkable,
+            address vault,
+            uint32 stack,
+            address[] memory ancestors,
+            uint32[] memory ancestorsRoyalty
+        ) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
 
-        ipaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(
-            unlinkable,
-            vault,
-            stack,
-            ancestors,
-            ancestorsRoyalty
-        );
+        ipaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(unlinkable, vault, stack, ancestors, ancestorsRoyalty);
         vm.stopPrank();
         (unlinkable, vault, stack, ancestors, ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(derivIpa));
 
-        derivIpaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(
-            unlinkable,
-            vault,
-            stack,
-            ancestors,
-            ancestorsRoyalty
-        );
+        derivIpaRoyaltyData = IRoyaltyPolicyLAP.LAPRoyaltyData(unlinkable, vault, stack, ancestors, ancestorsRoyalty);
 
         // TODO: claim tokens to check Royalty balance storage
         // vm.prank(ipaRoyaltyData.ipRoyaltyVault);
         //IIpRoyaltyVault(ipaRoyaltyData.ipRoyaltyVault).collectRoyaltyTokens(address(ipa));
-        
+
         //// Disputes
         vm.startPrank(u.admin);
         tag = ShortStringOps.stringToBytes32("test");
@@ -296,11 +291,9 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         // Pause
         vm.prank(u.admin);
         protocolPauser.pause();
-
     }
 
     function testState() internal {
-        
         // IPAccountImpl
         assertEq(ipa.owner(), ipaOwner);
         assertEq(ipaName, ipa.getString("NAME"));
@@ -313,7 +306,15 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         assertEq(derivIpaRegistrationDate, derivIpa.getUint256("REGISTRATION_DATE"));
 
         // Access Control
-        assertEq(accessController.getPermission(address(ipa), signer, address(licensingModule), LicensingModule_V1_0_0.attachLicenseTerms.selector), AccessPermission.ALLOW);
+        assertEq(
+            accessController.getPermission(
+                address(ipa),
+                signer,
+                address(licensingModule),
+                LicensingModule_V1_0_0.attachLicenseTerms.selector
+            ),
+            AccessPermission.ALLOW
+        );
 
         // IPAssetRegistry
         assertEq(ipAssetRegistry.totalSupply(), 2);
@@ -372,8 +373,14 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         //assertEq(royaltyModule.royaltyPolicies(address(derivIpa)), address(royaltyPolicyLAP));
         // RoyaltyPolicyLAP
         assertTrue(royaltyPolicyLAP.paused());
-        (bool unlinkable, address vault, uint32 stack, address[] memory ancestors, uint32[] memory ancestorsRoyalty) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
-        
+        (
+            bool unlinkable,
+            address vault,
+            uint32 stack,
+            address[] memory ancestors,
+            uint32[] memory ancestorsRoyalty
+        ) = royaltyPolicyLAP.getRoyaltyData(address(ipa));
+
         IRoyaltyPolicyLAP.LAPRoyaltyData memory newIpaData = IRoyaltyPolicyLAP.LAPRoyaltyData({
             // whether calling via minting license or linking to parents the ipId becomes unlinkable
             isUnlinkableToParents: unlinkable,
@@ -382,7 +389,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             ancestorsAddresses: ancestors,
             ancestorsRoyalties: ancestorsRoyalty
         });
-        
+
         assertEq(newIpaData.isUnlinkableToParents, ipaRoyaltyData.isUnlinkableToParents);
         assertEq(newIpaData.ipRoyaltyVault, ipaRoyaltyData.ipRoyaltyVault);
         assertEq(newIpaData.royaltyStack, ipaRoyaltyData.royaltyStack);
@@ -407,20 +414,14 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         assertTrue(licReg_V1_1_0.hasDerivativeIps(address(ipa)));
         assertTrue(licReg_V1_1_0.exists(address(pilTemplate), termsId));
         assertTrue(licReg_V1_1_0.exists(address(pilTemplate), defaultTermsId));
-        assertTrue(licReg_V1_1_0.hasIpAttachedLicenseTerms(
-            address(ipa), address(pilTemplate), termsId
-        ));
-        
-        (address attLT, uint256 attLicenseTermsId) = licReg_V1_1_0.getAttachedLicenseTerms(
-            address(ipa), 0
-        );
+        assertTrue(licReg_V1_1_0.hasIpAttachedLicenseTerms(address(ipa), address(pilTemplate), termsId));
+
+        (address attLT, uint256 attLicenseTermsId) = licReg_V1_1_0.getAttachedLicenseTerms(address(ipa), 0);
         assertEq(attLT, address(pilTemplate));
         assertEq(attLicenseTermsId, 2);
         assertEq(licReg_V1_1_0.getAttachedLicenseTermsCount(address(ipa)), 1);
-        
-        (attLT, attLicenseTermsId) = licReg_V1_1_0.getAttachedLicenseTerms(
-            address(derivIpa), 0
-        );
+
+        (attLT, attLicenseTermsId) = licReg_V1_1_0.getAttachedLicenseTerms(address(derivIpa), 0);
         assertEq(attLT, address(pilTemplate));
         assertEq(attLicenseTermsId, 2);
         assertEq(licReg_V1_1_0.getAttachedLicenseTermsCount(address(derivIpa)), 1);
@@ -433,7 +434,8 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         assertEq(licenseRegistry.getParentIpCount(address(derivIpa)), 1);
 
         // TODO: Set v1.0.0 minting config first
-        // Licensing.LicensingConfig memory ipaConfig = licReg_V1_1_0.getLicensingConfig(address(ipa), address(pilTemplate), termsId);
+        // Licensing.LicensingConfig memory ipaConfig =
+        // licReg_V1_1_0.getLicensingConfig(address(ipa), address(pilTemplate), termsId);
         // assertEq(ipaConfig.isSet, ipaLicConfig.isSet);
         // assertEq(ipaConfig.mintingFee, ipaLicConfig.mintingFee);
         // assertEq(ipaConfig.licensingHook, ipaLicConfig.mintingFeeModule);
@@ -458,7 +460,6 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         assertEq(licTok_V1_1_0.getLicenseTemplate(2), address(pilTemplate));
         assertEq(licTok_V1_1_0.isLicenseTokenRevoked(1), true);
 
-
         PILicenseTemplate pilTemp_V1_1_0 = PILicenseTemplate(address(pilTemplate));
         assertFalse(pilTemp_V1_1_0.isLicenseTransferable(1));
         assertTrue(pilTemp_V1_1_0.isLicenseTransferable(2));
@@ -468,29 +469,29 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         assertEq(pilTemp_V1_1_0.getLicenseTermsURI(1), ""); // TODO check this without using PILFlavors
         // TODO: compare getRoyaltyPolicy results
         // TODO: check expireTerms
-
     }
 
     function convertPILTerms(PILTerms_V1_0_0 memory t) internal returns (PILTerms memory) {
-        return PILTerms({
-            transferable: t.transferable,
-            royaltyPolicy: t.royaltyPolicy,
-            mintingFee: t.mintingFee,
-            expiration: t.expiration,
-            commercialUse: t.commercialUse,
-            commercialAttribution: t.commercialAttribution,
-            commercializerChecker: t.commercializerChecker,
-            commercializerCheckerData: t.commercializerCheckerData,
-            commercialRevShare: t.commercialRevShare,
-            commercialRevCelling: t.commercialRevCelling,
-            derivativesAllowed: t.derivativesAllowed,
-            derivativesAttribution: t.derivativesAttribution,
-            derivativesApproval: t.derivativesApproval,
-            derivativesReciprocal: t.derivativesReciprocal,
-            derivativeRevCelling: t.derivativeRevCelling,
-            currency: t.currency,
-            uri: t.uri
-        });
+        return
+            PILTerms({
+                transferable: t.transferable,
+                royaltyPolicy: t.royaltyPolicy,
+                mintingFee: t.mintingFee,
+                expiration: t.expiration,
+                commercialUse: t.commercialUse,
+                commercialAttribution: t.commercialAttribution,
+                commercializerChecker: t.commercializerChecker,
+                commercializerCheckerData: t.commercializerCheckerData,
+                commercialRevShare: t.commercialRevShare,
+                commercialRevCelling: t.commercialRevCelling,
+                derivativesAllowed: t.derivativesAllowed,
+                derivativesAttribution: t.derivativesAttribution,
+                derivativesApproval: t.derivativesApproval,
+                derivativesReciprocal: t.derivativesReciprocal,
+                derivativeRevCelling: t.derivativeRevCelling,
+                currency: t.currency,
+                uri: t.uri
+            });
     }
 
     function upgrade(UpgradedImplHelper.UpgradeProposal memory prop) internal {

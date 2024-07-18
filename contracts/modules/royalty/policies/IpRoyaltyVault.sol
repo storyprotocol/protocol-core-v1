@@ -14,7 +14,6 @@ import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/
 import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
 import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
-import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
 
 /// @title Ip Royalty Vault
@@ -49,6 +48,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
     }
+
+    address public constant IP_GRAPH_CONTRACT = address(0x1A);
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IpRoyaltyVault")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant IpRoyaltyVaultStorageLocation =
@@ -222,19 +223,17 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     function collectRoyaltyTokens(address ancestorIpId) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
-        (, , , address[] memory ancestors, uint32[] memory ancestorsRoyalties) = ROYALTY_POLICY_LAP.getRoyaltyData(
-            $.ipId
-        );
+        address ipId = $.ipId;
 
-        if (DISPUTE_MODULE.isIpTagged($.ipId)) revert Errors.IpRoyaltyVault__IpTagged();
+        if (DISPUTE_MODULE.isIpTagged(ipId)) revert Errors.IpRoyaltyVault__IpTagged();
         if ($.isCollectedByAncestor[ancestorIpId]) revert Errors.IpRoyaltyVault__AlreadyClaimed();
 
         // check if the address being claimed to is an ancestor
-        (uint32 index, bool isIn) = ArrayUtils.indexOf(ancestors, ancestorIpId);
-        if (!isIn) revert Errors.IpRoyaltyVault__ClaimerNotAnAncestor();
+        if (!_hasAncestorIp(ipId, ancestorIpId)) revert Errors.IpRoyaltyVault__ClaimerNotAnAncestor();
 
         // transfer royalty tokens to the ancestor
-        IERC20Upgradeable(address(this)).safeTransfer(ancestorIpId, ancestorsRoyalties[index]);
+        uint32 ancestorsRoyalty = _getRoyalty(ipId, ancestorIpId);
+        IERC20Upgradeable(address(this)).safeTransfer(ancestorIpId, ancestorsRoyalty);
 
         // save the amount of revenue tokens that are collectable by the ancestor
         address[] memory tokenList = $.tokens.values();
@@ -242,7 +241,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         for (uint256 i = 0; i < tokenList.length; ++i) {
             // the only case in which unclaimedRoyaltyTokens can be 0 is when the vault is empty and everyone claimed
             // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
-            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] * ancestorsRoyalties[index]) /
+            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] *ancestorsRoyalty) /
                 unclaimedTokens;
             if (collectAmount == 0) continue;
 
@@ -250,9 +249,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         }
 
         $.isCollectedByAncestor[ancestorIpId] = true;
-        $.unclaimedRoyaltyTokens -= ancestorsRoyalties[index];
+        $.unclaimedRoyaltyTokens -= ancestorsRoyalty;
 
-        emit RoyaltyTokensCollected(ancestorIpId, ancestorsRoyalties[index]);
+        emit RoyaltyTokensCollected(ancestorIpId, ancestorsRoyalty);
     }
 
     /// @notice Collect the accrued tokens (if any)
@@ -358,6 +357,22 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice The list of revenue tokens in the vault
     function tokens() external view returns (address[] memory) {
         return _getIpRoyaltyVaultStorage().tokens.values();
+    }
+
+    function _hasAncestorIp(address ipId, address ancestorIpId) internal returns (bool) {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
+        );
+        require(success, "Call failed");
+        return abi.decode(returnData, (bool));
+    }
+
+    function _getRoyalty(address ipId, address parentIpId) internal returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("getRoyalty(address,address)", ipId, parentIpId)
+        );
+        require(success, "Call failed");
+        return uint32(abi.decode(returnData, (uint256)));
     }
 
     /// @dev Returns the storage struct of the IpRoyaltyVault

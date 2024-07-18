@@ -42,18 +42,10 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP {
 
     function onRoyaltyPayment(address caller, address ipId, address token, uint256 amount) external {}
 
-    function getRoyaltyData(
-        address ipId
-    ) external view returns (bool, address, uint32, address[] memory, uint32[] memory) {
+    function getRoyaltyData(address ipId) external view returns (bool, address, uint32) {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         IRoyaltyPolicyLAP.LAPRoyaltyData memory data = $.royaltyData[ipId];
-        return (
-            data.isUnlinkableToParents,
-            data.ipRoyaltyVault,
-            data.royaltyStack,
-            data.ancestorsAddresses,
-            data.ancestorsRoyalties
-        );
+        return (data.isUnlinkableToParents, data.ipRoyaltyVault, data.royaltyStack);
     }
 
     function getSnapshotInterval() external view returns (uint256) {

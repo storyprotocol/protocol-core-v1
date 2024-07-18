@@ -5,6 +5,7 @@ pragma solidity ^0.8.23;
 // external
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
@@ -100,7 +101,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     PILicenseTemplate internal pilTemplate;
 
     // Token
-    ERC20 private immutable erc20; // keep private to avoid conflict with inheriting contracts
+    ERC20 private erc20; // keep private to avoid conflict with inheriting contracts
 
     // keep private to avoid conflict with inheriting contracts
     uint256 private immutable ARBITRATION_PRICE;
@@ -169,8 +170,23 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     }
 
     function _deployProtocolContracts() private {
-        require(address(erc20) != address(0), "Deploy: Asset Not Set");
         string memory contractKey;
+        if (address(erc20) == address(0)) {
+            contractKey = "MockERC20";
+            _predeploy(contractKey);
+            erc20 = MockERC20(
+                create3Deployer.deploy(
+                    _getSalt(type(MockERC20).name),
+                    abi.encodePacked(type(MockERC20).creationCode, abi.encode(deployer))
+                )
+            );
+            require(
+                _getDeployedAddress(type(MockERC20).name) == address(erc20),
+                "Deploy: MockERC20 Address Mismatch"
+            );
+            _postdeploy(contractKey, address(erc20));
+        }
+
         // Core Protocol Contracts
         contractKey = "ProtocolAccessManager";
         _predeploy(contractKey);

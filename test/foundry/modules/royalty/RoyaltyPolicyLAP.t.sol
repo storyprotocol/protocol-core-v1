@@ -26,11 +26,11 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(address(royaltyModule));
-        _setupMaxUniqueTree();
+        _setupTree();
         vm.stopPrank();
     }
 
-    function _setupMaxUniqueTree() internal {
+    function _setupTree() internal {
         // init royalty policy for roots
         royaltyPolicyLAP.onLicenseMinting(address(7), abi.encode(uint32(7)), "");
         royaltyPolicyLAP.onLicenseMinting(address(8), abi.encode(uint32(8)), "");
@@ -55,6 +55,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(3), parents);
         royaltyPolicyLAP.onLinkToParents(address(3), parents, encodedLicenseData, "");
 
         // 4 is child of 9 and 10
@@ -66,6 +67,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(4), parents);
         royaltyPolicyLAP.onLinkToParents(address(4), parents, encodedLicenseData, "");
 
         // 5 is child of 11 and 12
@@ -77,6 +79,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(5), parents);
         royaltyPolicyLAP.onLinkToParents(address(5), parents, encodedLicenseData, "");
 
         // 6 is child of 13 and 14
@@ -88,6 +91,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(6), parents);
         royaltyPolicyLAP.onLinkToParents(address(6), parents, encodedLicenseData, "");
 
         // init 3rd level with children
@@ -100,6 +104,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(1), parents);
         royaltyPolicyLAP.onLinkToParents(address(1), parents, encodedLicenseData, "");
 
         // 2 is child of 5 and 6
@@ -111,6 +116,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentRoyalties.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties[i]);
         }
+        ipGraph.addParentIp(address(2), parents);
         royaltyPolicyLAP.onLinkToParents(address(2), parents, encodedLicenseData, "");
 
         // ancestors of parent 1
@@ -199,15 +205,26 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onLicenseMinting_revert_LastPositionNotAbleToMintLicense() public {
-        bytes[] memory encodedLicenseData = new bytes[](2);
-        for (uint32 i = 0; i < parentsIpIds100.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentsIpIds100[i]);
-        }
+        uint256 maxAncestors = royaltyPolicyLAP.MAX_ANCESTORS();
+        uint256 percentPerAncestor = royaltyPolicyLAP.TOTAL_RT_SUPPLY() / maxAncestors;
+        uint32 startPoint = 1000;
+        uint32 endPoint = startPoint + uint32(maxAncestors);
+
         vm.startPrank(address(royaltyModule));
-        royaltyPolicyLAP.onLinkToParents(address(100), parentsIpIds100, encodedLicenseData, "");
+
+        address[] memory parent = new address[](1);
+        bytes[] memory encodedLicenseData = new bytes[](1);
+        for (uint32 i = 1 + startPoint; i <= endPoint; i++) {
+            parent[0] = address(uint160(i - 1));
+            encodedLicenseData[0] = abi.encode(uint32(percentPerAncestor));
+
+            address childAddress = address(uint160(i));
+            ipGraph.addParentIp(childAddress, parent);
+            royaltyPolicyLAP.onLinkToParents(childAddress, parent, encodedLicenseData, "");
+        }
 
         vm.expectRevert(Errors.RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense.selector);
-        royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(uint32(0)), "");
+        royaltyPolicyLAP.onLicenseMinting(address(uint160(endPoint)), abi.encode(uint32(0)), "");
         vm.stopPrank();
     }
 
@@ -215,17 +232,9 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         vm.prank(address(royaltyModule));
         royaltyPolicyLAP.onLicenseMinting(address(100), abi.encode(uint32(0)), "");
 
-        (
-            ,
-            address ipRoyaltyVault,
-            uint32 royaltyStack,
-            address[] memory ancestors,
-            uint32[] memory ancestorsRoyalties
-        ) = royaltyPolicyLAP.getRoyaltyData(address(100));
+        (, address ipRoyaltyVault, uint32 royaltyStack) = royaltyPolicyLAP.getRoyaltyData(address(100));
 
         assertEq(royaltyStack, 0);
-        assertEq(ancestors.length, 0);
-        assertEq(ancestorsRoyalties.length, 0);
         assertFalse(ipRoyaltyVault == address(0));
     }
 
@@ -260,22 +269,13 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         for (uint32 i = 0; i < parentsIpIds100.length; i++) {
             encodedLicenseData[i] = abi.encode(parentsIpIds100[i]);
         }
+        ipGraph.addParentIp(address(100), parentsIpIds100);
         vm.prank(address(royaltyModule));
         royaltyPolicyLAP.onLinkToParents(address(100), parentsIpIds100, encodedLicenseData, "");
 
-        (
-            ,
-            address ipRoyaltyVault,
-            uint32 royaltyStack,
-            address[] memory ancestors,
-            uint32[] memory ancestorsRoyalties
-        ) = royaltyPolicyLAP.getRoyaltyData(address(100));
+        (, address ipRoyaltyVault, uint32 royaltyStack) = royaltyPolicyLAP.getRoyaltyData(address(100));
 
         assertEq(royaltyStack, 105);
-        for (uint32 i = 0; i < ancestorsRoyalties.length; i++) {
-            assertEq(ancestorsRoyalties[i], MAX_ANCESTORS_ROYALTY_[i]);
-        }
-        assertEq(ancestors, MAX_ANCESTORS_);
         assertFalse(ipRoyaltyVault == address(0));
     }
 
@@ -286,7 +286,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_onRoyaltyPayment() public {
-        (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, address ipRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         uint256 royaltyAmount = 1000 * 10 ** 6;
         USDC.mint(address(1), royaltyAmount);
         vm.stopPrank();

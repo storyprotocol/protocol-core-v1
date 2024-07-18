@@ -166,7 +166,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             vm.warp(block.timestamp + 7 days + 1);
             IpRoyaltyVault(ipRoyaltyVault).snapshot();
@@ -189,8 +189,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipRoyaltyVault3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
+            (, address ipRoyaltyVault3, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             vm.warp(block.timestamp + 7 days + 1);
             IpRoyaltyVault(ipRoyaltyVault2).snapshot();
@@ -216,7 +216,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.bob);
 
-            (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             // take snapshot
             vm.warp(block.timestamp + 7 days + 1);
@@ -236,8 +236,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
         {
             vm.startPrank(u.alice);
 
-            (, address ipRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipRoyaltyVault3, , , ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            (, address ipRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
+            (, address ipRoyaltyVault3, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
 
             address[] memory tokens = new address[](2);
             tokens[0] = address(mockToken);

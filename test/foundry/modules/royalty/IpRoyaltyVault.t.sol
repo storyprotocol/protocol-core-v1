@@ -26,7 +26,7 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.startPrank(address(royaltyModule));
         _setupMaxUniqueTree();
 
-        (, address IpRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, address IpRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         ipRoyaltyVault = IpRoyaltyVault(IpRoyaltyVault2);
     }
 
@@ -55,6 +55,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(100), parents);
         royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
 
         // 4 is child of 9 and 10
@@ -66,6 +67,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(4), parents);
         royaltyPolicyLAP.onLinkToParents(address(4), parents, encodedLicenseData, "");
 
         // 5 is child of 11 and 12
@@ -77,6 +79,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(5), parents);
         royaltyPolicyLAP.onLinkToParents(address(5), parents, encodedLicenseData, "");
 
         // 6 is child of 13 and 14
@@ -88,6 +91,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(6), parents);
         royaltyPolicyLAP.onLinkToParents(address(6), parents, encodedLicenseData, "");
 
         // init 3rd level with children
@@ -100,6 +104,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(1), parents);
         royaltyPolicyLAP.onLinkToParents(address(1), parents, encodedLicenseData, "");
 
         // 2 is child of 5 and 6
@@ -111,6 +116,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
+        ipGraph.addParentIp(address(2), parents);
         royaltyPolicyLAP.onLinkToParents(address(2), parents, encodedLicenseData, "");
 
         address[] memory parentsIpIds100 = new address[](2);
@@ -126,7 +132,7 @@ contract TestIpRoyaltyVault is BaseTest {
         for (uint32 i = 0; i < parentRoyalties1.length; i++) {
             encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
         }
-
+        ipGraph.addParentIp(address(3), parents);
         vm.startPrank(address(licensingModule));
         royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
     }
@@ -159,7 +165,7 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
         uint256 claimableRevenue = ipRoyaltyVault.claimableRevenue(address(2), 1, address(USDC));
         assertEq(
@@ -193,7 +199,7 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
         address[] memory tokens = new address[](2);
         tokens[0] = address(USDC);
@@ -256,7 +262,7 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
         uint256[] memory snapshots = new uint256[](2);
         snapshots[0] = 1;
@@ -316,7 +322,7 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 usdcAncestorsVaultBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
         uint256 linkAncestorsVaultBefore = ipRoyaltyVault.ancestorsVaultAmount(address(LINK));
 
-        (, , uint32 royaltyStack2, , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp, royaltyStack2);

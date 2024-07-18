@@ -9,15 +9,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param ipId The ID of the IP asset that the policy is being initialized for
     /// @param ipRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack
-    /// @param targetAncestors The ip ancestors array
-    /// @param targetRoyaltyAmount The ip royalty amount array
-    event PolicyInitialized(
-        address ipId,
-        address ipRoyaltyVault,
-        uint32 royaltyStack,
-        address[] targetAncestors,
-        uint32[] targetRoyaltyAmount
-    );
+    event PolicyInitialized(address ipId, address ipRoyaltyVault, uint32 royaltyStack);
 
     /// @notice Event emitted when a revenue token is added to a vault
     /// @param token The address of the revenue token
@@ -36,14 +28,10 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
     /// @param ipRoyaltyVault The ip royalty vault address
     /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    /// @param ancestorsAddresses The ancestors addresses array
-    /// @param ancestorsRoyalties Contains royalty token amounts for each ancestor on same index as ancestorsAddresses
     struct LAPRoyaltyData {
         bool isUnlinkableToParents;
         address ipRoyaltyVault;
         uint32 royaltyStack;
-        address[] ancestorsAddresses;
-        uint32[] ancestorsRoyalties;
     }
 
     /// @notice Returns the percentage scale - represents 100% of royalty tokens for an ip
@@ -70,9 +58,5 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @return isUnlinkable Indicates if the ipId is unlinkable to new parents
     /// @return ipRoyaltyVault The ip royalty vault address
     /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    /// @return targetAncestors The ip ancestors array
-    /// @return targetRoyaltyAmount The ip royalty amount array
-    function getRoyaltyData(
-        address ipId
-    ) external view returns (bool, address, uint32, address[] memory, uint32[] memory);
+    function getRoyaltyData(address ipId) external view returns (bool, address, uint32);
 }

@@ -9,6 +9,7 @@ optimizer_runs = 20000
 test = 'test'
 solc = '0.8.23'
 fs_permissions = [{ access = 'read-write', path = './deploy-out' }, { access = 'read', path = './out' }]
+build_info = true
 extra_output = ["storageLayout"]
 
 [rpc_endpoints]

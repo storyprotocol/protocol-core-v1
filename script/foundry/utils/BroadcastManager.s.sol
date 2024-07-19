@@ -2,10 +2,10 @@
 pragma solidity ^0.8.23;
 
 import { Script } from "forge-std/Script.sol";
+import { Users, UsersLib } from "../../../test/foundry/utils/Users.t.sol";
 
 import { StringUtil } from "./StringUtil.sol";
 import { MockERC20 } from "../../../test/foundry/mocks/token/MockERC20.sol";
-import { Users, UsersLib } from "../../../test/foundry/utils/Users.t.sol";
 
 contract BroadcastManager is Script {
     address public multisig;

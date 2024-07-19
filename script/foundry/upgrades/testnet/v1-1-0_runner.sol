@@ -60,7 +60,7 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
     IPAccountImpl internal ipAccountImpl;
     IPAssetRegistry internal ipAssetRegistry;
 
-    constructor() JsonDeploymentHandler("main") {
+    constructor() JsonDeploymentHandler("main") ImplDeployerV1_1_0() {
         create3Deployer = ICreate3Deployer(CREATE3_DEPLOYER);
     }
 
@@ -98,12 +98,11 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
             address(disputeModule),
             address(moduleRegistry)
         );
-        ImplDeployerV1_1_0 deployer = new ImplDeployerV1_1_0();
 
         _beginBroadcast(); // BroadcastManager.s.sol
 
         
-        UpgradeProposal[] memory proposals = deployer.deploy(create3Deployer, CREATE3_DEFAULT_SEED, ERC6551_REGISTRY, proxies, dependencies);
+        UpgradeProposal[] memory proposals = deploy(CREATE3_DEFAULT_SEED, ERC6551_REGISTRY, proxies, dependencies);
 
         _writeUpgradeProposals(VERSION, proposals); // JsonDeploymentHandler.s.sol
         _endBroadcast(); // BroadcastManager.s.sol

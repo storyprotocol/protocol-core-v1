@@ -140,7 +140,6 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
         );
 
         UpgradedImplHelper.UpgradeProposal[] memory proposals = implDeployer.deploy(
-            create3Deployer,
             0,
             address(erc6551Registry),
             proxies,
@@ -502,16 +501,16 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     }
 
     function upgradeUUPS(UpgradedImplHelper.UpgradeProposal memory prop) internal {
-        console2.log(address(protocolAccessManager));
+        // console2.log(address(protocolAccessManager));
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             u.admin,
             address(prop.proxy),
             UUPSUpgradeable.upgradeToAndCall.selector
         );
 
-        console2.log(string.concat("Can call schedule: ", immediate ? "true" : "false"));
-        console2.log("with delay");
-        console2.log(delay);
+        // console2.log(string.concat("Can call schedule: ", immediate ? "true" : "false"));
+        // console2.log("with delay");
+        // console2.log(delay);
 
         (immediate, delay) = protocolAccessManager.canCall(
             u.admin,
@@ -519,9 +518,9 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             AccessManager.schedule.selector
         );
 
-        console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
-        console2.log("with delay");
-        console2.log(delay);
+        // console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
+        // console2.log("with delay");
+        // console2.log(delay);
 
         vm.prank(u.admin);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
@@ -529,6 +528,16 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (prop.newImpl, "")),
             0 // earliest time possible, upgraderExecDelay
         );
+        console2.log("----");
+        console2.log("key");
+        console2.log(prop.key);
+        console2.log("proxy");
+        console2.log(address(prop.proxy));
+        console2.log("encodedCall");
+        console2.logBytes(abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (prop.newImpl, "")));
+        console2.log("----");
+
+
         uint48 schedule = protocolAccessManager.getSchedule(operationId);
 
         (immediate, delay) = protocolAccessManager.canCall(
@@ -537,9 +546,9 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             UUPSUpgradeable.upgradeToAndCall.selector
         );
         vm.warp(block.timestamp + delay + 1);
-        console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
-        console2.log("with delay");
-        console2.log(delay);
+        // console2.log(string.concat("Can call upgrade: ", immediate ? "true" : "false"));
+        // console2.log("with delay");
+        // console2.log(delay);
 
         vm.prank(u.admin);
         UUPSUpgradeable(prop.proxy).upgradeToAndCall(prop.newImpl, "");
@@ -552,6 +561,14 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
             abi.encodeCall(RoyaltyPolicyLAP.upgradeVaults, prop.newImpl),
             0 // earliest time possible, upgraderExecDelay
         );
+        console2.log("----");
+        console2.log("key");
+        console2.log(prop.key);
+        console2.log("proxy");
+        console2.log(address(prop.proxy));
+        console2.log("encodedCall");
+        console2.logBytes(abi.encodeCall(RoyaltyPolicyLAP.upgradeVaults, prop.newImpl));
+        console2.log("----");
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             u.admin,
             address(prop.proxy),

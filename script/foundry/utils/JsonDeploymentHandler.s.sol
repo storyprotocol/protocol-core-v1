@@ -45,10 +45,6 @@ contract JsonDeploymentHandler is Script {
         output = vm.serializeAddress("", contractKey, newAddress);
     }
 
-    function _writeToJson(string memory contractKey, string memory value) internal {
-        vm.writeJson(value, string.concat("./deploy-out/deployment-", chainId, ".json"), contractKey);
-    }
-
     function _writeDeployment() internal {
         vm.writeJson(output, string.concat("./deploy-out/deployment-", chainId, ".json"), string.concat(".", internalKey));
     }
@@ -64,7 +60,7 @@ contract JsonDeploymentHandler is Script {
     function _readUpgradeProposal(string memory key) internal view returns(UpgradedImplHelper.UpgradeProposal memory) {
         console2.log(string.concat("Reading ", key, "..."));
         address proxy = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-NewImpl")));
-        address newImpl = vm.parseJsonAddress(readJson, string.concat(".", internalKey, string.concat(key, "-NewImpl")));
+        address newImpl = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-NewImpl")));
 
         return UpgradedImplHelper.UpgradeProposal({key: key, proxy: proxy, newImpl: newImpl});
     }
@@ -73,7 +69,7 @@ contract JsonDeploymentHandler is Script {
         string memory proxyKey = string.concat(contractKey, "-Proxy");
         output = vm.serializeAddress("", proxyKey, proxy);
         string memory newImplKey = string.concat(contractKey, "-NewImpl");
-        output = vm.serializeAddress(output, newImplKey, newImpl);
+        output = vm.serializeAddress("", newImplKey, newImpl);
     }
 
     function _writeUpgradeProposals(string memory version, UpgradedImplHelper.UpgradeProposal[] memory proposals) internal {
@@ -82,6 +78,7 @@ contract JsonDeploymentHandler is Script {
             _writeUpgradeProposalAddress(p.key, p.proxy, p.newImpl);
         }
         string memory path = string.concat("./deploy-out/upgrade-", version, "-");
-        vm.writeJson(output, string.concat(path, chainId, ".json"), "upgradeProposals");
+        console2.log(output);
+        vm.writeJson(output, string.concat(path, chainId, ".json"), string.concat(".", internalKey));
     }
 }

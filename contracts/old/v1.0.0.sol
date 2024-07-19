@@ -6511,17 +6511,35 @@ abstract contract ReentrancyGuardUpgradeable is Initializable {
     // amount. Since refunds are capped to a percentage of the total
     // transaction's gas, it is best to keep them low in cases like this one, to
     // increase the likelihood of the full refund coming into effect.
-    uint256 private constant _NOT_ENTERED = 1;
-    uint256 private constant _ENTERED = 2;
+    uint256 private constant NOT_ENTERED = 1;
+    uint256 private constant ENTERED = 2;
 
-    uint256 private _status;
+    /// @custom:storage-location erc7201:openzeppelin.storage.ReentrancyGuard
+    struct ReentrancyGuardStorage {
+        uint256 _status;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.ReentrancyGuard")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ReentrancyGuardStorageLocation = 0x9b779b17422d0df92223018b32b4d1fa46e071723d6817e2486d003becc55f00;
+
+    function _getReentrancyGuardStorage() private pure returns (ReentrancyGuardStorage storage $) {
+        assembly {
+            $.slot := ReentrancyGuardStorageLocation
+        }
+    }
+
+    /**
+     * @dev Unauthorized reentrant call.
+     */
+    error ReentrancyGuardReentrantCall();
 
     function __ReentrancyGuard_init() internal onlyInitializing {
         __ReentrancyGuard_init_unchained();
     }
 
     function __ReentrancyGuard_init_unchained() internal onlyInitializing {
-        _status = _NOT_ENTERED;
+        ReentrancyGuardStorage storage $ = _getReentrancyGuardStorage();
+        $._status = NOT_ENTERED;
     }
 
     /**
@@ -6538,17 +6556,21 @@ abstract contract ReentrancyGuardUpgradeable is Initializable {
     }
 
     function _nonReentrantBefore() private {
-        // On the first call to nonReentrant, _status will be _NOT_ENTERED
-        require(_status != _ENTERED, "ReentrancyGuard: reentrant call");
+        ReentrancyGuardStorage storage $ = _getReentrancyGuardStorage();
+        // On the first call to nonReentrant, _status will be NOT_ENTERED
+        if ($._status == ENTERED) {
+            revert ReentrancyGuardReentrantCall();
+        }
 
         // Any calls to nonReentrant after this point will fail
-        _status = _ENTERED;
+        $._status = ENTERED;
     }
 
     function _nonReentrantAfter() private {
+        ReentrancyGuardStorage storage $ = _getReentrancyGuardStorage();
         // By storing the original value once again, a refund is triggered (see
         // https://eips.ethereum.org/EIPS/eip-2200)
-        _status = _NOT_ENTERED;
+        $._status = NOT_ENTERED;
     }
 
     /**
@@ -6556,15 +6578,9 @@ abstract contract ReentrancyGuardUpgradeable is Initializable {
      * `nonReentrant` function in the call stack.
      */
     function _reentrancyGuardEntered() internal view returns (bool) {
-        return _status == _ENTERED;
+        ReentrancyGuardStorage storage $ = _getReentrancyGuardStorage();
+        return $._status == ENTERED;
     }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[49] private __gap;
 }
 
 // solhint-disable-next-line max-line-length

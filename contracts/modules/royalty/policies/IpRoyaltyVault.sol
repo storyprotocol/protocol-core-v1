@@ -257,19 +257,19 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Collect the accrued tokens (if any)
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
-    /// @param tokens The list of revenue tokens to claim
-    function collectAccruedTokens(address ancestorIpId, address[] calldata tokens) external nonReentrant whenNotPaused {
+    /// @param _tokens The list of revenue tokens to claim
+    function collectAccruedTokens(address ancestorIpId, address[] calldata _tokens) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         if (DISPUTE_MODULE.isIpTagged($.ipId)) revert Errors.IpRoyaltyVault__IpTagged();
 
-        for (uint256 i = 0; i < tokens.length; ++i) {
-            uint256 collectAmount = $.collectableAmount[ancestorIpId][tokens[i]];
-            $.ancestorsVaultAmount[tokens[i]] -= collectAmount;
-            $.collectableAmount[ancestorIpId][tokens[i]] -= collectAmount;
-            IERC20Upgradeable(tokens[i]).safeTransfer(ancestorIpId, collectAmount);
+        for (uint256 i = 0; i < _tokens.length; ++i) {
+            uint256 collectAmount = $.collectableAmount[ancestorIpId][_tokens[i]];
+            $.ancestorsVaultAmount[_tokens[i]] -= collectAmount;
+            $.collectableAmount[ancestorIpId][_tokens[i]] -= collectAmount;
+            IERC20Upgradeable(_tokens[i]).safeTransfer(ancestorIpId, collectAmount);
 
-            emit RevenueTokenClaimed(ancestorIpId, tokens[i], collectAmount);
+            emit RevenueTokenClaimed(ancestorIpId, _tokens[i], collectAmount);
         }
     }
 

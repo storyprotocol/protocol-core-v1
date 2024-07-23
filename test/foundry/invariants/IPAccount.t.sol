@@ -34,10 +34,10 @@ contract IPAccountHarnessBase {
         bytes data;
     }
 
-    function batchExecute(CallToRecorder[] calldata calls, uint8 operation) external {
-        ERC6551.Call[] memory calls = new ERC6551.Call[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
-            calls[i] = ERC6551.Call({ target: address(recorder), value: calls[i].value, data: calls[i].data });
+    function batchExecute(CallToRecorder[] calldata _calls, uint8 operation) external {
+        ERC6551.Call[] memory calls = new ERC6551.Call[](_calls.length);
+        for (uint256 i = 0; i < _calls.length; i++) {
+            calls[i] = ERC6551.Call({ target: address(recorder), value: _calls[i].value, data: _calls[i].data });
         }
         ipAccount.executeBatch(calls, operation);
     }
@@ -132,29 +132,30 @@ contract IPAccountPermissionlessInvariants is BaseTest {
 
 /// @notice Invariants for IPAccount that bound to non-exist NFT
 /// and the fuzzer has no permissions to execute transactions
-contract IPAccountPermissionlessNoNftInvariants is IPAccountPermissionlessInvariants {
-    function setUp() public override {
-        super.setUp();
-        address _ipAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(200), 300);
-        super.afterSetUp(_ipAccount);
-    }
+// TODO: refactor this test, since registerIpAccount is no longer reachable
+// contract IPAccountPermissionlessNoNftInvariants is IPAccountPermissionlessInvariants {
+//     function setUp() public override {
+//         super.setUp();
+//         address _ipAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(200), 300);
+//         super.afterSetUp(_ipAccount);
+//     }
 
-    /// @dev As all callers have no permissions, the IPAccount should not be able to execute any transactions
-    /// @notice Invariant to check the owner, state, chainId, tokenContract, and tokenId of the IPAccount
-    function invariant_permissionless() public {
-        address _owner = ipAccount.owner();
-        bytes32 _state = ipAccount.state();
-        (uint256 _chainId, address _tokenContract, uint256 _tokenId) = ipAccount.token();
+//     /// @dev As all callers have no permissions, the IPAccount should not be able to execute any transactions
+//     /// @notice Invariant to check the owner, state, chainId, tokenContract, and tokenId of the IPAccount
+//     function invariant_permissionless() public {
+//         address _owner = ipAccount.owner();
+//         bytes32 _state = ipAccount.state();
+//         (uint256 _chainId, address _tokenContract, uint256 _tokenId) = ipAccount.token();
 
-        uint256 recorded = recorder.recorded();
+//         uint256 recorded = recorder.recorded();
 
-        assertEq(recorded, 0, "recorded");
-        assertEq(_state, state, "state");
-        assertEq(_chainId, block.chainid, "chainId");
-        assertEq(_tokenContract, tokenContract, "tokenContract");
-        assertEq(_owner, address(0), "owner");
-    }
-}
+//         assertEq(recorded, 0, "recorded");
+//         assertEq(_state, state, "state");
+//         assertEq(_chainId, block.chainid, "chainId");
+//         assertEq(_tokenContract, tokenContract, "tokenContract");
+//         assertEq(_owner, address(0), "owner");
+//     }
+// }
 
 /// @notice Invariants for IPAccount that bound to NFT and the fuzzer has no permissions to execute transactions
 contract IPAccountPermissionlessWithNftInvariants is IPAccountPermissionlessInvariants {

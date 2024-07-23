@@ -49,11 +49,6 @@ contract IPAssetRegistryHarness is Test {
         registered++;
     }
 
-    function registerIpAccount(uint8 index) public {
-        vm.warp(10000);
-        IPAccount memory ipAccount = ipAccounts[index];
-        ipAssetRegistry.registerIpAccount(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
-    }
 }
 
 /// @notice Base invariants for IPAssetRegistry contract
@@ -68,9 +63,8 @@ contract IPAssetRegistryBaseInvariants is BaseTest {
 
         targetContract(address(harness));
 
-        bytes4[] memory selectors = new bytes4[](2);
+        bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = harness.register.selector;
-        selectors[1] = harness.registerIpAccount.selector;
         targetSelector(FuzzSelector(address(harness), selectors));
 
         vm.warp(10000);

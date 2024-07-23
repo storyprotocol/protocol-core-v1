@@ -540,22 +540,23 @@ contract LicensingModuleExpensiveInvariant is LicensingModuleBaseInvariant {
 
         vm.prank(multisig);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
+        
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
-            mintingFee: type(uint256).max,
+            defaultMintingFee: type(uint256).max,
             expiration: 10 days,
             commercialUse: true,
             commercialAttribution: true,
             commercializerChecker: address(0),
             commercializerCheckerData: "",
             commercialRevShare: 0,
-            commercialRevCelling: 0,
+            commercialRevCeiling: 0,
             derivativesAllowed: true,
             derivativesAttribution: true,
             derivativesApproval: false,
             derivativesReciprocal: true,
-            derivativeRevCelling: 0,
+            derivativeRevCeiling: 0,
             currency: address(erc20),
             uri: ""
         });

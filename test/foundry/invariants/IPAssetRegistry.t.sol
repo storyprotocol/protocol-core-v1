@@ -48,7 +48,6 @@ contract IPAssetRegistryHarness is Test {
         ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
         registered++;
     }
-
 }
 
 /// @notice Base invariants for IPAssetRegistry contract

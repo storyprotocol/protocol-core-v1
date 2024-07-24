@@ -258,7 +258,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Collect the accrued tokens (if any)
     /// @param ancestorIpId The ip id of the ancestor to whom the royalty tokens belong to
     /// @param _tokens The list of revenue tokens to claim
-    function collectAccruedTokens(address ancestorIpId, address[] calldata _tokens) external nonReentrant whenNotPaused {
+    function collectAccruedTokens(
+        address ancestorIpId,
+        address[] calldata _tokens
+    ) external nonReentrant whenNotPaused {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         if (DISPUTE_MODULE.isIpTagged($.ipId)) revert Errors.IpRoyaltyVault__IpTagged();

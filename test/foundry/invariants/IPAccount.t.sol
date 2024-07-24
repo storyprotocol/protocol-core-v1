@@ -130,33 +130,6 @@ contract IPAccountPermissionlessInvariants is BaseTest {
     }
 }
 
-/// @notice Invariants for IPAccount that bound to non-exist NFT
-/// and the fuzzer has no permissions to execute transactions
-// TODO: refactor this test, since registerIpAccount is no longer reachable
-// contract IPAccountPermissionlessNoNftInvariants is IPAccountPermissionlessInvariants {
-//     function setUp() public override {
-//         super.setUp();
-//         address _ipAccount = ipAccountRegistry.registerIpAccount(block.chainid, address(200), 300);
-//         super.afterSetUp(_ipAccount);
-//     }
-
-//     /// @dev As all callers have no permissions, the IPAccount should not be able to execute any transactions
-//     /// @notice Invariant to check the owner, state, chainId, tokenContract, and tokenId of the IPAccount
-//     function invariant_permissionless() public {
-//         address _owner = ipAccount.owner();
-//         bytes32 _state = ipAccount.state();
-//         (uint256 _chainId, address _tokenContract, uint256 _tokenId) = ipAccount.token();
-
-//         uint256 recorded = recorder.recorded();
-
-//         assertEq(recorded, 0, "recorded");
-//         assertEq(_state, state, "state");
-//         assertEq(_chainId, block.chainid, "chainId");
-//         assertEq(_tokenContract, tokenContract, "tokenContract");
-//         assertEq(_owner, address(0), "owner");
-//     }
-// }
-
 /// @notice Invariants for IPAccount that bound to NFT and the fuzzer has no permissions to execute transactions
 contract IPAccountPermissionlessWithNftInvariants is IPAccountPermissionlessInvariants {
     function setUp() public override {

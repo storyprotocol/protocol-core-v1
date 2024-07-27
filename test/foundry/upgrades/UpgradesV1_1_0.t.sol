@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { DeployHelper_V1_1_0 } from "./DeployHelper_V1_1_0.sol";
+import { DeployHelper_V1_0_0 } from "./DeployHelper_V1_0_0.sol";
 // solhint-disable-next-line max-line-length
 import { ImplDeployerV1_1_0, UpgradedImplHelper } from "../../../script/foundry/upgrades/testnet/v1-1-0_impl-deployer.sol";
 import { Users, UsersLib } from "../utils/Users.t.sol";
@@ -31,7 +31,7 @@ import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol
 import { console2 } from "forge-std/console2.sol";
 import { Test } from "forge-std/Test.sol";
 
-contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
+contract Upgradesv1_1_0Test is DeployHelper_V1_0_0, Test {
     /// @dev Users struct to abstract away user management when testing
     Users internal u;
 
@@ -87,7 +87,7 @@ contract Upgradesv1_1_0Test is DeployHelper_V1_1_0, Test {
     Licensing_V1_0_0.MintingLicenseConfig derivIpaLicConfig;
 
     constructor()
-        DeployHelper_V1_1_0(
+        DeployHelper_V1_0_0(
             address(ERC6551_REGISTRY),
             address(CREATE3_DEPLOYER),
             address(erc20),

@@ -1,0 +1,23 @@
+{
+  "main": {
+    "AccessController": "0xF9936a224b3Deb6f9A4645ccAfa66f7ECe83CF0A",
+    "ArbitrationPolicySP": "0xc07Bc791CF55E718BA7D70cE650B3152BbE3325e",
+    "CoreMetadataModule": "0xDa498A3f7c8a88cb72201138C366bE3778dB9575",
+    "CoreMetadataViewModule": "0x17aD427cd467A85c256acDF57848Ec6383D70dF5",
+    "DisputeModule": "0xEB7B1dd43B81A7be1fA427515a2b173B454A9832",
+    "IPAccountImpl": "0x36a5f0D61f6Bab3C6Dde211E5a6762Cb18a8060d",
+    "IPAssetRegistry": "0xd43fE0d865cb5C26b1351d3eAf2E3064BE3276F6",
+    "IpRoyaltyVaultBeacon": "0xEFd61b92F619e374e37E2475A8d7e46FD8Be7939",
+    "IpRoyaltyVaultImpl": "0xD6c2AfB61085f1359d47159f2271BDD0EeBf19C2",
+    "LicenseRegistry": "0x4f4b1bf7135C7ff1462826CCA81B048Ed19562ed",
+    "LicenseToken": "0x1333c78A821c9a576209B01a16dDCEF881cAb6f2",
+    "LicensingModule": "0xe89b0EaA8a0949738efA80bB531a165FB3456CBe",
+    "ModuleRegistry": "0x2E0a668289D5C4Da6a2264aC8DF03cd600c7aAB8",
+    "PILicenseTemplate": "0x260B6CB6284c89dbE660c0004233f7bB99B5edE7",
+    "ProtocolAccessManager": "0xC77f5f7146E3BF01FD5f167ed46B7607Bb5BadC8",
+    "ProtocolPauseAdmin": "0x121022F354787754f39f55b9795178dA291348Bb",
+    "RoyaltyModule": "0xFAE961dd2b87CD5818dbCDc2591e6AB0b50E96b0",
+    "RoyaltyPolicyLAP": "0xAAbaf349C7a2A84564F9CC4Ac130B3f19A718E86",
+    "TokenWithdrawalModule": "0x90B1BeFD40A673a6c28E76CD43b4c9F304D23830"
+  }
+}

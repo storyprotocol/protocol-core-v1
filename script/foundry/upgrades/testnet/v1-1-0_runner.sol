@@ -45,7 +45,8 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
 
     ICreate3Deployer internal immutable create3Deployer;
 
-    string constant VERSION = "1.1.0";
+    string constant PREV_VERSION = "1.1.0";
+    string constant PROPOSAL_VERSION = "1.1.0";
 
     // License system
     LicenseToken internal licenseToken;
@@ -69,7 +70,7 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
 
     function run() public virtual {
         // _validate(); // StorageLayoutChecker.s.sol
-        _readDeployment(); // JsonDeploymentHandler.s.sol
+        _readDeployment(PREV_VERSION); // JsonDeploymentHandler.s.sol
         // Load existing contracts
         licensingModule = LicensingModule(_readAddress("LicensingModule"));
         licenseToken = LicenseToken(_readAddress("LicenseToken"));
@@ -104,7 +105,7 @@ contract DeployImplRunnerV1_1_0 is Script, BroadcastManager, JsonDeploymentHandl
         
         UpgradeProposal[] memory proposals = deploy(CREATE3_DEFAULT_SEED, ERC6551_REGISTRY, proxies, dependencies);
 
-        _writeUpgradeProposals(VERSION, proposals); // JsonDeploymentHandler.s.sol
+        _writeUpgradeProposals(PREV_VERSION, PROPOSAL_VERSION, proposals); // JsonDeploymentHandler.s.sol
         _endBroadcast(); // BroadcastManager.s.sol
     }
 

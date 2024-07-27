@@ -25,9 +25,9 @@ contract JsonDeploymentHandler is Script {
 
     ///////////////////// Deployment JSON /////////////////////
 
-    function _readDeployment() internal {
+    function _readDeployment(string memory version) internal {
         string memory root = vm.projectRoot();
-        string memory filePath = string.concat("/deploy-out/deployment-", (block.chainid).toString(), ".json");
+        string memory filePath = string.concat("/deploy-out/deployment-", version, "-", (block.chainid).toString(), ".json");
         console2.log(string.concat("Reading deployment file: ", filePath));
         string memory path = string.concat(root, filePath);
         readJson = vm.readFile(path);
@@ -45,21 +45,21 @@ contract JsonDeploymentHandler is Script {
         output = vm.serializeAddress("", contractKey, newAddress);
     }
 
-    function _writeDeployment() internal {
-        vm.writeJson(output, string.concat("./deploy-out/deployment-", chainId, ".json"), string.concat(".", internalKey));
+    function _writeDeployment(string memory version) internal {
+        vm.writeJson(output, string.concat("./deploy-out/deployment-", version, "-", chainId, ".json"), string.concat(".", internalKey));
     }
 
     ///////////////////// UPGRADES JSON /////////////////////
-    function _readProposalFile(string memory version) internal {
+    function _readProposalFile(string memory fromVersion, string memory toVersion) internal {
         string memory root = vm.projectRoot();
-        string memory filePath = string.concat("/deploy-out/upgrade-", version, "-", (block.chainid).toString(), ".json");
+        string memory filePath = string.concat("/deploy-out/upgrade-", fromVersion, "-to-", toVersion ,"-",(block.chainid).toString(), ".json");
         string memory path = string.concat(root, filePath);
         readJson = vm.readFile(path);
     }
 
     function _readUpgradeProposal(string memory key) internal view returns(UpgradedImplHelper.UpgradeProposal memory) {
         console2.log(string.concat("Reading ", key, "..."));
-        address proxy = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-NewImpl")));
+        address proxy = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-Proxy")));
         address newImpl = vm.parseJsonAddress(readJson, string.concat(".", internalKey, ".", string.concat(key, "-NewImpl")));
 
         return UpgradedImplHelper.UpgradeProposal({key: key, proxy: proxy, newImpl: newImpl});
@@ -72,12 +72,12 @@ contract JsonDeploymentHandler is Script {
         output = vm.serializeAddress("", newImplKey, newImpl);
     }
 
-    function _writeUpgradeProposals(string memory version, UpgradedImplHelper.UpgradeProposal[] memory proposals) internal {
+    function _writeUpgradeProposals(string memory fromVersion, string memory toVersion, UpgradedImplHelper.UpgradeProposal[] memory proposals) internal {
         for (uint256 i = 0; i < proposals.length; i++) {
             UpgradedImplHelper.UpgradeProposal memory p = proposals[i];
             _writeUpgradeProposalAddress(p.key, p.proxy, p.newImpl);
         }
-        string memory path = string.concat("./deploy-out/upgrade-", version, "-");
+        string memory path = string.concat("./deploy-out/upgrade-", fromVersion, "-to-", toVersion, "-");
         console2.log(output);
         vm.writeJson(output, string.concat(path, chainId, ".json"), string.concat(".", internalKey));
     }

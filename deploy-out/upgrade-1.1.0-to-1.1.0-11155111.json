@@ -1,0 +1,22 @@
+{
+  "main": {
+    "AccessController-NewImpl": "0x83cfC5eE93941C7435239659DeAEa8fD5CF0C921",
+    "AccessController-Proxy": "0xA126e34eb1710b2946A23bb1f716b10250eCA4A8",
+    "IPAssetRegistry-NewImpl": "0x351BDfED2611C8E39651D6f326f128DE37c793E6",
+    "IPAssetRegistry-Proxy": "0xe64fBeD2d3c7e4B6a96cB1c35F6A784aaB379938",
+    "IpRoyaltyVault-NewImpl": "0xF3aFfcBc74980842eE105D1343295a28ee376cE2",
+    "IpRoyaltyVault-Proxy": "0x1D674c456cA7Fb13668bDe290dAcf9b97afbC1c7",
+    "LicenseRegistry-NewImpl": "0x2255C499565f0f3DA27418969852E353aD38e82e",
+    "LicenseRegistry-Proxy": "0x4F848749a3C91eaBbed43f4028139353DE3Db9Bc",
+    "LicenseToken-NewImpl": "0xe6AE59a9921Ca4e0C1Ab5A297dE37C878e0BF844",
+    "LicenseToken-Proxy": "0xb5DCcc1a9670a9bf41C6E60A845564965ee82bE5",
+    "LicensingModule-NewImpl": "0x0b2D7963D50dfF1697F909138eFeB243A232F3b5",
+    "LicensingModule-Proxy": "0x1D136E378D560B19BE2d10F6d8Bb632142318986",
+    "PILicenseTemplate-NewImpl": "0x53bdaf3555Cc4D489F9FE1fDb14443D3eE44bD94",
+    "PILicenseTemplate-Proxy": "0x323EF5020fc687eA75dAbc0f49a7AB96C78F3803",
+    "RoyaltyModule-NewImpl": "0xddE0dE26af3bdDDabe079f0650122f3A35f9902E",
+    "RoyaltyModule-Proxy": "0xadC723a35950De5d13a67562e4F9Db65C91DECB3",
+    "RoyaltyPolicyLAP-NewImpl": "0x9CFed6D637BdD5192d3D3dc0e5ccfD21cf346D9D",
+    "RoyaltyPolicyLAP-Proxy": "0x1D674c456cA7Fb13668bDe290dAcf9b97afbC1c7"
+  }
+}

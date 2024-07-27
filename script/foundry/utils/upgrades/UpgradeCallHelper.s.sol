@@ -18,7 +18,7 @@ contract ScheduleCallHelper is Script, JsonDeploymentHandler {
     constructor() JsonDeploymentHandler("main") {}
 
     function run() external {
-        _readProposalFile("1.1.0");
+        _readProposalFile("1.1.0", "1.1.0"); // JsonDeploymentHandler.s.sol
         logScheduleCall(_readUpgradeProposal("AccessController"));
         logScheduleCall(_readUpgradeProposal("IPAssetRegistry"));
         logScheduleCall(_readUpgradeProposal("IpRoyaltyVault"));

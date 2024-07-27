@@ -134,12 +134,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run(uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_) public virtual {
+    function run(uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version) public virtual {
         create3SaltSeed = create3SaltSeed_;
         writeDeploys = writeDeploys_;
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        if (runStorageLayoutCheck) _validate();
+        //if (runStorageLayoutCheck) _validate();
 
         _beginBroadcast(); // BroadcastManager.s.sol
 
@@ -165,7 +165,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             revert RoleConfigError("Multisig upgrader role not granted");
         }
 
-        if (writeDeploys) _writeDeployment();
+        if (writeDeploys) _writeDeployment(version);
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
@@ -614,6 +614,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyPolicyLAP

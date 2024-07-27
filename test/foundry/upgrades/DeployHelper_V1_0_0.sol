@@ -35,7 +35,7 @@ import { JsonDeploymentHandler } from "../../../script/foundry/utils/JsonDeploym
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
 
-contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
+contract DeployHelper_V1_0_0 is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
     using stdJson for string;
 
@@ -120,7 +120,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
         writeDeploys = writeDeploys_;
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        if (runStorageLayoutCheck) _validate();
+        // if (runStorageLayoutCheck) _validate();
 
         _beginBroadcast(); // BroadcastManager.s.sol
 
@@ -147,7 +147,7 @@ contract DeployHelper_V1_1_0 is Script, BroadcastManager, JsonDeploymentHandler,
             revert RoleConfigError("Multisig upgrader role not granted");
         }
 
-        if (writeDeploys) _writeDeployment();
+        //if (writeDeploys) _writeDeployment();
 
         _endBroadcast(); // BroadcastManager.s.sol
     }

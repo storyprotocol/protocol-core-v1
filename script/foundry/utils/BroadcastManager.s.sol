@@ -7,6 +7,8 @@ import { Users, UsersLib } from "../../../test/foundry/utils/Users.t.sol";
 import { StringUtil } from "./StringUtil.sol";
 import { MockERC20 } from "../../../test/foundry/mocks/token/MockERC20.sol";
 
+import { console2 } from "forge-std/console2.sol";
+
 contract BroadcastManager is Script {
     address public multisig;
     address public deployer;
@@ -25,6 +27,7 @@ contract BroadcastManager is Script {
         } else if (block.chainid == 11155111) {
             deployerPrivateKey = vm.envUint("SEPOLIA_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
+            console2.log("deployer: ", address(deployer));
             multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
             relayer = vm.envAddress("SEPOLIA_RELAYER_ADDRESS");
             upgraderExecDelay = 10 minutes;

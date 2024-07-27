@@ -16,11 +16,11 @@ import { StringUtil } from "../utils/StringUtil.sol";
 
 contract RoleGranter is Script, BroadcastManager, JsonDeploymentHandler {
 
-
+    string version = "1.1.0";
     constructor() JsonDeploymentHandler("main") {}
 
     function run() public virtual {
-        _readDeployment(); // JsonDeploymentHandler.s.sol
+        _readDeployment(version); // JsonDeploymentHandler.s.sol
         _beginBroadcast(); // BroadcastManager.s.sol
 
         AccessManager am = AccessManager(_readAddress("ProtocolAccessManager"));

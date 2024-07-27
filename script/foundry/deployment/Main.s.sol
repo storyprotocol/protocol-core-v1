@@ -15,6 +15,7 @@ contract Main is DeployHelper {
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC
     // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
+    string constant internal VERSION = "1.1.0";
 
     constructor()
         DeployHelper(
@@ -42,8 +43,9 @@ contract Main is DeployHelper {
         super.run(
             seed, // create3 seed
             false, // runStorageLayoutCheck
-            true // writeDeployments
+            true, // writeDeployments
+            VERSION
         );
-        _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
+        _writeDeployment(VERSION); // write deployment json to deployments/deployment-{chainId}.json
     }
 }

@@ -12,6 +12,8 @@ import { HardhatConfig, HardhatUserConfig } from "hardhat/types"
 import "hardhat-contract-sizer" // npx hardhat size-contracts
 import "solidity-coverage"
 import "solidity-docgen"
+import "./script/hardhat/tasks/safe-tx-proposer";
+
 
 require("dotenv").config()
 
@@ -25,7 +27,7 @@ const SEPOLIA_URL = process.env.SEPOLIA_URL || "https://eth-sepolia"
 const SEPOLIA_PRIVATEKEY = process.env.SEPOLIA_PRIVATEKEY || "0xkey"
 const TENDERLY_URL = process.env.TENDERLY_URL || "https://eth-tenderly"
 const TENDERLY_PRIVATEKEY = process.env.TENDERLY_PRIVATEKEY || "0xkey"
-const USE_TENDERLY = process.env.USE_TENDERLY === "true"
+const USE_TENDERLY = process.env.USE_TENDERLY === "false"
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"

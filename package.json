@@ -59,6 +59,9 @@
         "@openzeppelin/contracts": "5.0.2",
         "@openzeppelin/contracts-upgradeable": "5.0.2",
         "@openzeppelin/contracts-upgradeable-v4": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
+        "@safe-global/api-kit": "^2.4.3",
+        "@safe-global/protocol-kit": "^4.0.3",
+        "@safe-global/safe-core-sdk-types": "^5.0.3",
         "erc6551": "^0.3.1",
         "solady": "^0.0.192"
     }

@@ -8,7 +8,6 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 /// Each Group NFT may represent a IP Group.
 /// Group NFTs are ERC721 NFTs that can be minted, transferred, but cannot be burned.
 interface IGroupNFT is IERC721Metadata {
-
     /// @notice Emitted when a IP Group NFT minted.
     /// @param minter The address of the minter of the IP Group NFT
     /// @param receiver The address of the receiver of the Group NFT.
@@ -19,9 +18,5 @@ interface IGroupNFT is IERC721Metadata {
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted Group NFT.
     /// @return groupNftId The ID of the minted Group NFT.
-    function mintGroupNft(
-        address minter,
-        address receiver
-    ) external returns (uint256 groupNftId);
-
+    function mintGroupNft(address minter, address receiver) external returns (uint256 groupNftId);
 }

@@ -11,30 +11,19 @@ interface IGroupingModule is IModule {
     /// @notice Emitted when added ip to group.
     /// @param groupId The address of the group.
     /// @param ipId The IP ID.
-    event AddedIpToGroup(
-        address indexed groupId,
-        address indexed ipId
-    );
+    event AddedIpToGroup(address indexed groupId, address indexed ipId);
 
     /// @notice Emitted when removed ip from group.
     /// @param groupId The address of the group.
     /// @param ipId The IP ID.
-    event RemovedIpFromGroup(
-        address indexed groupId,
-        address indexed ipId
-    );
+    event RemovedIpFromGroup(address indexed groupId, address indexed ipId);
 
     /// @notice Emitted when claimed reward.
     /// @param groupId The address of the group.
     /// @param token The address of the token.
     /// @param ipId The IP ID.
     /// @param amount The amount of reward.
-    event ClaimedReward(
-        address indexed groupId,
-        address indexed token,
-        address indexed ipId,
-        uint256 amount
-    );
+    event ClaimedReward(address indexed groupId, address indexed token, address indexed ipId, uint256 amount);
 
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.

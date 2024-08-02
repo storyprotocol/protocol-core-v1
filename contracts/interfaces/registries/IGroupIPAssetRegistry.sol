@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-
 /// @title Interface for Group IPA  Registry
 /// @notice This interface manages the registration and tracking of Group IPA
 interface IGroupIPAssetRegistry {
-
     /// @notice Emits when a Group IPA is officially registered into the protocol.
     /// @param ipId The address of the registered Group IPA.
     /// @param chainId The chain identifier of where the Group NFT resides.
@@ -17,7 +15,6 @@ interface IGroupIPAssetRegistry {
         address indexed tokenContract,
         uint256 indexed tokenId
     );
-
 
     /// @notice Registers a Group IPA
     /// @param groupPolicy The address of the group policy
@@ -39,13 +36,17 @@ interface IGroupIPAssetRegistry {
     /// @param startIndex The start index of the group members to retrieve
     /// @param size The size of the group members to retrieve
     /// @return groupMembers The addresses of the group members
-    function getGroupMembers(address groupId, uint256 startIndex, uint256 size) external view returns (address[] memory);
+    function getGroupMembers(
+        address groupId,
+        uint256 startIndex,
+        uint256 size
+    ) external view returns (address[] memory);
 
     /// @notice Checks whether an IP is a member of a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @param ipId The address of the IP.
     /// @return isMember Whether the IP is a member of the Group IPA.
-    function containsIp(address groupId, address ipId) external view returns(bool);
+    function containsIp(address groupId, address ipId) external view returns (bool);
 
     /// @notice Retrieves the total number of members in a Group IPA
     /// @param groupId The address of the Group IPA.

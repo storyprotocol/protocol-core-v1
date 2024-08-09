@@ -28,6 +28,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
+    address public constant IP_GRAPH_CONTRACT = address(0x1A);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -212,7 +213,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         bool isUsingLicenseToken
     ) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.parentIps[childIpId].length() > 0) {
+        if (_isDerivativeIp(childIpId)) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);
         }
         if ($.childIps[childIpId].length() > 0) {
@@ -240,6 +241,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
                 revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
             }
         }
+
+        IP_GRAPH_CONTRACT.call(abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds));
+
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms
         earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
@@ -363,22 +367,34 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if (index >= $.parentIps[childIpId].length()) {
-            revert Errors.LicenseRegistry__IndexOutOfBounds(childIpId, index, $.parentIps[childIpId].length());
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+            abi.encodeWithSignature("getParentIps(address)", childIpId)
+        );
+        require(success, "Call failed");
+        address[] memory parentIps = abi.decode(returnData, (address[]));
+        if (index >= parentIps.length) {
+            revert Errors.LicenseRegistry__IndexOutOfBounds(childIpId, index, parentIps.length);
         }
-        parentIpId = $.parentIps[childIpId].at(index);
+        parentIpId = parentIps[index];
     }
 
     function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
-        return _getLicenseRegistryStorage().parentIps[childIpId].contains(parentIpId);
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+            abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
+        );
+        require(success, "Call failed");
+        return (abi.decode(returnData, (bool)));
     }
 
     /// @notice Gets the count of parent IPs.
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256) {
-        return _getLicenseRegistryStorage().parentIps[childIpId].length();
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+            abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
+        );
+        require(success, "Call failed");
+        return abi.decode(returnData, (uint256));
     }
 
     /// @notice Retrieves the minting license configuration for a given license terms of the IP.
@@ -490,7 +506,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
-        return _getLicenseRegistryStorage().parentIps[childIpId].length() > 0;
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+            abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
+        );
+        require(success, "Call failed");
+        return abi.decode(returnData, (uint256)) > 0;
     }
 
     /// @dev Retrieves the minting license configuration for a given license terms of the IP.

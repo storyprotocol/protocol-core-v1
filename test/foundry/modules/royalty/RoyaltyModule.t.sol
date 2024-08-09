@@ -332,7 +332,7 @@ contract TestRoyaltyModule is BaseTest {
         address receiverIpId = address(2);
         address payerIpId = address(3);
 
-        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
@@ -349,7 +349,7 @@ contract TestRoyaltyModule is BaseTest {
         address receiverIpId = address(2);
         address payerIpId = address(3);
 
-        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
@@ -401,7 +401,7 @@ contract TestRoyaltyModule is BaseTest {
         address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
         address token = address(USDC);
 
-        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerAddress);
         USDC.mint(payerAddress, royaltyAmount);
@@ -422,7 +422,7 @@ contract TestRoyaltyModule is BaseTest {
         address licenseRoyaltyPolicy = address(royaltyPolicyLAP);
         address token = address(USDC);
 
-        (, address ipRoyaltyVault, , , ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
+        (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(receiverIpId);
 
         vm.startPrank(payerAddress);
         USDC.mint(payerAddress, royaltyAmount);

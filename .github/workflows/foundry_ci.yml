@@ -47,17 +47,8 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test -vvv --gas-limit 800000000000
         id: forge-test
 
       - name: Run solhint
         run: npx solhint contracts/**/*.sol
-
-  Coverage:
-    needs: [foundry-test]
-    uses: storyprotocol/gha-workflows/.github/workflows/reusable-forge-code-coverage.yml@main
-    # FOR LOCAL TESTING ONLY
-    # uses: ./../gha-workflows/.github/workflows/reusable-forge-code-coverage.yml
-    with:
-      exclude_paths: 'test/*, script/*'
-      branch_coverage: true

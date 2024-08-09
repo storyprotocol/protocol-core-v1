@@ -35,6 +35,9 @@ contract RoyaltyPolicyLAP is
         mapping(address ipId => LAPRoyaltyData) royaltyData;
     }
 
+    /// @notice Ip graph precompile contract address
+    address public constant IP_GRAPH_CONTRACT = address(0x1A);
+
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyPolicyLAP")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant RoyaltyPolicyLAPStorageLocation =
         0x0c915ba68e2c4e37f19454bb13066f18f9db418fcefbf3c585b4b7d0fb0e0600;
@@ -46,8 +49,8 @@ contract RoyaltyPolicyLAP is
     uint256 public constant MAX_PARENTS = 2;
 
     /// @notice Returns the maximum number of total ancestors.
-    /// @dev The IP derivative tree is limited to 14 ancestors, which represents 3 levels of a binary tree 14 = 2+4+8
-    uint256 public constant MAX_ANCESTORS = 14;
+    /// @dev The IP derivative tree is limited to 1024 ancestors
+    uint256 public constant MAX_ANCESTORS = 1024;
 
     /// @notice Returns the RoyaltyModule address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -131,7 +134,7 @@ contract RoyaltyPolicyLAP is
 
         LAPRoyaltyData memory data = $.royaltyData[ipId];
 
-        if (data.royaltyStack + newLicenseRoyalty > TOTAL_RT_SUPPLY)
+        if (_getRoyaltyStack(ipId) + newLicenseRoyalty > TOTAL_RT_SUPPLY)
             revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
         if (data.ipRoyaltyVault == address(0)) {
@@ -144,7 +147,7 @@ contract RoyaltyPolicyLAP is
         } else {
             // If the policy is already initialized and an ipId has the maximum number of ancestors
             // it can not have any derivative and therefore is not allowed to mint any license
-            if (data.ancestorsAddresses.length >= MAX_ANCESTORS)
+            if (_getAncestorCount(ipId) >= MAX_ANCESTORS)
                 revert Errors.RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
         }
     }
@@ -186,20 +189,10 @@ contract RoyaltyPolicyLAP is
     /// @return isUnlinkableToParents Indicates if the ipId is unlinkable to new parents
     /// @return ipRoyaltyVault The ip royalty vault address
     /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    /// @return ancestorsAddresses The ancestors addresses array
-    /// @return ancestorsRoyalties The ancestors royalties array
-    function getRoyaltyData(
-        address ipId
-    ) external view returns (bool, address, uint32, address[] memory, uint32[] memory) {
+    function getRoyaltyData(address ipId) external view returns (bool, address, uint32) {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
         LAPRoyaltyData memory data = $.royaltyData[ipId];
-        return (
-            data.isUnlinkableToParents,
-            data.ipRoyaltyVault,
-            data.royaltyStack,
-            data.ancestorsAddresses,
-            data.ancestorsRoyalties
-        );
+        return (data.isUnlinkableToParents, data.ipRoyaltyVault, data.royaltyStack);
     }
 
     /// @notice Returns the snapshot interval
@@ -223,20 +216,27 @@ contract RoyaltyPolicyLAP is
     /// @param licenseData The license data custom to each the royalty policy
     function _initPolicy(address ipId, address[] memory parentIpIds, bytes[] memory licenseData) internal {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-        // decode license data
-        uint32[] memory parentRoyalties = new uint32[](parentIpIds.length);
+
+        uint32[] memory royaltiesGroupByParent = new uint32[](parentIpIds.length);
+        address[] memory uniqueParents = new address[](parentIpIds.length);
+        uint256 uniqueParentCount;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            parentRoyalties[i] = abi.decode(licenseData[i], (uint32));
+            (uint256 index, bool exists) = ArrayUtils.indexOf(uniqueParents, parentIpIds[i]);
+            if (!exists) {
+                index = uniqueParentCount;
+                uniqueParentCount++;
+            }
+            royaltiesGroupByParent[index] += abi.decode(licenseData[i], (uint32));
+            uniqueParents[index] = parentIpIds[i];
+            _setRoyalty(ipId, parentIpIds[i], royaltiesGroupByParent[index]);
         }
 
-        if (parentIpIds.length > MAX_PARENTS) revert Errors.RoyaltyPolicyLAP__AboveParentLimit();
-
         // calculate new royalty stack
-        (
-            uint32 royaltyStack,
-            address[] memory newAncestors,
-            uint32[] memory newAncestorsRoyalties
-        ) = _getNewAncestorsData(parentIpIds, parentRoyalties);
+        uint32 royaltyStack = _getRoyaltyStack(ipId);
+
+        if (parentIpIds.length > MAX_PARENTS) revert Errors.RoyaltyPolicyLAP__AboveParentLimit();
+        if (_getAncestorCount(ipId) > MAX_ANCESTORS) revert Errors.RoyaltyPolicyLAP__AboveAncestorsLimit();
+        if (royaltyStack > TOTAL_RT_SUPPLY) revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
         // set the parents as unlinkable / loop limited to 2 parents
         for (uint256 i = 0; i < parentIpIds.length; i++) {
@@ -251,115 +251,41 @@ contract RoyaltyPolicyLAP is
             // whether calling via minting license or linking to parents the ipId becomes unlinkable
             isUnlinkableToParents: true,
             ipRoyaltyVault: ipRoyaltyVault,
-            royaltyStack: royaltyStack,
-            ancestorsAddresses: newAncestors,
-            ancestorsRoyalties: newAncestorsRoyalties
+            royaltyStack: royaltyStack
         });
 
-        emit PolicyInitialized(ipId, ipRoyaltyVault, royaltyStack, newAncestors, newAncestorsRoyalties);
+        emit PolicyInitialized(ipId, ipRoyaltyVault, royaltyStack);
     }
 
-    /// @dev Gets the new ancestors data
-    /// @param parentIpIds The parent ipIds
-    /// @param parentRoyalties The parent royalties
-    /// @return newRoyaltyStack The new royalty stack
-    /// @return newAncestors The new ancestors
-    /// @return newAncestorsRoyalty The new ancestors royalty
-    function _getNewAncestorsData(
-        address[] memory parentIpIds,
-        uint32[] memory parentRoyalties
-    ) internal view returns (uint32, address[] memory, uint32[] memory) {
-        if (parentRoyalties.length != parentIpIds.length)
-            revert Errors.RoyaltyPolicyLAP__InvalidParentRoyaltiesLength();
-
-        (
-            address[] memory newAncestors,
-            uint32[] memory newAncestorsRoyalty,
-            uint32 newAncestorsCount,
-            uint32 newRoyaltyStack
-        ) = _getExpectedOutputs(parentIpIds, parentRoyalties);
-
-        if (newAncestorsCount > MAX_ANCESTORS) revert Errors.RoyaltyPolicyLAP__AboveAncestorsLimit();
-        if (newRoyaltyStack > TOTAL_RT_SUPPLY) revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
-
-        return (newRoyaltyStack, newAncestors, newAncestorsRoyalty);
+    function _getRoyaltyStack(address ipId) internal returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("getRoyaltyStack(address)", ipId)
+        );
+        require(success, "Call failed");
+        return uint32(abi.decode(returnData, (uint256)));
     }
 
-    /// @dev Gets the expected outputs for the ancestors and ancestors royalties
-    /// @param parentIpIds The parent ipIds
-    /// @param parentRoyalties The parent royalties
-    /// @return newAncestors The new ancestors
-    /// @return newAncestorsRoyalty The new ancestors royalty
-    /// @return ancestorsCount The number of ancestors
-    /// @return royaltyStack The royalty stack
-    // solhint-disable-next-line code-complexity
-    function _getExpectedOutputs(
-        address[] memory parentIpIds,
-        uint32[] memory parentRoyalties
-    )
-        internal
-        view
-        returns (
-            address[] memory newAncestors,
-            uint32[] memory newAncestorsRoyalty,
-            uint32 ancestorsCount,
-            uint32 royaltyStack
-        )
-    {
-        uint32[] memory newAncestorsRoyalty_ = new uint32[](MAX_ANCESTORS);
-        address[] memory newAncestors_ = new address[](MAX_ANCESTORS);
+    function _getAncestorCount(address ipId) internal returns (uint256) {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
+        );
+        require(success, "Call failed");
+        return abi.decode(returnData, (uint256));
+    }
 
-        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
+    function _getRoyalty(address ipId, address parentIpId) internal returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("getRoyalty(address,address)", ipId, parentIpId)
+        );
+        require(success, "Call failed");
+        return uint32(abi.decode(returnData, (uint256)));
+    }
 
-        for (uint256 i = 0; i < parentIpIds.length; i++) {
-            if (i == 0) {
-                newAncestors_[ancestorsCount] = parentIpIds[i];
-                newAncestorsRoyalty_[ancestorsCount] += parentRoyalties[i];
-                royaltyStack += parentRoyalties[i];
-                ancestorsCount++;
-            } else if (i == 1) {
-                (uint256 index, bool isIn) = ArrayUtils.indexOf(newAncestors_, parentIpIds[i]);
-                if (!isIn) {
-                    newAncestors_[ancestorsCount] = parentIpIds[i];
-                    newAncestorsRoyalty_[ancestorsCount] += parentRoyalties[i];
-                    royaltyStack += parentRoyalties[i];
-                    ancestorsCount++;
-                } else {
-                    newAncestorsRoyalty_[index] += parentRoyalties[i];
-                    royaltyStack += parentRoyalties[i];
-                }
-            }
-            address[] memory parentAncestors = $.royaltyData[parentIpIds[i]].ancestorsAddresses;
-            uint32[] memory parentAncestorsRoyalties = $.royaltyData[parentIpIds[i]].ancestorsRoyalties;
-
-            for (uint256 j = 0; j < parentAncestors.length; j++) {
-                if (i == 0) {
-                    newAncestors_[ancestorsCount] = parentAncestors[j];
-                    newAncestorsRoyalty_[ancestorsCount] += parentAncestorsRoyalties[j];
-                    royaltyStack += parentAncestorsRoyalties[j];
-                    ancestorsCount++;
-                } else if (i == 1) {
-                    (uint256 index, bool isIn) = ArrayUtils.indexOf(newAncestors_, parentAncestors[j]);
-                    if (!isIn) {
-                        newAncestors_[ancestorsCount] = parentAncestors[j];
-                        newAncestorsRoyalty_[ancestorsCount] += parentAncestorsRoyalties[j];
-                        royaltyStack += parentAncestorsRoyalties[j];
-                        ancestorsCount++;
-                    } else {
-                        newAncestorsRoyalty_[index] += parentAncestorsRoyalties[j];
-                        royaltyStack += parentAncestorsRoyalties[j];
-                    }
-                }
-            }
-        }
-
-        // remove empty elements from each array
-        newAncestors = new address[](ancestorsCount);
-        newAncestorsRoyalty = new uint32[](ancestorsCount);
-        for (uint256 k = 0; k < ancestorsCount; k++) {
-            newAncestors[k] = newAncestors_[k];
-            newAncestorsRoyalty[k] = newAncestorsRoyalty_[k];
-        }
+    function _setRoyalty(address ipId, address parentIpId, uint32 royalty) internal {
+        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("setRoyalty(address,address,uint256)", ipId, parentIpId, uint256(royalty))
+        );
+        require(success, "Call failed");
     }
 
     function _getRoyaltyPolicyLAPStorage() private pure returns (RoyaltyPolicyLAPStorage storage $) {

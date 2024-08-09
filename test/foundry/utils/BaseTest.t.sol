@@ -18,6 +18,7 @@ import { MockERC721 } from "../mocks/token/MockERC721.sol";
 import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
 import { LicenseRegistryHarness } from "../mocks/module/LicenseRegistryHarness.sol";
+import { MockIPGraph } from "../mocks/MockIPGraph.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities
@@ -52,6 +53,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     address internal constant TREASURY_ADDRESS = address(200);
 
     address internal lrHarnessImpl;
+    MockIPGraph ipGraph = MockIPGraph(address(0x1A));
 
     constructor()
         DeployHelper(
@@ -66,6 +68,8 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {
+        vm.etch(address(0x1A), address(new MockIPGraph()).code);
+
         u = UsersLib.createMockUsers(vm);
 
         admin = u.admin;

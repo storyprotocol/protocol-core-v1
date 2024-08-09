@@ -60,7 +60,7 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         _setupMaxUniqueTree();
         vm.stopPrank();
 
-        (, address IpRoyaltyVault2, , , ) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        (, address IpRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(address(2));
         ipRoyaltyVault = IpRoyaltyVault(IpRoyaltyVault2);
 
         harness = new IpRoyaltyVaultHarness(address(ipRoyaltyVault), address(royaltyModule));

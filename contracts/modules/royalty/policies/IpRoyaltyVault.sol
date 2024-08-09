@@ -241,8 +241,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         for (uint256 i = 0; i < tokenList.length; ++i) {
             // the only case in which unclaimedRoyaltyTokens can be 0 is when the vault is empty and everyone claimed
             // in which case the call will revert upstream with IpRoyaltyVault__AlreadyClaimed error
-            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] *ancestorsRoyalty) /
-                unclaimedTokens;
+            uint256 collectAmount = ($.ancestorsVaultAmount[tokenList[i]] * ancestorsRoyalty) / unclaimedTokens;
             if (collectAmount == 0) continue;
 
             $.collectableAmount[ancestorIpId][tokenList[i]] += collectAmount;

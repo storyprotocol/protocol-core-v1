@@ -362,7 +362,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
             abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.IpRoyaltyVault__IpGraphCallFailed();
         return abi.decode(returnData, (bool));
     }
 
@@ -370,7 +370,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.call(
             abi.encodeWithSignature("getRoyalty(address,address)", ipId, parentIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.IpRoyaltyVault__IpGraphCallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }
 

@@ -170,6 +170,9 @@ library Errors {
     /// @notice Zero address provided for License Template.
     error LicenseRegistry__ZeroLicenseTemplate();
 
+    /// @notice Failed to add parent IPs to IP graph.
+    error LicenseRegistry__AddParentIpToIPGraphFailed(address childIpId, address[] parentIpIds);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -461,6 +464,9 @@ library Errors {
 
     /// @notice IP Royalty Vault is paused.
     error IpRoyaltyVault__EnforcedPause();
+
+    /// @notice Failed to call IP Graph precompiled contract.
+    error IpRoyaltyVault__IpGraphCallFailed();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Module Registry                            //

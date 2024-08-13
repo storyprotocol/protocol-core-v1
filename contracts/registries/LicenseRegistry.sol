@@ -242,7 +242,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             }
         }
 
-        IP_GRAPH_CONTRACT.call(abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds));
+        (bool success, ) = IP_GRAPH_CONTRACT.call(
+            abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
+        );
+        if (!success) {
+            revert Errors.LicenseRegistry__AddParentIpToIPGraphFailed(childIpId, parentIpIds);
+        }
 
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms

@@ -43,6 +43,7 @@ import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModul
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
 import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
+import { GroupNFT } from "contracts/GroupNFT.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
@@ -242,7 +243,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "IPAssetRegistry";
         _predeploy(contractKey);
-        impl = address(new IPAssetRegistry(address(erc6551Registry), _getDeployedAddress(type(IPAccountImpl).name)));
+        impl = address(
+            new IPAssetRegistry(
+                address(erc6551Registry),
+                _getDeployedAddress(type(IPAccountImpl).name),
+                _getDeployedAddress(type(GroupNFT).name)
+            )
+        );
         ipAssetRegistry = IPAssetRegistry(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -521,7 +528,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         ipRoyaltyVaultBeacon = UpgradeableBeacon(
             create3Deployer.deploy(
                 _getSalt(type(UpgradeableBeacon).name),
-                abi.encodePacked(type(UpgradeableBeacon).creationCode, abi.encode(address(ipRoyaltyVaultImpl), deployer))
+                abi.encodePacked(
+                    type(UpgradeableBeacon).creationCode,
+                    abi.encode(address(ipRoyaltyVaultImpl), deployer)
+                )
             )
         );
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
@@ -540,7 +550,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             _getDeployedAddress(type(CoreMetadataModule).name) == address(coreMetadataModule),
             "Deploy: Core Metadata Module Address Mismatch"
         );
-        require(_loadProxyImpl(address(coreMetadataModule)) == impl, "CoreMetadataModule Proxy Implementation Mismatch");
+        require(
+            _loadProxyImpl(address(coreMetadataModule)) == impl,
+            "CoreMetadataModule Proxy Implementation Mismatch"
+        );
         _postdeploy("CoreMetadataModule", address(coreMetadataModule));
 
         _predeploy("CoreMetadataViewModule");
@@ -643,7 +656,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(coreMetadataModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(coreMetadataModule),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyPolicyLAP

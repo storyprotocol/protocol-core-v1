@@ -596,4 +596,10 @@ library Errors {
 
     /// @notice The address is not whitelisted.
     error IPGraphACL__NotWhitelisted(address addr);
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                               Group IPA                                //
+    ////////////////////////////////////////////////////////////////////////////
+    error GroupNFT__CallerNotIPAssetRegistry(address caller);
+    error GroupNFT__ZeroAccessManager();
 }

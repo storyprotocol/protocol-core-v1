@@ -10,7 +10,7 @@ interface IGroupIPAssetRegistry {
     /// @param tokenContract The token contract address of the Group NFT.
     /// @param tokenId The token ID of the Group NFT.
     event IPGroupRegistered(
-        address ipId,
+        address groupId,
         uint256 indexed chainId,
         address indexed tokenContract,
         uint256 indexed tokenId

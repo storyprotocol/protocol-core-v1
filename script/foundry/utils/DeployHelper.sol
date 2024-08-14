@@ -43,6 +43,7 @@ import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModul
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
 import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
+import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 
 // script
 import { StringUtil } from "./StringUtil.sol";
@@ -596,6 +597,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // License Template
         licenseRegistry.registerLicenseTemplate(address(pilTemplate));
+
+        // set default license to non-commercial social remixing
+        uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
     }
 
     function _configureRoles() private {

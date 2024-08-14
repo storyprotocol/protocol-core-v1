@@ -382,6 +382,53 @@ contract LicensingModule is
         }
     }
 
+    function getLicensingFee(
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint256 amount,
+        address receiver,
+        bytes calldata royaltyContext
+    ) external view returns (address currencyToken, uint256 tokenAmount) {
+        tokenAmount = 0;
+        if (amount == 0) {
+            revert Errors.LicensingModule__MintAmountZero();
+        }
+        if (receiver == address(0)) {
+            revert Errors.LicensingModule__ReceiverZeroAddress();
+        }
+        if (!IP_ACCOUNT_REGISTRY.isIpAccount(licensorIpId)) {
+            revert Errors.LicensingModule__LicensorIpNotRegistered();
+        }
+        Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
+            licensorIpId,
+            licenseTemplate,
+            licenseTermsId,
+            _hasPermission(licensorIpId)
+        );
+        uint256 mintingFeeByHook = 0;
+        if (lsc.licensingHook != address(0)) {
+            mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeMintLicenseTokens(
+                msg.sender,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId,
+                amount,
+                receiver,
+                royaltyContext
+            );
+        }
+
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        uint256 mintingFeeByLicense = 0;
+        address royaltyPolicy = address(0);
+        (royaltyPolicy, , mintingFeeByLicense, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
+
+        if (royaltyPolicy != address(0)) {
+            tokenAmount = _getTotalMintingFee(lsc, mintingFeeByHook, mintingFeeByLicense, amount);
+        }
+    }
+
     /// @dev pay minting fee for all parent IPs
     /// This function is called by registerDerivative
     /// It pays the minting fee for all parent IPs through the royalty module

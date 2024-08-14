@@ -11,9 +11,10 @@ interface IGroupIPAssetRegistry {
     /// @param tokenId The token ID of the Group NFT.
     event IPGroupRegistered(
         address groupId,
-        uint256 indexed chainId,
+        uint256 chainId,
         address indexed tokenContract,
-        uint256 indexed tokenId
+        uint256 indexed tokenId,
+        address indexed groupPolicy
     );
 
     /// @notice Registers a Group IPA

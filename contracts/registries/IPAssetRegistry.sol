@@ -112,6 +112,17 @@ contract IPAssetRegistry is
         _getGroupIPAssetRegistryStorage().groupPolicies[groupId] = groupPolicy;
     }
 
+    function addGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
+        require(isGroupRegistered(groupId), "IPAssetRegistry: Group IPA not registered");
+        require(msg.sender == groupId, "IPAssetRegistry: Caller not Group IPA owner");
+        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            address ipId = ipIds[i];
+            require(isRegistered(ipId), "IPAssetRegistry: IP not registered");
+            allMemberIpIds.add(ipId);
+        }
+    }
+
     /// @notice Checks whether a group IPA was registered based on its ID.
     /// @param groupId The address of the Group IPA.
     /// @return isRegistered Whether the Group IPA was registered into the protocol.

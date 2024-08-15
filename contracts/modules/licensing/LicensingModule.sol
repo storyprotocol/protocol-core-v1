@@ -382,7 +382,7 @@ contract LicensingModule is
         }
     }
 
-    function getLicensingFee(
+    function calculateLicensingFee(
         address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,

@@ -5,7 +5,7 @@ pragma solidity 0.8.23;
 /// @notice This interface manages the registration and tracking of Group IPA
 interface IGroupIPAssetRegistry {
     /// @notice Emits when a Group IPA is officially registered into the protocol.
-    /// @param ipId The address of the registered Group IPA.
+    /// @param groupId The address of the registered Group IPA.
     /// @param chainId The chain identifier of where the Group NFT resides.
     /// @param tokenContract The token contract address of the Group NFT.
     /// @param tokenId The token ID of the Group NFT.
@@ -21,6 +21,16 @@ interface IGroupIPAssetRegistry {
     /// @param groupPolicy The address of the group policy
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupPolicy) external returns (address groupId);
+
+    /// @notice Adds a member to a Group IPA
+    /// @param groupId The address of the Group IPA.
+    /// @param ipIds The addresses of the IPs to add to the Group IPA.
+    function addGroupMember(address groupId, address[] calldata ipIds) external;
+
+    /// @notice Removes a member from a Group IPA
+    /// @param groupId The address of the Group IPA.
+    /// @param ipIds The addresses of the IPs to remove from the Group IPA.
+    function removeGroupMember(address groupId, address[] calldata ipIds) external;
 
     /// @notice Checks whether a group IPA was registered based on its ID.
     /// @param groupId The address of the Group IPA.

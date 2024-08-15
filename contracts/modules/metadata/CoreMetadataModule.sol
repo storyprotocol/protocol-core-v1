@@ -69,7 +69,7 @@ contract CoreMetadataModule is
     /// This metadata is associated with the IP Asset and is accessible via the NFT's TokenURI.
     /// Use bytes32(0) to indicate that the metadata is not available.
     function updateNftTokenURI(address ipId, bytes32 nftMetadataHash) external verifyPermission(ipId) {
-        _updateNftTokenURI(ipId, nftMetadataHash);
+        _updateNtTokenURI(ipId, nftMetadataHash);
     }
 
     /// @notice Sets the metadataURI for an IP asset.

@@ -39,8 +39,6 @@ contract GroupingModule is
     UUPSUpgradeable
 {
     using ERC165Checker for address;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using EnumerableSet for EnumerableSet.AddressSet;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
 
@@ -55,16 +53,17 @@ contract GroupingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
+    IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
+
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupingModuleStorageLocation =
         0x0f7178cb62e4803c52d40f70c08a6f88d6ee1af1838d58e0c83a222a6c3d3100;
 
     /// Constructor
     /// @param accessController The address of the AccessController contract
-    /// @param ipAccountRegistry The address of the IPAccountRegistry contract
+    /// @param ipAssetRegistry The address of the IpAssetRegistry contract
     /// @param royaltyModule The address of the RoyaltyModule contract
-    /// @param licenseRegistry The address of the LicenseRegistry contract
-    /// @param disputeModule The address of the DisputeModule contract
+    /// @param moduleRegistry The address of the ModuleRegistry contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
@@ -76,6 +75,7 @@ contract GroupingModule is
         if (moduleRegistry == address(0)) revert Errors.GroupingModule__ZeroModuleRegistry();
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
+        GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
         _disableInitializers();
     }
 
@@ -95,7 +95,7 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function addIp(address groupIpId, address[] calldata ipIds) external verifyPermission(groupIpId) {
-
+        GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
     }
 
     /// @notice Removes IP from group.
@@ -103,14 +103,16 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function removeIp(address groupIpId, address[] calldata ipIds) external verifyPermission(groupIpId) {
-
+        GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
     }
 
     /// @notice Claims reward.
     /// @param groupId The address of the group.
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
-    function claimReward(address groupId, address token, address[] calldata ipIds) external;
+    function claimReward(address groupId, address token, address[] calldata ipIds) external {
+
+    }
 
     
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

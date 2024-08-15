@@ -10,7 +10,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IGroupNFT } from "../interfaces/IGroupNFT.sol";
-import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
+import { GroupIPAssetRegistry } from "./GroupIPAssetRegistry.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
 import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
@@ -28,9 +28,9 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///                    auth, is also the canonical IP identifier for the IP NFT.
 contract IPAssetRegistry is
     IIPAssetRegistry,
-    IGroupIPAssetRegistry,
     IPAccountRegistry,
     ProtocolPausableUpgradeable,
+    GroupIPAssetRegistry,
     UUPSUpgradeable
 {
     using ERC165Checker for address;
@@ -67,9 +67,9 @@ contract IPAssetRegistry is
     constructor(
         address erc6551Registry,
         address ipAccountImpl,
-        address groupNFT
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) {
-        GROUP_NFT = IGroupNFT(groupNFT);
+        address groupNFT,
+        address groupingModule
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) GroupIPAssetRegistry(groupNFT, groupingModule) {
         _disableInitializers();
     }
 
@@ -94,112 +94,13 @@ contract IPAssetRegistry is
         address tokenContract,
         uint256 tokenId
     ) external whenNotPaused returns (address id) {
-        id = _register({ chainid: chainid, tokenContract: tokenContract, tokenId: tokenId, isGroup: false });
-    }
-
-    /// @notice Registers a Group IPA
-    /// @param groupPolicy The address of the group policy
-    /// @return groupId The address of the newly registered Group IPA.
-    function registerGroup(address groupPolicy) external whenNotPaused returns (address groupId) {
-        uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, msg.sender);
-        groupId = _register({
-            chainid: block.chainid,
-            tokenContract: address(GROUP_NFT),
-            tokenId: groupNftId,
-            isGroup: true
-        });
-        // TODO: check policy is whitelisted
-        _getGroupIPAssetRegistryStorage().groupPolicies[groupId] = groupPolicy;
-    }
-
-    function addGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
-        require(isGroupRegistered(groupId), "IPAssetRegistry: Group IPA not registered");
-        require(msg.sender == groupId, "IPAssetRegistry: Caller not Group IPA owner");
-        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            address ipId = ipIds[i];
-            require(isRegistered(ipId), "IPAssetRegistry: IP not registered");
-            allMemberIpIds.add(ipId);
-        }
-    }
-
-    /// @notice Checks whether a group IPA was registered based on its ID.
-    /// @param groupId The address of the Group IPA.
-    /// @return isRegistered Whether the Group IPA was registered into the protocol.
-    function isGroupRegistered(address groupId) external view returns (bool) {
-        if (!_isRegistered(groupId)) return false;
-        return IIPAccount(payable(groupId)).getBool("GROUP_IPA");
-    }
-
-    /// @notice Retrieves the group policy for a Group IPA
-    /// @param groupId The address of the Group IPA.
-    /// @return groupPolicy The address of the group policy.
-    function getGroupPolicy(address groupId) external view returns (address) {
-        return _getGroupIPAssetRegistryStorage().groupPolicies[groupId];
-    }
-
-    /// @notice Retrieves the group members for a Group IPA
-    /// @param groupId The address of the Group IPA.
-    /// @param startIndex The start index of the group members to retrieve
-    /// @param size The size of the group members to retrieve
-    /// @return results The addresses of the group members
-    function getGroupMembers(
-        address groupId,
-        uint256 startIndex,
-        uint256 size
-    ) external view returns (address[] memory results) {
-        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
-        uint256 totalSize = allMemberIpIds.length();
-        if (startIndex >= totalSize) return results;
-
-        uint256 resultsSize = (startIndex + size) > totalSize ? size - ((startIndex + size) - totalSize) : size;
-        for (uint256 i = 0; i < resultsSize; i++) {
-            results[i] = allMemberIpIds.at(startIndex + i);
-        }
-        return results;
-    }
-
-    /// @notice Checks whether an IP is a member of a Group IPA
-    /// @param groupId The address of the Group IPA.
-    /// @param ipId The address of the IP.
-    /// @return isMember Whether the IP is a member of the Group IPA.
-    function containsIp(address groupId, address ipId) external view returns (bool) {
-        return _getGroupIPAssetRegistryStorage().groups[groupId].contains(ipId);
-    }
-    /// @notice Retrieves the total number of members in a Group IPA
-    /// @param groupId The address of the Group IPA.
-    /// @return totalMembers The total number of members in the Group IPA.
-    function totalMembers(address groupId) external view returns (uint256) {
-        return _getGroupIPAssetRegistryStorage().groups[groupId].length();
-    }
-
-    /// @notice Gets the canonical IP identifier associated with an IP NFT.
-    /// @dev This is equivalent to the address of its bound IP account.
-    /// @param chainId The chain identifier of where the IP resides.
-    /// @param tokenContract The address of the IP.
-    /// @param tokenId The token identifier of the IP.
-    /// @return ipId The IP's canonical address identifier.
-    function ipId(uint256 chainId, address tokenContract, uint256 tokenId) public view returns (address) {
-        return super.ipAccount(chainId, tokenContract, tokenId);
-    }
-
-    /// @notice Checks whether an IP was registered based on its ID.
-    /// @param id The canonical identifier for the IP.
-    /// @return isRegistered Whether the IP was registered into the protocol.
-    function isRegistered(address id) external view returns (bool) {
-        return _isRegistered(id);
-    }
-
-    /// @notice Gets the total number of IP assets registered in the protocol.
-    function totalSupply() external view returns (uint256) {
-        return _getIPAssetRegistryStorage().totalSupply;
+        id = _register({ chainid: chainid, tokenContract: tokenContract, tokenId: tokenId });
     }
 
     function _register(
         uint256 chainid,
         address tokenContract,
-        uint256 tokenId,
-        bool isGroup
+        uint256 tokenId
     ) internal returns (address id) {
         id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
@@ -213,7 +114,6 @@ contract IPAssetRegistry is
         ipAccount.setString("NAME", name);
         ipAccount.setString("URI", uri);
         ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
-        if (isGroup) ipAccount.setBool("GROUP_IPA", true);
 
         _getIPAssetRegistryStorage().totalSupply++;
 
@@ -274,10 +174,4 @@ contract IPAssetRegistry is
         }
     }
 
-    /// @dev Returns the storage struct of GroupIPAssetRegistry.
-    function _getGroupIPAssetRegistryStorage() private pure returns (GroupIPAssetRegistryStorage storage $) {
-        assembly {
-            $.slot := GroupIPAssetRegistryStorageLocation
-        }
-    }
 }

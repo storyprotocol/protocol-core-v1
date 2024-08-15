@@ -64,6 +64,19 @@ library Errors {
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @notice The caller to Group IP Asset Registry is not the Grouping Module.
+    error GroupIPAssetRegistry__CallerIsNotGroupingModule(address caller);
+
+    /// @notice The give address is not a registered Group IP.
+    error GroupIPAssetRegistry__NotRegisteredGroupIP(address groupId);
+
+    /// @notice The give address is not a registered IPA.
+    error GroupIPAssetRegistry__NotRegisteredIP(address ipId);
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                            IP Asset Registry                           //
+    ////////////////////////////////////////////////////////////////////////////
+
     /// @notice Zero address provided for Access Manager in initializer.
     error IPAssetRegistry__ZeroAccessManager();
 

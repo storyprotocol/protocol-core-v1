@@ -27,7 +27,8 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 ///         attribution and an IP account for protocol authorization.
 ///         IMPORTANT: The IP account address, besides being used for protocol
 ///                    auth, is also the canonical IP identifier for the IP NFT.
-abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable, UUPSUpgradeable {
+abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable {
+    using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -68,13 +69,30 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     }
 
     function addGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
-        require(isGroupRegistered(groupId), "IPAssetRegistry: Group IPA not registered");
-        require(msg.sender == groupId, "IPAssetRegistry: Caller not Group IPA owner");
+        if (msg.sender != address(GROUPING_MODULE)) {
+            revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
+        }
+        if (!isGroupRegistered(groupId)) {
+            revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
+        }
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
         for (uint256 i = 0; i < ipIds.length; i++) {
             address ipId = ipIds[i];
-            require(isRegistered(ipId), "IPAssetRegistry: IP not registered");
+            if (!_isRegistered(ipId)) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipId);
             allMemberIpIds.add(ipId);
+        }
+    }
+
+    function removeGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
+        if (msg.sender != address(GROUPING_MODULE)) {
+            revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
+        }
+        if (!isGroupRegistered(groupId)) {
+            revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
+        }
+        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            allMemberIpIds.remove(ipIds[i]);
         }
     }
 
@@ -128,101 +146,13 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         return _getGroupIPAssetRegistryStorage().groups[groupId].length();
     }
 
-    /// @notice Gets the canonical IP identifier associated with an IP NFT.
-    /// @dev This is equivalent to the address of its bound IP account.
-    /// @param chainId The chain identifier of where the IP resides.
-    /// @param tokenContract The address of the IP.
-    /// @param tokenId The token identifier of the IP.
-    /// @return ipId The IP's canonical address identifier.
-    function ipId(uint256 chainId, address tokenContract, uint256 tokenId) public view returns (address) {
-        return super.ipAccount(chainId, tokenContract, tokenId);
-    }
+    function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal virtual returns (address id);
 
-    /// @notice Checks whether an IP was registered based on its ID.
-    /// @param id The canonical identifier for the IP.
-    /// @return isRegistered Whether the IP was registered into the protocol.
-    function isRegistered(address id) external view returns (bool) {
-        return _isRegistered(id);
-    }
-
-    /// @notice Gets the total number of IP assets registered in the protocol.
-    function totalSupply() external view returns (uint256) {
-        return _getIPAssetRegistryStorage().totalSupply;
-    }
-
-    function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal virtual returns (address id) {
-        id = _registerIpAccount(chainid, tokenContract, tokenId);
-        IIPAccount ipAccount = IIPAccount(payable(id));
-
-        if (bytes(ipAccount.getString("NAME")).length != 0) {
-            revert Errors.IPAssetRegistry__AlreadyRegistered();
-        }
-
-        (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);
-        uint256 registrationDate = block.timestamp;
-        ipAccount.setString("NAME", name);
-        ipAccount.setString("URI", uri);
-        ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
-        if (isGroup) ipAccount.setBool("GROUP_IPA", true);
-
-        _getIPAssetRegistryStorage().totalSupply++;
-
-        emit IPRegistered(id, chainid, tokenContract, tokenId, name, uri, registrationDate);
-    }
-
-    /// @dev Retrieves the name and URI of from IP NFT.
-    function _getNameAndUri(
-        uint256 chainid,
-        address tokenContract,
-        uint256 tokenId
-    ) internal view returns (string memory name, string memory uri) {
-        if (chainid != block.chainid) {
-            name = string.concat(chainid.toString(), ": ", tokenContract.toHexString(), " #", tokenId.toString());
-            uri = "";
-            return (name, uri);
-        }
-        // Handle NFT on the same chain
-        if (!tokenContract.supportsInterface(type(IERC721).interfaceId)) {
-            revert Errors.IPAssetRegistry__UnsupportedIERC721(tokenContract);
-        }
-
-        if (IERC721(tokenContract).ownerOf(tokenId) == address(0)) {
-            revert Errors.IPAssetRegistry__InvalidToken(tokenContract, tokenId);
-        }
-
-        if (!tokenContract.supportsInterface(type(IERC721Metadata).interfaceId)) {
-            revert Errors.IPAssetRegistry__UnsupportedIERC721Metadata(tokenContract);
-        }
-
-        name = string.concat(
-            block.chainid.toString(),
-            ": ",
-            IERC721Metadata(tokenContract).name(),
-            " #",
-            tokenId.toString()
-        );
-        uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
-    }
-
-    function _isRegistered(address id) internal view returns (bool) {
-        if (id == address(0)) return false;
-        if (id.code.length == 0) return false;
-        if (!ERC165Checker.supportsInterface(id, type(IIPAccount).interfaceId)) return false;
-        (uint chainId, address tokenContract, uint tokenId) = IIPAccount(payable(id)).token();
-        if (id != ipAccount(chainId, tokenContract, tokenId)) return false;
-        return bytes(IIPAccount(payable(id)).getString("NAME")).length != 0;
-    }
+    function _isRegistered(address id) internal view virtual returns (bool);
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override restricted {}
-
-    /// @dev Returns the storage struct of IPAssetRegistry.
-    function _getIPAssetRegistryStorage() private pure returns (IPAssetRegistryStorage storage $) {
-        assembly {
-            $.slot := IPAssetRegistryStorageLocation
-        }
-    }
+    function _authorizeUpgrade(address newImplementation) internal virtual override restricted {}
 
     /// @dev Returns the storage struct of GroupIPAssetRegistry.
     function _getGroupIPAssetRegistryStorage() private pure returns (GroupIPAssetRegistryStorage storage $) {

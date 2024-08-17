@@ -24,6 +24,7 @@ import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
+import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
 
 /// @title Grouping Module
 /// @notice Grouping module is the main entry point for the licensing system. It is responsible for:
@@ -90,11 +91,20 @@ contract GroupingModule is
         __ProtocolPausable_init(accessManager);
     }
 
+
+    function registerGroup(address groupPool) external whenNotPaused returns (address groupId) {
+        // mint Group NFT
+        // register Group NFT
+        groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(groupPool);
+        // initialize royalty vault
+        // transfer all royalty tokens to the  group pool
+    }
+
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
-    function addIp(address groupIpId, address[] calldata ipIds) external verifyPermission(groupIpId) {
+    function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
     }
 
@@ -102,7 +112,7 @@ contract GroupingModule is
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
-    function removeIp(address groupIpId, address[] calldata ipIds) external verifyPermission(groupIpId) {
+    function removeIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
     }
 
@@ -110,11 +120,17 @@ contract GroupingModule is
     /// @param groupId The address of the group.
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
-    function claimReward(address groupId, address token, address[] calldata ipIds) external {
-
+    function claimReward(address groupId, address token, address[] calldata ipIds) external whenNotPaused {
+        // claim reward from group IPA's RoyaltyVault to group pool
+        // trigger group pool to distribute rewards to group members's vault
+        IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId)).distributeRewards(groupId, token, ipIds);
     }
 
-    
+    function getClaimableReward(address groupId, address token, address[] calldata ipIds) external view returns (uint256) {
+        // get claimable reward from group pool
+        return 0;
+    }
+
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
     function _authorizeUpgrade(address newImplementation) internal override restricted {}

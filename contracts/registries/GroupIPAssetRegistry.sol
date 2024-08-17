@@ -39,7 +39,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
     struct GroupIPAssetRegistryStorage {
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
-        mapping(address ipId => address groupPolicy) groupPolicies;
+        mapping(address ipId => address groupPool) groupPools;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -63,7 +63,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
 
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);
         // TODO: check policy is whitelisted
-        _getGroupIPAssetRegistryStorage().groupPolicies[groupId] = groupPolicy;
+        _getGroupIPAssetRegistryStorage().groupPools[groupId] = groupPolicy;
 
         emit IPGroupRegistered(groupId, block.chainid, address(GROUP_NFT), groupNftId, groupPolicy);
     }
@@ -106,9 +106,9 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
 
     /// @notice Retrieves the group policy for a Group IPA
     /// @param groupId The address of the Group IPA.
-    /// @return groupPolicy The address of the group policy.
-    function getGroupPolicy(address groupId) external view returns (address) {
-        return _getGroupIPAssetRegistryStorage().groupPolicies[groupId];
+    /// @return groupPool The address of the group policy.
+    function getGroupPool(address groupId) external view returns (address) {
+        return _getGroupIPAssetRegistryStorage().groupPools[groupId];
     }
 
     /// @notice Retrieves the group members for a Group IPA

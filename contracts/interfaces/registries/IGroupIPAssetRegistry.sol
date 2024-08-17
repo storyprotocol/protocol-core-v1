@@ -39,8 +39,8 @@ interface IGroupIPAssetRegistry {
 
     /// @notice Retrieves the group policy for a Group IPA
     /// @param groupId The address of the Group IPA.
-    /// @return groupPolicy The address of the group policy.
-    function getGroupPolicy(address groupId) external view returns (address);
+    /// @return groupPool The address of the group policy.
+    function getGroupPool(address groupId) external view returns (address);
 
     /// @notice Retrieves the group members for a Group IPA
     /// @param groupId The address of the Group IPA.

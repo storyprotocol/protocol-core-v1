@@ -113,6 +113,8 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function removeIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
+        // distribute reward to the ip to be removed
+        // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
     }
 

@@ -52,7 +52,6 @@ interface ILicensingHook is IModule {
         bytes calldata hookData
     ) external returns (uint256 mintingFee);
 
-
     function calculateMintingFee(
         address caller,
         address licensorIpId,

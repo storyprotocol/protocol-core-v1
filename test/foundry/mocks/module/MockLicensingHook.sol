@@ -50,7 +50,6 @@ contract MockLicensingHook is BaseModule, ILicensingHook {
         if (caller == unqualifiedAddress) revert("MockLicensingHook: caller is invalid");
         if (receiver == unqualifiedAddress) revert("MockLicensingHook: receiver is invalid");
         return amount * 100;
-
     }
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {

@@ -73,6 +73,15 @@ library Errors {
     /// @notice The give address is not a registered IPA.
     error GroupIPAssetRegistry__NotRegisteredIP(address ipId);
 
+    /// @notice Zero address provided for Royalty Module.
+    error GroupingModule__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for Module Registry.
+    error GroupingModule__ZeroModuleRegistry();
+
+    /// @notice Zero address provided for Access Manager in initializer.
+    error GroupingModule__ZeroAccessManager();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

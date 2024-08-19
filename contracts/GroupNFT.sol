@@ -13,7 +13,7 @@ import { IGroupNFT } from "./interfaces/IGroupNFT.sol";
 import { Errors } from "./lib/Errors.sol";
 
 /// @title GroupNFT
-abstract contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
+contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -70,7 +70,7 @@ abstract contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgrade
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted Group NFT.
     /// @return groupNftId The ID of the minted Group NFT.
-    function mintGroupNFT(address minter, address receiver) external onlyIPAssetRegistry returns (uint256 groupNftId) {
+    function mintGroupNft(address minter, address receiver) external onlyIPAssetRegistry returns (uint256 groupNftId) {
         GroupNFTStorage storage $ = _getGroupNFTStorage();
         groupNftId = $.totalSupply++;
         _mint(receiver, groupNftId);

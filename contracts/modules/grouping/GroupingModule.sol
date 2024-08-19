@@ -25,6 +25,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
+import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
 
 /// @title Grouping Module
 /// @notice Grouping module is the main entry point for the licensing system. It is responsible for:
@@ -42,9 +43,6 @@ contract GroupingModule is
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
-
-    /// @inheritdoc IModule
-    string public constant override name = LICENSING_MODULE_KEY;
 
     /// @notice Returns the canonical protocol-wide RoyaltyModule
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -91,13 +89,16 @@ contract GroupingModule is
         __ProtocolPausable_init(accessManager);
     }
 
-
+    /// @notice Registers a Group IPA.
+    /// @param groupPool The address of the group pool.
+    /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupPool) external whenNotPaused returns (address groupId) {
         // mint Group NFT
         // register Group NFT
         groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(groupPool);
         // initialize royalty vault
         // transfer all royalty tokens to the  group pool
+        emit GroupRegistered(groupId, groupPool);
     }
 
     /// @notice Adds IP to group.
@@ -106,6 +107,10 @@ contract GroupingModule is
     /// @param ipIds The IP IDs.
     function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupIpId)).addIp(groupIpId, ipIds[i]);
+        }
+        emit AddedIpToGroup(groupIpId, ipIds);
     }
 
     /// @notice Removes IP from group.
@@ -116,6 +121,10 @@ contract GroupingModule is
         // distribute reward to the ip to be removed
         // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupIpId)).removeIp(groupIpId, ipIds[i]);
+        }
+        emit RemovedIpFromGroup(groupIpId, ipIds);
     }
 
     /// @notice Claims reward.
@@ -123,14 +132,33 @@ contract GroupingModule is
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external whenNotPaused {
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId));
         // claim reward from group IPA's RoyaltyVault to group pool
-        // trigger group pool to distribute rewards to group members's vault
-        IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId)).distributeRewards(groupId, token, ipIds);
+        pool.collectRoyalties(groupId, token);
+        // trigger group pool to distribute rewards to group members vault
+        uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            emit ClaimedReward(groupId, token, ipIds[i], rewards[i]);
+        }
     }
 
-    function getClaimableReward(address groupId, address token, address[] calldata ipIds) external view returns (uint256) {
+    function name() external pure override returns (string memory) {
+        return GROUPING_MODULE_KEY;
+    }
+
+    /// @notice Returns the available reward for each IP in the group.
+    /// @param groupId The address of the group.
+    /// @param token The address of the token.
+    /// @param ipIds The IP IDs.
+    /// @return The rewards for each IP.
+    function getClaimableReward(
+        address groupId,
+        address token,
+        address[] calldata ipIds
+    ) external view returns (uint256[] memory) {
         // get claimable reward from group pool
-        return 0;
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId));
+        return pool.getAvailableReward(groupId, token, ipIds);
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

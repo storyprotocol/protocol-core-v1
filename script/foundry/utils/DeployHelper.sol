@@ -44,6 +44,7 @@ import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataV
 import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
+import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
@@ -103,6 +104,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // License system
     LicenseToken internal licenseToken;
     PILicenseTemplate internal pilTemplate;
+
+    // Grouping
+    GroupNFT internal groupNft;
+    GroupingModule internal groupingModule;
 
     // Token
     ERC20 private erc20; // keep private to avoid conflict with inheriting contracts
@@ -247,7 +252,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             new IPAssetRegistry(
                 address(erc6551Registry),
                 _getDeployedAddress(type(IPAccountImpl).name),
-                _getDeployedAddress(type(GroupNFT).name)
+                _getDeployedAddress(type(GroupNFT).name),
+                _getDeployedAddress(type(GroupingModule).name)
             )
         );
         ipAssetRegistry = IPAssetRegistry(
@@ -377,6 +383,54 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         require(_loadProxyImpl(address(royaltyModule)) == impl, "RoyaltyModule Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy(contractKey, address(royaltyModule));
+
+        contractKey = "GroupNFT";
+        _predeploy(contractKey);
+        impl = address(new GroupNFT(address(ipAssetRegistry)));
+        groupNft = GroupNFT(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(GroupNFT).name),
+                impl,
+                abi.encodeCall(
+                    GroupNFT.initialize,
+                    (
+                        address(protocolAccessManager),
+                        "https://github.com/storyprotocol/protocol-core/blob/main/assets/license-image.gif"
+                    )
+                )
+            )
+        );
+        require(_getDeployedAddress(type(GroupNFT).name) == address(groupNft), "Deploy: GroupNFT Address Mismatch");
+        require(_loadProxyImpl(address(groupNft)) == impl, "GroupNFT Proxy Implementation Mismatch");
+        impl = address(0); // Make sure we don't deploy wrong impl
+        _postdeploy(contractKey, address(groupNft));
+
+        contractKey = "GroupingModule";
+        _predeploy(contractKey);
+        impl = address(
+            new GroupingModule(
+                address(accessController),
+                address(ipAssetRegistry),
+                address(moduleRegistry),
+                address(royaltyModule)
+            )
+        );
+        groupingModule = GroupingModule(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(GroupingModule).name),
+                impl,
+                abi.encodeCall(GroupingModule.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(GroupingModule).name) == address(groupingModule),
+            "Deploy: Grouping Module Address Mismatch"
+        );
+        require(_loadProxyImpl(address(groupingModule)) == impl, "Grouping Proxy Implementation Mismatch");
+        impl = address(0);
+        _postdeploy(contractKey, address(groupingModule));
 
         contractKey = "LicensingModule";
         _predeploy(contractKey);

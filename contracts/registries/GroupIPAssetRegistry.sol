@@ -72,7 +72,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         if (msg.sender != address(GROUPING_MODULE)) {
             revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
         }
-        if (!isGroupRegistered(groupId)) {
+        if (!_isGroupRegistered(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
@@ -87,7 +87,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         if (msg.sender != address(GROUPING_MODULE)) {
             revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
         }
-        if (!isGroupRegistered(groupId)) {
+        if (!_isGroupRegistered(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
@@ -146,13 +146,14 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         return _getGroupIPAssetRegistryStorage().groups[groupId].length();
     }
 
+    function _isGroupRegistered(address groupId) internal view returns (bool) {
+        if (!_isRegistered(groupId)) return false;
+        return IIPAccount(payable(groupId)).getBool("GROUP_IPA");
+    }
+
     function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal virtual returns (address id);
 
     function _isRegistered(address id) internal view virtual returns (bool);
-
-    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
-    /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal virtual override restricted {}
 
     /// @dev Returns the storage struct of GroupIPAssetRegistry.
     function _getGroupIPAssetRegistryStorage() private pure returns (GroupIPAssetRegistryStorage storage $) {

@@ -36,10 +36,6 @@ contract IPAssetRegistry is
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IGroupNFT public immutable GROUP_NFT;
 
     /// @dev Storage structure for the IPAssetRegistry
     /// @notice Tracks the total number of IP assets in existence.
@@ -48,20 +44,9 @@ contract IPAssetRegistry is
         uint256 totalSupply;
     }
 
-    /// @dev Storage structure for the Group IPAsset Registry
-    /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
-    struct GroupIPAssetRegistryStorage {
-        mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
-        mapping(address ipId => address groupPolicy) groupPolicies;
-    }
-
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant IPAssetRegistryStorageLocation =
         0x987c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
-
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant GroupIPAssetRegistryStorageLocation =
-        0xa87c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
@@ -101,7 +86,7 @@ contract IPAssetRegistry is
         uint256 chainid,
         address tokenContract,
         uint256 tokenId
-    ) internal returns (address id) {
+    ) internal override returns (address id) {
         id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 
@@ -118,6 +103,28 @@ contract IPAssetRegistry is
         _getIPAssetRegistryStorage().totalSupply++;
 
         emit IPRegistered(id, chainid, tokenContract, tokenId, name, uri, registrationDate);
+    }
+
+    /// @notice Gets the canonical IP identifier associated with an IP NFT.
+    /// @dev This is equivalent to the address of its bound IP account.
+    /// @param chainId The chain identifier of where the IP resides.
+    /// @param tokenContract The address of the IP.
+    /// @param tokenId The token identifier of the IP.
+    /// @return ipId The IP's canonical address identifier.
+    function ipId(uint256 chainId, address tokenContract, uint256 tokenId) public view returns (address) {
+        return super.ipAccount(chainId, tokenContract, tokenId);
+    }
+
+    /// @notice Checks whether an IP was registered based on its ID.
+    /// @param id The canonical identifier for the IP.
+    /// @return isRegistered Whether the IP was registered into the protocol.
+    function isRegistered(address id) external view returns (bool) {
+        return _isRegistered(id);
+    }
+
+    /// @notice Gets the total number of IP assets registered in the protocol.
+    function totalSupply() external view returns (uint256) {
+        return _getIPAssetRegistryStorage().totalSupply;
     }
 
     /// @dev Retrieves the name and URI of from IP NFT.
@@ -154,7 +161,7 @@ contract IPAssetRegistry is
         uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
     }
 
-    function _isRegistered(address id) internal view returns (bool) {
+    function _isRegistered(address id) internal view override returns (bool) {
         if (id == address(0)) return false;
         if (id.code.length == 0) return false;
         if (!ERC165Checker.supportsInterface(id, type(IIPAccount).interfaceId)) return false;
@@ -173,5 +180,4 @@ contract IPAssetRegistry is
             $.slot := IPAssetRegistryStorageLocation
         }
     }
-
 }

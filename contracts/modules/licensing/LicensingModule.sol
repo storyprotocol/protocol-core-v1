@@ -408,7 +408,7 @@ contract LicensingModule is
         );
         uint256 mintingFeeByHook = 0;
         if (lsc.licensingHook != address(0)) {
-            mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeMintLicenseTokens(
+            mintingFeeByHook = ILicensingHook(lsc.licensingHook).calculateMintingFee(
                 msg.sender,
                 licensorIpId,
                 licenseTemplate,

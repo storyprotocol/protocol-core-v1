@@ -252,7 +252,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             new IPAssetRegistry(
                 address(erc6551Registry),
                 _getDeployedAddress(type(IPAccountImpl).name),
-                _getDeployedAddress(type(GroupNFT).name),
                 _getDeployedAddress(type(GroupingModule).name)
             )
         );
@@ -386,7 +385,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "GroupNFT";
         _predeploy(contractKey);
-        impl = address(new GroupNFT(address(ipAssetRegistry)));
+        impl = address(new GroupNFT( _getDeployedAddress(type(GroupingModule).name)));
         groupNft = GroupNFT(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -413,7 +412,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(accessController),
                 address(ipAssetRegistry),
                 address(moduleRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(groupNft)
             )
         );
         groupingModule = GroupingModule(

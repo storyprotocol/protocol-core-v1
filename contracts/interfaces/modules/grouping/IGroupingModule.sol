@@ -11,7 +11,7 @@ interface IGroupingModule is IModule {
     /// @notice Emitted when a group is registered.
     /// @param groupId The address of the group.
     /// @param groupPool The address of the group pool.
-    event GroupRegistered(address indexed groupId, address indexed groupPool);
+    event IPGroupRegistered(address indexed groupId, address indexed groupPool);
 
     /// @notice Emitted when added ip to group.
     /// @param groupId The address of the group.

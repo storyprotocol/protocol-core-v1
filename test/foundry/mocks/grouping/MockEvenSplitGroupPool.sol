@@ -4,7 +4,6 @@ pragma solidity 0.8.23;
 import { IGroupRewardPool } from "contracts/interfaces/modules/grouping/IGroupRewardPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IGroupIPAssetRegistry } from "../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract MockEvenSplitGroupPool is IGroupRewardPool {
@@ -12,7 +11,8 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct IpInfo {
-        uint256 rewardDebt; // pending reward = accBalance / totalIp - ip.rewardDebt
+        uint256 startPoolBalance; // balance of pool when IP added to pool
+        uint256 rewardDebt; // pending reward = (PoolInfo.accBalance - startPoolBalance)  / totalIp - ip.rewardDebt
         uint256 addedTime; // keeps track of added time.
     }
 
@@ -35,11 +35,13 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         uint256 length = tokens.length();
         for (uint256 i = 0; i < length; i++) {
             address token = tokens.at(i);
+            // ignore if IP is already added to pool
+            if (ipInfo[groupId][token][ipId].addedTime == 0) continue;
             _collectRoyalties(groupId, token);
             uint256 totalReward = poolInfo[groupId][token].accBalance;
-            uint256 rewardPerIP = totalReward / totalMemberIPs[groupId];
-            ipInfo[groupId][token][ipId].rewardDebt = rewardPerIP;
             ipInfo[groupId][token][ipId].addedTime = block.timestamp;
+            ipInfo[groupId][token][ipId].startPoolBalance = totalReward;
+            ipInfo[groupId][token][ipId].rewardDebt = 0;
         }
     }
 
@@ -87,10 +89,11 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         address token,
         address[] memory ipIds
     ) internal view returns (uint256[] memory) {
-        uint256 totalReward = poolInfo[groupId][token].accBalance;
-        uint256 rewardPerIP = totalReward / totalMemberIPs[groupId];
+        uint256 totalAccumulatePoolBalance = poolInfo[groupId][token].accBalance;
         uint256[] memory rewards = new uint256[](ipIds.length);
         for (uint256 i = 0; i < ipIds.length; i++) {
+            uint256 poolBalanceBeforeIpAdded = ipInfo[groupId][token][ipIds[i]].startPoolBalance;
+            uint256 rewardPerIP = (totalAccumulatePoolBalance - poolBalanceBeforeIpAdded) / totalMemberIPs[groupId];
             rewards[i] = rewardPerIP - ipInfo[groupId][token][ipIds[i]].rewardDebt;
         }
         return rewards;

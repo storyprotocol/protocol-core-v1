@@ -4,23 +4,12 @@ pragma solidity 0.8.23;
 /// @title Interface for Group IPA  Registry
 /// @notice This interface manages the registration and tracking of Group IPA
 interface IGroupIPAssetRegistry {
-    /// @notice Emits when a Group IPA is officially registered into the protocol.
-    /// @param groupId The address of the registered Group IPA.
-    /// @param chainId The chain identifier of where the Group NFT resides.
-    /// @param tokenContract The token contract address of the Group NFT.
-    /// @param tokenId The token ID of the Group NFT.
-    event IPGroupRegistered(
-        address groupId,
-        uint256 chainId,
-        address indexed tokenContract,
-        uint256 indexed tokenId,
-        address indexed groupPolicy
-    );
-
     /// @notice Registers a Group IPA
-    /// @param groupPolicy The address of the group policy
+    /// @param groupNft The address of the group IPA
+    /// @param groupNftId The id of the group IPA
+    /// @param rewardPool The address of the group reward pool
     /// @return groupId The address of the newly registered Group IPA.
-    function registerGroup(address groupPolicy) external returns (address groupId);
+    function registerGroup(address groupNft, uint256 groupNftId, address rewardPool) external returns (address groupId);
 
     /// @notice Adds a member to a Group IPA
     /// @param groupId The address of the Group IPA.
@@ -35,12 +24,12 @@ interface IGroupIPAssetRegistry {
     /// @notice Checks whether a group IPA was registered based on its ID.
     /// @param groupId The address of the Group IPA.
     /// @return isRegistered Whether the Group IPA was registered into the protocol.
-    function isGroupRegistered(address groupId) external view returns (bool);
+    function isRegisteredGroup(address groupId) external view returns (bool);
 
     /// @notice Retrieves the group policy for a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @return groupPool The address of the group policy.
-    function getGroupPool(address groupId) external view returns (address);
+    function getGroupRewardPool(address groupId) external view returns (address);
 
     /// @notice Retrieves the group members for a Group IPA
     /// @param groupId The address of the Group IPA.

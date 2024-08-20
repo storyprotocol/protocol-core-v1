@@ -2,36 +2,31 @@
 pragma solidity 0.8.23;
 
 // external
-import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import { IGroupNFT } from "../../interfaces/IGroupNFT.sol";
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
-import { IModule } from "../../interfaces/modules/base/IModule.sol";
 import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
-import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
-import { IPAccountChecker } from "../../lib/registries/IPAccountChecker.sol";
-import { RoyaltyModule } from "../../modules/royalty/RoyaltyModule.sol";
+import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
 import { BaseModule } from "../BaseModule.sol";
-import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
-import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
-import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
 import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
 
 /// @title Grouping Module
-/// @notice Grouping module is the main entry point for the licensing system. It is responsible for:
-/// - Attaching license terms to IP assets
-/// - Minting license Tokens
-/// - Registering derivatives
+/// @notice Grouping module is the main entry point for the IPA grouping. It is responsible for:
+/// - Registering a group
+/// - Adding IP to group
+/// - Removing IP from group
+/// - Claiming reward
 contract GroupingModule is
     AccessControlled,
     IGroupingModule,
@@ -46,13 +41,19 @@ contract GroupingModule is
 
     /// @notice Returns the canonical protocol-wide RoyaltyModule
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    RoyaltyModule public immutable ROYALTY_MODULE;
+    IRoyaltyModule public immutable ROYALTY_MODULE;
 
-    /// @notice Returns the protocol-wide ModuleRegistry
+    /// @notice Returns the address GROUP NFT contract
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IModuleRegistry public immutable MODULE_REGISTRY;
+    IGroupNFT public immutable GROUP_NFT;
 
+    /// @notice Returns the canonical protocol-wide Group IP Asset Registry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
+
+    /// @notice Returns the canonical protocol-wide LicenseRegistry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupingModuleStorageLocation =
@@ -62,19 +63,29 @@ contract GroupingModule is
     /// @param accessController The address of the AccessController contract
     /// @param ipAssetRegistry The address of the IpAssetRegistry contract
     /// @param royaltyModule The address of the RoyaltyModule contract
-    /// @param moduleRegistry The address of the ModuleRegistry contract
+    /// @param licenseRegistry The address of the LicenseRegistry contract
+    /// @param groupNFT The address of the GroupNFT contract
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAssetRegistry,
-        address moduleRegistry,
-        address royaltyModule
+        address licenseRegistry,
+        address royaltyModule,
+        address groupNFT
     ) AccessControlled(accessController, ipAssetRegistry) {
         if (royaltyModule == address(0)) revert Errors.GroupingModule__ZeroRoyaltyModule();
-        if (moduleRegistry == address(0)) revert Errors.GroupingModule__ZeroModuleRegistry();
-        MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
-        ROYALTY_MODULE = RoyaltyModule(royaltyModule);
+        if (licenseRegistry == address(0)) revert Errors.GroupingModule__ZeroLicenseRegistry();
+        if (groupNFT == address(0)) revert Errors.GroupingModule__ZeroGroupNFT();
+        if (ipAssetRegistry == address(0)) revert Errors.GroupingModule__ZeroIpAssetRegistry();
+
+        ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+
+        if (!groupNFT.supportsInterface(type(IGroupNFT).interfaceId)) {
+            revert Errors.GroupingModule__InvalidGroupNFT(groupNFT);
+        }
+        GROUP_NFT = IGroupNFT(groupNFT);
         _disableInitializers();
     }
 
@@ -94,11 +105,14 @@ contract GroupingModule is
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupPool) external whenNotPaused returns (address groupId) {
         // mint Group NFT
+        uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, address(this));
         // register Group NFT
-        groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(groupPool);
+        groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(address(GROUP_NFT), groupNftId, groupPool);
         // initialize royalty vault
         // transfer all royalty tokens to the  group pool
-        emit GroupRegistered(groupId, groupPool);
+        // transfer Group NFT to msg.sender
+        GROUP_NFT.safeTransferFrom(address(this), msg.sender, groupNftId);
+        emit IPGroupRegistered(groupId, groupPool);
     }
 
     /// @notice Adds IP to group.
@@ -108,7 +122,7 @@ contract GroupingModule is
     function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
         for (uint256 i = 0; i < ipIds.length; i++) {
-            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupIpId)).addIp(groupIpId, ipIds[i]);
+            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId)).addIp(groupIpId, ipIds[i]);
         }
         emit AddedIpToGroup(groupIpId, ipIds);
     }
@@ -118,11 +132,14 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function removeIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
+        if (LICENSE_REGISTRY.hasDerivativeIps(groupIpId)) {
+            revert Errors.GroupingModule__GroupIPHasDerivativeIps(groupIpId);
+        }
         // distribute reward to the ip to be removed
         // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
         for (uint256 i = 0; i < ipIds.length; i++) {
-            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupIpId)).removeIp(groupIpId, ipIds[i]);
+            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId)).removeIp(groupIpId, ipIds[i]);
         }
         emit RemovedIpFromGroup(groupIpId, ipIds);
     }
@@ -132,7 +149,7 @@ contract GroupingModule is
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external whenNotPaused {
-        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId));
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         // claim reward from group IPA's RoyaltyVault to group pool
         pool.collectRoyalties(groupId, token);
         // trigger group pool to distribute rewards to group members vault
@@ -157,7 +174,7 @@ contract GroupingModule is
         address[] calldata ipIds
     ) external view returns (uint256[] memory) {
         // get claimable reward from group pool
-        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupPool(groupId));
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         return pool.getAvailableReward(groupId, token, ipIds);
     }
 

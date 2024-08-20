@@ -1,20 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
-import { IGroupNFT } from "../interfaces/IGroupNFT.sol";
 import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { IGroupingModule } from "../interfaces/modules/grouping/IGroupingModule.sol";
-import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
-import { IPAccountRegistry } from "../registries/IPAccountRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
@@ -30,49 +23,59 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable {
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
+    using ERC165Checker for address;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IGroupNFT public immutable GROUP_NFT;
+
     IGroupingModule public immutable GROUPING_MODULE;
 
     /// @dev Storage structure for the Group IPAsset Registry
     /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
     struct GroupIPAssetRegistryStorage {
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
-        mapping(address ipId => address groupPool) groupPools;
+        mapping(address ipId => address rewardPool) rewardPools;
+        mapping(address rewardPool => bool isRegistered) registeredGroupRewardPools;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupIPAssetRegistryStorageLocation =
         0xa87c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
 
+    modifier onlyGroupingModule() {
+        if (msg.sender != address(GROUPING_MODULE)) {
+            revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
+        }
+        _;
+    }
+
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address groupNFT, address groupingModule) {
-        // TODO: check zero address
-        GROUP_NFT = IGroupNFT(groupNFT);
+    constructor(address groupingModule) {
         GROUPING_MODULE = IGroupingModule(groupingModule);
         _disableInitializers();
     }
 
     /// @notice Registers a Group IPA
-    /// @param groupPolicy The address of the group policy
+    /// @param groupNft The address of the group IPA
+    /// @param groupNftId The id of the group IPA
+    /// @param rewardPool The address of the group reward pool
     /// @return groupId The address of the newly registered Group IPA.
-    function registerGroup(address groupPolicy) external whenNotPaused returns (address groupId) {
-        uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, msg.sender);
-        groupId = _register({ chainid: block.chainid, tokenContract: address(GROUP_NFT), tokenId: groupNftId });
+    function registerGroup(
+        address groupNft,
+        uint256 groupNftId,
+        address rewardPool
+    ) external onlyGroupingModule whenNotPaused returns (address groupId) {
+        groupId = _register({ chainid: block.chainid, tokenContract: groupNft, tokenId: groupNftId });
 
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);
-        // TODO: check policy is whitelisted
-        _getGroupIPAssetRegistryStorage().groupPools[groupId] = groupPolicy;
-
-        emit IPGroupRegistered(groupId, block.chainid, address(GROUP_NFT), groupNftId, groupPolicy);
+        GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
+        if (!$.registeredGroupRewardPools[rewardPool]) {
+            revert Errors.GroupIPAssetRegistry__GroupRewardPoolNotRegistered(rewardPool);
+        }
+        _getGroupIPAssetRegistryStorage().rewardPools[groupId] = rewardPool;
     }
 
-    function addGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
-        if (msg.sender != address(GROUPING_MODULE)) {
-            revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
-        }
-        if (!_isGroupRegistered(groupId)) {
+    function addGroupMember(address groupId, address[] calldata ipIds) external onlyGroupingModule whenNotPaused {
+        if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
@@ -83,11 +86,8 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         }
     }
 
-    function removeGroupMember(address groupId, address[] calldata ipIds) external whenNotPaused {
-        if (msg.sender != address(GROUPING_MODULE)) {
-            revert Errors.GroupIPAssetRegistry__CallerIsNotGroupingModule(msg.sender);
-        }
-        if (!_isGroupRegistered(groupId)) {
+    function removeGroupMember(address groupId, address[] calldata ipIds) external onlyGroupingModule whenNotPaused {
+        if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
@@ -99,16 +99,16 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @notice Checks whether a group IPA was registered based on its ID.
     /// @param groupId The address of the Group IPA.
     /// @return isRegistered Whether the Group IPA was registered into the protocol.
-    function isGroupRegistered(address groupId) external view returns (bool) {
+    function isRegisteredGroup(address groupId) external view returns (bool) {
         if (!_isRegistered(groupId)) return false;
         return IIPAccount(payable(groupId)).getBool("GROUP_IPA");
     }
 
     /// @notice Retrieves the group policy for a Group IPA
     /// @param groupId The address of the Group IPA.
-    /// @return groupPool The address of the group policy.
-    function getGroupPool(address groupId) external view returns (address) {
-        return _getGroupIPAssetRegistryStorage().groupPools[groupId];
+    /// @return rewardPool The address of the group policy.
+    function getGroupRewardPool(address groupId) external view returns (address) {
+        return _getGroupIPAssetRegistryStorage().rewardPools[groupId];
     }
 
     /// @notice Retrieves the group members for a Group IPA
@@ -139,6 +139,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     function containsIp(address groupId, address ipId) external view returns (bool) {
         return _getGroupIPAssetRegistryStorage().groups[groupId].contains(ipId);
     }
+
     /// @notice Retrieves the total number of members in a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @return totalMembers The total number of members in the Group IPA.
@@ -146,7 +147,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         return _getGroupIPAssetRegistryStorage().groups[groupId].length();
     }
 
-    function _isGroupRegistered(address groupId) internal view returns (bool) {
+    function _isRegisteredGroup(address groupId) internal view returns (bool) {
         if (!_isRegistered(groupId)) return false;
         return IIPAccount(payable(groupId)).getBool("GROUP_IPA");
     }

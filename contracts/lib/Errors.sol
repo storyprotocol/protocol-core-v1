@@ -77,10 +77,25 @@ library Errors {
     error GroupingModule__ZeroRoyaltyModule();
 
     /// @notice Zero address provided for Module Registry.
-    error GroupingModule__ZeroModuleRegistry();
+    error GroupingModule__ZeroLicenseRegistry();
 
     /// @notice Zero address provided for Access Manager in initializer.
     error GroupingModule__ZeroAccessManager();
+
+    /// @notice Zero address provided for Group NFT.
+    error GroupingModule__ZeroGroupNFT();
+
+    /// @notice Zero address provided for IP Asset Registry.
+    error GroupingModule__ZeroIpAssetRegistry();
+
+    /// @notice Invalid address of GroupNFT that does not support IGroupNFT interface.
+    error GroupingModule__InvalidGroupNFT(address groupNFT);
+
+    /// @notice Group Pool is not registered.
+    error GroupIPAssetRegistry__GroupRewardPoolNotRegistered(address groupPool);
+
+    /// @notice The group ip has derivative IPs.
+    error GroupingModule__GroupIPHasDerivativeIps(address groupId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //

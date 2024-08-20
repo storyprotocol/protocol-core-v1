@@ -6,10 +6,8 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
-import { IGroupNFT } from "../interfaces/IGroupNFT.sol";
 import { GroupIPAssetRegistry } from "./GroupIPAssetRegistry.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
@@ -52,9 +50,8 @@ contract IPAssetRegistry is
     constructor(
         address erc6551Registry,
         address ipAccountImpl,
-        address groupNFT,
         address groupingModule
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) GroupIPAssetRegistry(groupNFT, groupingModule) {
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) GroupIPAssetRegistry(groupingModule) {
         _disableInitializers();
     }
 
@@ -82,11 +79,7 @@ contract IPAssetRegistry is
         id = _register({ chainid: chainid, tokenContract: tokenContract, tokenId: tokenId });
     }
 
-    function _register(
-        uint256 chainid,
-        address tokenContract,
-        uint256 tokenId
-    ) internal override returns (address id) {
+    function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal override returns (address id) {
         id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 

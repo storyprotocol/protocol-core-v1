@@ -17,10 +17,7 @@ interface IGroupRewardPool {
     /// @notice Collects royalty revenue to the group pool through royalty module
     /// @param groupId The group ID
     /// @param token The reward token
-    function collectRoyalties(
-        address groupId,
-        address token
-    ) external;
+    function collectRoyalties(address groupId, address token) external;
 
     /// @notice Adds an IP to the group pool
     /// @param groupId The group ID
@@ -42,5 +39,4 @@ interface IGroupRewardPool {
         address token,
         address[] calldata ipIds
     ) external view returns (uint256[] memory);
-
 }

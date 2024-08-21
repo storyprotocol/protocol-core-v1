@@ -12,7 +12,7 @@ import { console2 } from "forge-std/console2.sol";
 contract ERC7201HelperScript is Script {
     
     string constant NAMESPACE = "story-protocol";
-    string constant CONTRACT_NAME = "ArbitrationPolicySP";
+    string constant CONTRACT_NAME = "GroupingModule";
 
     function run() external {
         bytes memory erc7201Key = abi.encodePacked(NAMESPACE, ".", CONTRACT_NAME);

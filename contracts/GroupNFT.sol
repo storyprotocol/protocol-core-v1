@@ -32,7 +32,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupNFT")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupNFTStorageLocation =
-        0x62a0d75e37bea0c3e666dc72a74112fc6af15ce635719127e380d8ca1e555d00;
+        0x1f63c78b3808749cafddcb77c269221c148dbaa356630c2195a6ec03d7fedb00;
 
     modifier onlyIPAssetRegistry() {
         if (msg.sender != address(IP_ASSET_REGISTRY)) {

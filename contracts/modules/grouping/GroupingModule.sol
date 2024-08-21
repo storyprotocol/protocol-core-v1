@@ -57,7 +57,7 @@ contract GroupingModule is
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupingModuleStorageLocation =
-        0x0f7178cb62e4803c52d40f70c08a6f88d6ee1af1838d58e0c83a222a6c3d3100;
+        0x4f35861babcda7cb8a75afddcc0971d8dc0cbbd9d19afddbe94e0dcd72824100;
 
     /// Constructor
     /// @param accessController The address of the AccessController contract

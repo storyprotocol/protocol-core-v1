@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
@@ -11,35 +10,28 @@ import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeabl
 import { Errors } from "../lib/Errors.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
-/// @title IP Asset Registry
-/// @notice This contract acts as the source of truth for all IP registered in
-///         Story Protocol. An IP is identified by its contract address, token
-///         id, and coin type, meaning any NFT may be conceptualized as an IP.
-///         Once an IP is registered into the protocol, a corresponding IP
-///         asset is generated, which references an IP resolver for metadata
-///         attribution and an IP account for protocol authorization.
-///         IMPORTANT: The IP account address, besides being used for protocol
-///                    auth, is also the canonical IP identifier for the IP NFT.
+/// @title GroupIPAssetRegistry
+/// @notice Manages the registration and tracking of Group IPA, including the group members and reward pools.
 abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable {
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
-    using ERC165Checker for address;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
 
     IGroupingModule public immutable GROUPING_MODULE;
 
-    /// @dev Storage structure for the Group IPAsset Registry
+    /// @dev Storage structure for the GroupIPAssetRegistry
     /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
     struct GroupIPAssetRegistryStorage {
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
         mapping(address ipId => address rewardPool) rewardPools;
+        // whitelisted group reward pools
         mapping(address rewardPool => bool isRegistered) registeredGroupRewardPools;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupIPAssetRegistryStorageLocation =
-        0xa87c61809af5a42943abd137c7acff8426aab6f7a1f5c967a03d1d718ba5cf00;
+        0x34c89140582ad641fa679f955c67d1a82028bef0953ade7c28b8194cf080d600;
 
     modifier onlyGroupingModule() {
         if (msg.sender != address(GROUPING_MODULE)) {
@@ -80,6 +72,9 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         _getGroupIPAssetRegistryStorage().registeredGroupRewardPools[rewardPool] = true;
     }
 
+    /// @notice Adds a member to a Group IPA
+    /// @param groupId The address of the Group IPA.
+    /// @param ipIds The addresses of the IPs to add to the Group IPA.
     function addGroupMember(address groupId, address[] calldata ipIds) external onlyGroupingModule whenNotPaused {
         if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
@@ -92,6 +87,9 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         }
     }
 
+    /// @notice Removes a member from a Group IPA
+    /// @param groupId The address of the Group IPA.
+    /// @param ipIds The addresses of the IPs to remove from the Group IPA.
     function removeGroupMember(address groupId, address[] calldata ipIds) external onlyGroupingModule whenNotPaused {
         if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
@@ -153,13 +151,16 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         return _getGroupIPAssetRegistryStorage().groups[groupId].length();
     }
 
+    /// @dev Checks whether a group IPA is registered
     function _isRegisteredGroup(address groupId) internal view returns (bool) {
         if (!_isRegistered(groupId)) return false;
         return IIPAccount(payable(groupId)).getBool("GROUP_IPA");
     }
 
+    /// @dev Registers IP Account
     function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal virtual returns (address id);
 
+    /// @dev Checks whether an IP is registered
     function _isRegistered(address id) internal view virtual returns (bool);
 
     /// @dev Returns the storage struct of GroupIPAssetRegistry.

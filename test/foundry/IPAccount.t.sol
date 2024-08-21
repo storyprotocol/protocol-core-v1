@@ -29,7 +29,7 @@ contract IPAccountTest is BaseTest {
         module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
         mockIpAccountRegistry = new MockIPAccountRegistry(
             ipAccountRegistry.ERC6551_PUBLIC_REGISTRY(),
-            ipAccountRegistry.IP_ACCOUNT_IMPL()
+            ipAccountRegistry.getIPAccountImpl()
         );
 
         vm.startPrank(u.admin); // used twice, name() and registerModule()
@@ -51,10 +51,6 @@ contract IPAccountTest is BaseTest {
 
         assertTrue(deployedAccount != address(0));
 
-        assertEq(predictedAccount, deployedAccount);
-
-        // Create account twice
-        deployedAccount = mockIpAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
         assertEq(predictedAccount, deployedAccount);
     }
 

@@ -6,6 +6,7 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { LibERC6551 } from "@solady/src/accounts/LibERC6551.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
@@ -83,7 +84,7 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausabl
         emit IPRegistered(id, chainid, tokenContract, tokenId, name, uri, registrationDate);
     }
 
-    /// @notice Gets the canonical IP identifier associated with an IP NFT.
+    /// @notice Gets the canonical IP identifier associated with an IP NFT with the current ipAccountImpl.
     /// @dev This is equivalent to the address of its bound IP account.
     /// @param chainId The chain identifier of where the IP resides.
     /// @param tokenContract The address of the IP.
@@ -93,16 +94,44 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausabl
         return super.ipAccount(chainId, tokenContract, tokenId);
     }
 
+    /// @notice Gets the canonical IP identifier associated with an IP NFT with a specific ipAccountImpl.
+    /// @dev This is equivalent to the address of its bound IP account.
+    /// @param chainId The chain identifier of where the IP resides.
+    /// @param tokenContract The address of the IP.
+    /// @param tokenId The token identifier of the IP.
+    /// @param ipAccountImpl The address of the IP account implementation.
+    /// @return ipId The IP's canonical address identifier, or zero address if the IP account
+    /// implementation is not supported.
+    function ipId(
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        address ipAccountImpl
+    ) public view returns (address) {
+        return super.ipAccount(chainId, tokenContract, tokenId, ipAccountImpl);
+    }
+
     /// @notice Checks whether an IP was registered based on its ID.
     /// @param id The canonical identifier for the IP.
     /// @return isRegistered Whether the IP was registered into the protocol.
-    function isRegistered(address id) external view returns (bool) {
-        if (id == address(0)) return false;
-        if (id.code.length == 0) return false;
+    function isRegistered(address id) public view returns (bool) {
+        if (id == address(0)) return false; //TODO: evaluate if redundant check
+        if (id.code.length == 0) return false; //TODO: evaluate if redundant check
+        // WARNING: This check may not work if IIPAccount is modified between versions.abi
+        // TODO: consider removing it
         if (!ERC165Checker.supportsInterface(id, type(IIPAccount).interfaceId)) return false;
+        address impl = LibERC6551.implementation(id);
+        if (!super.isIpAccountImplSupported(impl)) return false;
         (uint chainId, address tokenContract, uint tokenId) = IIPAccount(payable(id)).token();
-        if (id != ipAccount(chainId, tokenContract, tokenId)) return false;
-        return bytes(IIPAccount(payable(id)).getString("NAME")).length != 0;
+        if (id != ipAccount(chainId, tokenContract, tokenId, impl)) return false;
+        return bytes(IIPAccount(payable(id)).getString("NAME")).length != 0; //TODO: evaluate if redundant check
+    }
+
+    /// @notice Checks whether an NFT was registered as IPA.
+    /// @param chainId The chain identifier of where the IP NFT resides.
+    function isRegistered(uint256 chainId, address tokenContract, uint256 tokenId) external view returns (bool) {
+        address impl = _getIPAccountImplForNft(chainId, tokenContract, tokenId);
+        return impl != address(0);
     }
 
     /// @notice Gets the total number of IP assets registered in the protocol.
@@ -144,9 +173,12 @@ contract IPAssetRegistry is IIPAssetRegistry, IPAccountRegistry, ProtocolPausabl
         uri = IERC721Metadata(tokenContract).tokenURI(tokenId);
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable.
+    // It will also move the current implementation to legacy.
     /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override restricted {}
+    function _authorizeUpgrade(address newImplementation) internal override restricted {
+        _moveCurrentImplToLegacy();
+    }
 
     /// @dev Returns the storage struct of IPAssetRegistry.
     function _getIPAssetRegistryStorage() private pure returns (IPAssetRegistryStorage storage $) {

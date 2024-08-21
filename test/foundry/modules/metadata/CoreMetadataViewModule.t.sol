@@ -85,7 +85,7 @@ contract CoreMetadataViewModuleTest is BaseTest {
     function test_CoreMetadataViewModule_revert_isSupported() public {
         mockNFT.mintId(alice, 999);
         address nonIpAsset = erc6551Registry.createAccount(
-            ipAccountRegistry.IP_ACCOUNT_IMPL(),
+            ipAccountRegistry.getIPAccountImpl(),
             ipAccountRegistry.IP_ACCOUNT_SALT(),
             block.chainid,
             address(mockNFT),

@@ -46,4 +46,11 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     /// @param id The canonical identifier for the IP.
     /// @return isRegistered Whether the IP was registered into the protocol.
     function isRegistered(address id) external view returns (bool);
+
+    /// @notice Checks whether an IP was registered based on its chain ID, token contract, and token ID.
+    /// @param chainId The chain identifier of where the IP resides.
+    /// @param tokenContract The address of the IP.
+    /// @param tokenId The token identifier of the IP.
+    /// @return isRegistered Whether the IP was registered into the protocol.
+    function isRegistered(uint256 chainId, address tokenContract, uint256 tokenId) external view returns (bool);
 }

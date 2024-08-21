@@ -22,16 +22,22 @@ IPAssetRegistry.sol
 │               ├── it should set the IP registration date
 │               ├── it should increment the total supply
 │               └── it should emit an event
-└── when checking if IP is registered
-    ├── given the IP ID is zero address
-    │   └── it should return false
-    ├── given the IP ID has no code
-    │   └── it should return false
-    ├── given the IP ID does not support IIPAccount interface
-    │   └── it should return false
-    ├── given the IP ID does not match the expected registered IP ID
-    │   └── it should return false
-    ├── given the IP ID does not have name set in storage
-    │   └── it should return false
-    └── given the IP ID is valid, matches the expected ID, and has name set in storage
-        └── it should return true
+├── when checking if IP is registered
+|   ├── given the IP ID is zero address
+│   │   └── it should return false
+│   ├── given the IP ID has no code
+│   │   └── it should return false
+│   ├── given the IP ID does not support IIPAccount interface
+│   │   └── it should return false
+│   ├── given the IP ID does not match the expected registered IP ID
+│   │   └── it should return false
+│   ├── given the IP ID does not have name set in storage
+│   │   └── it should return false
+│   └── given the IP ID is valid, matches the expected ID, and has name set in storage
+│       └── it should return true
+└─── when upgrading ipAccountImpl
+    ├── given an IPAccount registered with old IPAccountImpl
+    │   └── it should return true in isRegistered
+    ├── given an unsupported IPAccountImpl
+        └── it should return false in isRegistered
+        

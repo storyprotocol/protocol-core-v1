@@ -20,7 +20,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         uint256 availableBalance;
     }
 
-    mapping(address groupId => mapping( address ipId =>  uint256 addedTime)) public ipAddedTime;
+    mapping(address groupId => mapping(address ipId => uint256 addedTime)) public ipAddedTime;
     mapping(address groupId => uint256 totalMemberIPs) public totalMemberIPs;
     mapping(address groupId => EnumerableSet.AddressSet tokens) internal groupTokens;
     // Info of each token pool. groupId => { token => PoolInfo}

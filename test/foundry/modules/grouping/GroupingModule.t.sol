@@ -6,23 +6,14 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
-import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
-import { ILicensingModule } from "../../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
-import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol";
-import { MockLicensingHook } from "../../mocks/module/MockLicensingHook.sol";
-import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
-import { Licensing } from "../../../../contracts/lib/Licensing.sol";
-import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
-import { IGroupRewardPool } from "../../../../contracts/interfaces/modules/grouping/IGroupRewardPool.sol";
 import { IGroupingModule } from "../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
-
+import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 // test
 import { MockEvenSplitGroupPool } from "../../mocks/grouping/MockEvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract GroupingModuleTest is BaseTest {
-
     // test register group
     // test add ip to group
     // test remove ip from group
@@ -53,7 +44,6 @@ contract GroupingModuleTest is BaseTest {
     uint256 public tokenId5 = 5;
 
     MockEvenSplitGroupPool public rewardPool;
-
 
     function setUp() public override {
         super.setUp();
@@ -106,7 +96,7 @@ contract GroupingModuleTest is BaseTest {
     }
 
     function test_addIp_later_after_depositedReward() public {
-        vm.warp(100);
+        vm.warp(9999);
         vm.startPrank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
         address[] memory ipIds = new address[](2);
@@ -117,7 +107,32 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.addIp(groupId, ipIds);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
         assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 100);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 9999);
+
+        erc20.mint(alice, 100);
+        erc20.approve(address(rewardPool), 100);
+        rewardPool.depositReward(groupId, address(erc20), 100);
+
+        vm.warp(10000);
+        address[] memory ipIds2 = new address[](1);
+        ipIds2[0] = ipId3;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds2);
+        groupingModule.addIp(groupId, ipIds2);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 3);
+        assertEq(rewardPool.totalMemberIPs(groupId), 3);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId3), 10000);
+        (uint256 startPoolBalance, uint256 rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId3);
+        assertEq(startPoolBalance, 100);
+        assertEq(rewardDebt, 0);
+
+        (startPoolBalance, rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId1);
+        assertEq(startPoolBalance, 0);
+        assertEq(rewardDebt, 0);
+
+        (startPoolBalance, rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId2);
+        assertEq(startPoolBalance, 0);
+        assertEq(rewardDebt, 0);
     }
 
     function test_removeIp() public {
@@ -164,4 +179,89 @@ contract GroupingModuleTest is BaseTest {
         assertEq(erc20.balanceOf(ipId1), 50);
     }
 
+    function test_addIp_after_registerDerivative() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        vm.stopPrank();
+
+        vm.startPrank(ipOwner3);
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = groupId;
+        licenseTermsIds[0] = termsId;
+
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        vm.stopPrank();
+
+
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        vm.prank(alice);
+        groupingModule.addIp(groupId, ipIds);
+
+        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
+        assertEq(rewardPool.totalMemberIPs(groupId), 2);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
+    }
+
+    function test_removeIp_revert_after_registerDerivative() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        vm.stopPrank();
+
+        vm.startPrank(ipOwner3);
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = groupId;
+        licenseTermsIds[0] = termsId;
+
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        vm.stopPrank();
+
+
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        vm.prank(alice);
+        groupingModule.addIp(groupId, ipIds);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
+        assertEq(rewardPool.totalMemberIPs(groupId), 2);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
+
+        address[] memory removeIpIds = new address[](1);
+        removeIpIds[0] = ipId1;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__GroupIPHasDerivativeIps.selector,
+                groupId
+            )
+        );
+        vm.prank(alice);
+        groupingModule.removeIp(groupId, removeIpIds);
+    }
 }

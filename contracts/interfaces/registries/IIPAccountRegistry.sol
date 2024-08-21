@@ -25,7 +25,24 @@ interface IIPAccountRegistry {
     /// @return ipAccountAddress The address of the IP Account associated with the given NFT token
     function ipAccount(uint256 chainId, address tokenContract, uint256 tokenId) external view returns (address);
 
+    /// @notice Returns the IPAccount address for the given NFT token, with the IPAccount implementation address.
+    /// This methods allows support of legacy implementations.
+    /// @param chainId The chain ID where the IP Account is located
+    /// @param tokenContract The address of the token contract associated with the IP Account
+    /// @param tokenId The ID of the token associated with the IP Account
+    /// @return ipAccountAddress The address of the IP Account associated with the given NFT token,
+    /// Zero address if unsupported ipAccountImpl
+    function ipAccount(
+        uint256 chainId,
+        address tokenContract,
+        uint256 tokenId,
+        address ipAccountImpl
+    ) external view returns (address);
+
     /// @notice Returns the IPAccount implementation address.
     /// @return The address of the IPAccount implementation
     function getIPAccountImpl() external view returns (address);
+
+    /// @notice Returns true if the IPAccount implementation is supported (either current or legacy).
+    function isIpAccountImplSupported(address ipAccountImpl) external view returns (bool);
 }

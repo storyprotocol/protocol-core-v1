@@ -172,7 +172,7 @@ contract IPAssetRegistryAllRegisteredInvariants is IPAssetRegistryInvariants {
     /// @dev Invariant: every registration should revert when the IP Account is already registered
     function invariant_allRevert() public {
         for (uint256 i = 0; i < harness.ipAccountCount(); i++) {
-            vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__AlreadyRegistered.selector));
+            vm.expectRevert(abi.encodeWithSelector(Errors.IPAccountRegistry__AlreadyRegistered.selector));
             harness.register(uint8(i));
         }
     }

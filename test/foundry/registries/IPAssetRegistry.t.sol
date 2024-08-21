@@ -7,11 +7,12 @@ import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
+import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721WithoutMetadata.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 /// @title IP Asset Registry Testing Contract
@@ -81,7 +82,7 @@ contract IPAssetRegistryTest is BaseTest {
     function test_IPAssetRegistry_RegisterPermissionless_IPAccountAlreadyExist() public {
         uint256 totalSupply = registry.totalSupply();
         erc6551Registry.createAccount(
-            ipAccountRegistry.IP_ACCOUNT_IMPL(),
+            ipAccountRegistry.getIPAccountImpl(),
             ipAccountRegistry.IP_ACCOUNT_SALT(),
             block.chainid,
             tokenAddress,
@@ -116,7 +117,7 @@ contract IPAssetRegistryTest is BaseTest {
         vm.prank(alice);
         registry.register(block.chainid, tokenAddress, tokenId);
 
-        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
+        vm.expectRevert(Errors.IPAccountRegistry__AlreadyRegistered.selector);
         vm.prank(alice);
         registry.register(block.chainid, tokenAddress, tokenId);
     }
@@ -163,7 +164,7 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(
             !registry.isRegistered(
                 erc6551Registry.createAccount(
-                    ipAccountRegistry.IP_ACCOUNT_IMPL(),
+                    ipAccountRegistry.getIPAccountImpl(),
                     ipAccountRegistry.IP_ACCOUNT_SALT(),
                     block.chainid,
                     address(mockNFT),
@@ -213,8 +214,42 @@ contract IPAssetRegistryTest is BaseTest {
 
         registry.register(chainid, tokenAddress, tokenId);
 
-        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
+        vm.expectRevert(Errors.IPAccountRegistry__AlreadyRegistered.selector);
         registry.register(chainid, tokenAddress, tokenId);
+    }
+
+    function test_IPAssetRegistry_UpgradeIPAccountImplWontBreakOldAccounts() public {
+        tokenAddress = address(0x12345);
+        tokenId = 1;
+        uint256 chainid = 55555555;
+        // Register an IPAccount
+        address ipaOld = registry.register(chainid, tokenAddress, tokenId);
+        assertTrue(ipAssetRegistry.isRegistered(ipaOld));
+
+        // Upgrade to a new IPAccount implementation
+        IPAccountImpl newIPAccount = new IPAccountImpl(
+            address(accessController),
+            address(ipAssetRegistry),
+            address(licenseRegistry),
+            address(moduleRegistry)
+        );
+        IPAssetRegistry newRegistryImpl = new IPAssetRegistry(address(erc6551Registry), address(newIPAccount));
+        vm.prank(u.admin);
+        protocolAccessManager.schedule(
+            address(ipAssetRegistry),
+            abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (address(newRegistryImpl), "")),
+            0 // earliest time possible, upgraderExecDelay
+        );
+        vm.warp(upgraderExecDelay + 1);
+
+        vm.prank(u.admin);
+        ipAssetRegistry.upgradeToAndCall(address(newRegistryImpl), "");
+
+        // Verify old IPAccount still works
+        assertTrue(ipAssetRegistry.isRegistered(ipaOld));
+        // Verify new IPAccount works
+        //address ipaNew = ipAssetRegistry.register(chainid, tokenAddress, tokenId + 1);
+        //assertTrue(ipAssetRegistry.isRegistered(ipaNew));
     }
 
     /// @notice Helper function for generating an account address.

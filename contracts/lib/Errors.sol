@@ -60,6 +60,9 @@ library Errors {
     /// @notice Zero address provided for ERC6551 Registry.
     error IPAccountRegistry_ZeroERC6551Registry();
 
+    /// @notice Emitted when an NFT has already been registered as an IP, with any supported IPAccount implementation.
+    error IPAccountRegistry__AlreadyRegistered();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

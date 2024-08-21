@@ -11,6 +11,10 @@ interface IGroupIPAssetRegistry {
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupNft, uint256 groupNftId, address rewardPool) external returns (address groupId);
 
+    /// @notice Whitelists a group reward pool
+    /// @param rewardPool The address of the group reward pool
+    function whitelistGroupRewardPool(address rewardPool) external;
+
     /// @notice Adds a member to a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @param ipIds The addresses of the IPs to add to the Group IPA.

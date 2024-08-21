@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC165, ERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -115,6 +116,13 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
         /* solhint-enable */
 
         return string(abi.encodePacked("data:application/json;base64,", Base64.encode(bytes(json))));
+    }
+
+    /// @notice IERC165 interface support.
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC721Upgradeable, IERC165) returns (bool) {
+        return interfaceId == type(IGroupNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
     ////////////////////////////////////////////////////////////////////////////

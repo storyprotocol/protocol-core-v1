@@ -25,7 +25,7 @@ import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
-import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY } from "contracts/lib/modules/Module.sol";
+import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY, GROUPING_MODULE_KEY } from "contracts/lib/modules/Module.sol";
 import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
@@ -411,7 +411,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             new GroupingModule(
                 address(accessController),
                 address(ipAssetRegistry),
-                address(moduleRegistry),
+                address(licenseRegistry),
                 address(royaltyModule),
                 address(groupNft)
             )
@@ -663,6 +663,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         moduleRegistry.registerModule(ROYALTY_MODULE_KEY, address(royaltyModule));
         moduleRegistry.registerModule(CORE_METADATA_MODULE_KEY, address(coreMetadataModule));
         moduleRegistry.registerModule(CORE_METADATA_VIEW_MODULE_KEY, address(coreMetadataViewModule));
+        moduleRegistry.registerModule(GROUPING_MODULE_KEY, address(groupingModule));
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);

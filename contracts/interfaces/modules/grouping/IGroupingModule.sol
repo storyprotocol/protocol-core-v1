@@ -35,6 +35,10 @@ interface IGroupingModule is IModule {
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupPool) external returns (address groupId);
 
+    /// @notice Whitelists a group reward pool.
+    /// @param rewardPool The address of the group reward pool.
+    function whitelistGroupRewardPool(address rewardPool) external;
+
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.

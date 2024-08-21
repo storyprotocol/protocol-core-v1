@@ -115,6 +115,12 @@ contract GroupingModule is
         emit IPGroupRegistered(groupId, groupPool);
     }
 
+    /// @notice Whitelists a group reward pool.
+    /// @param rewardPool The address of the group reward pool.
+    function whitelistGroupRewardPool(address rewardPool) external restricted {
+        GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool);
+    }
+
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.

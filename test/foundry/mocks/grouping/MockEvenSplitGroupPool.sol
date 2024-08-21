@@ -10,10 +10,9 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    struct IpInfo {
+    struct IpRewardInfo {
         uint256 startPoolBalance; // balance of pool when IP added to pool
         uint256 rewardDebt; // pending reward = (PoolInfo.accBalance - startPoolBalance)  / totalIp - ip.rewardDebt
-        uint256 addedTime; // keeps track of added time.
     }
 
     struct PoolInfo {
@@ -21,27 +20,29 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         uint256 availableBalance;
     }
 
+    mapping(address groupId => mapping( address ipId =>  uint256 addedTime)) public ipAddedTime;
     mapping(address groupId => uint256 totalMemberIPs) public totalMemberIPs;
     mapping(address groupId => EnumerableSet.AddressSet tokens) internal groupTokens;
     // Info of each token pool. groupId => { token => PoolInfo}
     mapping(address groupId => mapping(address token => PoolInfo)) public poolInfo;
     // Info of each user that stakes LP tokens. groupId => { token => { ipId => IpInfo}}
-    mapping(address groupId => mapping(address tokenId => mapping(address ipId => IpInfo))) public ipInfo;
+    mapping(address groupId => mapping(address tokenId => mapping(address ipId => IpRewardInfo))) public ipRewardInfo;
 
     function addIp(address groupId, address ipId) external {
+        // ignore if IP is already added to pool
+        if (ipAddedTime[groupId][ipId] != 0) return;
+        ipAddedTime[groupId][ipId] = block.timestamp;
         // set rewardDebt of IP to current availableReward of the IP
         totalMemberIPs[groupId] += 1;
+
         EnumerableSet.AddressSet storage tokens = groupTokens[groupId];
         uint256 length = tokens.length();
         for (uint256 i = 0; i < length; i++) {
             address token = tokens.at(i);
-            // ignore if IP is already added to pool
-            if (ipInfo[groupId][token][ipId].addedTime == 0) continue;
             _collectRoyalties(groupId, token);
             uint256 totalReward = poolInfo[groupId][token].accBalance;
-            ipInfo[groupId][token][ipId].addedTime = block.timestamp;
-            ipInfo[groupId][token][ipId].startPoolBalance = totalReward;
-            ipInfo[groupId][token][ipId].rewardDebt = 0;
+            ipRewardInfo[groupId][token][ipId].startPoolBalance = totalReward;
+            ipRewardInfo[groupId][token][ipId].rewardDebt = 0;
         }
     }
 
@@ -54,7 +55,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
             address token = tokens.at(i);
             _collectRoyalties(groupId, token);
             _distributeRewards(groupId, token, ipIds);
-            ipInfo[groupId][token][ipId].addedTime = 0;
+            ipAddedTime[groupId][ipId] = 0;
         }
         totalMemberIPs[groupId] -= 1;
     }
@@ -92,9 +93,15 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         uint256 totalAccumulatePoolBalance = poolInfo[groupId][token].accBalance;
         uint256[] memory rewards = new uint256[](ipIds.length);
         for (uint256 i = 0; i < ipIds.length; i++) {
-            uint256 poolBalanceBeforeIpAdded = ipInfo[groupId][token][ipIds[i]].startPoolBalance;
+            // ignore if IP is not added to pool
+            if (ipAddedTime[groupId][ipIds[i]] == 0) {
+                rewards[i] = 0;
+                revert("IP not added to pool");
+                continue;
+            }
+            uint256 poolBalanceBeforeIpAdded = ipRewardInfo[groupId][token][ipIds[i]].startPoolBalance;
             uint256 rewardPerIP = (totalAccumulatePoolBalance - poolBalanceBeforeIpAdded) / totalMemberIPs[groupId];
-            rewards[i] = rewardPerIP - ipInfo[groupId][token][ipIds[i]].rewardDebt;
+            rewards[i] = rewardPerIP - ipRewardInfo[groupId][token][ipIds[i]].rewardDebt;
         }
         return rewards;
     }
@@ -106,15 +113,11 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     ) internal returns (uint256[] memory rewards) {
         rewards = _getAvailableReward(groupId, token, ipIds);
         for (uint256 i = 0; i < ipIds.length; i++) {
-            // ignore if IP is not added to pool
-            if (ipInfo[groupId][token][ipIds[i]].addedTime == 0) {
-                continue;
-            }
             // calculate pending reward for each IP
-            ipInfo[groupId][token][ipIds[i]].rewardDebt += rewards[i];
+            ipRewardInfo[groupId][token][ipIds[i]].rewardDebt += rewards[i];
+            poolInfo[groupId][token].availableBalance -= rewards[i];
             // call royalty module to transfer reward to IP as royalty
             IERC20(token).safeTransfer(ipIds[i], rewards[i]);
-            poolInfo[groupId][token].availableBalance -= rewards[i];
         }
     }
 
@@ -123,6 +126,13 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         uint256 royalties = 0;
         poolInfo[groupId][token].availableBalance += royalties;
         poolInfo[groupId][token].accBalance += royalties;
+        groupTokens[groupId].add(token);
+    }
+
+    function depositReward(address groupId, address token, uint256 amount) external {
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        poolInfo[groupId][token].accBalance += amount;
+        poolInfo[groupId][token].availableBalance += amount;
         groupTokens[groupId].add(token);
     }
 }

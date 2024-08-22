@@ -172,7 +172,7 @@ library Errors {
 
     /// @notice Failed to add parent IPs to IP graph.
     error LicenseRegistry__AddParentIpToIPGraphFailed(address childIpId, address[] parentIpIds);
-    
+
     /// @notice Royalty policy mismatch.
     error LicensingModule__RoyaltyPolicyMismatch(address[] royaltyPolicies);
 

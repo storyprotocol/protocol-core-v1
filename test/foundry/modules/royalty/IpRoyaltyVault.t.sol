@@ -1,205 +1,291 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+// contracts
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
+// solhint-disable-next-line max-line-length
 import { IIpRoyaltyVault } from "../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
-
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
+// tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract TestIpRoyaltyVault is BaseTest {
-    IpRoyaltyVault private ipRoyaltyVault;
-
     function setUp() public override {
         super.setUp();
 
         vm.startPrank(u.admin);
-        // whitelist royalty policy
-        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(LINK), true);
-        royaltyPolicyLAP.setSnapshotInterval(7 days);
+        vm.stopPrank();
+    }
+
+    function test_IpRoyaltyVault_decimals() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+
+        assertEq(ipRoyaltyVault.decimals(), 6);
+    }
+
+    function test_IpRoyaltyVault_addIpRoyaltyVaultTokens_revert_NotRoyaltyModule() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__NotAllowedToAddTokenToVault.selector);
+        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(USDC));
+    }
+
+    function test_IpRoyaltyVault_addIpRoyaltyVaultTokens_revert_NotWhitelistedRoyaltyToken() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
         vm.stopPrank();
 
         vm.startPrank(address(royaltyModule));
-        _setupMaxUniqueTree();
-
-        (, address IpRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(address(2));
-        ipRoyaltyVault = IpRoyaltyVault(IpRoyaltyVault2);
-    }
-
-    function _setupMaxUniqueTree() internal {
-        // init royalty policy for roots
-        royaltyPolicyLAP.onLicenseMinting(address(7), abi.encode(uint32(7)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(8), abi.encode(uint32(8)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(9), abi.encode(uint32(9)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(10), abi.encode(uint32(10)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(11), abi.encode(uint32(11)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(12), abi.encode(uint32(12)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(13), abi.encode(uint32(13)), "");
-        royaltyPolicyLAP.onLicenseMinting(address(14), abi.encode(uint32(14)), "");
-
-        // init 2nd level with children
-        address[] memory parents = new address[](2);
-        uint32[] memory parentRoyalties1 = new uint32[](2);
-        bytes[] memory encodedLicenseData = new bytes[](2);
-
-        // 100 is child of 7 and 8
-        parents[0] = address(7);
-        parents[1] = address(8);
-        parentRoyalties1[0] = 7 * 10 ** 5;
-        parentRoyalties1[1] = 8 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(100), parents);
-        royaltyPolicyLAP.onLinkToParents(address(100), parents, encodedLicenseData, "");
-
-        // 4 is child of 9 and 10
-        parents[0] = address(9);
-        parents[1] = address(10);
-        parentRoyalties1[0] = 9 * 10 ** 5;
-        parentRoyalties1[1] = 10 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(4), parents);
-        royaltyPolicyLAP.onLinkToParents(address(4), parents, encodedLicenseData, "");
-
-        // 5 is child of 11 and 12
-        parents[0] = address(11);
-        parents[1] = address(12);
-        parentRoyalties1[0] = 11 * 10 ** 5;
-        parentRoyalties1[1] = 12 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(5), parents);
-        royaltyPolicyLAP.onLinkToParents(address(5), parents, encodedLicenseData, "");
-
-        // 6 is child of 13 and 14
-        parents[0] = address(13);
-        parents[1] = address(14);
-        parentRoyalties1[0] = 13 * 10 ** 5;
-        parentRoyalties1[1] = 14 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(6), parents);
-        royaltyPolicyLAP.onLinkToParents(address(6), parents, encodedLicenseData, "");
-
-        // init 3rd level with children
-        // 1 is child of 100 and 4
-        parents[0] = address(100);
-        parents[1] = address(4);
-        parentRoyalties1[0] = 3 * 10 ** 5;
-        parentRoyalties1[1] = 4 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(1), parents);
-        royaltyPolicyLAP.onLinkToParents(address(1), parents, encodedLicenseData, "");
-
-        // 2 is child of 5 and 6
-        parents[0] = address(5);
-        parents[1] = address(6);
-        parentRoyalties1[0] = 5 * 10 ** 5;
-        parentRoyalties1[1] = 6 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(2), parents);
-        royaltyPolicyLAP.onLinkToParents(address(2), parents, encodedLicenseData, "");
-
-        address[] memory parentsIpIds100 = new address[](2);
-        parentsIpIds100 = new address[](2);
-        parentsIpIds100[0] = address(1);
-        parentsIpIds100[1] = address(2);
-
-        parents[0] = address(1);
-        parents[1] = address(2);
-        parentRoyalties1[0] = 1 * 10 ** 5;
-        parentRoyalties1[1] = 2 * 10 ** 5;
-
-        for (uint32 i = 0; i < parentRoyalties1.length; i++) {
-            encodedLicenseData[i] = abi.encode(parentRoyalties1[i]);
-        }
-        ipGraph.addParentIp(address(3), parents);
-        vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(address(3), address(royaltyPolicyLAP), parents, encodedLicenseData, "");
-    }
-
-    function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens_NotRoyaltyPolicyLAP() public {
-        vm.expectRevert(Errors.IpRoyaltyVault__NotRoyaltyPolicyLAP.selector);
+        vm.expectRevert(Errors.IpRoyaltyVault__NotWhitelistedRoyaltyToken.selector);
         ipRoyaltyVault.addIpRoyaltyVaultTokens(address(0));
+        vm.stopPrank();
     }
 
-    function test_IpRoyaltyVault_AddIpRoyaltyVaultTokens() public {
-        vm.startPrank(address(royaltyPolicyLAP));
-        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(1));
+    function test_IpRoyaltyVault_addIpRoyaltyVaultTokens() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
 
-        address[] memory tokens = ipRoyaltyVault.tokens();
+        vm.startPrank(address(royaltyModule));
 
-        assertEq(tokens.length, 1);
-        assertEq(tokens[0], address(1));
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenAddedToVault(address(USDC), address(ipRoyaltyVault));
+
+        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(USDC));
+        vm.stopPrank();
+
+        assertEq(ipRoyaltyVault.tokens().length, 1);
+        assertEq(ipRoyaltyVault.tokens()[0], address(USDC));
     }
 
-    function test_IpRoyaltyVault_ClaimableRevenue() public {
+    function test_IpRoyaltyVault_constructor_revert_ZeroDisputeModule() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__ZeroDisputeModule.selector);
+        IpRoyaltyVault vault = new IpRoyaltyVault(address(0), address(royaltyModule));
+    }
+
+    function test_IpRoyaltyVault_constructor_revert_ZeroRoyaltyModule() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__ZeroRoyaltyModule.selector);
+        IpRoyaltyVault vault = new IpRoyaltyVault(address(disputeModule), address(0));
+    }
+
+    function test_IpRoyaltyVault_constructor() public {
+        IpRoyaltyVault vault = new IpRoyaltyVault(address(disputeModule), address(royaltyModule));
+        assertEq(address(vault.DISPUTE_MODULE()), address(disputeModule));
+        assertEq(address(vault.ROYALTY_MODULE()), address(royaltyModule));
+    }
+
+    function test_IpRoyaltyVault_initialize() public {
+        // mint license for IP80
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(80), address(royaltyPolicyLRP), uint32(10 * 10 ** 6), "");
+
+        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(address(80));
+
+        uint256 ipId80IpIdBalance = IERC20(ipRoyaltyVault).balanceOf(address(80));
+
+        assertEq(ERC20(ipRoyaltyVault).name(), "Royalty Token");
+        assertEq(ERC20(ipRoyaltyVault).symbol(), "RT");
+        assertEq(ERC20(ipRoyaltyVault).totalSupply(), royaltyModule.TOTAL_RT_SUPPLY());
+        assertEq(IIpRoyaltyVault(ipRoyaltyVault).ipId(), address(80));
+        assertEq(IIpRoyaltyVault(ipRoyaltyVault).lastSnapshotTimestamp(), block.timestamp);
+        assertEq(ipId80IpIdBalance, royaltyModule.TOTAL_RT_SUPPLY());
+    }
+
+    function test_IpRoyaltyVault_snapshot_InsufficientTimeElapsedSinceLastSnapshot() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IIpRoyaltyVault ipRoyaltyVault = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__InsufficientTimeElapsedSinceLastSnapshot.selector);
+        ipRoyaltyVault.snapshot();
+    }
+
+    function test_IpRoyaltyVault_snapshot_revert_Paused() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IIpRoyaltyVault ipRoyaltyVault = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.stopPrank();
+        vm.prank(u.admin);
+        royaltyModule.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.snapshot();
+    }
+
+    function test_IpRoyaltyVault_snapshot_revert_NoNewRevenueSinceLastSnapshot() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 7 days + 1);
+
+        vm.expectRevert(Errors.IpRoyaltyVault__NoNewRevenueSinceLastSnapshot.selector);
+        ipRoyaltyVault.snapshot();
+    }
+
+    function test_IpRoyaltyVault_snapshot() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(3), 100000 * 10 ** 6); // 100k USDC
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
+        USDC.mint(address(2), royaltyAmount); // 100k USDC
+        LINK.mint(address(2), royaltyAmount); // 100k LINK
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount);
+        LINK.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(LINK), royaltyAmount);
+        vm.stopPrank();
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+
+        uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
+        uint256 linkClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(LINK));
+
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp);
+
+        ipRoyaltyVault.snapshot();
+
+        assertEq(ipRoyaltyVault.claimVaultAmount(address(USDC)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimVaultAmount(address(LINK)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimVaultAmount(address(USDC)) - usdcClaimVaultBefore, royaltyAmount);
+        assertEq(ipRoyaltyVault.claimVaultAmount(address(LINK)) - linkClaimVaultBefore, royaltyAmount);
+        assertEq(ipRoyaltyVault.lastSnapshotTimestamp(), block.timestamp);
+        assertEq(ipRoyaltyVault.claimableAtSnapshot(1, address(USDC)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimableAtSnapshot(1, address(LINK)), royaltyAmount);
+
+        // users claim all USDC
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(USDC);
+        vm.startPrank(address(2));
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
         vm.stopPrank();
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
-
-        uint256 claimableRevenue = ipRoyaltyVault.claimableRevenue(address(2), 1, address(USDC));
-        assertEq(
-            claimableRevenue,
-            royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
+        // all USDC was claimed but LINK was not
+        assertEq(ipRoyaltyVault.tokens().length, 1);
     }
 
-    function test_IpRoyaltyVault_ClaimRevenueByTokenBatch_revert_Paused() public {
+    function test_IpRoyaltyVault_claimRevenue_revert_Paused() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IIpRoyaltyVault ipRoyaltyVault = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
         vm.stopPrank();
+
         vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
+        royaltyModule.pause();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
 
         vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
         ipRoyaltyVault.claimRevenueByTokenBatch(1, new address[](0));
     }
 
-    function test_IpRoyaltyVault_ClaimRevenueByTokenBatch() public {
+    function test_IpRoyaltyVault_claimableRevenue() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(2);
+        address payerIpId = address(3);
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(receiverIpId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IIpRoyaltyVault ipRoyaltyVault = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(receiverIpId));
+        vm.stopPrank();
+
+        // send 30% of rts to another address
+        address minorityHolder = address(1);
+        vm.prank(receiverIpId);
+        IERC20(address(ipRoyaltyVault)).transfer(minorityHolder, 30e6);
+
         // payment is made to vault
-        uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(3), royaltyAmount); // 100k USDC
-        LINK.mint(address(3), royaltyAmount); // 100k LINK
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
-        LINK.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(LINK), royaltyAmount);
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, royaltyAmount);
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
+
+        uint256 claimableRevenueIpId = ipRoyaltyVault.claimableRevenue(receiverIpId, 1, address(USDC));
+        uint256 claimableRevenueMinHolder = ipRoyaltyVault.claimableRevenue(minorityHolder, 1, address(USDC));
+        assertEq(claimableRevenueIpId, (royaltyAmount * 70e6) / 100e6);
+        assertEq(claimableRevenueMinHolder, (royaltyAmount * 30e6) / 100e6);
+    }
+
+    function test_IpRoyaltyVault_claimRevenueByTokenBatch_revert_claimRevenueByTokenBatch() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.startPrank(address(royaltyModule));
+        ipRoyaltyVault.addIpRoyaltyVaultTokens(address(USDC));
         vm.stopPrank();
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(USDC);
+
+        vm.expectRevert(Errors.IpRoyaltyVault__NoClaimableTokens.selector);
+        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
+    }
+
+    function test_IpRoyaltyVault_claimRevenueByTokenBatch() public {
+        // payment is made to vault
+        uint256 royaltyAmount = 100000 * 10 ** 6;
+        USDC.mint(address(2), royaltyAmount); // 100k USDC
+        LINK.mint(address(2), royaltyAmount); // 100k LINK
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount);
+        LINK.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(LINK), royaltyAmount);
+        vm.stopPrank();
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
 
         address[] memory tokens = new address[](2);
         tokens[0] = address(USDC);
@@ -214,7 +300,7 @@ contract TestIpRoyaltyVault is BaseTest {
 
         vm.startPrank(address(2));
 
-        uint256 expectedAmount = royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
+        uint256 expectedAmount = royaltyAmount;
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), expectedAmount);
@@ -232,37 +318,42 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(LINK)), true);
     }
 
-    function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch_revert_Paused() public {
+    function test_IpRoyaltyVault_claimRevenueBySnapshotBatch_revert_NoClaimableTokens() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
         vm.stopPrank();
-        vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
 
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
+        vm.expectRevert(Errors.IpRoyaltyVault__NoClaimableTokens.selector);
         ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
     }
 
-    function test_IpRoyaltyVault_ClaimRevenueBySnapshotBatch() public {
+    function test_IpRoyaltyVault_claimRevenueBySnapshotBatch() public {
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(3), royaltyAmount); // 100k USDC
+        USDC.mint(address(2), royaltyAmount); // 100k USDC
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
 
         // 1st payment is made to vault
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount / 2);
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount / 2);
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
         // 2nt payment is made to vault
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount / 2);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount / 2);
         vm.stopPrank();
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
-
-        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
 
         uint256[] memory snapshots = new uint256[](2);
         snapshots[0] = 1;
@@ -272,7 +363,7 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
         uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
 
-        uint256 expectedAmount = royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
+        uint256 expectedAmount = royaltyAmount;
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), expectedAmount);
@@ -287,217 +378,147 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(2, address(2), address(USDC)), true);
     }
 
-    function test_IpRoyaltyVault_Snapshot_SnapshotIntervalTooShort() public {
-        vm.expectRevert(Errors.IpRoyaltyVault__SnapshotIntervalTooShort.selector);
-        ipRoyaltyVault.snapshot();
-    }
-
-    function test_IpRoyaltyVault_Snapshot_revert_Paused() public {
-        // payment is made to vault
+    function test_IpRoyaltyVault_claimByTokenBatchAsSelf_revert_InvalidTargetIpId() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
         vm.stopPrank();
-        vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
 
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.snapshot();
+        vm.expectRevert(Errors.IpRoyaltyVault__InvalidTargetIpId.selector);
+        ipRoyaltyVault.claimByTokenBatchAsSelf(1, new address[](0), address(0));
     }
 
-    function test_IpRoyaltyVault_Snapshot() public {
-        // payment is made to vault
+    function test_IpRoyaltyVault_claimByTokenBatchAsSelf() public {
+        // deploy two vaults and send 30% of rts to another address
         uint256 royaltyAmount = 100000 * 10 ** 6;
-        USDC.mint(address(3), royaltyAmount); // 100k USDC
-        LINK.mint(address(3), royaltyAmount); // 100k LINK
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
-        LINK.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(LINK), royaltyAmount);
+        USDC.mint(address(2), royaltyAmount); // 100k USDC
+        LINK.mint(address(2), royaltyAmount); // 100k LINK
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(3), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault2 = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(3)));
+        vm.stopPrank();
+
+        vm.prank(address(2));
+        IERC20(address(ipRoyaltyVault)).transfer(address(ipRoyaltyVault2), 30e6);
+        vm.stopPrank();
+
+        // payment is made to vault
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount);
+        LINK.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(LINK), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
 
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(USDC);
+        tokens[1] = address(LINK);
+
+        uint256 claimerUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault2));
+        uint256 claimerLinkBalanceBefore = LINK.balanceOf(address(ipRoyaltyVault2));
+        uint256 claimedUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 claimedLinkBalanceBefore = LINK.balanceOf(address(ipRoyaltyVault));
         uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
         uint256 linkClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(LINK));
-        uint256 usdcAncestorsVaultBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
-        uint256 linkAncestorsVaultBefore = ipRoyaltyVault.ancestorsVaultAmount(address(LINK));
 
-        (, , uint32 royaltyStack2) = royaltyPolicyLAP.getRoyaltyData(address(2));
+        vm.startPrank(address(100));
+
+        uint256 expectedAmount = (royaltyAmount * 30e6) / 100e6;
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp, royaltyStack2);
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(ipRoyaltyVault2), address(USDC), expectedAmount);
 
-        ipRoyaltyVault.snapshot();
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(ipRoyaltyVault2), address(LINK), expectedAmount);
 
-        assertEq(
-            ipRoyaltyVault.claimVaultAmount(address(USDC)) + ipRoyaltyVault.ancestorsVaultAmount(address(USDC)),
-            royaltyAmount
-        );
-        assertEq(
-            ipRoyaltyVault.claimVaultAmount(address(LINK)) + ipRoyaltyVault.ancestorsVaultAmount(address(LINK)),
-            royaltyAmount
-        );
-        assertEq(
-            ipRoyaltyVault.claimVaultAmount(address(USDC)) - usdcClaimVaultBefore,
-            royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
-        assertEq(
-            ipRoyaltyVault.claimVaultAmount(address(LINK)) - linkClaimVaultBefore,
-            royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
-        assertEq(
-            ipRoyaltyVault.ancestorsVaultAmount(address(USDC)) - usdcAncestorsVaultBefore,
-            (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
-        assertEq(
-            ipRoyaltyVault.ancestorsVaultAmount(address(LINK)) - linkAncestorsVaultBefore,
-            (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
-        assertEq(ipRoyaltyVault.lastSnapshotTimestamp(), block.timestamp);
-        assertEq(ipRoyaltyVault.unclaimedRoyaltyTokens(), royaltyStack2);
-        assertEq(ipRoyaltyVault.unclaimedAtSnapshot(1), royaltyStack2);
-        assertEq(
-            ipRoyaltyVault.claimableAtSnapshot(1, address(USDC)),
-            royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
-        assertEq(
-            ipRoyaltyVault.claimableAtSnapshot(1, address(LINK)),
-            royaltyAmount - (royaltyAmount * royaltyStack2) / royaltyPolicyLAP.TOTAL_RT_SUPPLY()
-        );
+        ipRoyaltyVault2.claimByTokenBatchAsSelf(1, tokens, address(2));
 
-        // users claim all USDC
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(USDC);
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault2)) - claimerUsdcBalanceBefore, expectedAmount);
+        assertEq(LINK.balanceOf(address(ipRoyaltyVault2)) - claimerLinkBalanceBefore, expectedAmount);
+        assertEq(claimedUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(claimedLinkBalanceBefore - LINK.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(usdcClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(USDC)), expectedAmount);
+        assertEq(linkClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(LINK)), expectedAmount);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(ipRoyaltyVault2), address(USDC)), true);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(ipRoyaltyVault2), address(LINK)), true);
+    }
+
+    function test_IpRoyaltyVault_claimBySnapshotBatchAsSelf_revert_InvalidTargetIpId() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__InvalidTargetIpId.selector);
+        ipRoyaltyVault.claimBySnapshotBatchAsSelf(new uint256[](0), address(USDC), address(0));
+    }
+
+    function test_IpRoyaltyVault_claimBySnapshotBatchAsSelf() public {
+        // deploy two vaults and send 30% of rts to another address
+        uint256 royaltyAmount = 100000 * 10 ** 6;
+        USDC.mint(address(2), royaltyAmount * 2); // 100k USDC
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(2), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(2)));
+        vm.stopPrank();
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(3), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault2 = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(3)));
+        vm.stopPrank();
+
         vm.prank(address(2));
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
-
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
-        ipRoyaltyVault.collectAccruedTokens(address(5), tokens);
-        ipRoyaltyVault.collectRoyaltyTokens(address(11));
-        ipRoyaltyVault.collectAccruedTokens(address(11), tokens);
-        ipRoyaltyVault.collectRoyaltyTokens(address(12));
-        ipRoyaltyVault.collectAccruedTokens(address(12), tokens);
-        ipRoyaltyVault.collectRoyaltyTokens(address(6));
-        ipRoyaltyVault.collectAccruedTokens(address(6), tokens);
-        ipRoyaltyVault.collectRoyaltyTokens(address(13));
-        ipRoyaltyVault.collectAccruedTokens(address(13), tokens);
-        ipRoyaltyVault.collectRoyaltyTokens(address(14));
-        ipRoyaltyVault.collectAccruedTokens(address(14), tokens);
-
-        // take snapshot
-        vm.warp(block.timestamp + 7 days + 1);
-        ipRoyaltyVault.snapshot();
-
-        // all USDC was claimed but LINK was not
-        assertEq(ipRoyaltyVault.tokens().length, 1);
-    }
-
-    function test_IpRoyaltyVault_CollectRoyaltyTokens_AlreadyClaimed() public {
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
-
-        vm.expectRevert(Errors.IpRoyaltyVault__AlreadyClaimed.selector);
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
-    }
-
-    function test_IpRoyaltyVault_CollectRoyaltyTokens_ClaimerNotAnAncestor() public {
-        vm.expectRevert(Errors.IpRoyaltyVault__ClaimerNotAnAncestor.selector);
-        ipRoyaltyVault.collectRoyaltyTokens(address(0));
-    }
-
-    function test_IpRoyaltyVault_CollectRoyaltyTokens_revert_Paused() public {
+        IERC20(address(ipRoyaltyVault)).transfer(address(ipRoyaltyVault2), 30e6);
         vm.stopPrank();
-        vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
-
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
-    }
-
-    function test_IpRoyaltyVault_CollectRoyaltyTokens() public {
-        uint256 parentRoyalty = 5 * 10 ** 5;
-        uint256 royaltyAmount = 100000 * 10 ** 6;
-        uint256 accruedCollectableRevenue = (royaltyAmount * 5 * 10 ** 5) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
 
         // payment is made to vault
-        USDC.mint(address(3), royaltyAmount); // 100k USDC
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount);
         vm.stopPrank();
 
         // take snapshot
         vm.warp(block.timestamp + 7 days + 1);
         ipRoyaltyVault.snapshot();
 
-        uint256 userUsdcBalanceBefore = USDC.balanceOf(address(5));
-        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
-        uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
-        uint256 contractRTBalBefore = IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault));
-        uint256 userRTBalBefore = IERC20(address(ipRoyaltyVault)).balanceOf(address(5));
-        uint256 unclaimedRoyaltyTokensBefore = ipRoyaltyVault.unclaimedRoyaltyTokens();
-        uint256 ancestorsVaultAmountBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
+        // payment is made to vault
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(2), address(USDC), royaltyAmount);
+        vm.stopPrank();
+
+        // take snapshot
+        vm.warp(block.timestamp + 15 days + 1);
+        ipRoyaltyVault.snapshot();
+
+        uint256[] memory snapshots = new uint256[](2);
+        snapshots[0] = 1;
+        snapshots[1] = 2;
+
+        uint256 expectedAmount = (royaltyAmount * 2 * 30e6) / 100e6;
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RoyaltyTokensCollected(address(5), parentRoyalty);
-        emit IIpRoyaltyVault.RevenueTokenClaimed(address(5), address(USDC), accruedCollectableRevenue);
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(ipRoyaltyVault2), address(USDC), expectedAmount);
 
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
+        uint256 claimerUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault2));
+        uint256 claimedUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
 
-        assertEq(ipRoyaltyVault.isCollectedByAncestor(address(5)), true);
-        assertEq(
-            contractRTBalBefore - IERC20(address(ipRoyaltyVault)).balanceOf(address(ipRoyaltyVault)),
-            parentRoyalty
-        );
-        assertEq(IERC20(address(ipRoyaltyVault)).balanceOf(address(5)) - userRTBalBefore, parentRoyalty);
-        assertEq(unclaimedRoyaltyTokensBefore - ipRoyaltyVault.unclaimedRoyaltyTokens(), parentRoyalty);
-    }
+        ipRoyaltyVault2.claimBySnapshotBatchAsSelf(snapshots, address(USDC), address(2));
 
-    function test_IpRoyaltyVault_CollectAccruedTokens_revert_Paused() public {
-        vm.stopPrank();
-        vm.prank(u.admin);
-        royaltyPolicyLAP.pause();
-
-        vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.collectAccruedTokens(address(5), new address[](0));
-    }
-
-    function test_IpRoyaltyVault_CollectAccruedTokens() public {
-        uint256 parentRoyalty = 5 * 10 ** 5;
-        uint256 royaltyAmount = 100000 * 10 ** 6;
-        uint256 accruedCollectableRevenue = (royaltyAmount * 5 * 10 ** 5) / royaltyPolicyLAP.TOTAL_RT_SUPPLY();
-
-        // payment is made to vault
-        USDC.mint(address(3), royaltyAmount); // 100k USDC
-        vm.startPrank(address(3));
-        USDC.approve(address(royaltyPolicyLAP), royaltyAmount);
-        royaltyModule.payRoyaltyOnBehalf(address(2), address(3), address(USDC), royaltyAmount);
-        vm.stopPrank();
-
-        // take snapshot
-        vm.warp(block.timestamp + 7 days + 1);
-        ipRoyaltyVault.snapshot();
-
-        // collect royalty tokens
-        ipRoyaltyVault.collectRoyaltyTokens(address(5));
-
-        address[] memory tokens = new address[](1);
-        tokens[0] = address(USDC);
-
-        uint256 userUsdcBalanceBefore = USDC.balanceOf(address(5));
-        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
-        uint256 ancestorsVaultAmountBefore = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
-        uint256 collectableAmountBefore = ipRoyaltyVault.collectableAmount(address(5), address(USDC));
-
-        ipRoyaltyVault.collectAccruedTokens(address(5), tokens);
-
-        uint256 userUsdcBalanceAfter = USDC.balanceOf(address(5));
-        uint256 contractUsdcBalanceAfter = USDC.balanceOf(address(ipRoyaltyVault));
-        uint256 ancestorsVaultAmountAfter = ipRoyaltyVault.ancestorsVaultAmount(address(USDC));
-        uint256 collectableAmountAfter = ipRoyaltyVault.collectableAmount(address(5), address(USDC));
-
-        assertEq(userUsdcBalanceAfter - userUsdcBalanceBefore, accruedCollectableRevenue);
-        assertEq(contractUsdcBalanceBefore - contractUsdcBalanceAfter, accruedCollectableRevenue);
-        assertEq(ancestorsVaultAmountBefore - ancestorsVaultAmountAfter, accruedCollectableRevenue);
-        assertEq(collectableAmountAfter, 0);
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault2)) - claimerUsdcBalanceBefore, expectedAmount);
+        assertEq(claimedUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(usdcClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(USDC)), expectedAmount);
     }
 }

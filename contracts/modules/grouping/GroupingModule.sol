@@ -20,6 +20,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
 import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
+import { IPILicenseTemplate, PILTerms } from "contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 /// @title Grouping Module
 /// @notice Grouping module is the main entry point for the IPA grouping. It is responsible for:
@@ -126,10 +127,39 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
-        GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId)).addIp(groupIpId, ipIds[i]);
+        if (LICENSE_REGISTRY.hasDerivativeIps(groupIpId)) {
+            revert Errors.GroupingModule__GroupIPHasDerivativeIps(groupIpId);
         }
+
+        // check if the group IP has license terms and minting fee is 0
+        if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
+            revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
+        }
+        (address groupLicenseTemplate, uint256 groupLicenseTermsId) = LICENSE_REGISTRY.getAttachedLicenseTerms(
+            groupIpId,
+            0
+        );
+        PILTerms memory groupLicenseTerms = IPILicenseTemplate(groupLicenseTemplate).getLicenseTerms(
+            groupLicenseTermsId
+        );
+        if (groupLicenseTerms.defaultMintingFee != 0) {
+            revert Errors.GroupingModule__GroupIPHasMintingFee(groupIpId, groupLicenseTemplate, groupLicenseTermsId);
+        }
+
+        GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            // check if the IP has the same license terms as the group
+            if (!LICENSE_REGISTRY.hasIpAttachedLicenseTerms(ipIds[i], groupLicenseTemplate, groupLicenseTermsId)) {
+                revert Errors.GroupingModule__IpHasNoGroupLicenseTerms(
+                    ipIds[i],
+                    groupLicenseTemplate,
+                    groupLicenseTermsId
+                );
+            }
+            pool.addIp(groupIpId, ipIds[i]);
+        }
+
         emit AddedIpToGroup(groupIpId, ipIds);
     }
 

@@ -125,10 +125,6 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
         return interfaceId == type(IGroupNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    //                         Upgrades related                               //
-    ////////////////////////////////////////////////////////////////////////////
-
     /// @dev Returns the storage struct of GroupNFT.
     function _getGroupNFTStorage() private pure returns (GroupNFTStorage storage $) {
         assembly {

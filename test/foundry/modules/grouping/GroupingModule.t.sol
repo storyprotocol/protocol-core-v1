@@ -68,7 +68,7 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }
 
-    function test_registerGroup() public {
+    function test_GroupingModule_registerGroup() public {
         address expectedGroupId = ipAssetRegistry.ipId(block.chainid, address(groupNft), 0);
         vm.expectEmit();
         emit IGroupingModule.IPGroupRegistered(expectedGroupId, address(rewardPool));
@@ -80,10 +80,27 @@ contract GroupingModuleTest is BaseTest {
         assertEq(ipAssetRegistry.totalMembers(groupId), 0);
     }
 
-    function test_addIp() public {
+    function test_GroupingModule_addIp() public {
         vm.warp(100);
-        vm.startPrank(alice);
+        vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -95,10 +112,29 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardPool.ipAddedTime(groupId, ipId1), 100);
     }
 
-    function test_addIp_later_after_depositedReward() public {
+    function test_GroupingModule_addIp_later_after_depositedReward() public {
         vm.warp(9999);
-        vm.startPrank(alice);
+        vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        vm.prank(ipOwner3);
+        licensingModule.attachLicenseTerms(ipId3, address(pilTemplate), termsId);
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -135,9 +171,26 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardDebt, 0);
     }
 
-    function test_removeIp() public {
-        vm.startPrank(alice);
+    function test_GroupingModule_removeIp() public {
+        vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -150,11 +203,27 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.removeIp(groupId, removeIpIds);
     }
 
-    function test_claimReward() public {
+    function test_GroupingModule_claimReward() public {
         vm.warp(100);
-        vm.startPrank(alice);
-
+        vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -179,7 +248,7 @@ contract GroupingModuleTest is BaseTest {
         assertEq(erc20.balanceOf(ipId1), 50);
     }
 
-    function test_addIp_after_registerDerivative() public {
+    function test_GroupingModule_addIp_revert_after_registerDerivative() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 0,
@@ -194,6 +263,11 @@ contract GroupingModuleTest is BaseTest {
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
         vm.stopPrank();
 
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+
         vm.startPrank(ipOwner3);
         address[] memory parentIpIds = new address[](1);
         uint256[] memory licenseTermsIds = new uint256[](1);
@@ -206,17 +280,16 @@ contract GroupingModuleTest is BaseTest {
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
-        vm.expectEmit();
-        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupIPHasDerivativeIps.selector, groupId));
         vm.prank(alice);
         groupingModule.addIp(groupId, ipIds);
 
-        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 0);
+        assertEq(rewardPool.totalMemberIPs(groupId), 0);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 0);
     }
 
-    function test_removeIp_revert_after_registerDerivative() public {
+    function test_GroupingModule_removeIp_revert_after_registerDerivative() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 0,
@@ -226,10 +299,25 @@ contract GroupingModuleTest is BaseTest {
             })
         );
 
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+
         vm.startPrank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        groupingModule.addIp(groupId, ipIds);
         vm.stopPrank();
+
+        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
+        assertEq(rewardPool.totalMemberIPs(groupId), 2);
+        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
 
         vm.startPrank(ipOwner3);
         address[] memory parentIpIds = new address[](1);
@@ -239,17 +327,6 @@ contract GroupingModuleTest is BaseTest {
 
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
         vm.stopPrank();
-
-        address[] memory ipIds = new address[](2);
-        ipIds[0] = ipId1;
-        ipIds[1] = ipId2;
-        vm.expectEmit();
-        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
-        vm.prank(alice);
-        groupingModule.addIp(groupId, ipIds);
-        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
 
         address[] memory removeIpIds = new address[](1);
         removeIpIds[0] = ipId1;

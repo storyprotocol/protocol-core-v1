@@ -28,7 +28,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
-    address public constant IP_GRAPH_CONTRACT = address(0x1A);
+    address public constant IP_GRAPH = address(0x1A);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -243,7 +243,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             }
         }
 
-        (bool success, ) = IP_GRAPH_CONTRACT.call(
+        (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
         if (!success) {
@@ -373,7 +373,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIps(address)", childIpId)
         );
         require(success, "Call failed");
@@ -385,7 +385,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
         );
         require(success, "Call failed");
@@ -396,7 +396,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
         require(success, "Call failed");
@@ -525,7 +525,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
         require(success, "Call failed");

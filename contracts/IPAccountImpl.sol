@@ -19,6 +19,7 @@ import { IPAccountStorage } from "./IPAccountStorage.sol";
 /// @title IPAccountImpl
 /// @notice The Story Protocol's implementation of the IPAccount.
 contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable ACCESS_CONTROLLER;
 
     receive() external payable override(Receiver, IIPAccount) {}
@@ -29,6 +30,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     /// This means that each cloned IPAccount will inherently use the same AccessController
     /// without the need for individual configuration.
     /// @param accessController The address of the AccessController contract to be used for permission checks
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(
         address accessController,
         address ipAssetRegistry,

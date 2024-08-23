@@ -16,6 +16,7 @@ contract Main is DeployHelper {
     address internal constant TREASURY_ADDRESS = address(200);
     // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
+    string constant internal VERSION = "1.1.0";
 
     constructor()
         DeployHelper(
@@ -31,7 +32,7 @@ contract Main is DeployHelper {
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run() public virtual override {
+    function run() public virtual {
         _run(CREATE3_DEFAULT_SEED);
     }
 
@@ -44,8 +45,9 @@ contract Main is DeployHelper {
         super.run(
             seed, // create3 seed
             false, // runStorageLayoutCheck
-            true // writeDeployments
+            true, // writeDeployments
+            VERSION
         );
-        _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
+        _writeDeployment(VERSION); // write deployment json to deployments/deployment-{chainId}.json
     }
 }

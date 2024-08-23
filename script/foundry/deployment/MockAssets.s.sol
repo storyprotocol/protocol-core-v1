@@ -26,7 +26,7 @@ contract MockAssets is Script, BroadcastManager, JsonDeploymentHandler {
 
         _deployProtocolContracts();
 
-        _writeDeployment(); // write deployment json to deploy-out/deployment-{chainId}.json
+        _writeDeployment("TEST"); // write deployment json to deploy-out/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
@@ -45,7 +45,7 @@ contract MockAssets is Script, BroadcastManager, JsonDeploymentHandler {
     }
 
     function _postdeploy(string memory contractKey, address newAddress) private {
-        _writeAddress(contractKey, newAddress);
         console2.log(string.concat(contractKey, " deployed to:"), newAddress);
+        _writeAddress(contractKey, newAddress);
     }
 }

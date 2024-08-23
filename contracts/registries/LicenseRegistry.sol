@@ -55,6 +55,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 defaultLicenseTermsId;
         mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;
         mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
+        mapping(address childIpId => mapping(address parentIpId => uint256 licenseTermsId)) parentLicenseTerms;
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
@@ -434,6 +435,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
+    }
+
+    /// @notice Returns the license terms through which a child IP links to a parent IP.
+    /// @param childIpId The address of the child IP.
+    /// @param parentIpId The address of the parent IP.
+    /// @return licenseTemplate The address of the license template.
+    /// @return licenseTermsId The ID of the license terms.
+    function getParentLicenseTerms(
+        address childIpId,
+        address parentIpId
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return ($.licenseTemplates[parentIpId], $.parentLicenseTerms[childIpId][parentIpId]);
     }
 
     /// @dev verify the child IP can be registered as a derivative of the parent IP

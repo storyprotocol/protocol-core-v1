@@ -3,7 +3,7 @@ pragma solidity 0.8.23;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IRoyaltyPolicyLAP } from "../../../contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
+import { IRoyaltyPolicyLAP } from "../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
 import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { PILicenseTemplate } from "../../../contracts/modules/licensing/PILicenseTemplate.sol";
 import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";

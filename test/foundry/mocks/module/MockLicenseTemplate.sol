@@ -86,14 +86,14 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     /// @notice Returns the royalty policy of a license terms.
     /// @param licenseTermsId The ID of the license terms.
     /// @return royaltyPolicy The address of the royalty policy specified for the license terms.
-    /// @return royaltyData The data of the royalty policy.
+    /// @return royaltyPercent The data of the royalty policy.
     /// @return mintingFee The fee for minting a license.
     /// @return currency The address of the ERC20 token, used for minting license fee and royalties.
     /// the currency token will used for pay for license token minting fee and royalties.
     function getRoyaltyPolicy(
         uint256 licenseTermsId
-    ) external view returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) {
-        return (address(0), "", 0, address(0));
+    ) external view returns (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) {
+        return (address(0), 0, 0, address(0));
     }
 
     /// @notice Checks if a license terms is transferable.

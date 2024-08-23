@@ -71,7 +71,7 @@ interface ILicenseTemplate is IERC165 {
     /// the license term does set RoyaltyPolicy.
     /// @param licenseTermsId The ID of the license terms.
     /// @return royaltyPolicy The address of the royalty policy specified for the license terms.
-    /// @return royaltyData The data of the royalty policy.
+    /// @return royaltyPercent The percentage of the royalty.
     /// @return mintingLicenseFee The fee for minting a license.
     /// @return currencyToken The address of the ERC20 token, used for minting license fee and royalties.
     /// the currency token will used for pay for license token minting fee and royalties.
@@ -80,7 +80,7 @@ interface ILicenseTemplate is IERC165 {
     )
         external
         view
-        returns (address royaltyPolicy, bytes memory royaltyData, uint256 mintingLicenseFee, address currencyToken);
+        returns (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingLicenseFee, address currencyToken);
 
     /// @notice Verifies the minting of a license token.
     /// @dev the function will be called by the LicensingModule when minting a license token to

@@ -189,4 +189,14 @@ interface ILicenseRegistry {
     /// @param ipId The address of the IP.
     /// @return Whether the IP is expired.
     function isExpiredNow(address ipId) external view returns (bool);
+
+    /// @notice Returns the license terms through which a child IP links to a parent IP.
+    /// @param childIpId The address of the child IP.
+    /// @param parentIpId The address of the parent IP.
+    /// @return licenseTemplate The address of the license template.
+    /// @return licenseTermsId The ID of the license terms.
+    function getParentLicenseTerms(
+        address childIpId,
+        address parentIpId
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId);
 }

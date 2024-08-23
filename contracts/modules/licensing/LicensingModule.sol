@@ -327,16 +327,16 @@ contract LicensingModule is
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
         // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
-        address[] memory rPolices = new address[](parentIpIds.length);
+        address[] memory rPolicies = new address[](parentIpIds.length);
         uint32[] memory rPercents = new uint32[](parentIpIds.length);
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
             rPercents[i] = royaltyPercent;
-            rPolices[i] = royaltyPolicy;
+            rPolicies[i] = royaltyPolicy;
         }
-        if (rPolices.length != 0 && rPolices[0] != address(0)) {
+        if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
             // Notify the royalty module
-            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolices, rPercents, royaltyContext);
+            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, rPercents, royaltyContext);
         }
         // burn license tokens
         LICENSE_NFT.burnLicenseTokens(childIpOwner, licenseTokenIds);

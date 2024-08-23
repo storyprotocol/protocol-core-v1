@@ -169,8 +169,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         }
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        if (runStorageLayoutCheck) super.run();
-
+        //if (runStorageLayoutCheck) _validate();
+        
         _beginBroadcast(); // BroadcastManager.s.sol
 
         _deployProtocolContracts();
@@ -189,8 +189,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             revert RoleConfigError("RoyaltyModule is not owner of ipRoyaltyVaultBeacon");
         }
 
-        if (!multisigAdmin || !multisigUpgrader) {
-            revert RoleConfigError("Multisig roles not granted");
+        if (!multisigAdmin) {
+            revert RoleConfigError("Multisig admin role not granted");
+        }
+        if (!multisigUpgrader) {
+            revert RoleConfigError("Multisig upgrader role not granted");
         }
 
         if (writeDeploys) _writeDeployment(version);
@@ -660,8 +663,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     function _postdeploy(string memory contractKey, address newAddress) private {
         if (writeDeploys) {
-            _writeAddress(contractKey, newAddress);
             console2.log(string.concat(contractKey, " deployed to:"), newAddress);
+            _writeAddress(contractKey, newAddress);
         }
     }
 

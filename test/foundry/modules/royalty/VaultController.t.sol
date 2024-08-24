@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { VaultController } from "../../../../contracts/modules/royalty/policies/VaultController.sol";
 
 // contracts
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
@@ -35,6 +36,14 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_VaultController_upgradeVaults() public {
         address newVault = address(new IpRoyaltyVault(address(1), address(2)));
+
+        (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
+            address(royaltyModule),
+            abi.encodeCall(VaultController.upgradeVaults, (newVault)),
+            0 // earliest time possible, upgraderExecDelay
+        );
+        vm.warp(upgraderExecDelay + 1);
+
         royaltyModule.upgradeVaults(newVault);
         assertEq(UpgradeableBeacon(royaltyModule.ipRoyaltyVaultBeacon()).implementation(), newVault);
     }

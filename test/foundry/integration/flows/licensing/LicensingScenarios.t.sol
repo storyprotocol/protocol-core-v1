@@ -134,7 +134,7 @@ contract Licensing_Scenarios is BaseIntegration {
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
 
         // Mint license for commercial use, then link to new IPA to make it a derivative
-        IERC20(USDC).approve(address(royaltyPolicyLAP), mintingFee);
+        IERC20(USDC).approve(address(royaltyModule), mintingFee);
         licenseIds[0] = licensingModule.mintLicenseTokens({
             licensorIpId: ipAcct[1],
             licenseTemplate: address(pilTemplate),
@@ -146,7 +146,7 @@ contract Licensing_Scenarios is BaseIntegration {
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
 
         // Mint license for commercial remixing, then link to new IPA to make it a derivative
-        IERC20(USDC).approve(address(royaltyPolicyLAP), mintingFee);
+        IERC20(USDC).approve(address(royaltyModule), mintingFee);
         licenseIds[0] = licensingModule.mintLicenseTokens({
             licensorIpId: ipAcct[1],
             licenseTemplate: address(pilTemplate),

@@ -168,7 +168,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         // mint license token with payments
         vm.startPrank(u.dan);
         erc20.mint(u.dan, 1000);
-        erc20.approve(address(royaltyPolicyLAP), 100);
+        erc20.approve(address(royaltyModule), 100);
 
         lcTokenId = licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), 2, 1, address(u.dan), "");
 
@@ -207,7 +207,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         // register derivative directly with payments
         vm.startPrank(u.eve);
         erc20.mint(u.eve, 1000);
-        erc20.approve(address(royaltyPolicyLAP), 100);
+        erc20.approve(address(royaltyModule), 100);
         parentIpIds = new address[](1);
         licenseTermsIds = new uint256[](1);
         parentIpIds[0] = ipAcct[1];

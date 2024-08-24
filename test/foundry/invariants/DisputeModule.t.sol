@@ -169,7 +169,7 @@ contract DisputeInvariants is BaseTest {
         parentIpIds[0] = _ipAccount;
 
         vm.prank(address(harness));
-        mockToken.approve(address(royaltyPolicyLAP), type(uint256).max);
+        mockToken.approve(address(royaltyModule), type(uint256).max);
 
         vm.prank(address(harness));
         licensingModule.attachLicenseTerms(_ipAccount, address(pilTemplate), commRemixTermsId);

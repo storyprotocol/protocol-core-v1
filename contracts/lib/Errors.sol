@@ -61,7 +61,7 @@ library Errors {
     error IPAccountRegistry_ZeroERC6551Registry();
 
     ////////////////////////////////////////////////////////////////////////////
-    //                            IP Asset Registry                           //
+    //                        Group IP Asset Registry                         //
     ////////////////////////////////////////////////////////////////////////////
 
     /// @notice The caller to Group IP Asset Registry is not the Grouping Module.
@@ -88,6 +88,9 @@ library Errors {
     /// @notice Zero address provided for IP Asset Registry.
     error GroupingModule__ZeroIpAssetRegistry();
 
+    /// @notice Zero address provided for License Token.
+    error GroupingModule__ZeroLicenseToken();
+
     /// @notice Invalid address of GroupNFT that does not support IGroupNFT interface.
     error GroupingModule__InvalidGroupNFT(address groupNFT);
 
@@ -95,7 +98,7 @@ library Errors {
     error GroupIPAssetRegistry__GroupRewardPoolNotRegistered(address groupPool);
 
     /// @notice The group ip has derivative IPs.
-    error GroupingModule__GroupIPHasDerivativeIps(address groupId);
+    error GroupingModule__GroupFrozenDueToHasDerivativeIps(address groupId);
 
     /// @notice The group ip has no attached any license terms.
     error GroupingModule__GroupIPHasNoLicenseTerms(address groupId);
@@ -106,6 +109,17 @@ library Errors {
     /// @notice The Group IP's license terms should not have minting fee.
     error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice The caller to GroupingModule is not the Licensing Module.
+    error GroupingModule__CallerIsNotLicensingModule(address caller);
+
+    /// @notice The Group IP has been frozen.
+    error GroupIPAssetRegistry__GroupFrozen(address groupId);
+
+    /// @notice The Group IP has not been frozen.
+    error GroupIPAssetRegistry__GroupNotFrozen(address groupId);
+
+    /// @notice The Group IP has been frozen due to already mint license tokens.
+    error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -316,6 +330,9 @@ library Errors {
 
     /// @notice The license terms ID is invalid or license template doesn't exist.
     error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice Grouping Module is zero address.
+    error LicensingModule__ZeroGroupingModule();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

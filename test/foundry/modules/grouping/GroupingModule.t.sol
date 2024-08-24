@@ -280,7 +280,7 @@ contract GroupingModuleTest is BaseTest {
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupIPHasDerivativeIps.selector, groupId));
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupFrozenDueToHasDerivativeIps.selector, groupId));
         vm.prank(alice);
         groupingModule.addIp(groupId, ipIds);
 
@@ -330,7 +330,7 @@ contract GroupingModuleTest is BaseTest {
 
         address[] memory removeIpIds = new address[](1);
         removeIpIds[0] = ipId1;
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupIPHasDerivativeIps.selector, groupId));
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupFrozenDueToHasDerivativeIps.selector, groupId));
         vm.prank(alice);
         groupingModule.removeIp(groupId, removeIpIds);
     }

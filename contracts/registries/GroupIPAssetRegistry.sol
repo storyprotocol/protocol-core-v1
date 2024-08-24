@@ -79,7 +79,8 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
-        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
+        GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
+        EnumerableSet.AddressSet storage allMemberIpIds = $.groups[groupId];
         for (uint256 i = 0; i < ipIds.length; i++) {
             address ipId = ipIds[i];
             if (!_isRegistered(ipId)) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipId);
@@ -94,7 +95,8 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         if (!_isRegisteredGroup(groupId)) {
             revert Errors.GroupIPAssetRegistry__NotRegisteredGroupIP(groupId);
         }
-        EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
+        GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
+        EnumerableSet.AddressSet storage allMemberIpIds = $.groups[groupId];
         for (uint256 i = 0; i < ipIds.length; i++) {
             allMemberIpIds.remove(ipIds[i]);
         }

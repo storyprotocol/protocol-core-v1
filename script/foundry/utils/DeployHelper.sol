@@ -643,11 +643,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(coreMetadataModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
-        // Owner of the beacon is the RoyaltyPolicyLAP
+        // Owner of the beacon is the RoyaltyModule
         selectors = new bytes4[](2);
         selectors[0] = VaultController.upgradeVaults.selector;
         selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
-        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Pause
         selectors = new bytes4[](2);

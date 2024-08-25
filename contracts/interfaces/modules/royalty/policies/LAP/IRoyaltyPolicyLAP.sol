@@ -2,7 +2,6 @@
 pragma solidity 0.8.23;
 
 import { IRoyaltyPolicy } from "../../../../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
-import { IDisputeModule } from "../../../../../interfaces/modules/dispute/IDisputeModule.sol";
 
 /// @title RoyaltyPolicyLAP interface
 interface IRoyaltyPolicyLAP is IRoyaltyPolicy {

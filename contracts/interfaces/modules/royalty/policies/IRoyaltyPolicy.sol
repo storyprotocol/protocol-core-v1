@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.23;
 
-import { IRoyaltyModule } from "../IRoyaltyModule.sol";
-
 /// @title RoyaltyPolicy interface
 interface IRoyaltyPolicy {
     /// @notice Executes royalty related logic on minting a license

@@ -106,17 +106,19 @@ contract GroupingModule is
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(address groupPool) external whenNotPaused returns (address groupId) {
         // mint Group NFT
-        uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, address(this));
+        uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, msg.sender);
         // register Group NFT
         groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(address(GROUP_NFT), groupNftId, groupPool);
-        // transfer Group NFT to msg.sender
-        GROUP_NFT.safeTransferFrom(address(this), msg.sender, groupNftId);
         emit IPGroupRegistered(groupId, groupPool);
     }
 
     /// @notice Whitelists a group reward pool.
     /// @param rewardPool The address of the group reward pool.
     function whitelistGroupRewardPool(address rewardPool) external restricted {
+        if (rewardPool == address(0)) {
+            revert Errors.GroupingModule__ZeroGroupRewardPool();
+        }
+
         GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool);
     }
 

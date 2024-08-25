@@ -26,7 +26,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
         mapping(address ipId => address rewardPool) rewardPools;
         // whitelisted group reward pools
-        mapping(address rewardPool => bool isRegistered) registeredGroupRewardPools;
+        mapping(address rewardPool => bool isRegistered) whitelistedGroupRewardPools;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -60,7 +60,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
 
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);
         GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
-        if (!$.registeredGroupRewardPools[rewardPool]) {
+        if (!$.whitelistedGroupRewardPools[rewardPool]) {
             revert Errors.GroupIPAssetRegistry__GroupRewardPoolNotRegistered(rewardPool);
         }
         _getGroupIPAssetRegistryStorage().rewardPools[groupId] = rewardPool;
@@ -69,7 +69,10 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @notice Whitelists a group reward pool
     /// @param rewardPool The address of the group reward pool
     function whitelistGroupRewardPool(address rewardPool) external onlyGroupingModule whenNotPaused {
-        _getGroupIPAssetRegistryStorage().registeredGroupRewardPools[rewardPool] = true;
+        if (rewardPool == address(0)) {
+            revert Errors.GroupIPAssetRegistry__InvalidGroupRewardPool(rewardPool);
+        }
+        _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool] = true;
     }
 
     /// @notice Adds a member to a Group IPA

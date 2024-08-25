@@ -73,6 +73,15 @@ library Errors {
     /// @notice The give address is not a registered IPA.
     error GroupIPAssetRegistry__NotRegisteredIP(address ipId);
 
+    /// @notice Zero address provided for Group Reward Pool.
+    error GroupIPAssetRegistry__InvalidGroupRewardPool(address rewardPool);
+
+    /// @notice Zero address provided for Group Reward Pool.
+    error GroupingModule__ZeroGroupRewardPool();
+
+    /// @notice The reward pool is invalid not support the required interfaces.
+    error GroupingModule__InvalidGroupRewardPool(address rewardPool);
+
     /// @notice Zero address provided for Royalty Module.
     error GroupingModule__ZeroRoyaltyModule();
 

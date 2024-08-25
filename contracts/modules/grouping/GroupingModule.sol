@@ -125,8 +125,8 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
-        _checkIfGroupMutable(groupIpId);
-        // check if the group IP has license terms and minting fee is 0
+        _checkIfGroupMembersLocked(groupIpId);
+        // the group IP must has license terms and minting fee is 0 to be able to add IP to group
         if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
             revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
         }
@@ -163,7 +163,7 @@ contract GroupingModule is
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
     function removeIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
-        _checkIfGroupMutable(groupIpId);
+        _checkIfGroupMembersLocked(groupIpId);
         // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
         for (uint256 i = 0; i < ipIds.length; i++) {
@@ -206,7 +206,8 @@ contract GroupingModule is
         return pool.getAvailableReward(groupId, token, ipIds);
     }
 
-    function _checkIfGroupMutable(address groupIpId) internal view {
+    /// @dev The group members are locked if the group has derivative IPs or license tokens minted.
+    function _checkIfGroupMembersLocked(address groupIpId) internal view {
         if (LICENSE_REGISTRY.hasDerivativeIps(groupIpId)) {
             revert Errors.GroupingModule__GroupFrozenDueToHasDerivativeIps(groupIpId);
         }

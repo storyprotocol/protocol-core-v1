@@ -44,6 +44,7 @@ import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataV
 import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
+import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
 // script
 import { StringUtil } from "./StringUtil.sol";
@@ -93,6 +94,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Access Control
     AccessManager internal protocolAccessManager; // protocol roles
     AccessController internal accessController; // per IPA roles
+    IPGraphACL internal ipGraphACL;
 
     // Pause
     ProtocolPauseAdmin internal protocolPauser;
@@ -133,6 +135,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
         else if (block.chainid == 1513) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
+        else if (block.chainid == 1337) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
+        else revert("Unsupported chain");
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -547,6 +551,17 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
 
+        _predeploy("IPGraphACL");
+        ipGraphACL = IPGraphACL(
+            create3Deployer.deploy(
+                _getSalt(type(IPGraphACL).name),
+                abi.encodePacked(
+                    type(IPGraphACL).creationCode,
+                    abi.encode(address(protocolAccessManager))
+                )
+            )
+        );
+        _postdeploy("IPGraphACL", address(ipGraphACL));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -601,6 +616,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // set default license to non-commercial social remixing
         uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
+
+        // IPGraphACL
+        ipGraphACL.addWhitelistAddress(address(licenseRegistry));
+        ipGraphACL.addWhitelistAddress(address(royaltyPolicyLAP));
     }
 
     function _configureRoles() private {

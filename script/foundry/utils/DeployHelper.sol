@@ -358,7 +358,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 create3Deployer,
                 _getSalt(type(RoyaltyModule).name),
                 impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(8), uint256(1024)))
+                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(8), uint256(1024), uint256(15)))
             )
         );
         require(

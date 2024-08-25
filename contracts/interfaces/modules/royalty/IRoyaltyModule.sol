@@ -37,13 +37,19 @@ interface IRoyaltyModule is IModule {
     /// @notice Event emitted when the IP graph limits are updated
     /// @param maxParents The maximum number of parents an IP asset can have
     /// @param maxAncestors The maximum number of ancestors an IP asset can have
-    event IpGraphLimitsUpdated(uint256 maxParents, uint256 maxAncestors);
+    /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
+    event IpGraphLimitsUpdated(uint256 maxParents, uint256 maxAncestors, uint256 accumulatedRoyaltyPoliciesLimit);
 
     /// @notice Sets the ip graph limits
     /// @dev Enforced to be only callable by the protocol admin
     /// @param parentLimit The maximum number of parents an IP asset can have
     /// @param ancestorLimit The maximum number of ancestors an IP asset can have
-    function setIpGraphLimits(uint256 parentLimit, uint256 ancestorLimit) external;
+    /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
+    function setIpGraphLimits(
+        uint256 parentLimit,
+        uint256 ancestorLimit,
+        uint256 accumulatedRoyaltyPoliciesLimit
+    ) external;
 
     /// @notice Whitelist a royalty policy
     /// @dev Enforced to be only callable by the protocol admin
@@ -102,11 +108,8 @@ interface IRoyaltyModule is IModule {
     /// @param amount The amount to pay
     function payLicenseMintingFee(address receiverIpId, address payerAddress, address token, uint256 amount) external;
 
-    /// @notice Returns the IP graph contract address
-    function IP_GRAPH() external view returns (address);
-
-    /// @notice Returns the percentage scale - represents 100% of royalty tokens for an IP
-    function TOTAL_RT_SUPPLY() external view returns (uint32);
+    /// @notice Returns the total number of royalty tokens
+    function totalRtSupply() external pure returns (uint32);
 
     /// @notice Indicates if a royalty policy is whitelisted
     /// @param royaltyPolicy The address of the royalty policy
@@ -128,6 +131,9 @@ interface IRoyaltyModule is IModule {
 
     /// @notice Returns the maximum number of total ancestors
     function maxAncestors() external view returns (uint256);
+
+    /// @notice Returns the maximum number of accumulated royalty policies an IP asset can have
+    function maxAccumulatedRoyaltyPolicies() external view returns (uint256);
 
     /// @notice Indicates the royalty vault for a given IP asset
     /// @param ipId The ID of IP asset

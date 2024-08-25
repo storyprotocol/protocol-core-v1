@@ -94,7 +94,7 @@ contract RoyaltyPolicyLAP is
         bytes calldata
     ) external onlyRoyaltyModule nonReentrant {
         // check if the new license royalty is within the royalty stack limit
-        if (_getRoyaltyStack(ipId) + licensePercent > ROYALTY_MODULE.TOTAL_RT_SUPPLY())
+        if (_getRoyaltyStack(ipId) + licensePercent > ROYALTY_MODULE.totalRtSupply())
             revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
     }
 
@@ -135,8 +135,7 @@ contract RoyaltyPolicyLAP is
 
         // calculate new royalty stack
         uint32 newRoyaltyStack = _getRoyaltyStack(ipId);
-        if (newRoyaltyStack > ROYALTY_MODULE.TOTAL_RT_SUPPLY())
-            revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
+        if (newRoyaltyStack > ROYALTY_MODULE.totalRtSupply()) revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
         $.royaltyStack[ipId] = newRoyaltyStack;
         $.unclaimedRoyaltyTokens[ipId] = newRoyaltyStack;
@@ -162,7 +161,7 @@ contract RoyaltyPolicyLAP is
 
         // transfer revenue tokens to the ancestor vault
         address[] memory tokenList = IIpRoyaltyVault(ipIdIpRoyaltyVault).tokens();
-        uint256 totalRtSupply = uint256(ROYALTY_MODULE.TOTAL_RT_SUPPLY());
+        uint256 totalRtSupply = uint256(ROYALTY_MODULE.totalRtSupply());
         uint256 currentSnapshotId = IIpRoyaltyVault(ipIdIpRoyaltyVault).getCurrentSnapshotId();
         for (uint256 i = 0; i < tokenList.length; ++i) {
             uint256 revenueTokenBalance = $.revenueTokenBalances[ipId][tokenList[i]];

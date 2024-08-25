@@ -430,6 +430,12 @@ library Errors {
     /// @notice Zero amount provided.
     error RoyaltyModule__ZeroAmount();
 
+    /// @notice Zero value for accumulated royalty policies limit.
+    error RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit();
+
+    /// @notice Above accumulated royalty policies limit.
+    error RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////

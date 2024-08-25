@@ -117,8 +117,11 @@ contract RoyaltyPolicyLAP is
         uint256 uniqueParentCount;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             if (licenseRoyaltyPolicies[i] != address(this)) {
+                // currently only parents being linked through LAP license are added to the precompile
+                // so when a parent is linking through a different royalty policy, the royalty amount is set to zero
                 _setRoyaltyLAP(ipId, parentIpIds[i], 0);
             } else {
+                // for parents linking through LAP license, the royalty amount is set in the precompile
                 (uint256 index, bool exists) = ArrayUtils.indexOf(uniqueParents, parentIpIds[i]);
                 if (!exists) {
                     index = uniqueParentCount;

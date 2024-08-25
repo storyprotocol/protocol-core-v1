@@ -5,9 +5,6 @@ import { IRoyaltyModule } from "../IRoyaltyModule.sol";
 
 /// @title RoyaltyPolicy interface
 interface IRoyaltyPolicy {
-    /// @notice Returns the RoyaltyModule address
-    function ROYALTY_MODULE() external view returns (IRoyaltyModule);
-
     /// @notice Executes royalty related logic on minting a license
     /// @dev Enforced to be only callable by RoyaltyModule
     /// @param ipId The ipId whose license is being minted (licensor)

@@ -12,12 +12,6 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param amount The amount of royalty tokens being collected
     event RoyaltyTokensCollected(address ipId, address ancestorIpId, uint256 amount);
 
-    /// @notice Returns the ip graph contract address
-    function IP_GRAPH() external view returns (address);
-
-    /// @notice Returns the dispute module address
-    function DISPUTE_MODULE() external view returns (IDisputeModule);
-
     /// @notice Collects royalty tokens to an ancestor's ip royalty vault
     /// @param ipId The ID of the IP asset
     /// @param ancestorIpId The ID of the ancestor IP asset

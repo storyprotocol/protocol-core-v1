@@ -27,7 +27,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param ipId The ip id to whom this royalty vault belongs to
     /// @param lastSnapshotTimestamp The last snapshotted timestamp
     /// @param claimVaultAmount Amount of revenue token in the claim vault
-    /// @param totalClaimVaultAmount Total amount of revenue token added to the claim vault
     /// @param claimableAtSnapshot Amount of revenue token claimable at a given snapshot
     /// @param isClaimedAtSnapshot Indicates whether the claimer has claimed the revenue tokens at a given snapshot
     /// @param tokens The list of revenue tokens in the vault
@@ -36,7 +35,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         address ipId;
         uint40 lastSnapshotTimestamp;
         mapping(address token => uint256 amount) claimVaultAmount;
-        mapping(address token => uint256 amount) totalClaimVaultAmount;
         mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
         mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
@@ -142,7 +140,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
             $.claimableAtSnapshot[snapshotId][tokenList[i]] = newRevenue;
             $.claimVaultAmount[tokenList[i]] += newRevenue;
-            $.totalClaimVaultAmount[tokenList[i]] += newRevenue;
         }
 
         if (noRevenueCounter == tokenList.length) revert Errors.IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
@@ -270,12 +267,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param token The address of the revenue token
     function claimVaultAmount(address token) external view returns (uint256) {
         return _getIpRoyaltyVaultStorage().claimVaultAmount[token];
-    }
-
-    /// @notice Total amount of revenue token added to the claim vault
-    /// @param token The address of the revenue token
-    function totalClaimVaultAmount(address token) external view returns (uint256) {
-        return _getIpRoyaltyVaultStorage().totalClaimVaultAmount[token];
     }
 
     /// @notice Amount of revenue token claimable at a given snapshot

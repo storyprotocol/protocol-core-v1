@@ -85,10 +85,6 @@ interface IIpRoyaltyVault {
     /// @param token The address of the revenue token
     function claimVaultAmount(address token) external view returns (uint256);
 
-    /// @notice Total amount of revenue token added to the claim vault
-    /// @param token The address of the revenue token
-    function totalClaimVaultAmount(address token) external view returns (uint256);
-
     /// @notice Amount of revenue token claimable at a given snapshot
     /// @param snapshotId The snapshot id
     /// @param token The address of the revenue token

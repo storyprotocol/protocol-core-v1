@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --gas-limit 800000000000
+          forge test -vvv
         id: forge-test
 
       - name: Run solhint

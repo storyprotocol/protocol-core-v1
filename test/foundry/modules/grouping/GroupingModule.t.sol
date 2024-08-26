@@ -241,8 +241,11 @@ contract GroupingModuleTest is BaseTest {
 
         assertEq(groupingModule.getClaimableReward(groupId, address(erc20), claimIpIds)[0], 50);
 
+        uint256[] memory claimAmounts = new uint256[](1);
+        claimAmounts[0] = 50;
+
         vm.expectEmit();
-        emit IGroupingModule.ClaimedReward(groupId, address(erc20), ipId1, 50);
+        emit IGroupingModule.ClaimedReward(groupId, address(erc20), claimIpIds, claimAmounts);
         groupingModule.claimReward(groupId, address(erc20), claimIpIds);
         assertEq(erc20.balanceOf(address(rewardPool)), 50);
         assertEq(erc20.balanceOf(ipId1), 50);

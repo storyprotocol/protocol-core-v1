@@ -38,7 +38,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @dev Storage structure for the Licensor
     /// @custom:storage-location erc7201:story-protocol.Licensor
     struct LicensorStorage {
-        mapping(address licensorIpId => uint256[] tokenIds) licensorIpTokens;
+        mapping(address licensorIpId => uint256 totalMintedTokens) licensorIpTotalTokens;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseToken")) - 1)) & ~bytes32(uint256(0xff));
@@ -108,11 +108,12 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
+        $.totalMintedTokens += amount;
+        _getLicensorStorage().licensorIpTotalTokens[licensorIpId] += amount;
         for (uint256 i = 0; i < amount; i++) {
-            uint256 tokenId = $.totalMintedTokens++;
+            uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
             _mint(receiver, tokenId);
-            _getLicensorStorage().licensorIpTokens[licensorIpId].push(tokenId);
             emit LicenseTokenMinted(minter, receiver, tokenId);
         }
     }
@@ -206,15 +207,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @param licensorIpId The ID of the licensor IP.
     /// @return The total number of License Tokens minted for the licensor IP.
     function getTotalTokensByLicensor(address licensorIpId) external view returns (uint256) {
-        return _getLicensorStorage().licensorIpTokens[licensorIpId].length;
-    }
-
-    /// @notice Retrieves the License Token ID at the specified index for a given licensor IP.
-    /// @param licensorIpId The ID of the licensor IP.
-    /// @param index The index of the License Token to retrieve.
-    /// @return The ID of the License Token at the specified index.
-    function getTokenByLicensor(address licensorIpId, uint256 index) external view returns (uint256) {
-        return _getLicensorStorage().licensorIpTokens[licensorIpId][index];
+        return _getLicensorStorage().licensorIpTotalTokens[licensorIpId];
     }
 
     /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in

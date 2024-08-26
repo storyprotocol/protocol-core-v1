@@ -28,7 +28,7 @@ interface IGroupingModule is IModule {
     /// @param token The address of the token.
     /// @param ipId The IP ID.
     /// @param amount The amount of reward.
-    event ClaimedReward(address indexed groupId, address indexed token, address indexed ipId, uint256 amount);
+    event ClaimedReward(address indexed groupId, address indexed token, address[] ipId, uint256[] amount);
 
     /// @notice Registers a Group IPA.
     /// @param groupPool The address of the group pool.

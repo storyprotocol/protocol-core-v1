@@ -88,12 +88,6 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @return The total number of License Tokens minted for the licensor IP.
     function getTotalTokensByLicensor(address licensorIpId) external view returns (uint256);
 
-    /// @notice Retrieves the License Token ID at the specified index for a given licensor IP.
-    /// @param licensorIpId The ID of the licensor IP.
-    /// @param index The index of the License Token to retrieve.
-    /// @return The ID of the License Token at the specified index.
-    function getTokenByLicensor(address licensorIpId, uint256 index) external view returns (uint256);
-
     /// @notice Validates License Tokens for registering a derivative IP.
     /// @dev This function checks if the License Tokens are valid for the derivative IP registration process.
     /// The function will be called by LicensingModule when registering a derivative IP with license tokens.

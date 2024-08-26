@@ -104,7 +104,7 @@ contract GroupingModule is
     /// @notice Registers a Group IPA.
     /// @param groupPool The address of the group pool.
     /// @return groupId The address of the newly registered Group IPA.
-    function registerGroup(address groupPool) external whenNotPaused returns (address groupId) {
+    function registerGroup(address groupPool) external nonReentrant whenNotPaused returns (address groupId) {
         // mint Group NFT
         uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, msg.sender);
         // register Group NFT
@@ -187,9 +187,7 @@ contract GroupingModule is
         pool.collectRoyalties(groupId, token);
         // trigger group pool to distribute rewards to group members vault
         uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            emit ClaimedReward(groupId, token, ipIds[i], rewards[i]);
-        }
+        emit ClaimedReward(groupId, token, ipIds, rewards);
     }
 
     function name() external pure override returns (string memory) {

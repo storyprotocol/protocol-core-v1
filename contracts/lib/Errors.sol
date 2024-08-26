@@ -173,6 +173,9 @@ library Errors {
     /// @notice Failed to add parent IPs to IP graph.
     error LicenseRegistry__AddParentIpToIPGraphFailed(address childIpId, address[] parentIpIds);
 
+    /// @notice Zero address provided for IP Graph ACL.
+    error LicenseRegistry__ZeroIPGraphACL();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

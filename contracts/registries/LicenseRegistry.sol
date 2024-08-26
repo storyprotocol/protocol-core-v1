@@ -82,6 +82,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     constructor(address licensingModule, address disputeModule, address ipGraphAcl) {
         if (licensingModule == address(0)) revert Errors.LicenseRegistry__ZeroLicensingModule();
         if (disputeModule == address(0)) revert Errors.LicenseRegistry__ZeroDisputeModule();
+        if (ipGraphAcl == address(0)) revert Errors.LicenseRegistry__ZeroIPGraphACL();
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);

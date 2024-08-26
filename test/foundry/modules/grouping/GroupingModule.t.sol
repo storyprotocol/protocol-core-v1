@@ -248,6 +248,36 @@ contract GroupingModuleTest is BaseTest {
         assertEq(erc20.balanceOf(ipId1), 50);
     }
 
+    function test_GroupingModule_addIp_revert_addGroupToGroup() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        address groupId2 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId2, address(pilTemplate), termsId);
+        vm.stopPrank();
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = groupId2;
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.GroupingModule__CannotAddGroupToGroup.selector, groupId1, groupId2)
+        );
+        vm.prank(alice);
+        groupingModule.addIp(groupId1, ipIds);
+
+        assertEq(ipAssetRegistry.totalMembers(groupId1), 0);
+        assertEq(rewardPool.totalMemberIPs(groupId1), 0);
+        assertEq(rewardPool.ipAddedTime(groupId1, ipId1), 0);
+    }
+
     function test_GroupingModule_addIp_revert_after_registerDerivative() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

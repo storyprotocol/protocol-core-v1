@@ -121,6 +121,9 @@ library Errors {
     /// @notice The caller to GroupingModule is not the Licensing Module.
     error GroupingModule__CallerIsNotLicensingModule(address caller);
 
+    /// @notice Cannot add group to group.
+    error GroupingModule__CannotAddGroupToGroup(address groupId, address childGroupId);
+
     /// @notice The Group IP has been frozen.
     error GroupIPAssetRegistry__GroupFrozen(address groupId);
 

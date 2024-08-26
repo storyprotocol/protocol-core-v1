@@ -146,6 +146,9 @@ contract GroupingModule is
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
         for (uint256 i = 0; i < ipIds.length; i++) {
+            if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipIds[i])) {
+                revert Errors.GroupingModule__CannotAddGroupToGroup(groupIpId, ipIds[i]);
+            }
             // check if the IP has the same license terms as the group
             if (!LICENSE_REGISTRY.hasIpAttachedLicenseTerms(ipIds[i], groupLicenseTemplate, groupLicenseTermsId)) {
                 revert Errors.GroupingModule__IpHasNoGroupLicenseTerms(

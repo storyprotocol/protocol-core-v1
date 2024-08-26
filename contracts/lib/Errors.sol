@@ -132,6 +132,7 @@ library Errors {
 
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -277,6 +278,9 @@ library Errors {
         address childIpIp,
         address actualTokenOwner
     );
+
+    /// @notice License token is not owned by the caller.
+    error LicenseToken__NotLicenseTokenOwner(uint256 tokenId, address ipOwner, address tokenOwner);
 
     /// @notice All license tokens must be from the same license template.
     error LicenseToken__AllLicenseTokensMustFromSameLicenseTemplate(
@@ -451,32 +455,62 @@ library Errors {
     /// @notice Zero address provided for Royalty Token.
     error RoyaltyModule__ZeroRoyaltyToken();
 
-    /// @notice Not a whitelisted royalty policy.
-    error RoyaltyModule__NotWhitelistedRoyaltyPolicy();
+    /// @notice Zero maximum parents provided.
+    error RoyaltyModule__ZeroMaxParents();
 
-    /// @notice Not a whitelisted royalty token.
-    error RoyaltyModule__NotWhitelistedRoyaltyToken();
+    /// @notice Zero maximum ancestors provided.
+    error RoyaltyModule__ZeroMaxAncestors();
 
-    /// @notice Royalty policy for IP is unset.
-    error RoyaltyModule__NoRoyaltyPolicySet();
+    /// @notice Zero address provided for parent ipId.
+    error RoyaltyModule__ZeroParentIpId();
 
-    /// @notice Royalty policy between IPs are incompatible (different).
-    error RoyaltyModule__IncompatibleRoyaltyPolicy();
+    /// @notice Royalty token supply limit is exceeded.
+    error RoyaltyModule__AboveRoyaltyTokenSupplyLimit();
+
+    /// @notice Not a allowed royalty policy.
+    error RoyaltyModule__NotAllowedRoyaltyPolicy();
 
     /// @notice Caller is unauthorized.
     error RoyaltyModule__NotAllowedCaller();
 
-    /// @notice IP can only mint licenses of selected royalty policy.
-    error RoyaltyModule__CanOnlyMintSelectedPolicy();
-
     /// @notice Parent IP list for linking is empty.
     error RoyaltyModule__NoParentsOnLinking();
 
-    /// @notice IP is expired.
-    error RoyaltyModule__IpIsExpired();
-
     /// @notice IP is dipute tagged.
     error RoyaltyModule__IpIsTagged();
+
+    /// @notice Last position IP is not able to mint more licenses.
+    error RoyaltyModule__LastPositionNotAbleToMintLicense();
+
+    /// @notice The IP is not allowed to link to parents.
+    error RoyaltyModule__UnlinkableToParents();
+
+    /// @notice Size of parent IP list is above limit.
+    error RoyaltyModule__AboveParentLimit();
+
+    /// @notice Amount of ancestors for derivative IP is above the limit.
+    error RoyaltyModule__AboveAncestorsLimit();
+
+    /// @notice Royalty policy is already whitelisted or registered.
+    error RoyaltyModule__PolicyAlreadyWhitelistedOrRegistered();
+
+    /// @notice External Royalty Policy does not support IExternalRoyaltyPolicy interface.
+    error RoyaltyModule__ExternalRoyaltyPolicyInterfaceNotSupported();
+
+    /// @notice Royalty Policy is not whitelisted or registered.
+    error RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
+
+    /// @notice Receiver ipId has no royalty vault.
+    error RoyaltyModule__ZeroReceiverVault();
+
+    /// @notice Zero amount provided.
+    error RoyaltyModule__ZeroAmount();
+
+    /// @notice Zero value for accumulated royalty policies limit.
+    error RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit();
+
+    /// @notice Above accumulated royalty policies limit.
+    error RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
@@ -485,14 +519,11 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error RoyaltyPolicyLAP__ZeroAccessManager();
 
-    /// @notice Zero address provided for IP Royalty Vault Beacon.
-    error RoyaltyPolicyLAP__ZeroIpRoyaltyVaultBeacon();
-
     /// @notice Zero address provided for Royalty Module.
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
 
-    /// @notice Zero address provided for Licensing Module.
-    error RoyaltyPolicyLAP__ZeroLicensingModule();
+    /// @notice Zero address provided for Dispute Module.
+    error RoyaltyPolicyLAP__ZeroDisputeModule();
 
     /// @notice Zero address provided for IP Graph ACL.
     error RoyaltyPolicyLAP__ZeroIPGraphACL();
@@ -500,54 +531,74 @@ library Errors {
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLAP__NotRoyaltyModule();
 
-    /// @notice Size of parent IP list is above the LAP royalty policy limit.
-    error RoyaltyPolicyLAP__AboveParentLimit();
-
-    /// @notice Amount of ancestors for derivative IP is above the LAP royalty policy limit.
-    error RoyaltyPolicyLAP__AboveAncestorsLimit();
-
     /// @notice Total royalty stack exceeds the protocol limit.
     error RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
-    /// @notice Size of parent royalties list and parent IP list mismatch.
-    error RoyaltyPolicyLAP__InvalidParentRoyaltiesLength();
+    /// @notice IP is dispute tagged.
+    error RoyaltyPolicyLAP__IpTagged();
 
-    /// @notice IP cannot be linked to a parent, because it is either already linked to parents or derivatives (root).
-    error RoyaltyPolicyLAP__UnlinkableToParents();
+    /// @notice IP is not allowed to claim revenue tokens.
+    error RoyaltyPolicyLAP__AlreadyClaimed();
 
-    /// @notice Policy is already initialized and IP is at the ancestors limit, so it can't mint more licenses.
-    error RoyaltyPolicyLAP__LastPositionNotAbleToMintLicense();
+    /// @notice Claimer is not an ancestor of the IP.
+    error RoyaltyPolicyLAP__ClaimerNotAnAncestor();
+
+    /// @notice Not all revenue tokens have been claimed yet.
+    error RoyaltyPolicyLAP__NotAllRevenueTokensHaveBeenClaimed();
+
+    /// @notice There is no vault associated with the IP.
+    error RoyaltyPolicyLAP__InvalidTargetIpId();
 
     ////////////////////////////////////////////////////////////////////////////
-    //                             IP Royalty Vault                           //
+    //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
 
-    /// @notice Zero address provided for Royalty Policy LAP.
-    error IpRoyaltyVault__ZeroRoyaltyPolicyLAP();
+    /// @notice Caller is not the Royalty Module.
+    error RoyaltyPolicyLRP__NotRoyaltyModule();
+
+    /// @notice Zero address provided for Royalty Module.
+    error RoyaltyPolicyLRP__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for Access Manager in initializer.
+    error RoyaltyPolicyLRP__ZeroAccessManager();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                         IP Royalty Vault                               //
+    ////////////////////////////////////////////////////////////////////////////
 
     /// @notice Zero address provided for Dispute Module.
     error IpRoyaltyVault__ZeroDisputeModule();
 
-    /// @notice Caller is not the Royalty Policy LAP.
-    error IpRoyaltyVault__NotRoyaltyPolicyLAP();
+    /// @notice Zero address provided for Royalty Module.
+    error IpRoyaltyVault__ZeroRoyaltyModule();
 
-    /// @notice Snapshot interval is too short, wait for the interval to pass for the next snapshot.
-    error IpRoyaltyVault__SnapshotIntervalTooShort();
+    /// @notice Caller is not Royalty Module.
+    error IpRoyaltyVault__NotAllowedToAddTokenToVault();
 
-    /// @notice Royalty Tokens is already claimed.
-    error IpRoyaltyVault__AlreadyClaimed();
+    /// @notice Wait for the interval to pass for the next snapshot.
+    error IpRoyaltyVault__InsufficientTimeElapsedSinceLastSnapshot();
 
-    /// @notice Royalty Tokens claimer is not an ancestor of derivative IP.
-    error IpRoyaltyVault__ClaimerNotAnAncestor();
+    /// @notice No new revenue since the last snapshot.
+    error IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
 
-    /// @notice IP is dispute tagged.
-    error IpRoyaltyVault__IpTagged();
+    /// @notice There is no ip royalty vault for the provided IP.
+    error IpRoyaltyVault__InvalidTargetIpId();
+
+    /// @notice No claimable tokens.
+    error IpRoyaltyVault__NoClaimableTokens();
+
+    /// @notice Not a whitelisted royalty token.
+    error IpRoyaltyVault__NotWhitelistedRoyaltyToken();
 
     /// @notice IP Royalty Vault is paused.
     error IpRoyaltyVault__EnforcedPause();
 
-    /// @notice Failed to call IP Graph precompiled contract.
-    error IpRoyaltyVault__IpGraphCallFailed();
+    ////////////////////////////////////////////////////////////////////////////
+    //                            Vault Controller                            //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for IP Royalty Vault Beacon.
+    error VaultController__ZeroIpRoyaltyVaultBeacon();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Module Registry                            //
@@ -675,6 +726,10 @@ library Errors {
     ////////////////////////////////////////////////////////////////////////////
     //                               Group IPA                                //
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Caller is not the IPA Asset Registry.
     error GroupNFT__CallerNotIPAssetRegistry(address caller);
+
+    /// @notice Zero address provided for Access Manager.
     error GroupNFT__ZeroAccessManager();
 }

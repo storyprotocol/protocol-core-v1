@@ -26,7 +26,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
         mapping(address ipId => address rewardPool) rewardPools;
         // whitelisted group reward pools
-        mapping(address rewardPool => bool isRegistered) whitelistedGroupRewardPools;
+        mapping(address rewardPool => bool isWhitelisted) whitelistedGroupRewardPools;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));

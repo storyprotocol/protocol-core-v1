@@ -12,10 +12,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
 /// @title GroupIPAssetRegistry
 /// @notice Manages the registration and tracking of Group IPA, including the group members and reward pools.
-abstract contract GroupIPAssetRegistry is
-    IGroupIPAssetRegistry,
-    ProtocolPausableUpgradeable
-{
+abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable {
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -88,9 +85,8 @@ abstract contract GroupIPAssetRegistry is
         GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
         EnumerableSet.AddressSet storage allMemberIpIds = $.groups[groupId];
         for (uint256 i = 0; i < ipIds.length; i++) {
-            address ipId = ipIds[i];
-            if (!_isRegistered(ipId)) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipId);
-            allMemberIpIds.add(ipId);
+            if (!_isRegistered(ipIds[i])) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipIds[i]);
+            allMemberIpIds.add(ipIds[i]);
         }
     }
 

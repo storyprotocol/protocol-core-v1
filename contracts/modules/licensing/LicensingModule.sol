@@ -260,7 +260,7 @@ contract LicensingModule is
         // the earliest expiration time among all license terms.
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, false);
         // Process the payment for the minting fee.
-        (address commonRoyaltyPolicy, bytes[] memory royaltyDatas) = _payMintingFeeForAllParentIps(
+        (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) = _payMintingFeeForAllParentIps(
             childIpId,
             parentIpIds,
             licenseTermsIds,
@@ -278,9 +278,8 @@ contract LicensingModule is
             licenseTemplate
         );
 
-        if (commonRoyaltyPolicy != address(0)) {
-            ROYALTY_MODULE.onLinkToParents(childIpId, commonRoyaltyPolicy, parentIpIds, royaltyDatas, royaltyContext);
-        }
+        if (royaltyPolicies.length == 0 || royaltyPolicies[0] == address(0)) return;
+        ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, royaltyPolicies, royaltyPercents, royaltyContext);
     }
 
     /// @notice Registers a derivative with license tokens.
@@ -328,21 +327,17 @@ contract LicensingModule is
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
         // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
-        address commonRoyaltyPolicy = address(0);
-        bytes[] memory royaltyDatas = new bytes[](parentIpIds.length);
+        address[] memory rPolicies = new address[](parentIpIds.length);
+        uint32[] memory rPercents = new uint32[](parentIpIds.length);
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, bytes memory royaltyData, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
-            royaltyDatas[i] = royaltyData;
-            if (i == 0) {
-                commonRoyaltyPolicy = royaltyPolicy;
-            } else if (royaltyPolicy != commonRoyaltyPolicy) {
-                revert Errors.LicensingModule__IncompatibleRoyaltyPolicy(royaltyPolicy, commonRoyaltyPolicy);
-            }
+            (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
+            rPercents[i] = royaltyPercent;
+            rPolicies[i] = royaltyPolicy;
         }
 
-        // Notify the royalty module
-        if (commonRoyaltyPolicy != address(0)) {
-            ROYALTY_MODULE.onLinkToParents(childIpId, commonRoyaltyPolicy, parentIpIds, royaltyDatas, royaltyContext);
+        if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
+            // Notify the royalty module
+            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, rPercents, royaltyContext);
         }
         // burn license tokens
         LICENSE_NFT.burnLicenseTokens(childIpOwner, licenseTokenIds);
@@ -398,13 +393,12 @@ contract LicensingModule is
         address licenseTemplate,
         address childIpOwner,
         bytes calldata royaltyContext
-    ) private returns (address commonRoyaltyPolicy, bytes[] memory royaltyDatas) {
-        commonRoyaltyPolicy = address(0);
-        royaltyDatas = new bytes[](licenseTermsIds.length);
-
+    ) private returns (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) {
+        royaltyPolicies = new address[](licenseTermsIds.length);
+        royaltyPercents = new uint32[](licenseTermsIds.length);
         // pay minting fee for all parent IPs
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, bytes memory royaltyData) = _executeLicensingHookAndPayMintingFee(
+            (address royaltyPolicy, uint32 royaltyPercent) = _executeLicensingHookAndPayMintingFee(
                 childIpId,
                 parentIpIds[i],
                 licenseTemplate,
@@ -412,14 +406,8 @@ contract LicensingModule is
                 childIpOwner,
                 royaltyContext
             );
-            royaltyDatas[i] = royaltyData;
-            // royaltyPolicy must be the same for all parent IPs and royaltyPolicy could be 0
-            // Using the first royaltyPolicy as the commonRoyaltyPolicy, all other royaltyPolicy must be the same
-            if (i == 0) {
-                commonRoyaltyPolicy = royaltyPolicy;
-            } else if (royaltyPolicy != commonRoyaltyPolicy) {
-                revert Errors.LicensingModule__IncompatibleRoyaltyPolicy(royaltyPolicy, commonRoyaltyPolicy);
-            }
+            royaltyPolicies[i] = royaltyPolicy;
+            royaltyPercents[i] = royaltyPercent;
         }
     }
 
@@ -430,7 +418,7 @@ contract LicensingModule is
         uint256 licenseTermsId,
         address childIpOwner,
         bytes calldata royaltyContext
-    ) private returns (address royaltyPolicy, bytes memory royaltyData) {
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
             parentIpId,
             licenseTemplate,
@@ -448,7 +436,7 @@ contract LicensingModule is
                 lsc.hookData
             );
         }
-        (royaltyPolicy, royaltyData) = _payMintingFee(
+        (royaltyPolicy, royaltyPercent) = _payMintingFee(
             parentIpId,
             licenseTemplate,
             licenseTermsId,
@@ -470,7 +458,7 @@ contract LicensingModule is
     /// @param royaltyContext The context of the royalty.
     /// @param licensingConfig The minting license config
     /// @return royaltyPolicy The address of the royalty policy.
-    /// @return royaltyData The data of the royalty policy.
+    /// @return royaltyPercent The license royalty percentage
     function _payMintingFee(
         address parentIpId,
         address licenseTemplate,
@@ -479,18 +467,18 @@ contract LicensingModule is
         bytes calldata royaltyContext,
         Licensing.LicensingConfig memory licensingConfig,
         uint256 mintingFeeByHook
-    ) private returns (address royaltyPolicy, bytes memory royaltyData) {
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         uint256 mintingFeeByLicense = 0;
         address currencyToken = address(0);
-        (royaltyPolicy, royaltyData, mintingFeeByLicense, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
+        (royaltyPolicy, royaltyPercent, mintingFeeByLicense, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
 
         if (royaltyPolicy != address(0)) {
-            ROYALTY_MODULE.onLicenseMinting(parentIpId, royaltyPolicy, royaltyData, royaltyContext);
+            ROYALTY_MODULE.onLicenseMinting(parentIpId, royaltyPolicy, royaltyPercent, royaltyContext);
             uint256 tmf = _getTotalMintingFee(licensingConfig, mintingFeeByHook, mintingFeeByLicense, amount);
             // pay minting fee
             if (tmf > 0) {
-                ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, royaltyPolicy, currencyToken, tmf);
+                ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, currencyToken, tmf);
             }
         }
     }

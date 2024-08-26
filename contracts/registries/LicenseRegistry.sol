@@ -29,7 +29,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
-    address public constant IP_GRAPH_CONTRACT = address(0x1A);
+    address public constant IP_GRAPH = address(0x1A);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -44,6 +44,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param registeredRoyaltyPolicies Registered royalty policies
     /// @param registeredCurrencyTokens Registered currency tokens
     /// @param parentIps Mapping of parent IPs to derivative IPs
+    /// @param parentLicenseTerms Mapping of parent IPs to license terms used to link to derivative IPs
     /// @param childIps Mapping of derivative IPs to parent IPs
     /// @param attachedLicenseTerms Mapping of attached license terms to IP IDs
     /// @param licenseTemplates Mapping of license templates to IP IDs
@@ -58,6 +59,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 defaultLicenseTermsId;
         mapping(address licenseTemplate => bool isRegistered) registeredLicenseTemplates;
         mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
+        mapping(address childIpId => mapping(address parentIpId => uint256 licenseTermsId)) parentLicenseTerms;
         mapping(address parentIpId => EnumerableSet.AddressSet childIpIds) childIps;
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
@@ -248,7 +250,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
 
         IP_GRAPH_ACL.allow();
-        (bool success, ) = IP_GRAPH_CONTRACT.call(
+        (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
         IP_GRAPH_ACL.disallow();
@@ -380,7 +382,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIps(address)", childIpId)
         );
         require(success, "Call failed");
@@ -392,7 +394,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
         );
         require(success, "Call failed");
@@ -403,7 +405,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
         require(success, "Call failed");
@@ -442,6 +444,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
+    }
+
+    /// @notice Returns the license terms through which a child IP links to a parent IP.
+    /// @param childIpId The address of the child IP.
+    /// @param parentIpId The address of the parent IP.
+    /// @return licenseTemplate The address of the license template.
+    /// @return licenseTermsId The ID of the license terms.
+    function getParentLicenseTerms(
+        address childIpId,
+        address parentIpId
+    ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return ($.licenseTemplates[parentIpId], $.parentLicenseTerms[childIpId][parentIpId]);
     }
 
     /// @dev verify the child IP can be registered as a derivative of the parent IP
@@ -519,7 +534,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH_CONTRACT.staticcall(
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
         require(success, "Call failed");

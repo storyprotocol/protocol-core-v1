@@ -54,10 +54,10 @@ contract PILicenseTemplateTest is BaseTest {
     function test_PILicenseTemplate_registerLicenseTerms() public {
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         assertEq(defaultTermsId, 1);
-        (address royaltyPolicy, bytes memory royaltyData, uint256 mintingFee, address currency) = pilTemplate
+        (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
             .getRoyaltyPolicy(defaultTermsId);
         assertEq(royaltyPolicy, address(0), "royaltyPolicy should be address(0)");
-        assertEq(royaltyData, abi.encode(0), "royaltyData should be empty");
+        assertEq(royaltyPercent, 0, "royaltyPercent should be empty");
         assertEq(mintingFee, 0, "mintingFee should be 0");
         assertEq(currency, address(0), "currency should be address(0)");
         assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId), "license should be transferable");
@@ -67,9 +67,9 @@ contract PILicenseTemplateTest is BaseTest {
 
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(socialRemixTermsId, 2);
-        (royaltyPolicy, royaltyData, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(socialRemixTermsId);
+        (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(socialRemixTermsId);
         assertEq(royaltyPolicy, address(0));
-        assertEq(royaltyData, abi.encode(0));
+        assertEq(royaltyPercent, 0);
         assertEq(mintingFee, 0);
         assertEq(currency, address(0));
         assertTrue(pilTemplate.isLicenseTransferable(socialRemixTermsId));
@@ -85,9 +85,9 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
         assertEq(commUseTermsId, 3);
-        (royaltyPolicy, royaltyData, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commUseTermsId);
+        (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commUseTermsId);
         assertEq(royaltyPolicy, address(royaltyPolicyLAP));
-        assertEq(royaltyData, abi.encode(0));
+        assertEq(royaltyPercent, 0);
         assertEq(mintingFee, 100);
         assertEq(currency, address(erc20));
         assertTrue(pilTemplate.isLicenseTransferable(commUseTermsId));
@@ -107,9 +107,9 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
         assertEq(commRemixTermsId, 4);
-        (royaltyPolicy, royaltyData, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commRemixTermsId);
+        (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commRemixTermsId);
         assertEq(royaltyPolicy, address(royaltyPolicyLAP));
-        assertEq(royaltyData, abi.encode(10));
+        assertEq(royaltyPercent, 10);
         assertEq(mintingFee, 100);
         assertEq(currency, address(erc20));
         assertTrue(pilTemplate.isLicenseTransferable(commRemixTermsId));

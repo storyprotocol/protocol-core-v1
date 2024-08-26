@@ -1577,7 +1577,7 @@ contract LicensingModuleTest is BaseTest {
         vm.startPrank(minter);
 
         erc20.mint(minter, 1000);
-        erc20.approve(address(royaltyPolicyLAP), 100);
+        erc20.approve(address(royaltyModule), 100);
 
         address receiver = address(0x111);
         vm.expectEmit();
@@ -1624,7 +1624,7 @@ contract LicensingModuleTest is BaseTest {
 
         vm.startPrank(ipOwner2);
         erc20.mint(ipOwner2, 1000);
-        erc20.approve(address(royaltyPolicyLAP), 100);
+        erc20.approve(address(royaltyModule), 100);
 
         address[] memory parentIpIds = new address[](1);
         uint256[] memory licenseTermsIds = new uint256[](1);
@@ -1676,7 +1676,7 @@ contract LicensingModuleTest is BaseTest {
 
         vm.startPrank(ipOwner2);
         erc20.mint(ipOwner2, 1000);
-        erc20.approve(address(royaltyPolicyLAP), 100);
+        erc20.approve(address(royaltyModule), 100);
 
         address[] memory parentIpIds = new address[](1);
         uint256[] memory licenseTermsIds = new uint256[](1);
@@ -1711,7 +1711,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig2);
 
         vm.startPrank(ipOwner2);
-        erc20.approve(address(royaltyPolicyLAP), 300);
+        erc20.approve(address(royaltyModule), 300);
         uint256 licenseTokenId = licensingModule.mintLicenseTokens({
             licensorIpId: ipId1,
             licenseTemplate: address(pilTemplate),

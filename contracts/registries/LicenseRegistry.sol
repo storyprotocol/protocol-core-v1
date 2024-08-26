@@ -37,7 +37,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPGraphACL public immutable IP_GRAPH_ACL;
 
-
     /// @dev Storage of the LicenseRegistry
     /// @param defaultLicenseTemplate The default license template address
     /// @param defaultLicenseTermsId The default license terms ID

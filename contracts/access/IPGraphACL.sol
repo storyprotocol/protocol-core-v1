@@ -11,8 +11,7 @@ import { Errors } from "../lib/Errors.sol";
 /// IPGraph precompiled check if the IPGraphACL contract allows access to the IPGraph.
 contract IPGraphACL is AccessManaged {
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPGraphACL")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant  IP_GRAPH_ACL_SLOT =
-        0xaf99b37fdaacca72ee7240cb1435cc9e498aee6ef4edc19c8cc0cd787f4e6800;
+    bytes32 private constant IP_GRAPH_ACL_SLOT = 0xaf99b37fdaacca72ee7240cb1435cc9e498aee6ef4edc19c8cc0cd787f4e6800;
 
     /// @notice Whitelisted addresses that can allow or disallow access to the IPGraph contract.
     mapping(address => bool) public whitelist;

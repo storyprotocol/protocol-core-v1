@@ -91,9 +91,6 @@ interface IDisputeModule {
     /// @param disputeId The dispute id
     event DisputeResolved(uint256 disputeId);
 
-    /// @notice Tag to represent the dispute is in dispute state waiting for judgement
-    function IN_DISPUTE() external view returns (bytes32);
-
     /// @notice Dispute ID counter
     function disputeCounter() external view returns (uint256);
 

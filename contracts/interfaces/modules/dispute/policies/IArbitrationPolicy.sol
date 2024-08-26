@@ -3,18 +3,6 @@ pragma solidity 0.8.23;
 
 /// @title Arbitration Policy Interface
 interface IArbitrationPolicy {
-    /// @notice Returns the protocol-wide dispute module address
-    function DISPUTE_MODULE() external view returns (address);
-
-    /// @notice Returns the payment token address
-    function PAYMENT_TOKEN() external view returns (address);
-
-    /// @notice Returns the arbitration price
-    function ARBITRATION_PRICE() external view returns (uint256);
-
-    /// @notice Returns the treasury address
-    function treasury() external view returns (address);
-
     /// @notice Allows governance set the treasury address
     /// @dev Enforced to be only callable by the governance protocol admin
     /// @param newTreasury The new address of the treasury
@@ -46,4 +34,7 @@ interface IArbitrationPolicy {
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to resolve the dispute
     function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external;
+
+    /// @notice Returns the treasury address
+    function treasury() external view returns (address);
 }

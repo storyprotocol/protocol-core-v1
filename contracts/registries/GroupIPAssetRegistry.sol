@@ -2,6 +2,7 @@
 pragma solidity 0.8.23;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
@@ -12,7 +13,11 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 
 /// @title GroupIPAssetRegistry
 /// @notice Manages the registration and tracking of Group IPA, including the group members and reward pools.
-abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausableUpgradeable {
+abstract contract GroupIPAssetRegistry is
+    IGroupIPAssetRegistry,
+    ProtocolPausableUpgradeable,
+    ReentrancyGuardUpgradeable
+{
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -55,7 +60,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         address groupNft,
         uint256 groupNftId,
         address rewardPool
-    ) external onlyGroupingModule whenNotPaused returns (address groupId) {
+    ) external nonReentrant onlyGroupingModule whenNotPaused returns (address groupId) {
         groupId = _register({ chainid: block.chainid, tokenContract: groupNft, tokenId: groupNftId });
 
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);

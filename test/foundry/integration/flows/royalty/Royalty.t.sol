@@ -9,7 +9,8 @@ import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 import { IRoyaltyModule } from "../../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
-import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+// solhint-disable-next-line max-line-length
+import { IRoyaltyPolicyLAP } from "../../../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
 import { Errors } from "../../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 
@@ -62,7 +63,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             vm.startPrank(u.bob);
 
             uint256 mintAmount = 3;
-            erc20.approve(address(royaltyPolicyLAP), mintAmount * mintingFee);
+            erc20.approve(address(royaltyModule), mintAmount * mintingFee);
 
             uint256[] memory licenseIds = new uint256[](3);
 
@@ -110,7 +111,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             uint256 mintAmount = 1;
             uint256[] memory licenseIds = new uint256[](2);
 
-            erc20.approve(address(royaltyPolicyLAP), 2 * mintAmount * mintingFee);
+            erc20.approve(address(royaltyModule), 2 * mintAmount * mintingFee);
 
             vm.expectEmit(address(royaltyModule));
             emit IRoyaltyModule.LicenseMintingFeePaid(ipAcct[1], u.carl, address(erc20), mintAmount * mintingFee);
@@ -151,7 +152,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             mockToken.mint(newUser, 1 ether);
 
-            mockToken.approve(address(royaltyPolicyLAP), 1 ether);
+            mockToken.approve(address(royaltyModule), 1 ether);
             // ipAcct[3] is the receiver, the actual token is paid by the caller (newUser).
             royaltyModule.payRoyaltyOnBehalf(ipAcct[3], ipAcct[3], address(mockToken), 1 ether);
             totalPaymentToIpAcct3 += 1 ether;
@@ -166,90 +167,74 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
+            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
 
             vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault).snapshot();
+            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
 
             // Expect 10% (10_000_000) because ipAcct[2] has only one parent (IPAccount1), with 10% absolute royalty.
 
-            vm.expectEmit(ipRoyaltyVault);
-            emit IERC20.Transfer({ from: ipRoyaltyVault, to: ipAcct[2], value: 10_000_000 });
+            uint256[] memory snapshotsToClaim = new uint256[](1);
+            snapshotsToClaim[0] = 1;
+            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[3]);
 
-            vm.expectEmit(ipRoyaltyVault);
-            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[2], 10_000_000);
+            vm.expectEmit(ipRoyaltyVault3);
+            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault2, value: 10_000_000 });
 
-            IpRoyaltyVault(ipRoyaltyVault).collectRoyaltyTokens(ipAcct[2]);
+            vm.expectEmit(address(royaltyPolicyLAP));
+            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[2], 10_000_000);
+
+            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[2]);
         }
 
         // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 vaults
         {
-            vm.startPrank(u.alice);
+            vm.startPrank(address(100));
 
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            (, address ipRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipRoyaltyVault3, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
+            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
+            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
 
             vm.warp(block.timestamp + 7 days + 1);
             IpRoyaltyVault(ipRoyaltyVault2).snapshot();
-            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
 
             // IPAccount1 should expect 10% absolute royalty from its children (IPAccount2)
             // and 20% from its grandchild (IPAccount3) and so on.
 
+            uint256[] memory snapshotsToClaim = new uint256[](1);
+            snapshotsToClaim[0] = 1;
+            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[2]);
+
             vm.expectEmit(ipRoyaltyVault2);
-            emit IERC20.Transfer({ from: ipRoyaltyVault2, to: ipAcct[1], value: 10_000_000 });
-            vm.expectEmit(ipRoyaltyVault2);
-            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[1], 10_000_000);
-            IpRoyaltyVault(ipRoyaltyVault2).collectRoyaltyTokens(ipAcct[1]);
+            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 10_000_000 });
+            vm.expectEmit(address(royaltyPolicyLAP));
+            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[2], ipAcct[1], 10_000_000);
+            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[2], ipAcct[1]);
 
             vm.expectEmit(ipRoyaltyVault3);
-            emit IERC20.Transfer({ from: ipRoyaltyVault3, to: ipAcct[1], value: 20_000_000 });
-            vm.expectEmit(ipRoyaltyVault3);
-            emit IIpRoyaltyVault.RoyaltyTokensCollected(ipAcct[1], 20_000_000);
-            IpRoyaltyVault(ipRoyaltyVault3).collectRoyaltyTokens(ipAcct[1]);
+            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 20_000_000 });
+            vm.expectEmit(address(royaltyPolicyLAP));
+            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[1], 20_000_000);
+            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[1]);
         }
 
-        // Owner of IPAccount2, Bob, takes snapshot on IPAccount3 vault and claims his revenue from IPAccount3 vault
+        // Alice using IPAccount1 takes snapshot on IPAccount2 vault and claims her revenue from both
+        // IPAccount2 and IPAccount3
         {
-            vm.startPrank(u.bob);
+            vm.startPrank(ipAcct[1]);
 
-            (, address ipRoyaltyVault, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
+            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
 
-            // take snapshot
-            vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault).snapshot();
-
-            address[] memory tokens = new address[](2);
+            address[] memory tokens = new address[](1);
             tokens[0] = address(mockToken);
-            tokens[1] = address(LINK);
 
-            IpRoyaltyVault(ipRoyaltyVault).claimRevenueByTokenBatch(1, tokens);
+            IpRoyaltyVault(ipRoyaltyVault1).snapshot();
 
-            vm.stopPrank();
-        }
-
-        // Owner of IPAccount1, Alice, takes snapshot on IPAccount2 vault and claims her revenue from both
-        // IPAccount2 and IPAccount3 vaults
-        {
-            vm.startPrank(u.alice);
-
-            (, address ipRoyaltyVault2, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[2]);
-            (, address ipRoyaltyVault3, ) = royaltyPolicyLAP.getRoyaltyData(ipAcct[3]);
-
-            address[] memory tokens = new address[](2);
-            tokens[0] = address(mockToken);
-            tokens[1] = address(LINK);
-
-            IpRoyaltyVault(ipRoyaltyVault3).claimRevenueByTokenBatch(1, tokens);
-
-            // take snapshot
-            vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault2).snapshot();
-
-            IpRoyaltyVault(ipRoyaltyVault2).claimRevenueByTokenBatch(1, tokens);
+            IpRoyaltyVault(ipRoyaltyVault1).claimRevenueByTokenBatch(1, tokens);
         }
     }
 }

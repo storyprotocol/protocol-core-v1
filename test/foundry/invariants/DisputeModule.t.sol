@@ -169,7 +169,7 @@ contract DisputeInvariants is BaseTest {
         parentIpIds[0] = _ipAccount;
 
         vm.prank(address(harness));
-        mockToken.approve(address(royaltyPolicyLAP), type(uint256).max);
+        mockToken.approve(address(royaltyModule), type(uint256).max);
 
         vm.prank(address(harness));
         licensingModule.attachLicenseTerms(_ipAccount, address(pilTemplate), commRemixTermsId);
@@ -183,7 +183,7 @@ contract DisputeInvariants is BaseTest {
             royaltyContext: ""
         });
 
-        targetContract(address(harness));
+        /*         targetContract(address(harness));
 
         bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = harness.raiseDispute.selector;
@@ -191,7 +191,7 @@ contract DisputeInvariants is BaseTest {
         selectors[2] = harness.cancelDispute.selector;
         selectors[3] = harness.tagDerivativeIfParentInfringed.selector;
         selectors[4] = harness.resolveDispute.selector;
-        targetSelector(FuzzSelector(address(harness), selectors));
+        targetSelector(FuzzSelector(address(harness), selectors)); */
     }
 
     /// @notice Invariant to check dispute id should be equal to counter

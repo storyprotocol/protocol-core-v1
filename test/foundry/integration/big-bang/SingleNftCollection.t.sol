@@ -128,7 +128,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             // (verified by the mockTokenGatedHook commercializer checker)
             mockGatedNft.mint(u.carl);
 
-            mockToken.approve(address(royaltyPolicyLAP), mintingFee);
+            mockToken.approve(address(royaltyModule), mintingFee);
 
             uint256[] memory carl_license_from_root_alice = new uint256[](1);
             carl_license_from_root_alice[0] = licensingModule.mintLicenseTokens({
@@ -178,7 +178,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             mockNFT.mintId(u.alice, 2);
             uint256 mintAmount = 2;
 
-            mockToken.approve(address(royaltyPolicyLAP), mintAmount * mintingFee);
+            mockToken.approve(address(royaltyModule), mintAmount * mintingFee);
 
             // Alice needs to hold an NFT from mockGatedNFT collection to mint license on pil_com_deriv_cheap_flexible
             // (verified by the mockTokenGatedHook commercializer checker)
@@ -217,7 +217,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             mockNFT.mintId(u.carl, tokenId);
 
             mockToken.mint(u.carl, mintingFee * license0_mintAmount);
-            mockToken.approve(address(royaltyPolicyLAP), mintingFee * license0_mintAmount);
+            mockToken.approve(address(royaltyModule), mintingFee * license0_mintAmount);
 
             uint256[] memory carl_licenses = new uint256[](2);
             // Commercial license (Carl already has mockGatedNft from above, so he passes commercializer checker check)
@@ -253,7 +253,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
             uint256 license1_mintAmount = 500;
             mockToken.mint(u.carl, mintingFee * license1_mintAmount);
-            mockToken.approve(address(royaltyPolicyLAP), mintingFee * license1_mintAmount);
+            mockToken.approve(address(royaltyModule), mintingFee * license1_mintAmount);
 
             // Modify license[1] to a Commercial license
             carl_licenses[1] = licensingModule.mintLicenseTokens({

@@ -94,7 +94,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(u.bob);
 
         uint256 mintAmount = 3;
-        erc20.approve(address(royaltyPolicyLAP), type(uint256).max);
+        erc20.approve(address(royaltyModule), type(uint256).max);
 
         uint256[] memory licenseIds = new uint256[](1);
 

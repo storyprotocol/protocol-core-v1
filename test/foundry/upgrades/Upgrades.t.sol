@@ -2,7 +2,7 @@
 pragma solidity 0.8.23;
 
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
+import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
@@ -24,21 +24,21 @@ contract UpgradesTest is BaseTest {
         address newVault = address(new MockIpRoyaltyVaultV2(address(royaltyPolicyLAP), address(disputeModule)));
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             u.bob,
-            address(royaltyPolicyLAP),
-            RoyaltyPolicyLAP.upgradeVaults.selector
+            address(royaltyModule),
+            VaultController.upgradeVaults.selector
         );
         assertFalse(immediate);
         assertEq(delay, execDelay);
         vm.prank(u.bob);
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
-            address(royaltyPolicyLAP),
-            abi.encodeCall(RoyaltyPolicyLAP.upgradeVaults, (newVault)),
+            address(royaltyModule),
+            abi.encodeCall(VaultController.upgradeVaults, (newVault)),
             0 // earliest time possible, upgraderExecDelay
         );
         vm.warp(upgraderExecDelay + 1);
 
         vm.prank(u.bob);
-        royaltyPolicyLAP.upgradeVaults(newVault);
+        royaltyModule.upgradeVaults(newVault);
 
         assertEq(ipRoyaltyVaultBeacon.implementation(), newVault);
     }
@@ -107,16 +107,13 @@ contract UpgradesTest is BaseTest {
 
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             multisig,
-            address(royaltyPolicyLAP),
-            RoyaltyPolicyLAP.upgradeVaults.selector
+            address(royaltyModule),
+            VaultController.upgradeVaults.selector
         );
         assertFalse(immediate);
         assertEq(delay, 600);
         assertEq(
-            protocolAccessManager.getTargetFunctionRole(
-                address(royaltyPolicyLAP),
-                RoyaltyPolicyLAP.upgradeVaults.selector
-            ),
+            protocolAccessManager.getTargetFunctionRole(address(royaltyModule), VaultController.upgradeVaults.selector),
             ProtocolAdmin.UPGRADER_ROLE
         );
 
@@ -265,6 +262,21 @@ contract UpgradesTest is BaseTest {
         assertEq(
             protocolAccessManager.getTargetFunctionRole(
                 address(royaltyPolicyLAP),
+                UUPSUpgradeable.upgradeToAndCall.selector
+            ),
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+
+        (immediate, delay) = protocolAccessManager.canCall(
+            multisig,
+            address(royaltyPolicyLRP),
+            UUPSUpgradeable.upgradeToAndCall.selector
+        );
+        assertFalse(immediate);
+        assertEq(delay, execDelay);
+        assertEq(
+            protocolAccessManager.getTargetFunctionRole(
+                address(royaltyPolicyLRP),
                 UUPSUpgradeable.upgradeToAndCall.selector
             ),
             ProtocolAdmin.UPGRADER_ROLE

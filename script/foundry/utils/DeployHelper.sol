@@ -19,7 +19,7 @@ import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpg
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/IRoyaltyPolicyLAP.sol";
+import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { Errors } from "contracts/lib/Errors.sol";
@@ -32,7 +32,9 @@ import { ModuleRegistry } from "contracts/registries/ModuleRegistry.sol";
 import { LicenseRegistry } from "contracts/registries/LicenseRegistry.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
-import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/RoyaltyPolicyLAP.sol";
+import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/LAP/RoyaltyPolicyLAP.sol";
+import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
+import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
@@ -90,6 +92,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Policy
     ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
+    RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
     IpRoyaltyVault internal ipRoyaltyVaultImpl;
 
@@ -168,8 +171,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
 
-        if (address(royaltyPolicyLAP) != ipRoyaltyVaultBeacon.owner()) {
-            revert RoleConfigError("RoyaltyPolicyLAP is not owner of IpRoyaltyVaultBeacon");
+        if (address(royaltyModule) != ipRoyaltyVaultBeacon.owner()) {
+            revert RoleConfigError("RoyaltyModule is not owner of ipRoyaltyVaultBeacon");
         }
 
         if (!multisigAdmin || !multisigUpgrader) {
@@ -372,7 +375,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 create3Deployer,
                 _getSalt(type(RoyaltyModule).name),
                 impl,
-                abi.encodeCall(RoyaltyModule.initialize, address(protocolAccessManager))
+                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(8), uint256(1024), uint256(15)))
             )
         );
         require(
@@ -514,7 +517,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
             address(royaltyModule),
-            address(licensingModule),
+            address(disputeModule),
             _getDeployedAddress(type(IPGraphACL).name)
         ));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
@@ -532,6 +535,24 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         require(_loadProxyImpl(address(royaltyPolicyLAP)) == impl, "RoyaltyPolicyLAP Proxy Implementation Mismatch");
         impl = address(0);
         _postdeploy("RoyaltyPolicyLAP", address(royaltyPolicyLAP));
+
+        _predeploy("RoyaltyPolicyLRP");
+        impl = address(new RoyaltyPolicyLRP(address(royaltyModule)));
+        royaltyPolicyLRP = RoyaltyPolicyLRP(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(RoyaltyPolicyLRP).name),
+                impl,
+                abi.encodeCall(RoyaltyPolicyLRP.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(RoyaltyPolicyLRP).name) == address(royaltyPolicyLRP),
+            "Deploy: Royalty Policy Address Mismatch"
+        );
+        require(_loadProxyImpl(address(royaltyPolicyLRP)) == impl, "RoyaltyPolicyLRP Proxy Implementation Mismatch");
+        impl = address(0);
+        _postdeploy("RoyaltyPolicyLRP", address(royaltyPolicyLRP));
 
         _predeploy("PILicenseTemplate");
         impl = address(
@@ -571,14 +592,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getSalt(type(IpRoyaltyVault).name),
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(royaltyPolicyLAP), address(disputeModule))
+                    abi.encode(address(disputeModule), address(royaltyModule))
                 )
             )
         );
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
-        // Transfer Ownership to RoyaltyPolicyLAP later
         ipRoyaltyVaultBeacon = UpgradeableBeacon(
             create3Deployer.deploy(
                 _getSalt(type(UpgradeableBeacon).name),
@@ -667,10 +687,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Royalty Module and SP Royalty Policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
+        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLRP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-        royaltyPolicyLAP.setSnapshotInterval(7 days);
-        royaltyPolicyLAP.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
-        ipRoyaltyVaultBeacon.transferOwnership(address(royaltyPolicyLAP));
+        royaltyModule.setSnapshotInterval(7 days);
+        royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
+        ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
         // Dispute Module and SP Dispute Policy
         address arbitrationRelayer = relayer;
@@ -708,6 +729,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
@@ -718,11 +741,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
 
         // Royalty and Upgrade Beacon
-        // Owner of the beacon is the RoyaltyPolicyLAP
+        // Owner of the beacon is the RoyaltyModule
         selectors = new bytes4[](2);
-        selectors[0] = RoyaltyPolicyLAP.upgradeVaults.selector;
+        selectors[0] = VaultController.upgradeVaults.selector;
         selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
-        protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Pause
         selectors = new bytes4[](2);

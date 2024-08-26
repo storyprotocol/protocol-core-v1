@@ -617,10 +617,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // License Template
         licenseRegistry.registerLicenseTemplate(address(pilTemplate));
 
-        // set default license to non-commercial social remixing
-        uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
-
         // IPGraphACL
         ipGraphACL.whitelistAddress(address(licenseRegistry));
         ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));

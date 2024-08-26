@@ -18,6 +18,7 @@ import { ExpiringOps } from "../lib/ExpiringOps.sol";
 import { ILicenseTemplate } from "../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
+import { IPGraphACL } from "../access/IPGraphACL.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
@@ -33,6 +34,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
+
 
     /// @dev Storage of the LicenseRegistry
     /// @param defaultLicenseTemplate The default license template address
@@ -76,11 +80,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule) {
+    constructor(address licensingModule, address disputeModule, address ipGraphAcl) {
         if (licensingModule == address(0)) revert Errors.LicenseRegistry__ZeroLicensingModule();
         if (disputeModule == address(0)) revert Errors.LicenseRegistry__ZeroDisputeModule();
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         _disableInitializers();
     }
 
@@ -242,9 +247,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             }
         }
 
+        IP_GRAPH_ACL.allow();
         (bool success, ) = IP_GRAPH_CONTRACT.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
+        IP_GRAPH_ACL.disallow();
+
         if (!success) {
             revert Errors.LicenseRegistry__AddParentIpToIPGraphFailed(childIpId, parentIpIds);
         }

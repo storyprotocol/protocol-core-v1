@@ -31,7 +31,11 @@ contract TestRoyaltyModule is BaseTest {
 
         USDC.mint(ipAccount2, 1000 * 10 ** 6); // 1000 USDC
 
-        address impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
+        address impl = address(new RoyaltyPolicyLAP(
+            address(royaltyModule),
+            address(licensingModule),
+            address(ipGraphACL)
+        ));
         royaltyPolicyLAP2 = RoyaltyPolicyLAP(
             TestProxyHelper.deployUUPSProxy(
                 impl,

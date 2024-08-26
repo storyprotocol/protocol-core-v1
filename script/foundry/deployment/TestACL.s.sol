@@ -14,6 +14,7 @@ import "test/foundry/mocks/token/MockERC721.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
 import { LicensingModule } from "contracts/modules/licensing/LicensingModule.sol";
 import "test/foundry/mocks/MockIPGraph.sol";
+import "contracts/access/IPGraphACL.sol";
 
 import "test/foundry/mocks/token/MockERC721.sol";
 
@@ -33,6 +34,7 @@ contract TestACL is Script {
     address internal accessControllerAddr;
     address internal pilTemplateAddr;
     address internal licenseTokenAddr;
+    address internal ipGraphAclAddr;
 
     function run() public {
         vm.etch(address(0x1A), address(new MockIPGraph()).code);
@@ -64,7 +66,7 @@ contract TestACL is Script {
         console2.log("Registered IP:", ipId2);
         console2.log("Registered IP:", ipId3);
 
-
+        IPGraphACL(ipGraphAclAddr).allow();
         address[] memory parents = new address[](1);
         parents[0] = ipId1;
         uint256[] memory licenseTermsIds = new uint256[](1);
@@ -72,6 +74,7 @@ contract TestACL is Script {
         LicensingModule(licensingModuleAddr).registerDerivative(ipId2, parents, licenseTermsIds, pilTemplateAddr, "");
         console2.log("Registered Derivative:", ipId2);
 
+        IPGraphACL(ipGraphAclAddr).disallow();
 
         vm.stopBroadcast();
     }
@@ -92,6 +95,7 @@ contract TestACL is Script {
         accessControllerAddr = json.readAddress(".main.AccessController");
         pilTemplateAddr = json.readAddress(".main.PILicenseTemplate");
         licenseTokenAddr = json.readAddress(".main.LicenseToken");
+        ipGraphAclAddr = json.readAddress(".main.IPGraphACL");
     }
 
     function _predeploy(string memory contractKey) private view {

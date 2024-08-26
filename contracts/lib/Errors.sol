@@ -416,6 +416,9 @@ library Errors {
     /// @notice Zero address provided for Licensing Module.
     error RoyaltyPolicyLAP__ZeroLicensingModule();
 
+    /// @notice Zero address provided for IP Graph ACL.
+    error RoyaltyPolicyLAP__ZeroIPGraphACL();
+
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLAP__NotRoyaltyModule();
 
@@ -583,4 +586,11 @@ library Errors {
 
     /// @notice Removing a contract that is not in the pausable list.
     error ProtocolPauseAdmin__PausableNotFound();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                               IPGraphACL                               //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice The address is not whitelisted.
+    error IPGraphACL__NotWhitelisted(address addr);
 }

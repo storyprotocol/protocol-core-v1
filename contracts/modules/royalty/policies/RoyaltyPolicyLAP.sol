@@ -13,6 +13,7 @@ import { IRoyaltyPolicyLAP } from "../../../interfaces/modules/royalty/policies/
 import { ArrayUtils } from "../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../pause/ProtocolPausableUpgradeable.sol";
+import { IPGraphACL } from "../../../access/IPGraphACL.sol";
 
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
@@ -60,6 +61,9 @@ contract RoyaltyPolicyLAP is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable LICENSING_MODULE;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
+
     /// @dev Restricts the calls to the royalty module
     modifier onlyRoyaltyModule() {
         if (msg.sender != ROYALTY_MODULE) revert Errors.RoyaltyPolicyLAP__NotRoyaltyModule();
@@ -69,13 +73,17 @@ contract RoyaltyPolicyLAP is
     /// @notice Constructor
     /// @param royaltyModule The RoyaltyModule address
     /// @param licensingModule The LicensingModule address
+    /// @param ipGraphAcl The IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyModule, address licensingModule) {
+    constructor(address royaltyModule, address licensingModule, address ipGraphAcl) {
         if (royaltyModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroRoyaltyModule();
         if (licensingModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroLicensingModule();
+        if (ipGraphAcl == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIPGraphACL();
 
         ROYALTY_MODULE = royaltyModule;
         LICENSING_MODULE = licensingModule;
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
+
         _disableInitializers();
     }
 
@@ -220,6 +228,8 @@ contract RoyaltyPolicyLAP is
         uint32[] memory royaltiesGroupByParent = new uint32[](parentIpIds.length);
         address[] memory uniqueParents = new address[](parentIpIds.length);
         uint256 uniqueParentCount;
+
+        IP_GRAPH_ACL.allow();
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             (uint256 index, bool exists) = ArrayUtils.indexOf(uniqueParents, parentIpIds[i]);
             if (!exists) {
@@ -230,6 +240,7 @@ contract RoyaltyPolicyLAP is
             uniqueParents[index] = parentIpIds[i];
             _setRoyalty(ipId, parentIpIds[i], royaltiesGroupByParent[index]);
         }
+        IP_GRAPH_ACL.disallow();
 
         // calculate new royalty stack
         uint32 royaltyStack = _getRoyaltyStack(ipId);

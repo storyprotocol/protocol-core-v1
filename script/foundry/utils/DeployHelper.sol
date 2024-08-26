@@ -136,7 +136,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
         else if (block.chainid == 1513) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
         else if (block.chainid == 1337) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
-        else revert("Unsupported chain");
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -286,7 +285,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(
             new LicenseRegistry(
                 _getDeployedAddress(type(LicensingModule).name),
-                _getDeployedAddress(type(DisputeModule).name)
+                _getDeployedAddress(type(DisputeModule).name),
+                _getDeployedAddress(type(IPGraphACL).name)
             )
         );
         licenseRegistry = LicenseRegistry(
@@ -451,7 +451,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("ArbitrationPolicySP", address(arbitrationPolicySP));
 
         _predeploy("RoyaltyPolicyLAP");
-        impl = address(new RoyaltyPolicyLAP(address(royaltyModule), address(licensingModule)));
+        impl = address(new RoyaltyPolicyLAP(
+            address(royaltyModule),
+            address(licensingModule),
+            _getDeployedAddress(type(IPGraphACL).name)
+        ));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -618,8 +622,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
 
         // IPGraphACL
-        ipGraphACL.addWhitelistAddress(address(licenseRegistry));
-        ipGraphACL.addWhitelistAddress(address(royaltyPolicyLAP));
+        ipGraphACL.whitelistAddress(address(licenseRegistry));
+        ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
     }
 
     function _configureRoles() private {

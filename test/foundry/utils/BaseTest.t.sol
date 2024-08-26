@@ -96,7 +96,11 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         dealMockAssets();
 
         ipAccountRegistry = IPAccountRegistry(ipAssetRegistry);
-        lrHarnessImpl = address(new LicenseRegistryHarness(address(licensingModule), address(disputeModule)));
+        lrHarnessImpl = address(new LicenseRegistryHarness(
+            address(licensingModule),
+            address(disputeModule),
+            address(ipGraphACL)
+        ));
     }
 
     function dealMockAssets() public {

@@ -33,21 +33,12 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         string imageUrl;
         uint256 totalMintedTokens;
         mapping(uint256 tokenId => LicenseTokenMetadata) licenseTokenMetadatas;
-    }
-
-    /// @dev Storage structure for the Licensor
-    /// @custom:storage-location erc7201:story-protocol.Licensor
-    struct LicensorStorage {
         mapping(address licensorIpId => uint256 totalMintedTokens) licensorIpTotalTokens;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseToken")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicenseTokenStorageLocation =
         0x62a0d75e37bea0c3e666dc72a74112fc6af15ce635719127e380d8ca1e555d00;
-
-    // keccak256(abi.encode(uint256(keccak256("story-protocol.Licensor")) - 1)) & ~bytes32(uint256(0xff));
-    bytes32 private constant LicensorStorageLocation =
-        0x23f0add89533cdf440c8f5cc9ffed2d19de5118ad74363071b8d1ea4f92f9a00;
 
     modifier onlyLicensingModule() {
         if (msg.sender != address(LICENSING_MODULE)) {
@@ -109,7 +100,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
         $.totalMintedTokens += amount;
-        _getLicensorStorage().licensorIpTotalTokens[licensorIpId] += amount;
+        $.licensorIpTotalTokens[licensorIpId] += amount;
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
@@ -207,7 +198,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @param licensorIpId The ID of the licensor IP.
     /// @return The total number of License Tokens minted for the licensor IP.
     function getTotalTokensByLicensor(address licensorIpId) external view returns (uint256) {
-        return _getLicensorStorage().licensorIpTotalTokens[licensorIpId];
+        return _getLicenseTokenStorage().licensorIpTotalTokens[licensorIpId];
     }
 
     /// @notice Returns true if the license has been revoked (licensor IP tagged after a dispute in
@@ -304,13 +295,6 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     function _getLicenseTokenStorage() private pure returns (LicenseTokenStorage storage $) {
         assembly {
             $.slot := LicenseTokenStorageLocation
-        }
-    }
-
-    /// @dev Returns the storage struct of Licensor.
-    function _getLicensorStorage() private pure returns (LicensorStorage storage $) {
-        assembly {
-            $.slot := LicensorStorageLocation
         }
     }
 

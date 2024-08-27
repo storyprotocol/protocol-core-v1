@@ -512,6 +512,9 @@ library Errors {
     /// @notice Above accumulated royalty policies limit.
     error RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
 
+    /// @notice Zero address for ip asset registry.
+    error RoyaltyModule__ZeroIpAssetRegistry();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////

@@ -15,6 +15,7 @@ import { VaultController } from "./policies/VaultController.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { IExternalRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IExternalRoyaltyPolicy.sol";
+import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
@@ -47,6 +48,10 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
 
+    /// @notice Returns the canonical protocol-wide IPAssetRegistry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IGroupIPAssetRegistry public immutable IP_ASSET_REGISTRY;
+
     /// @dev Storage structure for the RoyaltyModule
     /// @param maxParents The maximum number of parents an IP asset can have
     /// @param maxAncestors The maximum number of ancestors an IP asset can have
@@ -78,15 +83,18 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licensingModule The address of the licensing module
     /// @param disputeModule The address of the dispute module
     /// @param licenseRegistry The address of the license registry
+    /// @param ipAssetRegistry The address of the ip asset registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule, address licenseRegistry) {
+    constructor(address licensingModule, address disputeModule, address licenseRegistry, address ipAssetRegistry) {
         if (licensingModule == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
         if (disputeModule == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
         if (licenseRegistry == address(0)) revert Errors.RoyaltyModule__ZeroLicenseRegistry();
+        if (ipAssetRegistry == address(0)) revert Errors.RoyaltyModule__ZeroIpAssetRegistry();
 
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+        IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
 
         _disableInitializers();
     }
@@ -212,7 +220,13 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if (_getAncestorCount(ipId) >= $.maxAncestors) revert Errors.RoyaltyModule__LastPositionNotAbleToMintLicense();
 
         // deploy ipRoyaltyVault for the ipId given it does not exist yet
-        if ($.ipRoyaltyVaults[ipId] == address(0)) _deployIpRoyaltyVault(ipId, ipId);
+        if ($.ipRoyaltyVaults[ipId] == address(0)) {
+            address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
+            ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
+            : ipId;
+
+            _deployIpRoyaltyVault(ipId, receiver);
+        } 
 
         // for whitelisted policies calls onLicenseMinting
         if ($.isWhitelistedRoyaltyPolicy[royaltyPolicy]) {
@@ -422,8 +436,12 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if ($.accumulatedRoyaltyPolicies[ipId].length() > $.maxAccumulatedRoyaltyPolicies)
             revert Errors.RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
 
-        // sends remaining royalty tokens to the ipId address
-        IERC20(ipRoyaltyVault).safeTransfer(ipId, TOTAL_RT_SUPPLY - totalRtsRequiredToLink);
+        // sends remaining royalty tokens to the ipId address or 
+        // in the case the ipId is a group then send to the group reward pool
+        address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
+            ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
+            : ipId;
+        IERC20(ipRoyaltyVault).safeTransfer(receiver, TOTAL_RT_SUPPLY - totalRtsRequiredToLink);
     }
 
     /// @notice Adds a royalty policy to the accumulated royalty policies of an IP asset

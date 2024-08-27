@@ -14,6 +14,8 @@ import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
 import { MockExternalRoyaltyPolicy1 } from "../../mocks/policy/MockExternalRoyaltyPolicy1.sol";
 import { MockExternalRoyaltyPolicy2 } from "../../mocks/policy/MockExternalRoyaltyPolicy2.sol";
+import { MockERC721 } from "../../mocks/token/MockERC721.sol";
+import { MockEvenSplitGroupPool } from "../../mocks/grouping/MockEvenSplitGroupPool.sol";
 
 contract TestRoyaltyModule is BaseTest {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
@@ -30,6 +32,13 @@ contract TestRoyaltyModule is BaseTest {
     address internal arbitrationRelayer;
     address internal mockExternalRoyaltyPolicy1;
     address internal mockExternalRoyaltyPolicy2;
+
+    // grouping
+    MockERC721 internal mockNft = new MockERC721("MockERC721");
+    address public ipId1;
+    address public ipOwner1 = address(0x111);
+    uint256 public tokenId1 = 1;
+    MockEvenSplitGroupPool public rewardPool;
 
     function setUp() public override {
         super.setUp();
@@ -79,6 +88,13 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(ipAddr);
         disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP));
         vm.stopPrank();
+
+        // grouping
+        mockNft.mintId(ipOwner1, tokenId1);
+        ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
+        rewardPool = new MockEvenSplitGroupPool();
+        vm.prank(admin);
+        groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }
 
     function _setupTree() internal {
@@ -150,7 +166,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry))
+            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
         RoyaltyModule(
@@ -163,7 +179,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroMaxParents() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry))
+            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxParents.selector);
         RoyaltyModule(
@@ -176,7 +192,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroMaxAncestors() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry))
+            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxAncestors.selector);
         RoyaltyModule(
@@ -189,7 +205,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroAccumulatedRoyaltyPoliciesLimit() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry))
+            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit.selector);
         RoyaltyModule(
@@ -347,6 +363,23 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(ipIdRtBalAfter, royaltyModule.TOTAL_RT_SUPPLY());
         assertFalse(royaltyModule.ipRoyaltyVaults(licensor) == address(0));
+    }
+
+    function test_RoyaltyModule_onLicenseMinting_NewVaultGroup() public {
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        uint32 licensePercent = uint32(15);
+
+        vm.startPrank(address(licensingModule));
+
+        assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
+
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), licensePercent, "");
+
+        address newVault = royaltyModule.ipRoyaltyVaults(groupId);
+        uint256 groupPoolRtBalAfter = IERC20(newVault).balanceOf(address(rewardPool));
+
+        assertEq(groupPoolRtBalAfter, royaltyModule.TOTAL_RT_SUPPLY());
+        assertFalse(royaltyModule.ipRoyaltyVaults(groupId) == address(0));
     }
 
     function test_RoyaltyModule_onLicenseMinting_ExistingVault() public {
@@ -647,6 +680,51 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(accRoyaltyPolicies70After[1], address(royaltyPolicyLRP));
         assertEq(accRoyaltyPolicies70After[2], address(mockExternalRoyaltyPolicy1));
         assertEq(accRoyaltyPolicies70After[3], address(mockExternalRoyaltyPolicy2));
+    }
+
+    function test_RoyaltyModule_onLinkToParents_group() public {
+        address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+
+        // link group ip to 10 + 60 + 70
+        parents = new address[](3);
+        licenseRoyaltyPolicies = new address[](3);
+        parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(60);
+        parents[2] = address(70);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
+        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy2);
+        parentRoyalties[0] = uint32(5 * 10 ** 6);
+        parentRoyalties[1] = uint32(17 * 10 ** 6);
+        parentRoyalties[2] = uint32(24 * 10 ** 6);
+
+        vm.startPrank(address(licensingModule));
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        ipGraph.addParentIp(groupId, parents);
+
+        assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
+
+        royaltyModule.onLinkToParents(groupId, parents, licenseRoyaltyPolicies, parentRoyalties, "");
+
+        address ipRoyaltyVault80 = royaltyModule.ipRoyaltyVaults(groupId);
+        uint256 ipId80RtLAPBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(royaltyPolicyLAP));
+        uint256 ipId80RtLRPBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(royaltyPolicyLRP));
+        uint256 ipId80RtLRPParentVaultBalAfter = IERC20(ipRoyaltyVault80).balanceOf(
+            royaltyModule.ipRoyaltyVaults(address(60))
+        );
+        uint256 ipId80RtExternal1BalAfter = IERC20(ipRoyaltyVault80).balanceOf(mockExternalRoyaltyPolicy1);
+        uint256 ipId80RtExternal2BalAfter = IERC20(ipRoyaltyVault80).balanceOf(mockExternalRoyaltyPolicy2);
+        uint256 ipId80GroupPoolRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(rewardPool));
+
+        assertEq(ipId80RtLAPBalAfter, 45 * 10 ** 6);
+        assertEq(ipId80RtLRPBalAfter, 0);
+        assertEq(ipId80RtLRPParentVaultBalAfter, 17 * 10 ** 6);
+        assertEq(ipId80RtExternal1BalAfter, 0);
+        assertEq(ipId80RtExternal2BalAfter, 10 * 10 ** 6);
+        assertEq(ipId80GroupPoolRtBalAfter, 28 * 10 ** 6);
     }
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsTagged() public {

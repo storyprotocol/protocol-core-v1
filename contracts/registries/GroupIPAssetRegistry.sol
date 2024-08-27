@@ -17,7 +17,6 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-
     IGroupingModule public immutable GROUPING_MODULE;
 
     /// @dev Storage structure for the GroupIPAssetRegistry

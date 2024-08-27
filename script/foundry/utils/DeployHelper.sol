@@ -367,7 +367,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             new RoyaltyModule(
                 _getDeployedAddress(type(LicensingModule).name),
                 address(disputeModule),
-                address(licenseRegistry)
+                address(licenseRegistry),
+                address(ipAssetRegistry)
             )
         );
         royaltyModule = RoyaltyModule(

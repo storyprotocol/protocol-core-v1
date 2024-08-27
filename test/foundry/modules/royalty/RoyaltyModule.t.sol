@@ -166,7 +166,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroAccessManager() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
+            new RoyaltyModule(
+                address(licensingModule),
+                address(disputeModule),
+                address(licenseRegistry),
+                address(ipAssetRegistry)
+            )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
         RoyaltyModule(
@@ -179,7 +184,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroMaxParents() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
+            new RoyaltyModule(
+                address(licensingModule),
+                address(disputeModule),
+                address(licenseRegistry),
+                address(ipAssetRegistry)
+            )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxParents.selector);
         RoyaltyModule(
@@ -192,7 +202,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroMaxAncestors() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
+            new RoyaltyModule(
+                address(licensingModule),
+                address(disputeModule),
+                address(licenseRegistry),
+                address(ipAssetRegistry)
+            )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxAncestors.selector);
         RoyaltyModule(
@@ -205,7 +220,12 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_initialize_revert_ZeroAccumulatedRoyaltyPoliciesLimit() public {
         address impl = address(
-            new RoyaltyModule(address(licensingModule), address(disputeModule), address(licenseRegistry), address(ipAssetRegistry))
+            new RoyaltyModule(
+                address(licensingModule),
+                address(disputeModule),
+                address(licenseRegistry),
+                address(ipAssetRegistry)
+            )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit.selector);
         RoyaltyModule(

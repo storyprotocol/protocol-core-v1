@@ -222,11 +222,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         // deploy ipRoyaltyVault for the ipId given it does not exist yet
         if ($.ipRoyaltyVaults[ipId] == address(0)) {
             address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
-            ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
-            : ipId;
+                ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
+                : ipId;
 
             _deployIpRoyaltyVault(ipId, receiver);
-        } 
+        }
 
         // for whitelisted policies calls onLicenseMinting
         if ($.isWhitelistedRoyaltyPolicy[royaltyPolicy]) {
@@ -436,7 +436,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if ($.accumulatedRoyaltyPolicies[ipId].length() > $.maxAccumulatedRoyaltyPolicies)
             revert Errors.RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
 
-        // sends remaining royalty tokens to the ipId address or 
+        // sends remaining royalty tokens to the ipId address or
         // in the case the ipId is a group then send to the group reward pool
         address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
             ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)

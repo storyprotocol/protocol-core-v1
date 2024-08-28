@@ -1,6 +1,3 @@
-**Project Archived:** This repository has been archived and is no longer actively maintained. For the latest updates and ongoing development, please visit our new repository at [Protocol Core V1](https://github.com/storyprotocol/protocol-core-v1). We invite you to check out the new features and enhancements in the latest version. Thank you for your past and continued support!
-
-
 # Story Protocol Beta
 
 Story Protocol is building the Programmable IP layer to bring programmability to IP. Story Protocol transforms IPs into networks that transcend mediums and platforms, unleashing global creativity and liquidity. Instead of static JPEGs that lack interactivity and composability with other assets, programmable IPs are dynamic and extensible: built to be built upon. Creators and applications can register their IP with Story Protocol, converting their static IP into programmable IP by declaring a set of onchain rights that any program can read and write on.
@@ -40,7 +37,7 @@ Modules are customizable programs (smart contracts) that define and extend the f
 
 ### Registry
 
-A "Registry" functions as a primary directory/storage for the global states of Story Protocol. Unlike IPAccounts, which manage the state of specific IPs, a Registry oversees the broader states of the protocol.
+A "Registry" functions as a primary directory/storage for the global states of Story Protocol. Unlike [IPAccounts](https://docs.story.foundation/docs/ip-account), which manage the state of specific IPs, a Registry oversees the broader states of the protocol.
 
 ### Access Controller
 
@@ -70,6 +67,25 @@ And you probably already have `make` installed... but if not [try looking here.]
 yarn # this installs packages
 make # this builds
 ```
+
+## Verify Upgrade Storage Layout (before scripts or tests)
+
+```sh
+forge clean
+forge compile --build-info
+npx @openzeppelin/upgrades-core@^1.32.3 validate out/build-info 
+```
+
+## Helper script to write an upgradeable contract with ERC7201
+
+1. Edit `script/foundry/utils/upgrades/ERC7201Helper.s.sol`
+2. Change `string constant CONTRACT_NAME = "<the contract name>";`
+3. Run the script to generate boilerplate code for storage handling and the namespace hash:
+   
+```sh
+forge script script/foundry/utils/upgrades/ERC7201Helper.s.sol 
+```
+4. The log output is the boilerplate code, copy and paste in your contract
 
 ## Testing
 
@@ -143,7 +159,7 @@ And get your slither output.
 
 # Licensing
 
-The license for Story Protocol Core is the Business Source License 1.1 (BUSL-1.1), see LICENSE.
+The license for Story Protocol Core is the Business Source License 1.1 (BUSL-1.1), see LICENSE.
 
 After you have integrated our SDK and/or API with your application, in the Terms of Service for your application with your end users (which govern your end users’ use of and access to your application), you must include the following sentence:
 

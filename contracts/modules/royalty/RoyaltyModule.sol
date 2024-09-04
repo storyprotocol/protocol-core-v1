@@ -201,7 +201,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ipId The ipId whose license is being minted (licensor)
     /// @param royaltyPolicy The royalty policy address of the license being minted
     /// @param licensePercent The license percentage of the license being minted
-    /// @param externalData The external data custom to each the royalty policy
+    /// @param externalData The external data custom to the royalty policy being minted
     function onLicenseMinting(
         address ipId,
         address royaltyPolicy,
@@ -232,14 +232,17 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if ($.isWhitelistedRoyaltyPolicy[royaltyPolicy]) {
             IRoyaltyPolicy(royaltyPolicy).onLicenseMinting(ipId, licensePercent, externalData);
         }
+
+        emit LicenseMinted(ipId, royaltyPolicy, licensePercent, externalData);
     }
 
     /// @notice Executes royalty related logic on linking to parents
     /// @dev Enforced to be only callable by LicensingModule
     /// @param ipId The children ipId that is being linked to parents
     /// @param parentIpIds The parent ipIds that the children ipId is being linked to
-    /// @param licensesPercent The license percentage of the licenses being minted
-    /// @param externalData The external data custom to each the royalty policy
+    /// @param licenseRoyaltyPolicies The royalty policies of the each parent license being used to link
+    /// @param licensesPercent The license percentage of the licenses of each parent being used to link
+    /// @param externalData The external data custom to each the royalty policy being used to link
     function onLinkToParents(
         address ipId,
         address[] calldata parentIpIds,
@@ -282,6 +285,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
                 );
             }
         }
+
+        emit LinkedToParents(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, externalData);
     }
 
     /// @notice Allows the function caller to pay royalties to the receiver IP asset on behalf of the payer IP asset.

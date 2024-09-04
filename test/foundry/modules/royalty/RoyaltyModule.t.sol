@@ -25,6 +25,14 @@ contract TestRoyaltyModule is BaseTest {
     event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
     event RoyaltyVaultAddedToIp(address ipId, address ipRoyaltyVault);
     event ExternalRoyaltyPolicyRegistered(address externalRoyaltyPolicy);
+    event LicenseMinted(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
+    event LinkedToParents(
+        address ipId,
+        address[] parentIpIds,
+        address[] licenseRoyaltyPolicies,
+        uint32[] licensesPercent,
+        bytes externalData
+    );
 
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
@@ -339,7 +347,7 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLicenseMinting(licensor, address(1), licensePercent, "");
     }
 
-    function test_RoyaltyModule_onLicenseMinting_ZeroRoyaltyPolicy() public {
+    function test_RoyaltyModule_onLicenseMinting_revert_ZeroRoyaltyPolicy() public {
         address licensor = address(1);
         uint32 licensePercent = uint32(15);
 
@@ -359,7 +367,7 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), uint32(15), "");
     }
 
-    function test_RoyaltyModule_onLicenseMinting_revert_RoyaltyModule_AboveRoyaltyTokenSupplyLimit() public {
+    function test_RoyaltyModule_onLicenseMinting_revert_AboveRoyaltyTokenSupplyLimit() public {
         address licensor = address(1);
         uint32 licensePercent = uint32(500 * 10 ** 6);
 
@@ -375,6 +383,9 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
 
         assertEq(royaltyModule.ipRoyaltyVaults(licensor), address(0));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LicenseMinted(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
@@ -392,6 +403,9 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
 
         assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LicenseMinted(groupId, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), licensePercent, "");
 
@@ -411,6 +425,9 @@ contract TestRoyaltyModule is BaseTest {
 
         address ipRoyaltyVaultBefore = royaltyModule.ipRoyaltyVaults(licensor);
         uint256 ipIdRtBalBefore = IERC20(ipRoyaltyVaultBefore).balanceOf(licensor);
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LicenseMinted(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
@@ -660,6 +677,9 @@ contract TestRoyaltyModule is BaseTest {
         ipGraph.addParentIp(address(80), parents);
 
         assertEq(royaltyModule.ipRoyaltyVaults(address(80)), address(0));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LinkedToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
 
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
 

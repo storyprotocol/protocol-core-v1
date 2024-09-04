@@ -40,6 +40,27 @@ interface IRoyaltyModule is IModule {
     /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
     event IpGraphLimitsUpdated(uint256 maxParents, uint256 maxAncestors, uint256 accumulatedRoyaltyPoliciesLimit);
 
+    /// @notice Event emitted when a license is minted
+    /// @param ipId The ipId whose license is being minted (licensor)
+    /// @param royaltyPolicy The royalty policy address of the license being minted
+    /// @param licensePercent The license percentage of the license being minted
+    /// @param externalData The external data custom to the royalty policy being minted
+    event LicenseMinted(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
+
+    /// @notice Event emitted when an IP asset is linked to parents
+    /// @param ipId The children ipId that is being linked to parents
+    /// @param parentIpIds The parent ipIds that the children ipId is being linked to
+    /// @param licenseRoyaltyPolicies The royalty policies of the each parent license being used to link
+    /// @param licensesPercent The license percentage of the licenses of each parent being used to link
+    /// @param externalData The external data custom to each the royalty policy being used to link
+    event LinkedToParents(
+        address ipId,
+        address[] parentIpIds,
+        address[] licenseRoyaltyPolicies,
+        uint32[] licensesPercent,
+        bytes externalData
+    );
+
     /// @notice Sets the ip graph limits
     /// @dev Enforced to be only callable by the protocol admin
     /// @param parentLimit The maximum number of parents an IP asset can have

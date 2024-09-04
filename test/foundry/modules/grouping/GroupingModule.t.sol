@@ -63,7 +63,7 @@ contract GroupingModuleTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
 
-        rewardPool = new MockEvenSplitGroupPool();
+        rewardPool = new MockEvenSplitGroupPool(address(royaltyModule));
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }
@@ -219,8 +219,10 @@ contract GroupingModuleTest is BaseTest {
 
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "");
         vm.prank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "");
 
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
@@ -248,7 +250,7 @@ contract GroupingModuleTest is BaseTest {
         emit IGroupingModule.ClaimedReward(groupId, address(erc20), claimIpIds, claimAmounts);
         groupingModule.claimReward(groupId, address(erc20), claimIpIds);
         assertEq(erc20.balanceOf(address(rewardPool)), 50);
-        assertEq(erc20.balanceOf(ipId1), 50);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 50);
     }
 
     function test_GroupingModule_addIp_revert_addGroupToGroup() public {

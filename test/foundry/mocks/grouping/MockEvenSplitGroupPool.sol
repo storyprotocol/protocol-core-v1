@@ -12,7 +12,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    IRoyaltyModule public constant ROYALTY_MODULE;
+    IRoyaltyModule public  ROYALTY_MODULE;
 
     struct IpRewardInfo {
         uint256 startPoolBalance; // balance of pool when IP added to pool
@@ -33,6 +33,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     mapping(address groupId => mapping(address tokenId => mapping(address ipId => IpRewardInfo))) public ipRewardInfo;
 
     constructor(address _royaltyModule) {
+        require(_royaltyModule != address(0), "RoyaltyModule address cannot be 0");
         ROYALTY_MODULE = IRoyaltyModule(_royaltyModule);
     }
 
@@ -124,13 +125,15 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
             // calculate pending reward for each IP
             ipRewardInfo[groupId][token][ipIds[i]].rewardDebt += rewards[i];
             poolInfo[groupId][token].availableBalance -= rewards[i];
-            // call royalty module to transfer reward to IP as royalty
-            IERC20(token).safeTransfer(ipIds[i], rewards[i]);
+            // call royalty module to transfer reward to IP's vault as royalty
+            IERC20(token).safeTransfer(ROYALTY_MODULE.ipRoyaltyVaults(ipIds[i]), rewards[i]);
         }
     }
 
     function _collectRoyalties(address groupId, address token) internal {
-        IIpRoyaltyVault vault = ROYALTY_MODULE.ipRoyaltyVaults(groupId);
+        IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
+        // ignore if group IP vault is not created
+        if (address(vault) == address(0)) return;
         uint256[] memory snapshotsToClaim = new uint256[](1);
         snapshotsToClaim[0] = vault.snapshot();
         uint256 royalties = vault.claimRevenueBySnapshotBatch(snapshotsToClaim, token);

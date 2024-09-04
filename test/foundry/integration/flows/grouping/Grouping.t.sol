@@ -15,6 +15,7 @@ import { Errors } from "../../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { IGroupRewardPool } from "../../../../../contracts/interfaces/modules/grouping/IGroupRewardPool.sol";
 import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
+import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
@@ -35,13 +36,14 @@ contract Flows_Integration_Grouping is BaseIntegration {
 
     uint32 internal defaultCommRevShare = 10 * 10 ** 6; // 10%
     uint256 internal commRemixTermsId;
-    address internal rewardPool = address(new MockEvenSplitGroupPool(address(royaltyModule)));
+    address internal rewardPool;
 
     address internal groupOwner;
+    address internal groupId;
 
     function setUp() public override {
         super.setUp();
-
+        rewardPool = address(new MockEvenSplitGroupPool(address(royaltyModule)));
         commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({
@@ -60,10 +62,12 @@ contract Flows_Integration_Grouping is BaseIntegration {
     }
 
     function test_Integration_Grouping() public {
+        vm.prank(admin);
+        groupingModule.whitelistGroupRewardPool(rewardPool);
         // create a group
         {
             vm.startPrank(groupOwner);
-            address groupId = groupingModule.registerGroup(rewardPool);
+            groupId = groupingModule.registerGroup(rewardPool);
             vm.label(groupId, "Group1");
             licensingModule.attachLicenseTerms(groupId, address(pilTemplate), commRemixTermsId);
             vm.stopPrank();
@@ -84,6 +88,8 @@ contract Flows_Integration_Grouping is BaseIntegration {
             vm.stopPrank();
         }
 
+        licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), commRemixTermsId, 1, address(this), "");
+        licensingModule.mintLicenseTokens(ipAcct[2], address(pilTemplate), commRemixTermsId, 1, address(this), "");
         {
             address[] memory ipIds = new address[](2);
             ipIds[0] = ipAcct[1];
@@ -95,6 +101,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
 
         {
             vm.startPrank(u.carl);
+            ipAcct[3] = registerIpAccount(mockNFT, 3, u.carl);
             address[] memory parentIpIds = new address[](1);
             parentIpIds[0] = groupId;
             uint256[] memory licenseIds = new uint256[](1);
@@ -113,9 +120,9 @@ contract Flows_Integration_Grouping is BaseIntegration {
             address newUser = address(0xbeef);
             vm.startPrank(newUser);
 
-            mockToken.mint(newUser, 1 ether);
-
-            mockToken.approve(address(royaltyModule), 1 ether);
+            mockToken.mint(newUser, 10 ether);
+            vm.label(address(royaltyModule), "RoyaltyModule");
+            mockToken.approve(address(royaltyModule), 10 ether);
             // ipAcct[3] is the receiver, the actual token is paid by the caller (newUser).
             royaltyModule.payRoyaltyOnBehalf(ipAcct[3], ipAcct[3], address(mockToken), 10 ether);
             totalPaymentToIpAcct3 += 10 ether;
@@ -163,85 +170,8 @@ contract Flows_Integration_Grouping is BaseIntegration {
             vm.expectEmit(address(groupingModule));
             emit IGroupingModule.ClaimedReward(groupId, address(erc20), ipIds, rewards);
             groupingModule.claimReward(groupId, address(erc20), ipIds);
-            assertEq(mockToken.balanceOf(royaltyModule.ipRoyaltyVaults(ipAcct[1])), 5_000_000);
-            assertEq(mockToken.balanceOf(royaltyModule.ipRoyaltyVaults(ipAcct[2])), 5_000_000);
+            assertEq(mockToken.balanceOf(royaltyModule.ipRoyaltyVaults(ipAcct[1])), 1 ether / 2);
+            assertEq(mockToken.balanceOf(royaltyModule.ipRoyaltyVaults(ipAcct[2])), 1 ether / 2);
         }
-
-        //        // Owner of IPAccount2, Bob, claims his RTs from IPAccount3 vault
-        //        {
-        //            vm.startPrank(u.bob);
-        //
-        //            ERC20[] memory tokens = new ERC20[](1);
-        //            tokens[0] = mockToken;
-        //
-        //            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
-        //            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
-        //
-        //            vm.warp(block.timestamp + 7 days + 1);
-        //            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
-        //
-        //            // Expect 10% (10_000_000) because ipAcct[2] has only one parent (IPAccount1), with 10% absolute royalty.
-        //
-        //            uint256[] memory snapshotsToClaim = new uint256[](1);
-        //            snapshotsToClaim[0] = 1;
-        //            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[3]);
-        //
-        //            vm.expectEmit(ipRoyaltyVault3);
-        //            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault2, value: 10_000_000 });
-        //
-        //            vm.expectEmit(address(royaltyPolicyLAP));
-        //            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[2], 10_000_000);
-        //
-        //            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[2]);
-        //        }
-
-        // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 vaults
-//        {
-//            vm.startPrank(address(100));
-//
-//            ERC20[] memory tokens = new ERC20[](1);
-//            tokens[0] = mockToken;
-//
-//            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
-//            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
-//            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
-//
-//            vm.warp(block.timestamp + 7 days + 1);
-//            IpRoyaltyVault(ipRoyaltyVault2).snapshot();
-//
-//            // IPAccount1 should expect 10% absolute royalty from its children (IPAccount2)
-//            // and 20% from its grandchild (IPAccount3) and so on.
-//
-//            uint256[] memory snapshotsToClaim = new uint256[](1);
-//            snapshotsToClaim[0] = 1;
-//            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[2]);
-//
-//            vm.expectEmit(ipRoyaltyVault2);
-//            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 10_000_000 });
-//            vm.expectEmit(address(royaltyPolicyLAP));
-//            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[2], ipAcct[1], 10_000_000);
-//            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[2], ipAcct[1]);
-//
-//            vm.expectEmit(ipRoyaltyVault3);
-//            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 20_000_000 });
-//            vm.expectEmit(address(royaltyPolicyLAP));
-//            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[1], 20_000_000);
-//            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[1]);
-//        }
-//
-//        // Alice using IPAccount1 takes snapshot on IPAccount2 vault and claims her revenue from both
-//        // IPAccount2 and IPAccount3
-//        {
-//            vm.startPrank(ipAcct[1]);
-//
-//            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
-//
-//            address[] memory tokens = new address[](1);
-//            tokens[0] = address(mockToken);
-//
-//            IpRoyaltyVault(ipRoyaltyVault1).snapshot();
-//
-//            IpRoyaltyVault(ipRoyaltyVault1).claimRevenueByTokenBatch(1, tokens);
-//        }
     }
 }

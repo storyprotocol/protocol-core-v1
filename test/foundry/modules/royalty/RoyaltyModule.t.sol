@@ -92,7 +92,7 @@ contract TestRoyaltyModule is BaseTest {
         // grouping
         mockNft.mintId(ipOwner1, tokenId1);
         ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
-        rewardPool = new MockEvenSplitGroupPool();
+        rewardPool = new MockEvenSplitGroupPool(address(royaltyModule));
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }

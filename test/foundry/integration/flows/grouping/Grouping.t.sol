@@ -7,13 +7,10 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // contracts
-import { IRoyaltyModule } from "../../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 // solhint-disable-next-line max-line-length
 import { IRoyaltyPolicyLAP } from "../../../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
-import { Errors } from "../../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
-import { IGroupRewardPool } from "../../../../../contracts/interfaces/modules/grouping/IGroupRewardPool.sol";
 import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 

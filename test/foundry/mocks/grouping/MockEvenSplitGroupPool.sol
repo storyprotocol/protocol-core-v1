@@ -12,7 +12,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    IRoyaltyModule public  ROYALTY_MODULE;
+    IRoyaltyModule public ROYALTY_MODULE;
 
     struct IpRewardInfo {
         uint256 startPoolBalance; // balance of pool when IP added to pool

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { IRoyaltyModule } from "../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IDisputeModule } from "../../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";

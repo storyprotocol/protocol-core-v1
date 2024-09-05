@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";

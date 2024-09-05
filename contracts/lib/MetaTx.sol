@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 /// @title MetaTx
 /// @dev This library provides functions for handling meta transactions in the Story Protocol.

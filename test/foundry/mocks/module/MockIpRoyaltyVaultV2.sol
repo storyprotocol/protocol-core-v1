@@ -1,7 +1,7 @@
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 contract MockIpRoyaltyVaultV2 is IpRoyaltyVault {
     /// @dev Storage structure for the MockIPRoyaltyVaultV2

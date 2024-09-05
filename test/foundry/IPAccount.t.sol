@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 import { ERC6551 } from "@solady/src/accounts/ERC6551.sol";

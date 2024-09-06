@@ -143,8 +143,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
         if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        else if (block.chainid == 1513) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
-        else if (block.chainid == 1337) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
+        else if (block.chainid == 1513) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+        else if (block.chainid == 1337) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):

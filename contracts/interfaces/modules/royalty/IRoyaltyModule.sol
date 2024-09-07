@@ -129,8 +129,17 @@ interface IRoyaltyModule is IModule {
     /// @param amount The amount to pay
     function payLicenseMintingFee(address receiverIpId, address payerAddress, address token, uint256 amount) external;
 
-    /// @notice Returns the total number of royalty tokens
-    function totalRtSupply() external pure returns (uint32);
+    /// @notice Returns the number of ancestors for a given IP asset
+    /// @param ipId The ID of IP asset
+    function getAncestorsCount(address ipId) external view returns (uint256);
+
+    /// @notice Indicates if an IP asset has a specific ancestor IP asset
+    /// @param ipId The ID of IP asset
+    /// @param ancestorIpId The ID of the ancestor IP asset
+    function hasAncestorIp(address ipId, address ancestorIpId) external view returns (bool);
+
+    /// @notice Returns the maximum percentage - represents 100%
+    function maxPercent() external pure returns (uint32);
 
     /// @notice Indicates if a royalty policy is whitelisted
     /// @param royaltyPolicy The address of the royalty policy
@@ -160,7 +169,16 @@ interface IRoyaltyModule is IModule {
     /// @param ipId The ID of IP asset
     function ipRoyaltyVaults(address ipId) external view returns (address);
 
+    /// @notice Returns the global royalty stack for whitelisted royalty policies and a given IP asset
+    /// @param ipId The ID of IP asset
+    function globalRoyaltyStack(address ipId) external view returns (uint32);
+
     /// @notice Returns the accumulated royalty policies for a given IP asset
     /// @param ipId The ID of IP asset
     function accumulatedRoyaltyPolicies(address ipId) external view returns (address[] memory);
+
+    /// @notice Returns the total lifetime revenue tokens received for a given IP asset
+    /// @param ipId The ID of IP asset
+    /// @param token The token address
+    function totalRevenueTokensReceived(address ipId, address token) external view returns (uint256);
 }

@@ -33,8 +33,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @notice Ip graph precompile contract address
     address public constant IP_GRAPH = address(0x1A);
 
-    /// @notice Returns the percentage scale - represents 100% of royalty tokens for an ip
-    uint32 public constant TOTAL_RT_SUPPLY = 100000000; // 100 * 10 ** 6
+    /// @notice Returns the percentage scale - represents 100%
+    uint32 public constant MAX_PERCENT = 100000000; // 100 * 10 ** 6
 
     /// @notice Returns the canonical protocol-wide licensing module
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -60,7 +60,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param isRegisteredExternalRoyaltyPolicy Indicates if an external royalty policy is registered
     /// @param ipRoyaltyVaults Indicates the royalty vault for a given IP asset (if any)
+    /// @param globalRoyaltyStack Indicates the gloabl royalty stack from whitelisted royalty policies for a given IP asset
     /// @param accumulatedRoyaltyPolicies Indicates the accumulated royalty policies for a given IP asset
+    /// @param totalRevenueTokensReceived Indicates the total lifetime revenue tokens received for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
         uint256 maxParents;
@@ -70,7 +72,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         mapping(address token => bool) isWhitelistedRoyaltyToken;
         mapping(address royaltyPolicy => bool) isRegisteredExternalRoyaltyPolicy;
         mapping(address ipId => address ipRoyaltyVault) ipRoyaltyVaults;
+        mapping(address ipId => uint32) globalRoyaltyStack;
         mapping(address ipId => EnumerableSet.AddressSet) accumulatedRoyaltyPolicies;
+        mapping(address ipId => mapping(address token => uint256)) totalRevenueTokensReceived;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyModule")) - 1)) & ~bytes32(uint256(0xff));
@@ -210,10 +214,10 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     ) external nonReentrant onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
         if (royaltyPolicy == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
-        if (licensePercent > TOTAL_RT_SUPPLY) revert Errors.RoyaltyModule__AboveRoyaltyTokenSupplyLimit();
+        if (licensePercent > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
 
         if (!$.isWhitelistedRoyaltyPolicy[royaltyPolicy] && !$.isRegisteredExternalRoyaltyPolicy[royaltyPolicy])
-            revert Errors.RoyaltyModule__NotAllowedRoyaltyPolicy();
+            revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
 
         // If the an ipId has the maximum number of ancestors
         // it can not have any derivative and therefore is not allowed to mint a license
@@ -230,6 +234,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // for whitelisted policies calls onLicenseMinting
         if ($.isWhitelistedRoyaltyPolicy[royaltyPolicy]) {
+            if ($.globalRoyaltyStack[ipId] + licensePercent > MAX_PERCENT)
+                revert Errors.RoyaltyModule__AboveMaxPercent();
             IRoyaltyPolicy(royaltyPolicy).onLicenseMinting(ipId, licensePercent, externalData);
         }
 
@@ -268,23 +274,26 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         _distributeRoyaltyTokensToPolicies(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, ipRoyaltyVault);
 
         // for whitelisted policies calls onLinkToParents
+        // loop is limited to accumulatedRoyaltyPoliciesLimit
+        uint32 sumRoyaltyStack;
         address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[ipId].values();
         for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
-            if (
-                !$.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]] &&
-                !$.isRegisteredExternalRoyaltyPolicy[accRoyaltyPolicies[i]]
-            ) revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
-
             if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
-                IRoyaltyPolicy(accRoyaltyPolicies[i]).onLinkToParents(
+                sumRoyaltyStack += IRoyaltyPolicy(accRoyaltyPolicies[i]).onLinkToParents(
                     ipId,
                     parentIpIds,
                     licenseRoyaltyPolicies,
                     licensesPercent,
                     externalData
                 );
+            } else {
+                if (!$.isRegisteredExternalRoyaltyPolicy[accRoyaltyPolicies[i]])
+                    revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
             }
         }
+
+        if (sumRoyaltyStack > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
+        $.globalRoyaltyStack[ipId] = sumRoyaltyStack;
 
         emit LinkedToParents(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, externalData);
     }
@@ -300,11 +309,21 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address token,
         uint256 amount
     ) external nonReentrant whenNotPaused {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+
+        if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
+        if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
         IDisputeModule dispute = DISPUTE_MODULE;
         if (dispute.isIpTagged(receiverIpId) || dispute.isIpTagged(payerIpId))
             revert Errors.RoyaltyModule__IpIsTagged();
 
-        _payToReceiverVault(receiverIpId, msg.sender, token, amount);
+        // pay to the whitelisted royalty policies first
+        uint256 amountPaid = _payToWhitelistedRoyaltyPolicies(receiverIpId, msg.sender, token, amount);
+
+        // pay the remaining amount to the receiver vault
+        _payToReceiverVault(receiverIpId, msg.sender, token, amount - amountPaid);
+
+        $.totalRevenueTokensReceived[receiverIpId][token] += amount;
 
         emit RoyaltyPaid(receiverIpId, payerIpId, msg.sender, token, amount);
     }
@@ -320,16 +339,39 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address token,
         uint256 amount
     ) external onlyLicensingModule {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+
+        if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
+        if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
         if (DISPUTE_MODULE.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
 
-        _payToReceiverVault(receiverIpId, payerAddress, token, amount);
+        // pay to the whitelisted royalty policies first
+        uint256 amountPaid = _payToWhitelistedRoyaltyPolicies(receiverIpId, payerAddress, token, amount);
+
+        // pay the remaining amount to the receiver vault
+        _payToReceiverVault(receiverIpId, payerAddress, token, amount - amountPaid);
+
+        $.totalRevenueTokensReceived[receiverIpId][token] += amount;
 
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount);
     }
 
-    /// @notice Returns the total number of royalty tokens
-    function totalRtSupply() external pure returns (uint32) {
-        return TOTAL_RT_SUPPLY;
+    /// @notice Returns the number of ancestors for a given IP asset
+    /// @param ipId The ID of IP asset
+    function getAncestorsCount(address ipId) external view returns (uint256) {
+        return _getAncestorCount(ipId);
+    }
+
+    /// @notice Indicates if an IP asset has a specific ancestor IP asset
+    /// @param ipId The ID of IP asset
+    /// @param ancestorIpId The ID of the ancestor IP asset
+    function hasAncestorIp(address ipId, address ancestorIpId) external view returns (bool) {
+        return _hasAncestorIp(ipId, ancestorIpId);
+    }
+
+    /// @notice Returns the maximum percentage - represents 100%
+    function maxPercent() external pure returns (uint32) {
+        return MAX_PERCENT;
     }
 
     /// @notice Indicates if a royalty policy is whitelisted
@@ -374,15 +416,56 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         return _getRoyaltyModuleStorage().ipRoyaltyVaults[ipId];
     }
 
+    /// @notice Returns the global royalty stack for whitelisted royalty policies and a given IP asset
+    /// @param ipId The ID of IP asset
+    function globalRoyaltyStack(address ipId) external view returns (uint32) {
+        return _getRoyaltyModuleStorage().globalRoyaltyStack[ipId];
+    }
+
     /// @notice Returns the accumulated royalty policies for a given IP asset
     /// @param ipId The ID of IP asset
     function accumulatedRoyaltyPolicies(address ipId) external view returns (address[] memory) {
         return _getRoyaltyModuleStorage().accumulatedRoyaltyPolicies[ipId].values();
     }
 
+    /// @notice Returns the total lifetime revenue tokens received for a given IP asset
+    /// @param ipId The ID of IP asset
+    /// @param token The token address
+    function totalRevenueTokensReceived(address ipId, address token) external view returns (uint256) {
+        return _getRoyaltyModuleStorage().totalRevenueTokensReceived[ipId][token];
+    }
+
     /// @notice IERC165 interface support
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(IRoyaltyModule).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /// @notice Transfers to each whitelisted policy its share of the total payment
+    /// @param receiverIpId The ID of the IP asset receiving the payment
+    /// @param payerAddress The address of the payer
+    /// @param token The token address
+    /// @param amount The total payment amount
+    function _payToWhitelistedRoyaltyPolicies(
+        address receiverIpId,
+        address payerAddress,
+        address token,
+        uint256 amount
+    ) internal returns (uint256 totalAmountPaid) {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+
+        // loop is limited to accumulatedRoyaltyPoliciesLimit
+        address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[receiverIpId].values();
+        for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
+            if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
+                uint32 royaltyStack = IRoyaltyPolicy(accRoyaltyPolicies[i]).getRoyaltyStack(receiverIpId);
+                if (royaltyStack == 0) continue;
+
+                uint256 amountToTransfer = (amount * royaltyStack) / MAX_PERCENT;
+                totalAmountPaid += amountToTransfer;
+
+                IERC20(token).safeTransferFrom(payerAddress, accRoyaltyPolicies[i], amountToTransfer);
+            }
+        }
     }
 
     /// @notice Deploys a new ipRoyaltyVault for the given ipId
@@ -393,7 +476,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
         address ipRoyaltyVault = address(new BeaconProxy(ipRoyaltyVaultBeacon(), ""));
-        IIpRoyaltyVault(ipRoyaltyVault).initialize("Royalty Token", "RT", TOTAL_RT_SUPPLY, ipId, receiver);
+        IIpRoyaltyVault(ipRoyaltyVault).initialize("Royalty Token", "RT", MAX_PERCENT, ipId, receiver);
         $.ipRoyaltyVaults[ipId] = ipRoyaltyVault;
 
         return ipRoyaltyVault;
@@ -427,13 +510,12 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
                 uint32 licensePercent = accParentRoyaltyPolicies[j] == licenseRoyaltyPolicies[i]
                     ? licensesPercent[i]
                     : 0;
-                uint32 rtsRequiredToLink = IRoyaltyPolicy(accParentRoyaltyPolicies[j]).rtsRequiredToLink(
+                uint32 rtsRequiredToLink = IRoyaltyPolicy(accParentRoyaltyPolicies[j]).getRtsRequiredToLink(
                     parentIpIds[i],
                     licensePercent
                 );
                 totalRtsRequiredToLink += rtsRequiredToLink;
-                if (totalRtsRequiredToLink > TOTAL_RT_SUPPLY)
-                    revert Errors.RoyaltyModule__AboveRoyaltyTokenSupplyLimit();
+                if (totalRtsRequiredToLink > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
                 IERC20(ipRoyaltyVault).safeTransfer(accParentRoyaltyPolicies[j], rtsRequiredToLink);
             }
         }
@@ -446,7 +528,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
             ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
             : ipId;
-        IERC20(ipRoyaltyVault).safeTransfer(receiver, TOTAL_RT_SUPPLY - totalRtsRequiredToLink);
+        IERC20(ipRoyaltyVault).safeTransfer(receiver, MAX_PERCENT - totalRtsRequiredToLink);
     }
 
     /// @notice Adds a royalty policy to the accumulated royalty policies of an IP asset
@@ -463,11 +545,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param token The token to use to pay the royalties
     /// @param amount The amount to pay
     function _payToReceiverVault(address receiverIpId, address payerAddress, address token, uint256 amount) internal {
-        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
-
-        if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
-
-        address receiverVault = $.ipRoyaltyVaults[receiverIpId];
+        address receiverVault = _getRoyaltyModuleStorage().ipRoyaltyVaults[receiverIpId];
         if (receiverVault == address(0)) revert Errors.RoyaltyModule__ZeroReceiverVault();
 
         IIpRoyaltyVault(receiverVault).addIpRoyaltyVaultTokens(token);
@@ -477,12 +555,24 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @notice Returns the count of ancestors for the given IP asset
     /// @param ipId The ID of the IP asset
     /// @return The number of ancestors
-    function _getAncestorCount(address ipId) internal returns (uint256) {
-        (bool success, bytes memory returnData) = IP_GRAPH.call(
+    function _getAncestorCount(address ipId) internal view returns (uint256) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
         );
         require(success, "Call failed");
         return abi.decode(returnData, (uint256));
+    }
+
+    /// @notice Returns whether and IP is an ancestor of a given IP
+    /// @param ipId The ipId to check if it has an ancestor
+    /// @param ancestorIpId The ancestor ipId to check if it is an ancestor
+    /// @return True if the IP has the ancestor
+    function _hasAncestorIp(address ipId, address ancestorIpId) internal view returns (bool) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+            abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
+        );
+        require(success, "Call failed");
+        return abi.decode(returnData, (bool));
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

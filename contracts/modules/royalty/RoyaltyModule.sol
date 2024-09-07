@@ -59,10 +59,10 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param isWhitelistedRoyaltyPolicy Indicates if a royalty policy is whitelisted
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param isRegisteredExternalRoyaltyPolicy Indicates if an external royalty policy is registered
-    /// @param ipRoyaltyVaults Indicates the royalty vault for a given IP asset (if any)
-    /// @param globalRoyaltyStack Indicates the gloabl royalty stack from whitelisted royalty policies for a given IP asset
-    /// @param accumulatedRoyaltyPolicies Indicates the accumulated royalty policies for a given IP asset
-    /// @param totalRevenueTokensReceived Indicates the total lifetime revenue tokens received for a given IP asset
+    /// @param ipRoyaltyVaults The royalty vault address for a given IP asset (if any)
+    /// @param globalRoyaltyStack The global royalty stack from whitelisted royalty policies for a given IP asset
+    /// @param accumulatedRoyaltyPolicies The accumulated royalty policies for a given IP asset
+    /// @param totalRevenueTokensReceived The total lifetime revenue tokens received for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
         uint256 maxParents;
@@ -194,7 +194,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // checks if the IExternalRoyaltyPolicy call does not revert
         // external royalty policies contracts should inherit IExternalRoyaltyPolicy interface
-        if (IExternalRoyaltyPolicy(externalRoyaltyPolicy).rtsRequiredToLink(address(0), 0) >= uint32(0)) {
+        if (IExternalRoyaltyPolicy(externalRoyaltyPolicy).getPolicyRtsRequiredToLink(address(0), 0) >= uint32(0)) {
             $.isRegisteredExternalRoyaltyPolicy[externalRoyaltyPolicy] = true;
             emit ExternalRoyaltyPolicyRegistered(externalRoyaltyPolicy);
         }
@@ -457,7 +457,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[receiverIpId].values();
         for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
             if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
-                uint32 royaltyStack = IRoyaltyPolicy(accRoyaltyPolicies[i]).getRoyaltyStack(receiverIpId);
+                uint32 royaltyStack = IRoyaltyPolicy(accRoyaltyPolicies[i]).getPolicyRoyaltyStack(receiverIpId);
                 if (royaltyStack == 0) continue;
 
                 uint256 amountToTransfer = (amount * royaltyStack) / MAX_PERCENT;
@@ -510,7 +510,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
                 uint32 licensePercent = accParentRoyaltyPolicies[j] == licenseRoyaltyPolicies[i]
                     ? licensesPercent[i]
                     : 0;
-                uint32 rtsRequiredToLink = IRoyaltyPolicy(accParentRoyaltyPolicies[j]).getRtsRequiredToLink(
+                uint32 rtsRequiredToLink = IRoyaltyPolicy(accParentRoyaltyPolicies[j]).getPolicyRtsRequiredToLink(
                     parentIpIds[i],
                     licensePercent
                 );
@@ -575,14 +575,14 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         return abi.decode(returnData, (bool));
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
-    /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override restricted {}
-
     /// @dev Returns the storage struct of RoyaltyModule
     function _getRoyaltyModuleStorage() private pure returns (RoyaltyModuleStorage storage $) {
         assembly {
             $.slot := RoyaltyModuleStorageLocation
         }
     }
+
+    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
+    /// @param newImplementation The address of the new implementation
+    function _authorizeUpgrade(address newImplementation) internal override restricted {}
 }

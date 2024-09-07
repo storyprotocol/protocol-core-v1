@@ -297,7 +297,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     function _claimableRevenue(address account, uint256 snapshotId, address token) internal view returns (uint256) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
-        // if the ip is tagged, then the unclaimed royalties are lost
+        // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
         if (DISPUTE_MODULE.isIpTagged($.ipId)) return 0;
 
         uint256 balance = balanceOfAt(account, snapshotId);

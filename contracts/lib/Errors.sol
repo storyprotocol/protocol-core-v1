@@ -464,11 +464,8 @@ library Errors {
     /// @notice Zero address provided for parent ipId.
     error RoyaltyModule__ZeroParentIpId();
 
-    /// @notice Royalty token supply limit is exceeded.
-    error RoyaltyModule__AboveRoyaltyTokenSupplyLimit();
-
-    /// @notice Not a allowed royalty policy.
-    error RoyaltyModule__NotAllowedRoyaltyPolicy();
+    /// @notice Above maximum percentage.
+    error RoyaltyModule__AboveMaxPercent();
 
     /// @notice Caller is unauthorized.
     error RoyaltyModule__NotAllowedCaller();
@@ -494,9 +491,6 @@ library Errors {
     /// @notice Royalty policy is already whitelisted or registered.
     error RoyaltyModule__PolicyAlreadyWhitelistedOrRegistered();
 
-    /// @notice External Royalty Policy does not support IExternalRoyaltyPolicy interface.
-    error RoyaltyModule__ExternalRoyaltyPolicyInterfaceNotSupported();
-
     /// @notice Royalty Policy is not whitelisted or registered.
     error RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
 
@@ -515,6 +509,12 @@ library Errors {
     /// @notice Zero address for ip asset registry.
     error RoyaltyModule__ZeroIpAssetRegistry();
 
+    /// @notice Not a whitelisted royalty token.
+    error RoyaltyModule__NotWhitelistedRoyaltyToken();
+
+    /// @notice Amount exceeds the claimable royalty.
+    error RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -525,17 +525,11 @@ library Errors {
     /// @notice Zero address provided for Royalty Module.
     error RoyaltyPolicyLAP__ZeroRoyaltyModule();
 
-    /// @notice Zero address provided for Dispute Module.
-    error RoyaltyPolicyLAP__ZeroDisputeModule();
-
     /// @notice Zero address provided for IP Graph ACL.
     error RoyaltyPolicyLAP__ZeroIPGraphACL();
 
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLAP__NotRoyaltyModule();
-
-    /// @notice Total royalty stack exceeds the protocol limit.
-    error RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
 
     /// @notice IP is dispute tagged.
     error RoyaltyPolicyLAP__IpTagged();
@@ -552,6 +546,9 @@ library Errors {
     /// @notice There is no vault associated with the IP.
     error RoyaltyPolicyLAP__InvalidTargetIpId();
 
+    /// @notice Zero claimable royalty.
+    error RoyaltyPolicyLAP__ZeroClaimableRoyalty();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -559,11 +556,20 @@ library Errors {
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLRP__NotRoyaltyModule();
 
+    /// @notice Zero address provided for IP Graph ACL.
+    error RoyaltyPolicyLRP__ZeroIPGraphACL();
+
     /// @notice Zero address provided for Royalty Module.
     error RoyaltyPolicyLRP__ZeroRoyaltyModule();
 
     /// @notice Zero address provided for Access Manager in initializer.
     error RoyaltyPolicyLRP__ZeroAccessManager();
+
+    /// @notice Zero claimable royalty.
+    error RoyaltyPolicyLRP__ZeroClaimableRoyalty();
+
+    /// @notice Claimer is not an ancestor of the IP.
+    error RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

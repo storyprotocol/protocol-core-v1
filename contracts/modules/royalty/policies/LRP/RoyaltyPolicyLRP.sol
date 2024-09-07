@@ -10,6 +10,7 @@ import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyM
 import { IRoyaltyPolicyLRP } from "../../../../interfaces/modules/royalty/policies/LRP/IRoyaltyPolicyLRP.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
+import { IPGraphACL } from "../../../../access/IPGraphACL.sol";
 
 /// @title Liquid Relative Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid relative percentage mechanism
@@ -42,9 +43,31 @@ contract RoyaltyPolicyLRP is
 {
     using SafeERC20 for IERC20;
 
+    /// @dev Storage structure for the RoyaltyPolicyLRP
+    /// @param royaltyStackLRP Sum of the royalty percentages to be paid to all ancestors for LRP royalty policy
+    /// @param ancestorPercentLRP The royalty percentage between an IP asset and its ancestors for LRP royalty policy
+    /// @param transferredTokensLRP Total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
+    /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLRP
+    struct RoyaltyPolicyLRPStorage {
+        mapping(address ipId => uint32) royaltyStackLRP;
+        mapping(address ipId => mapping(address ancestorIpId => uint32)) ancestorPercentLRP;
+        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokensLRP;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyPolicyLRP")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant RoyaltyPolicyLRPStorageLocation =
+        0xbbe79ec88963794a251328747c07178ad16a06e9c87463d90d5d0d429fa6e700;
+
+    /// @notice Ip graph precompile contract address
+    address public constant IP_GRAPH = address(0x1A);
+
     /// @notice Returns the RoyaltyModule address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
+
+    /// @notice IPGraphACL address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
 
     /// @dev Restricts the calls to the royalty module
     modifier onlyRoyaltyModule() {
@@ -54,11 +77,15 @@ contract RoyaltyPolicyLRP is
 
     /// @notice Constructor
     /// @param royaltyModule The RoyaltyModule address
+    /// @param ipGraphAcl The IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyModule) {
+    constructor(address royaltyModule, address ipGraphAcl) {
         if (royaltyModule == address(0)) revert Errors.RoyaltyPolicyLRP__ZeroRoyaltyModule();
+        if (ipGraphAcl == address(0)) revert Errors.RoyaltyPolicyLRP__ZeroIPGraphACL();
 
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
+
         _disableInitializers();
     }
 
@@ -86,32 +113,135 @@ contract RoyaltyPolicyLRP is
     /// @param ipId The children ipId that is being linked to parents
     /// @param parentIpIds The parent ipIds that the children ipId is being linked to
     /// @param licensesPercent The license percentage of the licenses being minted
+    /// @return newRoyaltyStackLRP The royalty stack of the child ipId for LRP royalty policy
     function onLinkToParents(
         address ipId,
         address[] calldata parentIpIds,
         address[] memory licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant {
-        IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
-
-        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(ipId);
-
-        // this for loop is limited to the maximum number of parents
+    ) external onlyRoyaltyModule nonReentrant returns (uint32 newRoyaltyStackLRP) {
+        IP_GRAPH_ACL.allow();
         for (uint256 i = 0; i < parentIpIds.length; i++) {
+            // when a parent is linking through a different royalty policy, the royalty amount is zero
             if (licenseRoyaltyPolicies[i] == address(this)) {
-                address parentRoyaltyVault = royaltyModule.ipRoyaltyVaults(parentIpIds[i]);
-                IERC20(ipRoyaltyVault).safeTransfer(parentRoyaltyVault, licensesPercent[i]);
+                // for parents linking through LRP license, the royalty amount is set in the precompile
+                // TODO: can we eliminate setRoyaltyLRP and traverse graph with existing data from ip asset registry?
+                _setRoyaltyLRP(ipId, parentIpIds[i], licensesPercent[i]);
             }
         }
+        IP_GRAPH_ACL.disallow();
+
+        // calculate new royalty stack
+        newRoyaltyStackLRP = _getRoyaltyStackLRP(ipId);
+        _getRoyaltyPolicyLRPStorage().royaltyStackLRP[ipId] = newRoyaltyStackLRP;
+    }
+
+    /// @notice Transfers to vault an amount of revenue tokens claimable via LRP royalty policy
+    /// @param ipId The ipId of the IP asset
+    /// @param ancestorIpId The ancestor ipId of the IP asset
+    /// @param token The token address to transfer
+    /// @param amount The amount of tokens to transfer
+    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
+        RoyaltyPolicyLRPStorage storage $ = _getRoyaltyPolicyLRPStorage();
+
+        uint32 ancestorPercent = $.ancestorPercentLRP[ipId][ancestorIpId];
+        if (ancestorPercent == 0) {
+            // on the first transfer to a vault from a specific descendant the royalty between the two is set
+            uint32 newAncestorPercent = _getRoyaltyLRP(ipId, ancestorIpId);
+            if (newAncestorPercent == 0) revert Errors.RoyaltyPolicyLRP__ZeroClaimableRoyalty();
+            $.ancestorPercentLRP[ipId][ancestorIpId] = newAncestorPercent;
+        }
+
+        // check if the amount being claimed is within the claimable royalty amount
+        IRoyaltyModule royaltyModule = ROYALTY_MODULE;
+        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
+        uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
+        uint256 transferredAmount = $.transferredTokensLRP[ancestorIpId][ipId][token];
+        if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
+
+        address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
+
+        $.transferredTokensLRP[ipId][ancestorIpId][token] += amount;
+        IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
     }
 
     /// @notice Returns the amount of royalty tokens required to link a child to a given IP asset
     /// @param ipId The ipId of the IP asset
     /// @param licensePercent The percentage of the license
     /// @return The amount of royalty tokens required to link a child to a given IP asset
-    function rtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
-        return licensePercent;
+    function getPolicyRtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
+        return 0;
+    }
+
+    /// @notice Returns the LRP royalty stack for a given IP asset
+    /// @param ipId The ipId to get the royalty stack for
+    /// @return Sum of the royalty percentages to be paid to all ancestors for LRP royalty policy
+    function getPolicyRoyaltyStack(address ipId) external view returns (uint32) {
+        return _getRoyaltyPolicyLRPStorage().royaltyStackLRP[ipId];
+    }
+
+    /// @notice Returns the royalty percentage between an IP asset and its ancestors via LRP
+    /// @param ipId The ipId to get the royalty for
+    /// @param ancestorIpId The ancestor ipId to get the royalty for
+    /// @return The royalty percentage between an IP asset and its ancestors via LRP
+    function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {
+        return _getRoyaltyLRP(ipId, ancestorIpId);
+    }
+
+    /// @notice Returns the total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
+    /// @param ipId The ipId of the IP asset
+    /// @param ancestorIpId The ancestor ipId of the IP asset
+    /// @param token The token address to transfer
+    /// @return The total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
+    function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {
+        return _getRoyaltyPolicyLRPStorage().transferredTokensLRP[ipId][ancestorIpId][token];
+    }
+
+    /// @notice Returns the royalty stack for a given IP asset for LRP royalty policy
+    /// @param ipId The ipId to get the royalty stack for
+    /// @return The royalty stack for a given IP asset for LRP royalty policy
+    function _getRoyaltyStackLRP(address ipId) internal view returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+            abi.encodeWithSignature("getRoyaltyStack(address,address)", ipId, address(this))
+        );
+        require(success, "Call failed");
+        return uint32(abi.decode(returnData, (uint256)));
+    }
+
+    /// @notice Sets the LRP royalty for a given link between an IP asset and its ancestor
+    /// @param ipId The ipId to set the royalty for
+    /// @param parentIpId The parent ipId to set the royalty for
+    /// @param royalty The LRP license royalty percentage
+    function _setRoyaltyLRP(address ipId, address parentIpId, uint32 royalty) internal {
+        (bool success, bytes memory returnData) = IP_GRAPH.call(
+            abi.encodeWithSignature(
+                "setRoyalty(address,address,address,uint256)",
+                ipId,
+                parentIpId,
+                address(this),
+                uint256(royalty)
+            )
+        );
+        require(success, "Call failed");
+    }
+
+    /// @notice Returns the royalty percentage between an IP asset and its ancestor via royalty policy LRP
+    /// @param ipId The ipId to get the royalty for
+    /// @param ancestorIpId The ancestor ipId to get the royalty for
+    /// @return The royalty percentage between an IP asset and its ancestor via royalty policy LRP
+    function _getRoyaltyLRP(address ipId, address ancestorIpId) internal view returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+            abi.encodeWithSignature("getRoyalty(address,address,address)", ipId, ancestorIpId, address(this))
+        );
+        require(success, "Call failed");
+        return uint32(abi.decode(returnData, (uint256)));
+    }
+    /// @notice Returns the storage struct of RoyaltyPolicyLRP
+    function _getRoyaltyPolicyLRPStorage() private pure returns (RoyaltyPolicyLRPStorage storage $) {
+        assembly {
+            $.slot := RoyaltyPolicyLRPStorageLocation
+        }
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

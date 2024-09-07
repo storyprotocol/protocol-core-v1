@@ -7,10 +7,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IIpRoyaltyVault } from "../../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
-import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IRoyaltyPolicyLAP } from "../../../../interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
-import { ArrayUtils } from "../../../../lib/ArrayUtils.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
 import { IPGraphACL } from "../../../../access/IPGraphACL.sol";
@@ -26,20 +23,14 @@ contract RoyaltyPolicyLAP is
     using SafeERC20 for IERC20;
 
     /// @dev Storage structure for the RoyaltyPolicyLAP
-    /// @param royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    /// @param unclaimedRoyaltyTokens The unclaimed royalty tokens for a given ipId
-    /// @param isCollectedByAncestor Whether royalty tokens have been collected by an ancestor for a given ipId
-    /// @param revenueTokenBalances The revenue token balances claimed for a given ipId and token
-    /// @param snapshotsClaimed Whether a snapshot has been claimed for a given ipId and token
-    /// @param snapshotsClaimedCounter The number of snapshots claimed for a given ipId and token
+    /// @param royaltyStackLAP Sum of the royalty percentages to be paid to all ancestors for LAP royalty policy
+    /// @param ancestorPercentLAP The royalty percentage between an IP asset and its ancestors for LAP royalty policy
+    /// @param transferredTokensLAP Total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLAP
     struct RoyaltyPolicyLAPStorage {
-        mapping(address ipId => uint32) royaltyStack;
-        mapping(address ipId => uint32) unclaimedRoyaltyTokens;
-        mapping(address ipId => mapping(address ancestorIpId => bool)) isCollectedByAncestor;
-        mapping(address ipId => mapping(address token => uint256)) revenueTokenBalances;
-        mapping(address ipId => mapping(address token => mapping(uint256 snapshotId => bool))) snapshotsClaimed;
-        mapping(address ipId => mapping(address token => uint256)) snapshotsClaimedCounter;
+        mapping(address ipId => uint32) royaltyStackLAP;
+        mapping(address ipId => mapping(address ancestorIpId => uint32)) ancestorPercentLAP;
+        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokensLAP;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyPolicyLAP")) - 1)) & ~bytes32(uint256(0xff));
@@ -53,10 +44,6 @@ contract RoyaltyPolicyLAP is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
 
-    /// @notice Dispute module address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IDisputeModule public immutable DISPUTE_MODULE;
-
     /// @notice IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPGraphACL public immutable IP_GRAPH_ACL;
@@ -69,16 +56,13 @@ contract RoyaltyPolicyLAP is
 
     /// @notice Constructor
     /// @param royaltyModule The RoyaltyModule address
-    /// @param disputeModule The DisputeModule address
     /// @param ipGraphAcl The IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyModule, address disputeModule, address ipGraphAcl) {
+    constructor(address royaltyModule, address ipGraphAcl) {
         if (royaltyModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroRoyaltyModule();
-        if (disputeModule == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroDisputeModule();
         if (ipGraphAcl == address(0)) revert Errors.RoyaltyPolicyLAP__ZeroIPGraphACL();
 
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
-        DISPUTE_MODULE = IDisputeModule(disputeModule);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
 
         _disableInitializers();
@@ -101,228 +85,139 @@ contract RoyaltyPolicyLAP is
         address ipId,
         uint32 licensePercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant {
-        // check if the new license royalty is within the royalty stack limit
-        if (_getRoyaltyStack(ipId) + licensePercent > ROYALTY_MODULE.totalRtSupply())
-            revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
-    }
+    ) external onlyRoyaltyModule nonReentrant {}
 
     /// @notice Executes royalty related logic on linking to parents
     /// @dev Enforced to be only callable by RoyaltyModule
     /// @param ipId The children ipId that is being linked to parents
     /// @param parentIpIds The parent ipIds that the children ipId is being linked to
     /// @param licensesPercent The license percentage of the licenses being minted
+    /// @return newRoyaltyStackLAP The royalty stack of the child ipId for LAP royalty policy
     function onLinkToParents(
         address ipId,
         address[] calldata parentIpIds,
         address[] memory licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant {
-        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-
-        uint32[] memory royaltiesGroupedByParent = new uint32[](parentIpIds.length);
-        address[] memory uniqueParents = new address[](parentIpIds.length);
-        uint256 uniqueParentCount;
-
+    ) external onlyRoyaltyModule nonReentrant returns (uint32 newRoyaltyStackLAP) {
         IP_GRAPH_ACL.allow();
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            if (licenseRoyaltyPolicies[i] != address(this)) {
-                // currently only parents being linked through LAP license are added to the precompile
-                // so when a parent is linking through a different royalty policy, the royalty amount is set to zero
-                _setRoyaltyLAP(ipId, parentIpIds[i], 0);
-            } else {
+            // when a parent is linking through a different royalty policy, the royalty amount is zero
+            if (licenseRoyaltyPolicies[i] == address(this)) {
                 // for parents linking through LAP license, the royalty amount is set in the precompile
-                (uint256 index, bool exists) = ArrayUtils.indexOf(uniqueParents, parentIpIds[i]);
-                if (!exists) {
-                    index = uniqueParentCount;
-                    uniqueParentCount++;
-                }
-                royaltiesGroupedByParent[index] += licensesPercent[i];
-                uniqueParents[index] = parentIpIds[i];
-                _setRoyaltyLAP(ipId, parentIpIds[i], royaltiesGroupedByParent[index]);
+                // TODO: can we eliminate setRoyaltyLAP and traverse graph with existing data from ip asset registry?
+                _setRoyaltyLAP(ipId, parentIpIds[i], licensesPercent[i]);
             }
         }
         IP_GRAPH_ACL.disallow();
 
         // calculate new royalty stack
-        uint32 newRoyaltyStack = _getRoyaltyStack(ipId);
-        if (newRoyaltyStack > ROYALTY_MODULE.totalRtSupply()) revert Errors.RoyaltyPolicyLAP__AboveRoyaltyStackLimit();
-
-        $.royaltyStack[ipId] = newRoyaltyStack;
-        $.unclaimedRoyaltyTokens[ipId] = newRoyaltyStack;
+        newRoyaltyStackLAP = _getRoyaltyStackLAP(ipId);
+        _getRoyaltyPolicyLAPStorage().royaltyStackLAP[ipId] = newRoyaltyStackLAP;
     }
 
-    /// @notice Collects royalty tokens to an ancestor's ip royalty vault
-    /// @param ipId The ID of the IP asset
-    /// @param ancestorIpId The ID of the ancestor IP asset
-    function collectRoyaltyTokens(address ipId, address ancestorIpId) external nonReentrant whenNotPaused {
+    /// @notice Transfers to vault an amount of revenue tokens claimable via LAP royalty policy
+    /// @param ipId The ipId of the IP asset
+    /// @param ancestorIpId The ancestor ipId of the IP asset
+    /// @param token The token address to transfer
+    /// @param amount The amount of tokens to transfer
+    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
 
-        if (DISPUTE_MODULE.isIpTagged(ipId)) revert Errors.RoyaltyPolicyLAP__IpTagged();
-        if ($.isCollectedByAncestor[ipId][ancestorIpId]) revert Errors.RoyaltyPolicyLAP__AlreadyClaimed();
-
-        // check if the address being claimed to is an ancestor
-        if (!_hasAncestorIp(ipId, ancestorIpId)) revert Errors.RoyaltyPolicyLAP__ClaimerNotAnAncestor();
-
-        // transfer royalty tokens to the ancestor vault
-        uint32 rtsToTransferToAncestor = _getRoyaltyLAP(ipId, ancestorIpId);
-        address ipIdIpRoyaltyVault = ROYALTY_MODULE.ipRoyaltyVaults(ipId);
-        address ancestorIpRoyaltyVault = ROYALTY_MODULE.ipRoyaltyVaults(ancestorIpId);
-        IERC20(ipIdIpRoyaltyVault).safeTransfer(ancestorIpRoyaltyVault, rtsToTransferToAncestor);
-
-        // transfer revenue tokens to the ancestor vault
-        address[] memory tokenList = IIpRoyaltyVault(ipIdIpRoyaltyVault).tokens();
-        uint256 totalRtSupply = uint256(ROYALTY_MODULE.totalRtSupply());
-        uint256 currentSnapshotId = IIpRoyaltyVault(ipIdIpRoyaltyVault).getCurrentSnapshotId();
-        for (uint256 i = 0; i < tokenList.length; ++i) {
-            uint256 revenueTokenBalance = $.revenueTokenBalances[ipId][tokenList[i]];
-            // check if all revenue tokens have been claimed to LAP contract before the ancestor collects royalty tokens
-            if (currentSnapshotId != $.snapshotsClaimedCounter[ipId][tokenList[i]]) {
-                revert Errors.RoyaltyPolicyLAP__NotAllRevenueTokensHaveBeenClaimed();
-            }
-
-            if (revenueTokenBalance > 0) {
-                // when unclaimedRoyaltyTokens is zero then all royalty tokens have been claimed and it is ok to revert
-                uint256 revenueTokenToTransfer = (revenueTokenBalance * rtsToTransferToAncestor) /
-                    $.unclaimedRoyaltyTokens[ipId];
-                IERC20(tokenList[i]).safeTransfer(ancestorIpRoyaltyVault, revenueTokenToTransfer);
-                IIpRoyaltyVault(ancestorIpRoyaltyVault).addIpRoyaltyVaultTokens(tokenList[i]);
-                $.revenueTokenBalances[ipId][tokenList[i]] -= revenueTokenToTransfer;
-            }
+        uint32 ancestorPercent = $.ancestorPercentLAP[ipId][ancestorIpId];
+        if (ancestorPercent == 0) {
+            // on the first transfer to a vault from a specific descendant the royalty between the two is set
+            uint32 newAncestorPercent = _getRoyaltyLAP(ipId, ancestorIpId);
+            if (newAncestorPercent == 0) revert Errors.RoyaltyPolicyLAP__ZeroClaimableRoyalty();
+            $.ancestorPercentLAP[ipId][ancestorIpId] = newAncestorPercent;
         }
 
-        $.isCollectedByAncestor[ipId][ancestorIpId] = true;
-        $.unclaimedRoyaltyTokens[ipId] -= rtsToTransferToAncestor;
+        // check if the amount being claimed is within the claimable royalty amount
+        IRoyaltyModule royaltyModule = ROYALTY_MODULE;
+        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
+        uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
+        uint256 transferredAmount = $.transferredTokensLAP[ancestorIpId][ipId][token];
+        if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
 
-        emit RoyaltyTokensCollected(ipId, ancestorIpId, rtsToTransferToAncestor);
-    }
+        address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
 
-    /// @notice Allows claiming revenue tokens of behalf of royalty LAP royalty policy contract
-    /// @param snapshotIds The snapshot IDs to claim revenue tokens for
-    /// @param token The token to claim revenue tokens for
-    /// @param targetIpId The target IP ID to claim revenue tokens for
-    function claimBySnapshotBatchAsSelf(
-        uint256[] memory snapshotIds,
-        address token,
-        address targetIpId
-    ) external whenNotPaused nonReentrant {
-        RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-
-        address targetIpVault = ROYALTY_MODULE.ipRoyaltyVaults(targetIpId);
-        if (targetIpVault == address(0)) revert Errors.RoyaltyPolicyLAP__InvalidTargetIpId();
-
-        uint256 tokensClaimed = IIpRoyaltyVault(targetIpVault).claimRevenueBySnapshotBatch(snapshotIds, token);
-
-        // record which snapshots have been claimed for each token to ensure that revenue tokens have been
-        // claimed before allowing collecting the royalty tokens
-        for (uint256 i = 0; i < snapshotIds.length; i++) {
-            if (!$.snapshotsClaimed[targetIpId][token][snapshotIds[i]]) {
-                $.snapshotsClaimed[targetIpId][token][snapshotIds[i]] = true;
-                $.snapshotsClaimedCounter[targetIpId][token]++;
-            }
-        }
-
-        $.revenueTokenBalances[targetIpId][token] += tokensClaimed;
+        $.transferredTokensLAP[ipId][ancestorIpId][token] += amount;
+        IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
     }
 
     /// @notice Returns the amount of royalty tokens required to link a child to a given IP asset
     /// @param ipId The ipId of the IP asset
     /// @param licensePercent The percentage of the license
     /// @return The amount of royalty tokens required to link a child to a given IP asset
-    function rtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
-        return (_getRoyaltyPolicyLAPStorage().royaltyStack[ipId] + licensePercent);
+    function getPolicyRtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
+        return 0;
     }
 
-    /// @notice Returns the royalty data for a given IP asset
-    /// @param ipId The ipId to get the royalty data for
-    /// @return royaltyStack The royalty stack of a given ipId is the sum of the royalties to be paid to each ancestors
-    function royaltyStack(address ipId) external view returns (uint32) {
-        return _getRoyaltyPolicyLAPStorage().royaltyStack[ipId];
-    }
-
-    /// @notice Returns the unclaimed royalty tokens for a given IP asset
-    /// @param ipId The ipId to get the unclaimed royalty tokens for
-    function unclaimedRoyaltyTokens(address ipId) external view returns (uint32) {
-        return _getRoyaltyPolicyLAPStorage().unclaimedRoyaltyTokens[ipId];
-    }
-
-    /// @notice Returns if the royalty tokens have been collected by an ancestor for a given IP asset
-    /// @param ipId The ipId to check if the royalty tokens have been collected by an ancestor
-    /// @param ancestorIpId The ancestor ipId to check if the royalty tokens have been collected
-    function isCollectedByAncestor(address ipId, address ancestorIpId) external view returns (bool) {
-        return _getRoyaltyPolicyLAPStorage().isCollectedByAncestor[ipId][ancestorIpId];
-    }
-
-    /// @notice Returns the revenue token balances for a given IP asset
-    /// @param ipId The ipId to get the revenue token balances for
-    /// @param token The token to get the revenue token balances for
-    function revenueTokenBalances(address ipId, address token) external view returns (uint256) {
-        return _getRoyaltyPolicyLAPStorage().revenueTokenBalances[ipId][token];
-    }
-
-    /// @notice Returns whether a snapshot has been claimed for a given IP asset and token
-    /// @param ipId The ipId to check if the snapshot has been claimed for
-    /// @param token The token to check if the snapshot has been claimed for
-    /// @param snapshot The snapshot to check if it has been claimed
-    function snapshotsClaimed(address ipId, address token, uint256 snapshot) external view returns (bool) {
-        return _getRoyaltyPolicyLAPStorage().snapshotsClaimed[ipId][token][snapshot];
-    }
-
-    /// @notice Returns the number of snapshots claimed for a given IP asset and token
-    /// @param ipId The ipId to check if the snapshot has been claimed for
-    /// @param token The token to check if the snapshot has been claimed for
-    function snapshotsClaimedCounter(address ipId, address token) external view returns (uint256) {
-        return _getRoyaltyPolicyLAPStorage().snapshotsClaimedCounter[ipId][token];
-    }
-
-    /// @notice Returns the royalty stack for a given IP asset
+    /// @notice Returns the LAP royalty stack for a given IP asset
     /// @param ipId The ipId to get the royalty stack for
-    /// @return The royalty stack for a given IP asset
-    function _getRoyaltyStack(address ipId) internal returns (uint32) {
-        (bool success, bytes memory returnData) = IP_GRAPH.call(
-            abi.encodeWithSignature("getRoyaltyStack(address)", ipId)
+    /// @return Sum of the royalty percentages to be paid to all ancestors for LAP royalty policy
+    function getPolicyRoyaltyStack(address ipId) external view returns (uint32) {
+        return _getRoyaltyPolicyLAPStorage().royaltyStackLAP[ipId];
+    }
+
+    /// @notice Returns the royalty percentage between an IP asset and its ancestors via LAP
+    /// @param ipId The ipId to get the royalty for
+    /// @param ancestorIpId The ancestor ipId to get the royalty for
+    /// @return The royalty percentage between an IP asset and its ancestors via LAP
+    function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {
+        return _getRoyaltyLAP(ipId, ancestorIpId);
+    }
+
+    /// @notice Returns the total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
+    /// @param ipId The ipId of the IP asset
+    /// @param ancestorIpId The ancestor ipId of the IP asset
+    /// @param token The token address to transfer
+    /// @return The total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
+    function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {
+        return _getRoyaltyPolicyLAPStorage().transferredTokensLAP[ipId][ancestorIpId][token];
+    }
+
+    /// @notice Returns the royalty stack for a given IP asset for LAP royalty policy
+    /// @param ipId The ipId to get the royalty stack for
+    /// @return The royalty stack for a given IP asset for LAP royalty policy
+    function _getRoyaltyStackLAP(address ipId) internal view returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+            abi.encodeWithSignature("getRoyaltyStack(address,address)", ipId, address(this))
         );
         require(success, "Call failed");
         return uint32(abi.decode(returnData, (uint256)));
     }
 
-    /// @notice Returns whether and IP is an ancestor of a given IP
-    /// @param ipId The ipId to check if it has an ancestor
-    /// @param ancestorIpId The ancestor ipId to check if it is an ancestor
-    /// @return True if the IP has the ancestor
-    function _hasAncestorIp(address ipId, address ancestorIpId) internal returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH.call(
-            abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
-        );
-        require(success, "Call failed");
-        return abi.decode(returnData, (bool));
-    }
-
-    /// @notice Sets the LAP royalty for a given IP asset
+    /// @notice Sets the LAP royalty for a given link between an IP asset and its ancestor
     /// @param ipId The ipId to set the royalty for
     /// @param parentIpId The parent ipId to set the royalty for
-    /// @param royalty The LAP license royalty amount
+    /// @param royalty The LAP license royalty percentage
     function _setRoyaltyLAP(address ipId, address parentIpId, uint32 royalty) internal {
         (bool success, bytes memory returnData) = IP_GRAPH.call(
-            abi.encodeWithSignature("setRoyalty(address,address,uint256)", ipId, parentIpId, uint256(royalty))
+            abi.encodeWithSignature(
+                "setRoyalty(address,address,address,uint256)",
+                ipId,
+                parentIpId,
+                address(this),
+                uint256(royalty)
+            )
         );
         require(success, "Call failed");
     }
 
-    /// @notice Returns the royalty from LAP licenses for a given IP asset
+    /// @notice Returns the royalty percentage between an IP asset and its ancestor via royalty policy LAP
     /// @param ipId The ipId to get the royalty for
-    /// @param parentIpId The parent ipId to get the royalty for
-    /// @return The LAP license royalty amount
-    function _getRoyaltyLAP(address ipId, address parentIpId) internal returns (uint32) {
-        (bool success, bytes memory returnData) = IP_GRAPH.call(
-            abi.encodeWithSignature("getRoyalty(address,address)", ipId, parentIpId)
+    /// @param ancestorIpId The ancestor ipId to get the royalty for
+    /// @return The royalty percentage between an IP asset and its ancestor via royalty policy LAP
+    function _getRoyaltyLAP(address ipId, address ancestorIpId) internal view returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+            abi.encodeWithSignature("getRoyalty(address,address,address)", ipId, ancestorIpId, address(this))
         );
         require(success, "Call failed");
         return uint32(abi.decode(returnData, (uint256)));
     }
 
-    /// @notice Returns the storage struct for the RoyaltyPolicyLAP
+    /// @notice Returns the storage struct of RoyaltyPolicyLAP
     function _getRoyaltyPolicyLAPStorage() private pure returns (RoyaltyPolicyLAPStorage storage $) {
         assembly {
             $.slot := RoyaltyPolicyLAPStorageLocation

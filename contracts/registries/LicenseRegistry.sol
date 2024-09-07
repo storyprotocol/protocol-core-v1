@@ -247,6 +247,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             if (!isNewParent && !isNewTerms) {
                 revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
             }
+            $.parentLicenseTerms[childIpId][parentIpIds[i]] = licenseTermsIds[i];
         }
 
         IP_GRAPH_ACL.allow();
@@ -258,7 +259,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!success) {
             revert Errors.LicenseRegistry__AddParentIpToIPGraphFailed(childIpId, parentIpIds);
         }
-
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms
         earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
@@ -344,18 +344,26 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 index
     ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if (index >= $.attachedLicenseTerms[ipId].length()) {
-            revert Errors.LicenseRegistry__IndexOutOfBounds(ipId, index, $.attachedLicenseTerms[ipId].length());
+        uint256 length = $.attachedLicenseTerms[ipId].length();
+        if (index < length) {
+            licenseTemplate = $.licenseTemplates[ipId];
+            licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
+        // consider the default license terms is attached to IP as the last one
+        } else if (index == length && $.defaultLicenseTemplate != address(0)) {
+            licenseTemplate = $.defaultLicenseTemplate;
+            licenseTermsId = $.defaultLicenseTermsId;
+        } else {
+            length += ($.defaultLicenseTemplate == address(0) ? 0 : 1);
+            revert Errors.LicenseRegistry__IndexOutOfBounds(ipId, index, length);
         }
-        licenseTemplate = $.licenseTemplates[ipId];
-        licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
     }
 
     /// @notice Gets the count of attached license terms of an IP.
     /// @param ipId The address of the IP.
     /// @return The count of attached license terms.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256) {
-        return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return $.attachedLicenseTerms[ipId].length() + ($.defaultLicenseTemplate == address(0) ? 0 : 1);
     }
 
     /// @notice Gets the derivative IP of an IP by its index.
@@ -456,7 +464,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         address parentIpId
     ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        return ($.licenseTemplates[parentIpId], $.parentLicenseTerms[childIpId][parentIpId]);
+        return (_getLicenseTemplate(parentIpId), $.parentLicenseTerms[childIpId][parentIpId]);
     }
 
     /// @dev verify the child IP can be registered as a derivative of the parent IP
@@ -484,7 +492,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
         // childIp can only register with default license terms or the license terms attached to the parent IP
         if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsId) {
-            address pLicenseTemplate = $.licenseTemplates[parentIpId];
+            address pLicenseTemplate = _getLicenseTemplate(parentIpId);
             if (
                 (isUsingLicenseToken && pLicenseTemplate != address(0) && pLicenseTemplate != licenseTemplate) ||
                 (!isUsingLicenseToken && pLicenseTemplate != licenseTemplate)
@@ -494,6 +502,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             if (!isUsingLicenseToken && !$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
                 revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
             }
+        }
+    }
+
+    function _getLicenseTemplate(address ipId) internal view returns (address licenseTemplate) {
+        licenseTemplate = _getLicenseRegistryStorage().licenseTemplates[ipId];
+        if (licenseTemplate == address(0)) {
+            licenseTemplate = _getLicenseRegistryStorage().defaultLicenseTemplate;
         }
     }
 

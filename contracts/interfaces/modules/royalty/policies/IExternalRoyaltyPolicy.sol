@@ -7,5 +7,5 @@ interface IExternalRoyaltyPolicy {
     /// @param ipId The ipId of the IP asset
     /// @param licensePercent The percentage of the license
     /// @return The amount of royalty tokens required to link a child to a given IP asset
-    function rtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32);
+    function getPolicyRtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32);
 }

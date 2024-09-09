@@ -101,7 +101,6 @@ contract LicensingIntegrationTest is BaseIntegration {
         assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, 1);
 
-
         (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = licenseRegistry.getDefaultLicenseTerms();
         assertEq(defaultLicenseTemplate, address(pilTemplate));
         assertEq(defaultLicenseTermsId, 1);

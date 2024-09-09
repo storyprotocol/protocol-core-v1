@@ -348,7 +348,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (index < length) {
             licenseTemplate = $.licenseTemplates[ipId];
             licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
-        // consider the default license terms is attached to IP as the last one
+            // consider the default license terms is attached to IP as the last one
         } else if (index == length && $.defaultLicenseTemplate != address(0)) {
             licenseTemplate = $.defaultLicenseTemplate;
             licenseTermsId = $.defaultLicenseTermsId;

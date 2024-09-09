@@ -137,11 +137,13 @@ contract LicensingModuleTest is BaseTest {
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId1));
 
-        uint256 termsId2 = pilTemplate.registerLicenseTerms(PILFlavors.commercialUse({
-            mintingFee: 0,
-            currencyToken: address(erc20),
-            royaltyPolicy: address(royaltyPolicyLAP)
-        }));
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
         vm.expectEmit();
         emit ILicensingModule.LicenseTermsAttached(ipOwner1, ipId1, address(pilTemplate), termsId2);
         vm.prank(ipOwner1);
@@ -641,12 +643,14 @@ contract LicensingModuleTest is BaseTest {
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_privateLicense() public {
-        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.commercialRemix({
-            mintingFee: 0,
-            commercialRevShare: 10,
-            currencyToken: address(erc20),
-            royaltyPolicy: address(royaltyPolicyLAP)
-        }));
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
 
         vm.prank(ipOwner1);
         uint256 lcTokenId = licensingModule.mintLicenseTokens({

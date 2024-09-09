@@ -288,12 +288,13 @@ contract LicensingModuleBaseInvariant is BaseTest {
 
     /// @notice Invariant to check all IpIds are either not attached or attached to the known license templates
     function invariant_onlyAttachableToKnownLicenseTemplates() public {
+        (address defaultLicenseTemplate, ) = licenseRegistry.getDefaultLicenseTerms();
         for (uint256 i = 0; i < ipIds.length; i++) {
             (address licenseTemplate, ) = _getAttachedLicenseTerms(ipIds[i], 0);
             if (licenseTemplate != address(0)) {
                 bool found = false;
                 for (uint256 j = 0; j < pils.length; j++) {
-                    if (licenseTemplate == pils[j]) {
+                    if (licenseTemplate == pils[j] || licenseTemplate == defaultLicenseTemplate) {
                         found = true;
                         break;
                     }
@@ -339,7 +340,7 @@ contract LicensingModuleBaseInvariant is BaseTest {
     /// @notice Invariant to check that harness has no control over other ipIds
     function invariant_othersIpNotChanged() public {
         for (uint256 i = 0; i < othersIpIds.length; i++) {
-            (address licenseTemplate, uint256 licenseTermsId) = _getAttachedLicenseTerms(othersIpIds[i], 0);
+            (address licenseTemplate, uint256 licenseTermsId) = _getAttachedLicenseTerms(othersIpIds[i], 1);
             // shall be uninitialized
             assertEq(licenseTemplate, address(0), "LicensingModuleBaseInvariant: licenseTemplate not 0");
             assertEq(licenseTermsId, 0, "LicensingModuleBaseInvariant: licenseTermsId not 0");

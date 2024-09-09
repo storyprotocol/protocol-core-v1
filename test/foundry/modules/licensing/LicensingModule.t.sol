@@ -73,7 +73,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
         assertTrue(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId));
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
         assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId).isSet);
@@ -94,7 +94,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
         assertTrue(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId));
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
         assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId).isSet);
@@ -110,7 +110,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
         assertTrue(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId));
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 2);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId2), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId2), 0);
         assertFalse(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), termsId).isSet);
@@ -129,7 +129,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate1, address(pilTemplate));
         assertEq(licenseTermsId1, termsId1);
         assertTrue(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId1));
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
         assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId1).isSet);
@@ -137,7 +137,11 @@ contract LicensingModuleTest is BaseTest {
         assertFalse(licenseRegistry.isDerivativeIp(ipId1));
         assertTrue(licenseRegistry.exists(address(pilTemplate), termsId1));
 
-        uint256 termsId2 = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(PILFlavors.commercialUse({
+            mintingFee: 0,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        }));
         vm.expectEmit();
         emit ILicensingModule.LicenseTermsAttached(ipOwner1, ipId1, address(pilTemplate), termsId2);
         vm.prank(ipOwner1);
@@ -146,7 +150,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate2, address(pilTemplate));
         assertEq(licenseTermsId2, termsId2);
         assertTrue(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId2));
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 2);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId1), 3);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId1), 0);
         assertEq(licenseRegistry.getParentIpCount(ipId1), 0);
         assertFalse(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), termsId2).isSet);
@@ -219,7 +223,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
@@ -461,14 +465,6 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_mintLicenseTokens_revert_licensorIpNotRegistered() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.prank(ipOwner1);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipId1,
-                address(pilTemplate),
-                termsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__LicensorIpNotRegistered.selector));
@@ -485,14 +481,6 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_mintLicenseTokens_revert_invalidInputs() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.prank(ipOwner1);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipId1,
-                address(pilTemplate),
-                termsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         address receiver = address(0x111);
@@ -557,14 +545,6 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_mintLicenseTokens_revert_paused() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.prank(ipOwner1);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipId1,
-                address(pilTemplate),
-                termsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
 
         vm.prank(u.admin);
@@ -640,7 +620,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
@@ -661,7 +641,12 @@ contract LicensingModuleTest is BaseTest {
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_privateLicense() public {
-        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.commercialRemix({
+            mintingFee: 0,
+            commercialRevShare: 10,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        }));
 
         vm.prank(ipOwner1);
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
@@ -691,7 +676,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId2, address(pilTemplate), termsId), true);
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId1, address(pilTemplate), termsId), false);
 
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId2), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId2), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId2), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);
@@ -805,7 +790,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(pilTemplate), termsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId3), false);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId3), 0);
@@ -906,7 +891,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(pilTemplate), expiredTermsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId3), false);
         assertEq(licenseRegistry.getDerivativeIpCount(ipId3), 0);
@@ -976,7 +961,7 @@ contract LicensingModuleTest is BaseTest {
         uint256[] memory licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__DerivativeIpAlreadyHasLicense.selector, ipId1));
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__DerivativeIsParent.selector, ipId1));
         vm.prank(ipOwner1);
         licensingModule.registerDerivativeWithLicenseTokens(ipId1, licenseTokens, "");
     }
@@ -1216,7 +1201,7 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "");
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipId3, address(pilTemplate), termsId), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 1);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipId3), 2);
         assertEq(licenseRegistry.isDerivativeIp(ipId3), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipId3), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipId1), true);

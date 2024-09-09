@@ -52,30 +52,30 @@ contract PILicenseTemplateTest is BaseTest {
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
     function test_PILicenseTemplate_registerLicenseTerms() public {
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        assertEq(defaultTermsId, 1);
-        (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
-            .getRoyaltyPolicy(defaultTermsId);
-        assertEq(royaltyPolicy, address(0), "royaltyPolicy should be address(0)");
-        assertEq(royaltyPercent, 0, "royaltyPercent should be empty");
-        assertEq(mintingFee, 0, "mintingFee should be 0");
-        assertEq(currency, address(0), "currency should be address(0)");
-        assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId), "license should be transferable");
-        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.defaultValuesLicenseTerms()), 1);
-        assertEq(pilTemplate.getExpireTime(defaultTermsId, block.timestamp), 0, "expire time should be 0");
-        assertTrue(pilTemplate.exists(defaultTermsId), "license terms should exist");
-
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-        assertEq(socialRemixTermsId, 2);
-        (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(socialRemixTermsId);
+        assertEq(socialRemixTermsId, 1);
+        (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
+            .getRoyaltyPolicy(socialRemixTermsId);
         assertEq(royaltyPolicy, address(0));
         assertEq(royaltyPercent, 0);
         assertEq(mintingFee, 0);
         assertEq(currency, address(0));
         assertTrue(pilTemplate.isLicenseTransferable(socialRemixTermsId));
-        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.nonCommercialSocialRemixing()), 2);
+        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.nonCommercialSocialRemixing()), 1);
         assertEq(pilTemplate.getExpireTime(socialRemixTermsId, block.timestamp), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(socialRemixTermsId), "license terms should exist");
+
+        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        assertEq(defaultTermsId, 2);
+        (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(defaultTermsId);
+        assertEq(royaltyPolicy, address(0), "royaltyPolicy should be address(0)");
+        assertEq(royaltyPercent, 0, "royaltyPercent should be empty");
+        assertEq(mintingFee, 0, "mintingFee should be 0");
+        assertEq(currency, address(0), "currency should be address(0)");
+        assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId), "license should be transferable");
+        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.defaultValuesLicenseTerms()), 2);
+        assertEq(pilTemplate.getExpireTime(defaultTermsId, block.timestamp), 0, "expire time should be 0");
+        assertTrue(pilTemplate.exists(defaultTermsId), "license terms should exist");
 
         uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
@@ -336,7 +336,14 @@ contract PILicenseTemplateTest is BaseTest {
         vm.prank(ipOwner[2]);
         licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
 
-        uint256 anotherTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 anotherTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
 
         bool result = pilTemplate.verifyMintLicenseToken(anotherTermsId, ipOwner[3], ipAcct[2], 1);
         assertFalse(result);

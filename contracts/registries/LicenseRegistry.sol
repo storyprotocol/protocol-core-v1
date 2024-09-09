@@ -247,6 +247,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             if (!isNewParent && !isNewTerms) {
                 revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
             }
+            // link child IP to parent IP with license terms
             $.parentLicenseTerms[childIpId][parentIpIds[i]] = licenseTermsIds[i];
         }
 
@@ -334,7 +335,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return _hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId);
     }
 
-    /// @notice Gets the attached license terms of an IP by its index.
+    /// @notice Gets the attached license terms of an IP by its index. default license terms will be the last one.
     /// @param ipId The address of the IP.
     /// @param index The index of the attached license terms within the array of all attached license terms of the IP.
     /// @return licenseTemplate The address of the license template where the license terms are defined.
@@ -344,6 +345,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 index
     ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        // consider the default license terms is attached to IP as the last one
         uint256 length = $.attachedLicenseTerms[ipId].length();
         if (index < length) {
             licenseTemplate = $.licenseTemplates[ipId];
@@ -358,7 +360,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
     }
 
-    /// @notice Gets the count of attached license terms of an IP.
+    /// @notice Gets the count of attached license terms of an IP. the default license terms will be counted.
     /// @param ipId The address of the IP.
     /// @return The count of attached license terms.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256) {
@@ -505,6 +507,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
     }
 
+    /// @dev return the license template attached an IP,
+    /// return the default license template if the IP has no license template attached
     function _getLicenseTemplate(address ipId) internal view returns (address licenseTemplate) {
         licenseTemplate = _getLicenseRegistryStorage().licenseTemplates[ipId];
         if (licenseTemplate == address(0)) {

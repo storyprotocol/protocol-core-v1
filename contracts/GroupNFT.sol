@@ -9,7 +9,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 // solhint-disable-next-line max-line-length
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
-import { IIPAssetRegistry } from "./interfaces/registries/IIPAssetRegistry.sol";
+import { IGroupingModule } from "contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupNFT } from "./interfaces/IGroupNFT.sol";
 import { Errors } from "./lib/Errors.sol";
 
@@ -18,7 +18,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     using Strings for *;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
+    IGroupingModule public immutable GROUPING_MODULE;
 
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
@@ -34,16 +34,16 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     bytes32 private constant GroupNFTStorageLocation =
         0x1f63c78b3808749cafddcb77c269221c148dbaa356630c2195a6ec03d7fedb00;
 
-    modifier onlyIPAssetRegistry() {
-        if (msg.sender != address(IP_ASSET_REGISTRY)) {
+    modifier onlyGroupingModule() {
+        if (msg.sender != address(GROUPING_MODULE)) {
             revert Errors.GroupNFT__CallerNotIPAssetRegistry(msg.sender);
         }
         _;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address iPAssetRegistry) {
-        IP_ASSET_REGISTRY = IIPAssetRegistry(iPAssetRegistry);
+    constructor(address groupingModule) {
+        GROUPING_MODULE = IGroupingModule(groupingModule);
         _disableInitializers();
     }
 
@@ -71,7 +71,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted Group NFT.
     /// @return groupNftId The ID of the minted Group NFT.
-    function mintGroupNft(address minter, address receiver) external onlyIPAssetRegistry returns (uint256 groupNftId) {
+    function mintGroupNft(address minter, address receiver) external onlyGroupingModule returns (uint256 groupNftId) {
         GroupNFTStorage storage $ = _getGroupNFTStorage();
         groupNftId = $.totalSupply++;
         _mint(receiver, groupNftId);

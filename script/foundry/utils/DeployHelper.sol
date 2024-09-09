@@ -389,7 +389,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "GroupNFT";
         _predeploy(contractKey);
-        impl = address(new GroupNFT( _getDeployedAddress(type(GroupingModule).name)));
+        impl = address(new GroupNFT(address(ipAssetRegistry)));
         groupNft = GroupNFT(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -676,7 +676,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(licensingModule));
         protocolPauser.addPausable(address(royaltyModule));
         protocolPauser.addPausable(address(royaltyPolicyLAP));
+        protocolPauser.addPausable(address(royaltyPolicyLRP));
         protocolPauser.addPausable(address(ipAssetRegistry));
+        protocolPauser.addPausable(address(groupingModule));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -744,6 +746,17 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             selectors,
             ProtocolAdmin.UPGRADER_ROLE
         );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupingModule),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupNft),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyModule
@@ -776,12 +789,22 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
+            address(royaltyPolicyLRP),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
             address(ipAssetRegistry),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
             address(licenseRegistry),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupingModule),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );

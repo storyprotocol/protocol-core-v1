@@ -34,7 +34,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     bytes32 private constant GroupNFTStorageLocation =
         0x1f63c78b3808749cafddcb77c269221c148dbaa356630c2195a6ec03d7fedb00;
 
-    modifier onlyIPAssetRegistry() {
+    modifier onlyGroupingModule() {
         if (msg.sender != address(GROUPING_MODULE)) {
             revert Errors.GroupNFT__CallerNotIPAssetRegistry(msg.sender);
         }
@@ -71,7 +71,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted Group NFT.
     /// @return groupNftId The ID of the minted Group NFT.
-    function mintGroupNft(address minter, address receiver) external onlyIPAssetRegistry returns (uint256 groupNftId) {
+    function mintGroupNft(address minter, address receiver) external onlyGroupingModule returns (uint256 groupNftId) {
         GroupNFTStorage storage $ = _getGroupNFTStorage();
         groupNftId = $.totalSupply++;
         _mint(receiver, groupNftId);

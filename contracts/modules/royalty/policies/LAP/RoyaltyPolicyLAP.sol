@@ -8,6 +8,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicyLAP } from "../../../../interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
+import { IIpRoyaltyVault } from "../../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
 import { IPGraphACL } from "../../../../access/IPGraphACL.sol";
@@ -142,7 +143,11 @@ contract RoyaltyPolicyLAP is
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
 
         $.transferredTokensLAP[ipId][ancestorIpId][token] += amount;
+
+        IIpRoyaltyVault(ancestorIpRoyaltyVault).addIpRoyaltyVaultTokens(token, amount);
         IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
+
+        emit RevenueTransferredToVault(ipId, ancestorIpId, token, amount);
     }
 
     /// @notice Returns the amount of royalty tokens required to link a child to a given IP asset

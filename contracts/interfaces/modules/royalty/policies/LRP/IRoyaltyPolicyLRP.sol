@@ -5,6 +5,13 @@ import { IRoyaltyPolicy } from "../../../../../interfaces/modules/royalty/polici
 
 /// @title IRoyaltyPolicyLRP interface
 interface IRoyaltyPolicyLRP is IRoyaltyPolicy {
+    /// @notice Event emitted when revenue tokens are transferred to a vault
+    /// @param ipId The ipId of the IP asset
+    /// @param ancestorIpId The ancestor ipId of the IP asset whose vault will receive revenue tokens
+    /// @param token The token address that is transferred
+    /// @param amount The amount of tokens transferred
+    event RevenueTransferredToVault(address ipId, address ancestorIpId, address token, uint256 amount);
+
     /// @notice Transfers to vault an amount of revenue tokens claimable to LRP royalty policy
     /// @param ipId The ipId of the IP asset
     /// @param ancestorIpId The ancestor ipId of the IP asset

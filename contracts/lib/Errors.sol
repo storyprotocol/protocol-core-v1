@@ -731,7 +731,7 @@ library Errors {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @notice Caller is not the IPA Asset Registry.
-    error GroupNFT__CallerNotIPAssetRegistry(address caller);
+    error GroupNFT__CallerNotGroupingModule(address caller);
 
     /// @notice Zero address provided for Access Manager.
     error GroupNFT__ZeroAccessManager();

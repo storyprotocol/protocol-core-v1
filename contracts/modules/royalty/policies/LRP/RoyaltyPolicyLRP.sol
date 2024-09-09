@@ -165,7 +165,7 @@ contract RoyaltyPolicyLRP is
 
         $.transferredTokensLRP[ipId][ancestorIpId][token] += amount;
 
-        IIpRoyaltyVault(ancestorIpRoyaltyVault).addIpRoyaltyVaultTokens(token, amount);
+        IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amount);
         IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
 
         emit RevenueTransferredToVault(ipId, ancestorIpId, token, amount);

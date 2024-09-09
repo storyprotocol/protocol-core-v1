@@ -8,7 +8,7 @@ contract MockIPGraph {
     using EnumerableSet for EnumerableSet.AddressSet;
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     mapping(address childIpId => EnumerableSet.AddressSet parentIpIds) parentIps;
-    mapping(address ipId => mapping(address parentIpId => uint256)) royalties;
+    mapping(address ipId => mapping(address parentIpId => mapping(address royaltyPolicy => uint256 percent))) royalties;
     EnumerableSet.AddressSet ancestorIps;
     DoubleEndedQueue.Bytes32Deque queue;
 
@@ -66,8 +66,8 @@ contract MockIPGraph {
     ) external view returns (address[] memory) {
         return new address[](0);
     }
-    function setRoyalty(address ipId, address parentIpId, uint256 royaltyPercentage) external {
-        royalties[ipId][parentIpId] = royaltyPercentage;
+    function setRoyalty(address ipId, address parentIpId, address royaltyPolicy, uint256 royaltyPercentage) external {
+        royalties[ipId][parentIpId][royaltyPolicy] = royaltyPercentage;
     }
     function getRoyalty(address ipId, address ancestorIpId) external returns (uint256) {
         uint256 totalRoyalty = 0;
@@ -82,13 +82,13 @@ contract MockIPGraph {
                     queue.pushFront(_toBytes32(parentIpId));
                 }
                 if (parentIpId == ancestorIpId) {
-                    totalRoyalty += royalties[currentIpId][ancestorIpId];
+                    totalRoyalty += royalties[currentIpId][ancestorIpId][];
                 }
             }
         }
         return totalRoyalty;
     }
-    function getRoyaltyStack(address ipId) external returns (uint256) {
+    function getRoyaltyStack(address ipId, address royaltyPolicy) external returns (uint256) {
         uint256 royaltyStack = 0;
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));
@@ -100,7 +100,7 @@ contract MockIPGraph {
                     ancestorIps.add(parentIpId);
                     queue.pushFront(_toBytes32(parentIpId));
                 }
-                royaltyStack += royalties[currentIpId][parentIpId];
+                royaltyStack += royalties[currentIpId][parentIpId][royaltyPolicy];
             }
         }
         return royaltyStack;

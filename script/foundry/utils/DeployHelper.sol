@@ -389,7 +389,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "GroupNFT";
         _predeploy(contractKey);
-        impl = address(new GroupNFT(address(ipAssetRegistry)));
+        impl = address(new GroupNFT(_getDeployedAddress(type(GroupingModule).name)));
         groupNft = GroupNFT(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,

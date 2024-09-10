@@ -7,9 +7,10 @@ gas_reports = ["*"]
 optimizer = true
 optimizer_runs = 20000
 test = 'test'
-solc = '0.8.23'
+solc = '0.8.26'
 fs_permissions = [{ access = 'read-write', path = './deploy-out' }, { access = 'read', path = './out' }]
 extra_output = ["storageLayout"]
+evm_version = "cancun"
 
 [rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"

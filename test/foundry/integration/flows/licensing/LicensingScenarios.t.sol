@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 // external
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -8,6 +8,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contract
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
+import { Errors } from "../../../../../contracts/lib/Errors.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
@@ -111,6 +112,14 @@ contract Licensing_Scenarios is BaseIntegration {
         // Add policies to IP account
         vm.startPrank(u.alice);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
+                ipAcct[1],
+                address(pilTemplate),
+                ncSocialRemixTermsId
+            )
+        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commTermsId);
         vm.stopPrank();

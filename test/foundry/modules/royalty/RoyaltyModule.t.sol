@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
@@ -100,7 +100,7 @@ contract TestRoyaltyModule is BaseTest {
         // grouping
         mockNft.mintId(ipOwner1, tokenId1);
         ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
-        rewardPool = new MockEvenSplitGroupPool();
+        rewardPool = new MockEvenSplitGroupPool(address(royaltyModule));
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }

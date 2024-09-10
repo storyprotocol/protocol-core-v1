@@ -143,8 +143,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
         if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        else if (block.chainid == 1513) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
-        else if (block.chainid == 1337) erc20 = ERC20(0xDE51BB12D5cef80ff2334fe1019089363F80b46e);
+        else if (block.chainid == 1513) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+        else if (block.chainid == 1337) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -389,7 +389,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "GroupNFT";
         _predeploy(contractKey);
-        impl = address(new GroupNFT( _getDeployedAddress(type(GroupingModule).name)));
+        impl = address(new GroupNFT(_getDeployedAddress(type(GroupingModule).name)));
         groupNft = GroupNFT(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -676,7 +676,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(licensingModule));
         protocolPauser.addPausable(address(royaltyModule));
         protocolPauser.addPausable(address(royaltyPolicyLAP));
+        protocolPauser.addPausable(address(royaltyPolicyLRP));
         protocolPauser.addPausable(address(ipAssetRegistry));
+        protocolPauser.addPausable(address(groupingModule));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -710,6 +712,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // IPGraphACL
         ipGraphACL.whitelistAddress(address(licenseRegistry));
         ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
+
+        // set default license to non-commercial social remixing
+        uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
     }
 
     function _configureRoles() private {
@@ -740,6 +746,17 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             selectors,
             ProtocolAdmin.UPGRADER_ROLE
         );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupingModule),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupNft),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyModule
@@ -772,12 +789,22 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
+            address(royaltyPolicyLRP),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
             address(ipAssetRegistry),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
             address(licenseRegistry),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(groupingModule),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );

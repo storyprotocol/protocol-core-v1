@@ -1,7 +1,7 @@
 import { AccessController } from "contracts/access/AccessController.sol";
 
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 contract MockAccessControllerV2 is AccessController {
     /// @dev Storage structure for the AccessControllerV2

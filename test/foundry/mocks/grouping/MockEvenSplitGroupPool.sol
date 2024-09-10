@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import { IGroupRewardPool } from "contracts/interfaces/modules/grouping/IGroupRewardPool.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IIpRoyaltyVault } from "contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
 contract MockEvenSplitGroupPool is IGroupRewardPool {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
+
+    IRoyaltyModule public ROYALTY_MODULE;
 
     struct IpRewardInfo {
         uint256 startPoolBalance; // balance of pool when IP added to pool
@@ -27,6 +31,11 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     mapping(address groupId => mapping(address token => PoolInfo)) public poolInfo;
     // Info of each user that stakes LP tokens. groupId => { token => { ipId => IpInfo}}
     mapping(address groupId => mapping(address tokenId => mapping(address ipId => IpRewardInfo))) public ipRewardInfo;
+
+    constructor(address _royaltyModule) {
+        require(_royaltyModule != address(0), "RoyaltyModule address cannot be 0");
+        ROYALTY_MODULE = IRoyaltyModule(_royaltyModule);
+    }
 
     function addIp(address groupId, address ipId) external {
         // ignore if IP is already added to pool
@@ -116,14 +125,18 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
             // calculate pending reward for each IP
             ipRewardInfo[groupId][token][ipIds[i]].rewardDebt += rewards[i];
             poolInfo[groupId][token].availableBalance -= rewards[i];
-            // call royalty module to transfer reward to IP as royalty
-            IERC20(token).safeTransfer(ipIds[i], rewards[i]);
+            // call royalty module to transfer reward to IP's vault as royalty
+            IERC20(token).safeTransfer(ROYALTY_MODULE.ipRoyaltyVaults(ipIds[i]), rewards[i]);
         }
     }
 
     function _collectRoyalties(address groupId, address token) internal {
-        // call royalty module to collect revenue of token
-        uint256 royalties = 0;
+        IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
+        // ignore if group IP vault is not created
+        if (address(vault) == address(0)) return;
+        uint256[] memory snapshotsToClaim = new uint256[](1);
+        snapshotsToClaim[0] = vault.snapshot();
+        uint256 royalties = vault.claimRevenueBySnapshotBatch(snapshotsToClaim, token);
         poolInfo[groupId][token].availableBalance += royalties;
         poolInfo[groupId][token].accBalance += royalties;
         groupTokens[groupId].add(token);

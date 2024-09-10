@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 /// @title Errors Library
 /// @notice Library for all Story Protocol contract errors.
@@ -743,7 +743,7 @@ library Errors {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @notice Caller is not the IPA Asset Registry.
-    error GroupNFT__CallerNotIPAssetRegistry(address caller);
+    error GroupNFT__CallerNotGroupingModule(address caller);
 
     /// @notice Zero address provided for Access Manager.
     error GroupNFT__ZeroAccessManager();

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 // external
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -33,6 +33,14 @@ contract Flows_Integration_Disputes is BaseIntegration {
         ipAcct[3] = registerIpAccount(mockNFT, 3, u.carl);
 
         vm.startPrank(u.alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
+                ipAcct[1],
+                address(pilTemplate),
+                ncSocialRemixTermsId
+            )
+        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         vm.stopPrank();
     }

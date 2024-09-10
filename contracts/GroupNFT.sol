@@ -36,7 +36,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
 
     modifier onlyGroupingModule() {
         if (msg.sender != address(GROUPING_MODULE)) {
-            revert Errors.GroupNFT__CallerNotIPAssetRegistry(msg.sender);
+            revert Errors.GroupNFT__CallerNotGroupingModule(msg.sender);
         }
         _;
     }

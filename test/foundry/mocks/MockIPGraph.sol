@@ -85,13 +85,17 @@ contract MockIPGraph {
         _setRoyalty(ipId, parentIpId, policyKind, royaltyPercentage);
     }
 
-    function calculateRoyalty(address ipId, address ancestorIpId, uint256 policyKind) external returns (uint256 result) {
+    function calculateRoyalty(
+        address ipId,
+        address ancestorIpId,
+        uint256 policyKind
+    ) external returns (uint256 result) {
         result = _getRoyalty(ipId, ancestorIpId, policyKind);
         royalties[ipId][ancestorIpId][policyKind] = result;
     }
 
     function getRoyalty(address ipId, address ancestorIpId) external returns (uint256) {
-        return  _getRoyalty(ipId, ancestorIpId, POLICY_KIND_LAP);
+        return _getRoyalty(ipId, ancestorIpId, POLICY_KIND_LAP);
     }
 
     function getRoyalty(address ipId, address ancestorIpId, uint256 policyKind) external view returns (uint256) {
@@ -104,11 +108,11 @@ contract MockIPGraph {
     }
 
     function getRoyaltyStack(address ipId) external returns (uint256) {
-        return  _getRoyaltyStack(ipId, POLICY_KIND_LAP);
+        return _getRoyaltyStack(ipId, POLICY_KIND_LAP);
     }
 
     function getRoyaltyStack(address ipId, uint256 policyKind) external view returns (uint256) {
-        return  royaltyStacks[ipId][policyKind];
+        return royaltyStacks[ipId][policyKind];
     }
 
     function _setRoyalty(address ipId, address parentIpId, uint256 policyKind, uint256 royaltyPercentage) internal {
@@ -128,6 +132,7 @@ contract MockIPGraph {
         return totalRoyalty;
     }
 
+    // solhint-disable-next-line code-complexity
     function _getRoyaltyLrp(address ipId, address ancestorIpId) internal returns (uint256 result) {
         result = 0;
         _cleanAncestorIps();

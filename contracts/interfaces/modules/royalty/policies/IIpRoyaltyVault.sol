@@ -5,8 +5,8 @@ pragma solidity 0.8.23;
 interface IIpRoyaltyVault {
     /// @notice Event emitted when a revenue token is added to a vault
     /// @param token The address of the revenue token
-    /// @param vault The address of the vault
-    event RevenueTokenAddedToVault(address token, address vault);
+    /// @param amount The amount of revenue token added
+    event RevenueTokenAddedToVault(address token, uint256 amount);
 
     /// @notice Event emitted when a snapshot is taken
     /// @param snapshotId The snapshot id
@@ -33,10 +33,11 @@ interface IIpRoyaltyVault {
         address rtReceiver
     ) external;
 
-    /// @notice Adds a new revenue token to the vault
+    /// @notice Updates the vault balance with the new amount of revenue token
     /// @param token The address of the revenue token
+    /// @param amount The amount of revenue token to add
     /// @dev Only callable by the royalty module or whitelisted royalty policy
-    function addIpRoyaltyVaultTokens(address token) external;
+    function updateVaultBalance(address token, uint256 amount) external;
 
     /// @notice A function to snapshot the claimable revenue and royalty token amounts
     /// @return The snapshot id
@@ -52,7 +53,11 @@ interface IIpRoyaltyVault {
     /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
     /// @param tokenList The list of revenue tokens to claim
-    function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokenList) external;
+    /// @return The amount of revenue tokens claimed for each token
+    function claimRevenueByTokenBatch(
+        uint256 snapshotId,
+        address[] calldata tokenList
+    ) external returns (uint256[] memory);
 
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
@@ -80,6 +85,10 @@ interface IIpRoyaltyVault {
 
     /// @notice The last snapshotted timestamp
     function lastSnapshotTimestamp() external view returns (uint256);
+
+    /// @notice Amount of revenue token pending to be snapshotted
+    /// @param token The address of the revenue token
+    function pendingVaultAmount(address token) external view returns (uint256);
 
     /// @notice Amount of revenue token in the claim vault
     /// @param token The address of the revenue token

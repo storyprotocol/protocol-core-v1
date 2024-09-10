@@ -602,6 +602,12 @@ library Errors {
     /// @notice IP Royalty Vault is paused.
     error IpRoyaltyVault__EnforcedPause();
 
+    /// @notice The vault which is claiming does not belong to an ancestor IP.
+    error IpRoyaltyVault__VaultDoesNotBelongToAnAncestor();
+
+    /// @notice Zero amount provided.
+    error IpRoyaltyVault__ZeroAmount();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

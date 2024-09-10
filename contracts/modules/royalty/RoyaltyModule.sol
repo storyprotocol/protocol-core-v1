@@ -320,7 +320,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         uint256 amountPaid = _payToWhitelistedRoyaltyPolicies(receiverIpId, msg.sender, token, amount);
 
         // pay the remaining amount to the receiver vault
-        _payToReceiverVault(receiverIpId, msg.sender, token, amount - amountPaid);
+        uint256 remainingAmount = amount - amountPaid;
+        if (remainingAmount > 0) _payToReceiverVault(receiverIpId, msg.sender, token, remainingAmount);
 
         $.totalRevenueTokensReceived[receiverIpId][token] += amount;
 
@@ -348,7 +349,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         uint256 amountPaid = _payToWhitelistedRoyaltyPolicies(receiverIpId, payerAddress, token, amount);
 
         // pay the remaining amount to the receiver vault
-        _payToReceiverVault(receiverIpId, payerAddress, token, amount - amountPaid);
+        uint256 remainingAmount = amount - amountPaid;
+        if (remainingAmount > 0) _payToReceiverVault(receiverIpId, payerAddress, token, remainingAmount);
 
         $.totalRevenueTokensReceived[receiverIpId][token] += amount;
 
@@ -547,7 +549,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address receiverVault = _getRoyaltyModuleStorage().ipRoyaltyVaults[receiverIpId];
         if (receiverVault == address(0)) revert Errors.RoyaltyModule__ZeroReceiverVault();
 
-        IIpRoyaltyVault(receiverVault).addIpRoyaltyVaultTokens(token);
+        IIpRoyaltyVault(receiverVault).updateVaultBalance(token, amount);
         IERC20(token).safeTransferFrom(payerAddress, receiverVault, amount);
     }
 

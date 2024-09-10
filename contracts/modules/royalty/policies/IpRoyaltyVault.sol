@@ -26,6 +26,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @dev Storage structure for the IpRoyaltyVault
     /// @param ipId The ip id to whom this royalty vault belongs to
     /// @param lastSnapshotTimestamp The last snapshotted timestamp
+    /// @param pendingVaultAmount Amount of revenue token pending to be snapshotted
     /// @param claimVaultAmount Amount of revenue token in the claim vault
     /// @param claimableAtSnapshot Amount of revenue token claimable at a given snapshot
     /// @param isClaimedAtSnapshot Indicates whether the claimer has claimed the revenue tokens at a given snapshot
@@ -34,6 +35,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     struct IpRoyaltyVaultStorage {
         address ipId;
         uint40 lastSnapshotTimestamp;
+        mapping(address token => uint256 amount) pendingVaultAmount;
         mapping(address token => uint256 amount) claimVaultAmount;
         mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
         mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
@@ -102,18 +104,18 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         return 6;
     }
 
-    /// @notice Adds a new revenue token to the vault
+    /// @notice Updates the vault balance with the new amount of revenue token
     /// @param token The address of the revenue token
+    /// @param amount The amount of revenue token to add
     /// @dev Only callable by the royalty module or whitelisted royalty policy
-    function addIpRoyaltyVaultTokens(address token) external {
+    function updateVaultBalance(address token, uint256 amount) external {
         if (msg.sender != address(ROYALTY_MODULE) && !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(msg.sender))
             revert Errors.IpRoyaltyVault__NotAllowedToAddTokenToVault();
-
-        _addIpRoyaltyVaultTokens(token);
+        _updateVaultBalance(token, amount);
     }
 
     /// @notice Snapshots the claimable revenue and royalty token amounts
-    /// @return snapshotId The snapshot id
+    /// @return The snapshot id
     function snapshot() external whenNotPaused returns (uint256) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
@@ -126,13 +128,12 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         uint256 noRevenueCounter;
         address[] memory tokenList = $.tokens.values();
         for (uint256 i = 0; i < tokenList.length; i++) {
-            uint256 tokenBalance = IERC20Upgradeable(tokenList[i]).balanceOf(address(this));
-            if (tokenBalance == 0) {
+            if (IERC20Upgradeable(tokenList[i]).balanceOf(address(this)) == 0) {
                 $.tokens.remove(tokenList[i]);
                 continue;
             }
 
-            uint256 newRevenue = tokenBalance - $.claimVaultAmount[tokenList[i]];
+            uint256 newRevenue = $.pendingVaultAmount[tokenList[i]];
             if (newRevenue == 0) {
                 noRevenueCounter++;
                 continue;
@@ -140,6 +141,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
             $.claimableAtSnapshot[snapshotId][tokenList[i]] = newRevenue;
             $.claimVaultAmount[tokenList[i]] += newRevenue;
+            $.pendingVaultAmount[tokenList[i]] = 0;
         }
 
         if (noRevenueCounter == tokenList.length) revert Errors.IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
@@ -165,22 +167,26 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
     /// @param tokenList The list of revenue tokens to claim
+    /// @return The amount of revenue tokens claimed for each token
     function claimRevenueByTokenBatch(
         uint256 snapshotId,
         address[] calldata tokenList
-    ) external nonReentrant whenNotPaused {
+    ) external nonReentrant whenNotPaused returns (uint256[] memory) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
+        uint256[] memory claimableAmounts = new uint256[](tokenList.length);
         for (uint256 i = 0; i < tokenList.length; i++) {
-            uint256 claimableToken = _claimableRevenue(msg.sender, snapshotId, tokenList[i]);
-            if (claimableToken == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
+            claimableAmounts[i] = _claimableRevenue(msg.sender, snapshotId, tokenList[i]);
+            if (claimableAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
 
             $.isClaimedAtSnapshot[snapshotId][msg.sender][tokenList[i]] = true;
-            $.claimVaultAmount[tokenList[i]] -= claimableToken;
-            IERC20Upgradeable(tokenList[i]).safeTransfer(msg.sender, claimableToken);
+            $.claimVaultAmount[tokenList[i]] -= claimableAmounts[i];
+            IERC20Upgradeable(tokenList[i]).safeTransfer(msg.sender, claimableAmounts[i]);
 
-            emit RevenueTokenClaimed(msg.sender, tokenList[i], claimableToken);
+            emit RevenueTokenClaimed(msg.sender, tokenList[i], claimableAmounts[i]);
         }
+
+        return claimableAmounts;
     }
 
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
@@ -193,20 +199,20 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     ) external nonReentrant whenNotPaused returns (uint256) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
-        uint256 claimableToken;
+        uint256 claimableAmount;
         for (uint256 i = 0; i < snapshotIds.length; i++) {
-            claimableToken += _claimableRevenue(msg.sender, snapshotIds[i], token);
+            claimableAmount += _claimableRevenue(msg.sender, snapshotIds[i], token);
             $.isClaimedAtSnapshot[snapshotIds[i]][msg.sender][token] = true;
         }
 
-        if (claimableToken == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
+        if (claimableAmount == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
 
-        $.claimVaultAmount[token] -= claimableToken;
-        IERC20Upgradeable(token).safeTransfer(msg.sender, claimableToken);
+        $.claimVaultAmount[token] -= claimableAmount;
+        IERC20Upgradeable(token).safeTransfer(msg.sender, claimableAmount);
 
-        emit RevenueTokenClaimed(msg.sender, token, claimableToken);
+        emit RevenueTokenClaimed(msg.sender, token, claimableAmount);
 
-        return claimableToken;
+        return claimableAmount;
     }
 
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault by token batch
@@ -221,11 +227,20 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         address targetIpVault = ROYALTY_MODULE.ipRoyaltyVaults(targetIpId);
         if (targetIpVault == address(0)) revert Errors.IpRoyaltyVault__InvalidTargetIpId();
 
-        IIpRoyaltyVault(targetIpVault).claimRevenueByTokenBatch(snapshotId, tokenList);
+        // ensures that the target ipId is from a descendant ip which in turn ensures that
+        // all accumulated royalty policies from the ancestor ip have been checked when
+        // a payment was made to said descendant ip
+        if (!ROYALTY_MODULE.hasAncestorIp(targetIpId, _getIpRoyaltyVaultStorage().ipId))
+            revert Errors.IpRoyaltyVault__VaultDoesNotBelongToAnAncestor();
+
+        uint256[] memory claimedAmounts = IIpRoyaltyVault(targetIpVault).claimRevenueByTokenBatch(
+            snapshotId,
+            tokenList
+        );
 
         // only tokens that have claimable revenue higher than zero will be added to the vault
         for (uint256 i = 0; i < tokenList.length; i++) {
-            _addIpRoyaltyVaultTokens(tokenList[i]);
+            _updateVaultBalance(tokenList[i], claimedAmounts[i]);
         }
     }
 
@@ -241,10 +256,16 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         address targetIpVault = ROYALTY_MODULE.ipRoyaltyVaults(targetIpId);
         if (targetIpVault == address(0)) revert Errors.IpRoyaltyVault__InvalidTargetIpId();
 
-        IIpRoyaltyVault(targetIpVault).claimRevenueBySnapshotBatch(snapshotIds, token);
+        // ensures that the target ipId is from a descendant ip which in turn ensures that
+        // all accumulated royalty policies from the ancestor ip have been checked when
+        // a payment was made to said descendant ip
+        if (!ROYALTY_MODULE.hasAncestorIp(targetIpId, _getIpRoyaltyVaultStorage().ipId))
+            revert Errors.IpRoyaltyVault__VaultDoesNotBelongToAnAncestor();
+
+        uint256 claimedAmount = IIpRoyaltyVault(targetIpVault).claimRevenueBySnapshotBatch(snapshotIds, token);
 
         // the token will be added to the vault only if claimable revenue is higher than zero
-        _addIpRoyaltyVaultTokens(token);
+        _updateVaultBalance(token, claimedAmount);
     }
 
     /// @notice Returns the current snapshot id
@@ -261,6 +282,12 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice The last snapshotted timestamp
     function lastSnapshotTimestamp() external view returns (uint256) {
         return _getIpRoyaltyVaultStorage().lastSnapshotTimestamp;
+    }
+
+    /// @notice Amount of revenue token pending to be snapshotted
+    /// @param token The address of the revenue token
+    function pendingVaultAmount(address token) external view returns (uint256) {
+        return _getIpRoyaltyVaultStorage().pendingVaultAmount[token];
     }
 
     /// @notice Amount of revenue token in the claim vault
@@ -308,11 +335,17 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
     /// @notice Adds a new revenue token to the vault
     /// @param token The address of the revenue token
-    function _addIpRoyaltyVaultTokens(address token) internal {
+    function _updateVaultBalance(address token, uint256 amount) internal {
+        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
+
         if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(token))
             revert Errors.IpRoyaltyVault__NotWhitelistedRoyaltyToken();
-        bool newTokenInVault = _getIpRoyaltyVaultStorage().tokens.add(token);
-        if (newTokenInVault) emit RevenueTokenAddedToVault(token, address(this));
+        if (amount == 0) revert Errors.IpRoyaltyVault__ZeroAmount();
+
+        $.tokens.add(token);
+        $.pendingVaultAmount[token] += amount;
+
+        emit RevenueTokenAddedToVault(token, amount);
     }
 
     /// @dev Returns the storage struct of IpRoyaltyVault

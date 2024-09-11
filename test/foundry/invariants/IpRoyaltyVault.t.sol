@@ -40,9 +40,9 @@ contract IpRoyaltyVaultHarness is Test {
         vault.claimBySnapshotBatchAsSelf(snapshotIds, token, targetIpId);
     }
 
-    function addIpRoyaltyVaultTokens(address token) public {
+    function updateVaultBalance(address token, uint256 amount) public {
         vm.startPrank(address(royaltyModule));
-        vault.addIpRoyaltyVaultTokens(token);
+        vault.updateVaultBalance(token, amount);
     }
 
     function warp() public {
@@ -85,7 +85,7 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         selectors[3] = harness.payRoyaltyOnBehalf.selector;
         selectors[4] = harness.claimByTokenBatchAsSelf.selector;
         selectors[5] = harness.claimBySnapshotBatchAsSelf.selector;
-        selectors[6] = harness.addIpRoyaltyVaultTokens.selector;
+        selectors[6] = harness.updateVaultBalance.selector;
         selectors[7] = harness.warp.selector;
 
         targetSelector(FuzzSelector(address(harness), selectors));

@@ -8,6 +8,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
+import { IIpRoyaltyVault } from "../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
@@ -338,12 +339,12 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLicenseMinting(address(1), address(2), uint32(1), "");
     }
 
-    function test_RoyaltyModule_onLicenseMinting_revert_NotAllowedRoyaltyPolicy() public {
+    function test_RoyaltyModule_onLicenseMinting_revert_NotWhitelistedOrRegisteredRoyaltyPolicy() public {
         address licensor = address(1);
         uint32 licensePercent = uint32(15);
 
         vm.startPrank(address(licensingModule));
-        vm.expectRevert(Errors.RoyaltyModule__NotAllowedRoyaltyPolicy.selector);
+        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy.selector);
         royaltyModule.onLicenseMinting(licensor, address(1), licensePercent, "");
     }
 
@@ -367,12 +368,12 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), uint32(15), "");
     }
 
-    function test_RoyaltyModule_onLicenseMinting_revert_AboveRoyaltyTokenSupplyLimit() public {
+    function test_RoyaltyModule_onLicenseMinting_revert_AboveMaxPercent() public {
         address licensor = address(1);
         uint32 licensePercent = uint32(500 * 10 ** 6);
 
         vm.startPrank(address(licensingModule));
-        vm.expectRevert(Errors.RoyaltyModule__AboveRoyaltyTokenSupplyLimit.selector);
+        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licensePercent, "");
     }
 
@@ -392,7 +393,7 @@ contract TestRoyaltyModule is BaseTest {
         address newVault = royaltyModule.ipRoyaltyVaults(licensor);
         uint256 ipIdRtBalAfter = IERC20(newVault).balanceOf(licensor);
 
-        assertEq(ipIdRtBalAfter, royaltyModule.TOTAL_RT_SUPPLY());
+        assertEq(ipIdRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(licensor) == address(0));
     }
 
@@ -412,7 +413,7 @@ contract TestRoyaltyModule is BaseTest {
         address newVault = royaltyModule.ipRoyaltyVaults(groupId);
         uint256 groupPoolRtBalAfter = IERC20(newVault).balanceOf(address(rewardPool));
 
-        assertEq(groupPoolRtBalAfter, royaltyModule.TOTAL_RT_SUPPLY());
+        assertEq(groupPoolRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(groupId) == address(0));
     }
 
@@ -570,7 +571,7 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
     }
 
-    function test_RoyaltyModule_onLinkToParents_revert_RoyaltyModule_AboveRoyaltyTokenSupplyLimit() public {
+    function test_RoyaltyModule_onLinkToParents_revert_AboveMaxPercent() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);
         uint32[] memory parentRoyalties = new uint32[](3);
@@ -592,7 +593,7 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
         ipGraph.addParentIp(address(80), parents);
 
-        vm.expectRevert(Errors.RoyaltyModule__AboveRoyaltyTokenSupplyLimit.selector);
+        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
     }
 
@@ -694,12 +695,12 @@ contract TestRoyaltyModule is BaseTest {
         uint256 ipId80IpIdRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(80));
 
         assertFalse(royaltyModule.ipRoyaltyVaults(address(80)) == address(0));
-        assertEq(ipId80RtLAPBalAfter, 45 * 10 ** 6);
+        assertEq(ipId80RtLAPBalAfter, 0);
         assertEq(ipId80RtLRPBalAfter, 0);
-        assertEq(ipId80RtLRPParentVaultBalAfter, 17 * 10 ** 6);
+        assertEq(ipId80RtLRPParentVaultBalAfter, 0);
         assertEq(ipId80RtExternal1BalAfter, 0);
         assertEq(ipId80RtExternal2BalAfter, 10 * 10 ** 6);
-        assertEq(ipId80IpIdRtBalAfter, 28 * 10 ** 6);
+        assertEq(ipId80IpIdRtBalAfter, 90 * 10 ** 6);
 
         address[] memory accRoyaltyPolicies80After = royaltyModule.accumulatedRoyaltyPolicies(address(80));
         assertEq(accRoyaltyPolicies80After[0], address(royaltyPolicyLAP));
@@ -759,12 +760,12 @@ contract TestRoyaltyModule is BaseTest {
         uint256 ipId80RtExternal2BalAfter = IERC20(ipRoyaltyVault80).balanceOf(mockExternalRoyaltyPolicy2);
         uint256 ipId80GroupPoolRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(rewardPool));
 
-        assertEq(ipId80RtLAPBalAfter, 45 * 10 ** 6);
+        assertEq(ipId80RtLAPBalAfter, 0);
         assertEq(ipId80RtLRPBalAfter, 0);
-        assertEq(ipId80RtLRPParentVaultBalAfter, 17 * 10 ** 6);
+        assertEq(ipId80RtLRPParentVaultBalAfter, 0);
         assertEq(ipId80RtExternal1BalAfter, 0);
         assertEq(ipId80RtExternal2BalAfter, 10 * 10 ** 6);
-        assertEq(ipId80GroupPoolRtBalAfter, 28 * 10 ** 6);
+        assertEq(ipId80GroupPoolRtBalAfter, 90 * 10 ** 6);
     }
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsTagged() public {
@@ -780,9 +781,16 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payRoyaltyOnBehalf(ipAddr, ipAccount1, address(USDC), 100);
+    }
 
-        vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
-        royaltyModule.payRoyaltyOnBehalf(ipAccount1, ipAddr, address(USDC), 100);
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_ZeroAmount() public {
+        vm.expectRevert(Errors.RoyaltyModule__ZeroAmount.selector);
+        royaltyModule.payRoyaltyOnBehalf(address(1), address(2), address(USDC), 0);
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_NotWhitelistedRoyaltyToken() public {
+        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
+        royaltyModule.payRoyaltyOnBehalf(address(1), address(2), address(1), 100);
     }
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_paused() public {
@@ -813,6 +821,11 @@ contract TestRoyaltyModule is BaseTest {
 
         uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
         uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 totalRevenueTokensReceivedBefore = royaltyModule.totalRevenueTokensReceived(
+            receiverIpId,
+            address(USDC)
+        );
+        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount);
@@ -821,9 +834,13 @@ contract TestRoyaltyModule is BaseTest {
 
         uint256 payerIpIdUSDCBalAfter = USDC.balanceOf(payerIpId);
         uint256 ipRoyaltyVaultUSDCBalAfter = USDC.balanceOf(ipRoyaltyVault);
+        uint256 totalRevenueTokensReceivedAfter = royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC));
+        uint256 pendingVaultAmountAfter = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, royaltyAmount);
         assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
+        assertEq(totalRevenueTokensReceivedAfter - totalRevenueTokensReceivedBefore, royaltyAmount);
+        assertEq(pendingVaultAmountAfter - pendingVaultAmountBefore, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {

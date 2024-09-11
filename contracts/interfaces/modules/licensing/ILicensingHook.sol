@@ -55,6 +55,16 @@ interface ILicensingHook is IModule {
     /// @notice This function is called when the LicensingModule calculates/predict the minting fee for license tokens.
     /// @dev The hook should guarantee the minting fee calculation is correct and return the minting fee which is
     /// the exact same amount with returned by beforeMintLicenseTokens().
+    /// The hook should revert if the minting fee calculation is not allowed.
+    /// @param caller The address of the caller who calling the mintLicenseTokens() function.
+    /// @param licensorIpId The ID of licensor IP from which issue the license tokens.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms within the license template,
+    /// which is used to mint license tokens.
+    /// @param amount The amount of license tokens to mint.
+    /// @param receiver The address of the receiver who receive the license tokens.
+    /// @param hookData The data to be used by the licensing hook.
+    /// @return totalMintingFee The total minting fee to be paid when minting amount of license tokens.
     function calculateMintingFee(
         address caller,
         address licensorIpId,

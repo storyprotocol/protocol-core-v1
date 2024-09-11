@@ -390,6 +390,8 @@ contract LicensingModule is
     /// @param amount The amount of license tokens to mint.
     /// @param receiver The address of the receiver.
     /// @param royaltyContext The context of the royalty.
+    /// @return currencyToken The address of the ERC20 token used for minting license fee.
+    /// @return tokenAmount The amount of the currency token to be paid for minting license tokens.
     function predictMintingLicenseFee(
         address licensorIpId,
         address licenseTemplate,

@@ -1671,6 +1671,171 @@ contract LicensingModuleTest is BaseTest {
         });
     }
 
+    function test_LicensingModule_calculatingMintingFee_withMintingFeeFromHook() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 999,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 999999,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0x123))
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address receiver = address(0x111);
+        (address token, uint256 mintingFee) = licensingModule.predictMintingLicenseFee(
+            ipId1,
+            address(pilTemplate),
+            termsId,
+            5,
+            receiver,
+            ""
+        );
+        assertEq(mintingFee, 100 * 5);
+        assertEq(token, address(erc20));
+
+        address minter = vm.addr(777);
+        vm.startPrank(minter);
+
+        erc20.mint(minter, 1000);
+        erc20.approve(address(royaltyModule), 100 * 5);
+
+        vm.expectEmit();
+        emit ILicensingModule.LicenseTokensMinted(minter, ipId1, address(pilTemplate), termsId, 5, receiver, 0);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 5,
+            receiver: receiver,
+            royaltyContext: ""
+        });
+        vm.stopPrank();
+
+        assertEq(erc20.balanceOf(minter), 500);
+        assertEq(licenseToken.ownerOf(lcTokenId), receiver);
+    }
+
+    function test_LicensingModule_calculatingMintingFee_withMintingFeeFromLicenseConfig() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 999,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 1000,
+            licensingHook: address(0),
+            hookData: abi.encode(address(0x123))
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address receiver = address(0x111);
+        (address token, uint256 mintingFee) = licensingModule.predictMintingLicenseFee(
+            ipId1,
+            address(pilTemplate),
+            termsId,
+            5,
+            receiver,
+            ""
+        );
+        assertEq(mintingFee, 1000 * 5);
+        assertEq(token, address(erc20));
+
+        address minter = vm.addr(777);
+        vm.startPrank(minter);
+
+        erc20.mint(minter, 5000);
+        erc20.approve(address(royaltyModule), 1000 * 5);
+
+        vm.expectEmit();
+        emit ILicensingModule.LicenseTokensMinted(minter, ipId1, address(pilTemplate), termsId, 5, receiver, 0);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 5,
+            receiver: receiver,
+            royaltyContext: ""
+        });
+        vm.stopPrank();
+
+        assertEq(erc20.balanceOf(minter), 0);
+        assertEq(licenseToken.ownerOf(lcTokenId), receiver);
+    }
+
+    function test_LicensingModule_calculatingMintingFee_withMintingFeeFromLicense() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 10000,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address receiver = address(0x111);
+        (address token, uint256 mintingFee) = licensingModule.predictMintingLicenseFee(
+            ipId1,
+            address(pilTemplate),
+            termsId,
+            5,
+            receiver,
+            ""
+        );
+        assertEq(mintingFee, 10000 * 5);
+        assertEq(token, address(erc20));
+
+        address minter = vm.addr(777);
+        vm.startPrank(minter);
+
+        erc20.mint(minter, 50000);
+        erc20.approve(address(royaltyModule), 10000 * 5);
+
+        vm.expectEmit();
+        emit ILicensingModule.LicenseTokensMinted(minter, ipId1, address(pilTemplate), termsId, 5, receiver, 0);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 5,
+            receiver: receiver,
+            royaltyContext: ""
+        });
+        vm.stopPrank();
+
+        assertEq(erc20.balanceOf(minter), 0);
+        assertEq(licenseToken.ownerOf(lcTokenId), receiver);
+    }
+
     function test_LicensingModule_mintLicenseTokens_withMintingFeeFromHook() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

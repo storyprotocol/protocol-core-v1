@@ -382,7 +382,15 @@ contract LicensingModule is
         }
     }
 
-    function calculateLicensingFee(
+    /// @notice pre-compute the minting license fee for the given IP and license terms.
+    /// the function can be used to calculate the minting license fee before minting license tokens.
+    /// @param licensorIpId The IP ID of the licensor.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @param amount The amount of license tokens to mint.
+    /// @param receiver The address of the receiver.
+    /// @param royaltyContext The context of the royalty.
+    function predictMintingLicenseFee(
         address licensorIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
@@ -407,7 +415,7 @@ contract LicensingModule is
             _hasPermission(licensorIpId)
         );
         uint256 mintingFeeByHook = 0;
-        if (lsc.licensingHook != address(0)) {
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
             mintingFeeByHook = ILicensingHook(lsc.licensingHook).calculateMintingFee(
                 msg.sender,
                 licensorIpId,
@@ -415,7 +423,7 @@ contract LicensingModule is
                 licenseTermsId,
                 amount,
                 receiver,
-                royaltyContext
+                lsc.hookData
             );
         }
 

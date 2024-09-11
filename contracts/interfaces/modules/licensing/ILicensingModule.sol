@@ -138,4 +138,21 @@ interface ILicensingModule is IModule {
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external;
+
+    /// @notice pre-compute the minting license fee for the given IP and license terms.
+    /// the function can be used to calculate the minting license fee before minting license tokens.
+    /// @param licensorIpId The IP ID of the licensor.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @param amount The amount of license tokens to mint.
+    /// @param receiver The address of the receiver.
+    /// @param royaltyContext The context of the royalty.
+    function predictMintingLicenseFee(
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint256 amount,
+        address receiver,
+        bytes calldata royaltyContext
+    ) external view returns (address currencyToken, uint256 tokenAmount);
 }

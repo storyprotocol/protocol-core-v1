@@ -131,12 +131,12 @@ interface IRoyaltyModule is IModule {
 
     /// @notice Returns the number of ancestors for a given IP asset
     /// @param ipId The ID of IP asset
-    function getAncestorsCount(address ipId) external view returns (uint256);
+    function getAncestorsCount(address ipId) external returns (uint256);
 
     /// @notice Indicates if an IP asset has a specific ancestor IP asset
     /// @param ipId The ID of IP asset
     /// @param ancestorIpId The ID of the ancestor IP asset
-    function hasAncestorIp(address ipId, address ancestorIpId) external view returns (bool);
+    function hasAncestorIp(address ipId, address ancestorIpId) external returns (bool);
 
     /// @notice Returns the maximum percentage - represents 100%
     function maxPercent() external pure returns (uint32);

@@ -23,7 +23,7 @@ interface IRoyaltyPolicyLAP is IRoyaltyPolicy {
     /// @param ipId The ipId to get the royalty for
     /// @param ancestorIpId The ancestor ipId to get the royalty for
     /// @return The royalty percentage between an IP asset and its ancestors via LAP
-    function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32);
+    function getPolicyRoyalty(address ipId, address ancestorIpId) external returns (uint32);
 
     /// @notice Returns the total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
     /// @param ipId The ipId of the IP asset

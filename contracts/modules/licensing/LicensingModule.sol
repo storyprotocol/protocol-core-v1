@@ -382,6 +382,63 @@ contract LicensingModule is
         }
     }
 
+    /// @notice pre-compute the minting license fee for the given IP and license terms.
+    /// the function can be used to calculate the minting license fee before minting license tokens.
+    /// @param licensorIpId The IP ID of the licensor.
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @param amount The amount of license tokens to mint.
+    /// @param receiver The address of the receiver.
+    /// @param royaltyContext The context of the royalty.
+    /// @return currencyToken The address of the ERC20 token used for minting license fee.
+    /// @return tokenAmount The amount of the currency token to be paid for minting license tokens.
+    function predictMintingLicenseFee(
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint256 amount,
+        address receiver,
+        bytes calldata royaltyContext
+    ) external view returns (address currencyToken, uint256 tokenAmount) {
+        tokenAmount = 0;
+        if (amount == 0) {
+            revert Errors.LicensingModule__MintAmountZero();
+        }
+        if (receiver == address(0)) {
+            revert Errors.LicensingModule__ReceiverZeroAddress();
+        }
+        if (!IP_ACCOUNT_REGISTRY.isIpAccount(licensorIpId)) {
+            revert Errors.LicensingModule__LicensorIpNotRegistered();
+        }
+        Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
+            licensorIpId,
+            licenseTemplate,
+            licenseTermsId,
+            _hasPermission(licensorIpId)
+        );
+        uint256 mintingFeeByHook = 0;
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
+            mintingFeeByHook = ILicensingHook(lsc.licensingHook).calculateMintingFee(
+                msg.sender,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId,
+                amount,
+                receiver,
+                lsc.hookData
+            );
+        }
+
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        uint256 mintingFeeByLicense = 0;
+        address royaltyPolicy = address(0);
+        (royaltyPolicy, , mintingFeeByLicense, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
+
+        if (royaltyPolicy != address(0)) {
+            tokenAmount = _getTotalMintingFee(lsc, mintingFeeByHook, mintingFeeByLicense, amount);
+        }
+    }
+
     /// @dev pay minting fee for all parent IPs
     /// This function is called by registerDerivative
     /// It pays the minting fee for all parent IPs through the royalty module

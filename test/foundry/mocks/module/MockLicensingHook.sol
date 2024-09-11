@@ -37,6 +37,21 @@ contract MockLicensingHook is BaseModule, ILicensingHook {
         return 100;
     }
 
+    function calculateMintingFee(
+        address caller,
+        address licensorIpId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint256 amount,
+        address receiver,
+        bytes calldata hookData
+    ) external view returns (uint256 totalMintingFee) {
+        address unqualifiedAddress = abi.decode(hookData, (address));
+        if (caller == unqualifiedAddress) revert("MockLicensingHook: caller is invalid");
+        if (receiver == unqualifiedAddress) revert("MockLicensingHook: receiver is invalid");
+        return amount * 100;
+    }
+
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(ILicensingHook).interfaceId || super.supportsInterface(interfaceId);
     }

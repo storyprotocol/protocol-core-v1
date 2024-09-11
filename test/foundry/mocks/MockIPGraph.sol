@@ -77,42 +77,16 @@ contract MockIPGraph {
         return new address[](0);
     }
 
-    function setRoyalty(address ipId, address parentIpId, uint256 royaltyPercentage) external {
-        _setRoyalty(ipId, parentIpId, POLICY_KIND_LAP, royaltyPercentage);
-    }
-
     function setRoyalty(address ipId, address parentIpId, uint256 policyKind, uint256 royaltyPercentage) external {
         _setRoyalty(ipId, parentIpId, policyKind, royaltyPercentage);
     }
 
-    function calculateRoyalty(
-        address ipId,
-        address ancestorIpId,
-        uint256 policyKind
-    ) external returns (uint256 result) {
-        result = _getRoyalty(ipId, ancestorIpId, policyKind);
-        royalties[ipId][ancestorIpId][policyKind] = result;
+    function getRoyalty(address ipId, address ancestorIpId, uint256 policyKind) external returns (uint256) {
+        return _getRoyalty(ipId, ancestorIpId, policyKind);
     }
 
-    function getRoyalty(address ipId, address ancestorIpId) external returns (uint256) {
-        return _getRoyalty(ipId, ancestorIpId, POLICY_KIND_LAP);
-    }
-
-    function getRoyalty(address ipId, address ancestorIpId, uint256 policyKind) external view returns (uint256) {
-        return royalties[ipId][ancestorIpId][policyKind];
-    }
-
-    function updateRoyaltyStack(address ipId, uint256 policyKind) external returns (uint256 result) {
-        result = _getRoyaltyStack(ipId, policyKind);
-        royaltyStacks[ipId][policyKind] = result;
-    }
-
-    function getRoyaltyStack(address ipId) external returns (uint256) {
-        return _getRoyaltyStack(ipId, POLICY_KIND_LAP);
-    }
-
-    function getRoyaltyStack(address ipId, uint256 policyKind) external view returns (uint256) {
-        return royaltyStacks[ipId][policyKind];
+    function getRoyaltyStack(address ipId, uint256 policyKind) external returns (uint256) {
+        return _getRoyaltyStack(ipId, policyKind);
     }
 
     function _setRoyalty(address ipId, address parentIpId, uint256 policyKind, uint256 royaltyPercentage) internal {

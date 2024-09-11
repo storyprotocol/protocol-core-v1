@@ -30,11 +30,10 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP {
         address[] calldata ancestorsRules,
         uint32[] memory licensesPercent,
         bytes calldata externalData
-    ) external {}
+    ) external returns (uint32) {}
 
-    function onRoyaltyPayment(address caller, address ipId, address token, uint256 amount) external {}
-    function rtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {}
-    function royaltyStack(address ipId) external view returns (uint32) {
+    function getPolicyRtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {}
+    function getPolicyRoyaltyStack(address ipId) external view returns (uint32) {
         return _getRoyaltyPolicyLAPStorage().royaltyStack[ipId];
     }
     function collectRoyaltyTokens(address ipId, address ancestorIpId) external {}
@@ -44,6 +43,10 @@ contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP {
     function revenueTokenBalances(address ipId, address token) external view returns (uint256) {}
     function snapshotsClaimed(address ipId, address token, uint256 snapshot) external view returns (bool) {}
     function snapshotsClaimedCounter(address ipId, address token) external view returns (uint256) {}
+    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {}
+    function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {}
+    function getAncestorPercent(address ipId, address ancestorIpId) external view returns (uint32) {}
+    function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {}
 
     function _getRoyaltyPolicyLAPStorage() private pure returns (RoyaltyPolicyLAPStorage storage $) {
         assembly {

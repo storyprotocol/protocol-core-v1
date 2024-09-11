@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 import { IExternalRoyaltyPolicy } from "../../../../contracts/interfaces/modules/royalty/policies/IExternalRoyaltyPolicy.sol";
 
 contract MockExternalRoyaltyPolicy2 is IExternalRoyaltyPolicy {
-    function rtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
+    function getPolicyRtsRequiredToLink(address ipId, uint32 licensePercent) external view returns (uint32) {
         return 10 * 10 ** 6;
     }
 }

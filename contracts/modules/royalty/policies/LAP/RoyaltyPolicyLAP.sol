@@ -128,16 +128,16 @@ contract RoyaltyPolicyLAP is
         uint32 ancestorPercent = $.ancestorPercentLAP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {
             // on the first transfer to a vault from a specific descendant the royalty between the two is set
-            uint32 newAncestorPercent = _getRoyaltyLAP(ipId, ancestorIpId);
-            if (newAncestorPercent == 0) revert Errors.RoyaltyPolicyLAP__ZeroClaimableRoyalty();
-            $.ancestorPercentLAP[ipId][ancestorIpId] = newAncestorPercent;
+            ancestorPercent = _getRoyaltyLAP(ipId, ancestorIpId);
+            if (ancestorPercent == 0) revert Errors.RoyaltyPolicyLAP__ZeroClaimableRoyalty();
+            $.ancestorPercentLAP[ipId][ancestorIpId] = ancestorPercent;
         }
 
         // check if the amount being claimed is within the claimable royalty amount
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
         uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
-        uint256 transferredAmount = $.transferredTokensLAP[ancestorIpId][ipId][token];
+        uint256 transferredAmount = $.transferredTokensLAP[ipId][ancestorIpId][token];
         if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
 
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
@@ -169,7 +169,7 @@ contract RoyaltyPolicyLAP is
     /// @param ipId The ipId to get the royalty for
     /// @param ancestorIpId The ancestor ipId to get the royalty for
     /// @return The royalty percentage between an IP asset and its ancestors via LAP
-    function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {
+    function getPolicyRoyalty(address ipId, address ancestorIpId) external returns (uint32) {
         return _getRoyaltyLAP(ipId, ancestorIpId);
     }
 
@@ -185,9 +185,9 @@ contract RoyaltyPolicyLAP is
     /// @notice Returns the royalty stack for a given IP asset for LAP royalty policy
     /// @param ipId The ipId to get the royalty stack for
     /// @return The royalty stack for a given IP asset for LAP royalty policy
-    function _getRoyaltyStackLAP(address ipId) internal view returns (uint32) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("getRoyaltyStack(address,address)", ipId, address(this))
+    function _getRoyaltyStackLAP(address ipId) internal returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.call(
+            abi.encodeWithSignature("getRoyaltyStack(address,uint256)", ipId, uint256(0))
         );
         require(success, "Call failed");
         return uint32(abi.decode(returnData, (uint256)));
@@ -200,10 +200,10 @@ contract RoyaltyPolicyLAP is
     function _setRoyaltyLAP(address ipId, address parentIpId, uint32 royalty) internal {
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature(
-                "setRoyalty(address,address,address,uint256)",
+                "setRoyalty(address,address,uint256,uint256)",
                 ipId,
                 parentIpId,
-                address(this),
+                uint256(0),
                 uint256(royalty)
             )
         );
@@ -214,9 +214,9 @@ contract RoyaltyPolicyLAP is
     /// @param ipId The ipId to get the royalty for
     /// @param ancestorIpId The ancestor ipId to get the royalty for
     /// @return The royalty percentage between an IP asset and its ancestor via royalty policy LAP
-    function _getRoyaltyLAP(address ipId, address ancestorIpId) internal view returns (uint32) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("getRoyalty(address,address,address)", ipId, ancestorIpId, address(this))
+    function _getRoyaltyLAP(address ipId, address ancestorIpId) internal returns (uint32) {
+        (bool success, bytes memory returnData) = IP_GRAPH.call(
+            abi.encodeWithSignature("getRoyalty(address,address,uint256)", ipId, ancestorIpId, uint256(0))
         );
         require(success, "Call failed");
         return uint32(abi.decode(returnData, (uint256)));

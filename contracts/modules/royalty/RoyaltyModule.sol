@@ -359,14 +359,14 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
     /// @notice Returns the number of ancestors for a given IP asset
     /// @param ipId The ID of IP asset
-    function getAncestorsCount(address ipId) external view returns (uint256) {
+    function getAncestorsCount(address ipId) external returns (uint256) {
         return _getAncestorCount(ipId);
     }
 
     /// @notice Indicates if an IP asset has a specific ancestor IP asset
     /// @param ipId The ID of IP asset
     /// @param ancestorIpId The ID of the ancestor IP asset
-    function hasAncestorIp(address ipId, address ancestorIpId) external view returns (bool) {
+    function hasAncestorIp(address ipId, address ancestorIpId) external returns (bool) {
         return _hasAncestorIp(ipId, ancestorIpId);
     }
 
@@ -556,8 +556,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @notice Returns the count of ancestors for the given IP asset
     /// @param ipId The ID of the IP asset
     /// @return The number of ancestors
-    function _getAncestorCount(address ipId) internal view returns (uint256) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+    function _getAncestorCount(address ipId) internal returns (uint256) {
+        (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
         );
         require(success, "Call failed");
@@ -568,8 +568,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ipId The ipId to check if it has an ancestor
     /// @param ancestorIpId The ancestor ipId to check if it is an ancestor
     /// @return True if the IP has the ancestor
-    function _hasAncestorIp(address ipId, address ancestorIpId) internal view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
+    function _hasAncestorIp(address ipId, address ancestorIpId) internal returns (bool) {
+        (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
         );
         require(success, "Call failed");

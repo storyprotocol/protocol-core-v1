@@ -46,7 +46,7 @@ contract RoyaltyPolicyLRP is
 
     /// @dev Storage structure for the RoyaltyPolicyLRP
     /// @param royaltyStackLRP Sum of the royalty percentages to be paid to all ancestors for LRP royalty policy
-    /// @param ancestorPercentLRP The royalty percentage between an IP asset and its ancestors for LRP royalty policy
+    /// @param ancestorPercentLRP The royalty percentage between an IP asset and a given ancestor for LRP royalty policy
     /// @param transferredTokensLRP Total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLRP
     struct RoyaltyPolicyLRPStorage {
@@ -127,7 +127,6 @@ contract RoyaltyPolicyLRP is
             // when a parent is linking through a different royalty policy, the royalty amount is zero
             if (licenseRoyaltyPolicies[i] == address(this)) {
                 // for parents linking through LRP license, the royalty amount is set in the precompile
-                // TODO: can we eliminate setRoyaltyLRP and traverse graph with existing data from ip asset registry?
                 _setRoyaltyLRP(ipId, parentIpIds[i], licensesPercent[i]);
             }
         }

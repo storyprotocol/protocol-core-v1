@@ -25,7 +25,7 @@ contract RoyaltyPolicyLAP is
 
     /// @dev Storage structure for the RoyaltyPolicyLAP
     /// @param royaltyStackLAP Sum of the royalty percentages to be paid to all ancestors for LAP royalty policy
-    /// @param ancestorPercentLAP The royalty percentage between an IP asset and its ancestors for LAP royalty policy
+    /// @param ancestorPercentLAP The royalty percentage between an IP asset and a given ancestor for LAP royalty policy
     /// @param transferredTokensLAP Total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLAP
     struct RoyaltyPolicyLAPStorage {
@@ -106,7 +106,6 @@ contract RoyaltyPolicyLAP is
             // when a parent is linking through a different royalty policy, the royalty amount is zero
             if (licenseRoyaltyPolicies[i] == address(this)) {
                 // for parents linking through LAP license, the royalty amount is set in the precompile
-                // TODO: can we eliminate setRoyaltyLAP and traverse graph with existing data from ip asset registry?
                 _setRoyaltyLAP(ipId, parentIpIds[i], licensesPercent[i]);
             }
         }

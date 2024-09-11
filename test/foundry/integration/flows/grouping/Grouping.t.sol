@@ -4,12 +4,10 @@ pragma solidity ^0.8.23;
 // external
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // contracts
-import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 // solhint-disable-next-line max-line-length
-import { IRoyaltyPolicyLAP } from "../../../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
@@ -134,25 +132,14 @@ contract Flows_Integration_Grouping is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
-            address groupRoyaltyVault = royaltyModule.ipRoyaltyVaults(groupId);
+            royaltyPolicyLAP.transferToVault(
+                ipAcct[3],
+                groupId,
+                address(mockToken),
+                (10 ether * 10_000_000) / royaltyModule.maxPercent()
+            );
 
             vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
-
-            // Expect 10% (10_000_000) because ipAcct[2] has only one parent (IPAccount1), with 10% absolute royalty.
-
-            uint256[] memory snapshotsToClaim = new uint256[](1);
-            snapshotsToClaim[0] = 1;
-            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[3]);
-
-            vm.expectEmit(ipRoyaltyVault3);
-            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: groupRoyaltyVault, value: 10_000_000 });
-
-            vm.expectEmit(address(royaltyPolicyLAP));
-            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], groupId, 10_000_000);
-
-            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], groupId);
 
             vm.stopPrank();
         }

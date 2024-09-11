@@ -518,7 +518,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
             address(royaltyModule),
-            address(disputeModule),
             _getDeployedAddress(type(IPGraphACL).name)
         ));
         royaltyPolicyLAP = RoyaltyPolicyLAP(
@@ -538,7 +537,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _postdeploy("RoyaltyPolicyLAP", address(royaltyPolicyLAP));
 
         _predeploy("RoyaltyPolicyLRP");
-        impl = address(new RoyaltyPolicyLRP(address(royaltyModule)));
+        impl = address(new RoyaltyPolicyLRP(
+            address(royaltyModule),
+            _getDeployedAddress(type(IPGraphACL).name)
+        ));
         royaltyPolicyLRP = RoyaltyPolicyLRP(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -712,6 +714,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // IPGraphACL
         ipGraphACL.whitelistAddress(address(licenseRegistry));
         ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
+        ipGraphACL.whitelistAddress(address(royaltyPolicyLRP));
 
         // set default license to non-commercial social remixing
         uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());

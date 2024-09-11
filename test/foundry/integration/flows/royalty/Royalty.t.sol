@@ -4,13 +4,11 @@ pragma solidity 0.8.26;
 // external
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import { ERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // contracts
 import { IRoyaltyModule } from "../../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IpRoyaltyVault } from "../../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
-// solhint-disable-next-line max-line-length
-import { IRoyaltyPolicyLAP } from "../../../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
 import { Errors } from "../../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 
@@ -160,81 +158,43 @@ contract Flows_Integration_Disputes is BaseIntegration {
             vm.stopPrank();
         }
 
-        // Owner of IPAccount2, Bob, claims his RTs from IPAccount3 vault
-        {
-            vm.startPrank(u.bob);
-
-            ERC20[] memory tokens = new ERC20[](1);
-            tokens[0] = mockToken;
-
-            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
-            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
-
-            vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault3).snapshot();
-
-            // Expect 10% (10_000_000) because ipAcct[2] has only one parent (IPAccount1), with 10% absolute royalty.
-
-            uint256[] memory snapshotsToClaim = new uint256[](1);
-            snapshotsToClaim[0] = 1;
-            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[3]);
-
-            vm.expectEmit(ipRoyaltyVault3);
-            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault2, value: 10_000_000 });
-
-            vm.expectEmit(address(royaltyPolicyLAP));
-            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[2], 10_000_000);
-
-            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[2]);
-        }
-
-        // Owner of IPAccount1, Alice, claims her RTs from IPAccount2 and IPAccount3 vaults
-        {
-            vm.startPrank(address(100));
-
-            ERC20[] memory tokens = new ERC20[](1);
-            tokens[0] = mockToken;
-
-            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
-            address ipRoyaltyVault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
-            address ipRoyaltyVault3 = royaltyModule.ipRoyaltyVaults(ipAcct[3]);
-
-            vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(ipRoyaltyVault2).snapshot();
-
-            // IPAccount1 should expect 10% absolute royalty from its children (IPAccount2)
-            // and 20% from its grandchild (IPAccount3) and so on.
-
-            uint256[] memory snapshotsToClaim = new uint256[](1);
-            snapshotsToClaim[0] = 1;
-            royaltyPolicyLAP.claimBySnapshotBatchAsSelf(snapshotsToClaim, address(mockToken), ipAcct[2]);
-
-            vm.expectEmit(ipRoyaltyVault2);
-            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 10_000_000 });
-            vm.expectEmit(address(royaltyPolicyLAP));
-            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[2], ipAcct[1], 10_000_000);
-            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[2], ipAcct[1]);
-
-            vm.expectEmit(ipRoyaltyVault3);
-            emit IERC20.Transfer({ from: address(royaltyPolicyLAP), to: ipRoyaltyVault1, value: 20_000_000 });
-            vm.expectEmit(address(royaltyPolicyLAP));
-            emit IRoyaltyPolicyLAP.RoyaltyTokensCollected(ipAcct[3], ipAcct[1], 20_000_000);
-            royaltyPolicyLAP.collectRoyaltyTokens(ipAcct[3], ipAcct[1]);
-        }
-
-        // Alice using IPAccount1 takes snapshot on IPAccount2 vault and claims her revenue from both
-        // IPAccount2 and IPAccount3
+        // Alice claims her revenue from both IPAccount2 and IPAccount3
         {
             vm.startPrank(ipAcct[1]);
 
-            address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
+            address vault = royaltyModule.ipRoyaltyVaults(ipAcct[1]);
+            uint256 earningsFromMintingFees = 4 * mintingFee;
+            assertEq(mockToken.balanceOf(vault), earningsFromMintingFees);
 
-            address[] memory tokens = new address[](1);
-            tokens[0] = address(mockToken);
+            royaltyPolicyLAP.transferToVault(
+                ipAcct[2],
+                ipAcct[1],
+                address(mockToken),
+                (1 ether * 10_000_000) / royaltyModule.maxPercent()
+            );
+            royaltyPolicyLAP.transferToVault(
+                ipAcct[3],
+                ipAcct[1],
+                address(mockToken),
+                (1 ether * 20_000_000) / royaltyModule.maxPercent()
+            );
 
-            IpRoyaltyVault(ipRoyaltyVault1).snapshot();
+            vm.warp(block.timestamp + 7 days + 1);
+            IpRoyaltyVault(vault).snapshot();
 
-            IpRoyaltyVault(ipRoyaltyVault1).claimRevenueByTokenBatch(1, tokens);
+            uint256[] memory snapshotIds = new uint256[](1);
+            snapshotIds[0] = 1;
+
+            uint256 aliceBalanceBefore = mockToken.balanceOf(ipAcct[1]);
+
+            IpRoyaltyVault(vault).claimRevenueBySnapshotBatch(snapshotIds, address(mockToken));
+
+            uint256 aliceBalanceAfter = mockToken.balanceOf(ipAcct[1]);
+
+            assertEq(
+                aliceBalanceAfter - aliceBalanceBefore,
+                earningsFromMintingFees + (1 ether * (10_000_000 + 20_000_000)) / royaltyModule.maxPercent()
+            );
         }
     }
 }

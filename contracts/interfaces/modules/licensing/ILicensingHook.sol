@@ -52,6 +52,9 @@ interface ILicensingHook is IModule {
         bytes calldata hookData
     ) external returns (uint256 mintingFee);
 
+    /// @notice This function is called when the LicensingModule calculates/predict the minting fee for license tokens.
+    /// @dev The hook should guarantee the minting fee calculation is correct and return the minting fee which is
+    /// the exact same amount with returned by beforeMintLicenseTokens().
     function calculateMintingFee(
         address caller,
         address licensorIpId,

@@ -585,7 +585,7 @@ contract TestRoyaltyModule is BaseTest {
         parents[2] = address(70);
         licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
         licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
-        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy2);
+        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy1);
         parentRoyalties[0] = uint32(500 * 10 ** 6);
         parentRoyalties[1] = uint32(17 * 10 ** 6);
         parentRoyalties[2] = uint32(24 * 10 ** 6);
@@ -593,6 +593,15 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
         ipGraph.addParentIp(address(80), parents);
 
+        // tests royalty stack above 100%
+        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
+        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+
+        parentRoyalties[0] = uint32(50 * 10 ** 6);
+        parentRoyalties[1] = uint32(17 * 10 ** 6);
+        parentRoyalties[2] = uint32(240 * 10 ** 6);
+
+        // tests royalty token supply above 100%
         vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
     }
@@ -841,6 +850,18 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
         assertEq(totalRevenueTokensReceivedAfter - totalRevenueTokensReceivedBefore, royaltyAmount);
         assertEq(pendingVaultAmountAfter - pendingVaultAmountBefore, royaltyAmount);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_ZeroAmount() public {
+        vm.startPrank(address(licensingModule));
+        vm.expectRevert(Errors.RoyaltyModule__ZeroAmount.selector);
+        royaltyModule.payLicenseMintingFee(address(1), address(2), address(USDC), 0);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_NotWhitelistedRoyaltyToken() public {
+        vm.startPrank(address(licensingModule));
+        vm.expectRevert(Errors.RoyaltyModule__NotWhitelistedRoyaltyToken.selector);
+        royaltyModule.payLicenseMintingFee(address(1), address(2), address(1), 100);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {

@@ -19,7 +19,7 @@ import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpg
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IRoyaltyPolicyLAP } from "contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
+import { IGraphAwareRoyaltyPolicy } from "contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
 import { Errors } from "contracts/lib/Errors.sol";

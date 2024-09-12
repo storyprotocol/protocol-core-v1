@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IRoyaltyPolicyLRP } from "../../../../interfaces/modules/royalty/policies/LRP/IRoyaltyPolicyLRP.sol";
+import { IGraphAwareRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 import { IIpRoyaltyVault } from "../../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
@@ -37,7 +37,7 @@ import { IPGraphACL } from "../../../../access/IPGraphACL.sol";
 ///      dilution and consider measures to prevent/mitigate the dilution risk or whether the LRP royalty policy is the
 ///      right policy for their use case.
 contract RoyaltyPolicyLRP is
-    IRoyaltyPolicyLRP,
+    IGraphAwareRoyaltyPolicy,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable,
     ProtocolPausableUpgradeable

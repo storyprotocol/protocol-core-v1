@@ -7,7 +7,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IRoyaltyPolicyLAP } from "../../../../interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
+import { IGraphAwareRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 import { IIpRoyaltyVault } from "../../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
@@ -16,7 +16,7 @@ import { IPGraphACL } from "../../../../access/IPGraphACL.sol";
 /// @title Liquid Absolute Percentage Royalty Policy
 /// @notice Defines the logic for splitting royalties for a given ipId using a liquid absolute percentage mechanism
 contract RoyaltyPolicyLAP is
-    IRoyaltyPolicyLAP,
+    IGraphAwareRoyaltyPolicy,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable,
     ProtocolPausableUpgradeable

@@ -3,9 +3,9 @@ pragma solidity 0.8.26;
 
 import { IRoyaltyModule } from "../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IDisputeModule } from "../../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";
-import { IRoyaltyPolicyLAP } from "../../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
+import { IGraphAwareRoyaltyPolicy } from "../../../../contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 
-contract MockRoyaltyPolicyLAP is IRoyaltyPolicyLAP {
+contract MockRoyaltyPolicyLAP is IGraphAwareRoyaltyPolicy {
     struct RoyaltyPolicyLAPStorage {
         mapping(address ipId => uint32) royaltyStack;
     }

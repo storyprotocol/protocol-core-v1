@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import { IRoyaltyPolicyLAP } from "../../../contracts/interfaces/modules/royalty/policies/LAP/IRoyaltyPolicyLAP.sol";
+import { IGraphAwareRoyaltyPolicy } from "../../../contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { PILicenseTemplate } from "../../../contracts/modules/licensing/PILicenseTemplate.sol";
 import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";
@@ -11,7 +11,7 @@ import { PILFlavors } from "../../../contracts/lib/PILFlavors.sol";
 contract LicensingHelper {
     PILicenseTemplate private pilTemplate; // keep private to avoid collision with `BaseIntegration`
 
-    IRoyaltyPolicyLAP private royaltyPolicyLAP; // keep private to avoid collision with `BaseIntegration`
+    IGraphAwareRoyaltyPolicy private royaltyPolicyLAP; // keep private to avoid collision with `BaseIntegration`
 
     IERC20 private erc20; // keep private to avoid collision with `BaseIntegration`
 
@@ -22,7 +22,7 @@ contract LicensingHelper {
 
     function initLicensingHelper(address _pilTemplate, address _royaltyPolicyLAP, address _erc20) public {
         pilTemplate = PILicenseTemplate(_pilTemplate);
-        royaltyPolicyLAP = IRoyaltyPolicyLAP(_royaltyPolicyLAP);
+        royaltyPolicyLAP = IGraphAwareRoyaltyPolicy(_royaltyPolicyLAP);
         erc20 = IERC20(_erc20);
     }
 

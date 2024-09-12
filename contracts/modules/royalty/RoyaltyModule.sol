@@ -34,7 +34,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     address public constant IP_GRAPH = address(0x1A);
 
     /// @notice Returns the percentage scale - represents 100%
-    uint32 public constant MAX_PERCENT = 100000000; // 100 * 10 ** 6
+    uint32 public constant MAX_PERCENT = 100000000; // 100_000_000
 
     /// @notice Returns the canonical protocol-wide licensing module
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable

@@ -26,7 +26,7 @@ contract TestRoyaltyModule is BaseTest {
     event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
     event RoyaltyVaultAddedToIp(address ipId, address ipRoyaltyVault);
     event ExternalRoyaltyPolicyRegistered(address externalRoyaltyPolicy);
-    event LicenseMinted(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
+    event LicensedWithRoyalty(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
     event LinkedToParents(
         address ipId,
         address[] parentIpIds,
@@ -386,7 +386,7 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(royaltyModule.ipRoyaltyVaults(licensor), address(0));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit LicenseMinted(licensor, address(royaltyPolicyLAP), licensePercent, "");
+        emit LicensedWithRoyalty(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
@@ -406,7 +406,7 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit LicenseMinted(groupId, address(royaltyPolicyLAP), licensePercent, "");
+        emit LicensedWithRoyalty(groupId, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), licensePercent, "");
 
@@ -428,7 +428,7 @@ contract TestRoyaltyModule is BaseTest {
         uint256 ipIdRtBalBefore = IERC20(ipRoyaltyVaultBefore).balanceOf(licensor);
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit LicenseMinted(licensor, address(royaltyPolicyLAP), licensePercent, "");
+        emit LicensedWithRoyalty(licensor, address(royaltyPolicyLAP), licensePercent, "");
 
         royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), licensePercent, "");
 

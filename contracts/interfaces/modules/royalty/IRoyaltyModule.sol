@@ -45,7 +45,7 @@ interface IRoyaltyModule is IModule {
     /// @param royaltyPolicy The royalty policy address of the license being minted
     /// @param licensePercent The license percentage of the license being minted
     /// @param externalData The external data custom to the royalty policy being minted
-    event LicenseMinted(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
+    event LicensedWithRoyalty(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
 
     /// @notice Event emitted when an IP asset is linked to parents
     /// @param ipId The children ipId that is being linked to parents

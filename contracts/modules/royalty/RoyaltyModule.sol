@@ -237,7 +237,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
             IRoyaltyPolicy(royaltyPolicy).onLicenseMinting(ipId, licensePercent, externalData);
         }
 
-        emit LicenseMinted(ipId, royaltyPolicy, licensePercent, externalData);
+        emit LicensedWithRoyalty(ipId, royaltyPolicy, licensePercent, externalData);
     }
 
     /// @notice Executes royalty related logic on linking to parents

@@ -26,12 +26,12 @@ contract RoyaltyPolicyLAP is
     /// @dev Storage structure for the RoyaltyPolicyLAP
     /// @param royaltyStackLAP Sum of the royalty percentages to be paid to all ancestors for LAP royalty policy
     /// @param ancestorPercentLAP The royalty percentage between an IP asset and a given ancestor for LAP royalty policy
-    /// @param transferredTokensLAP Total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
+    /// @param transferredTokenLAP Total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLAP
     struct RoyaltyPolicyLAPStorage {
         mapping(address ipId => uint32) royaltyStackLAP;
         mapping(address ipId => mapping(address ancestorIpId => uint32)) ancestorPercentLAP;
-        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokensLAP;
+        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokenLAP;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyPolicyLAP")) - 1)) & ~bytes32(uint256(0xff));
@@ -142,12 +142,12 @@ contract RoyaltyPolicyLAP is
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
         uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
-        uint256 transferredAmount = $.transferredTokensLAP[ipId][ancestorIpId][token];
+        uint256 transferredAmount = $.transferredTokenLAP[ipId][ancestorIpId][token];
         if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
 
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
 
-        $.transferredTokensLAP[ipId][ancestorIpId][token] += amount;
+        $.transferredTokenLAP[ipId][ancestorIpId][token] += amount;
 
         IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amount);
         IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
@@ -184,7 +184,7 @@ contract RoyaltyPolicyLAP is
     /// @param token The token address to transfer
     /// @return The total lifetime revenue tokens transferred to a vault from a descendant IP via LAP
     function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {
-        return _getRoyaltyPolicyLAPStorage().transferredTokensLAP[ipId][ancestorIpId][token];
+        return _getRoyaltyPolicyLAPStorage().transferredTokenLAP[ipId][ancestorIpId][token];
     }
 
     /// @notice Returns the royalty stack for a given IP asset for LAP royalty policy

@@ -47,12 +47,12 @@ contract RoyaltyPolicyLRP is
     /// @dev Storage structure for the RoyaltyPolicyLRP
     /// @param royaltyStackLRP Sum of the royalty percentages to be paid to all ancestors for LRP royalty policy
     /// @param ancestorPercentLRP The royalty percentage between an IP asset and a given ancestor for LRP royalty policy
-    /// @param transferredTokensLRP Total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
+    /// @param transferredTokenLRP Total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
     /// @custom:storage-location erc7201:story-protocol.RoyaltyPolicyLRP
     struct RoyaltyPolicyLRPStorage {
         mapping(address ipId => uint32) royaltyStackLRP;
         mapping(address ipId => mapping(address ancestorIpId => uint32)) ancestorPercentLRP;
-        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokensLRP;
+        mapping(address ipId => mapping(address ancestorIpId => mapping(address token => uint256))) transferredTokenLRP;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyPolicyLRP")) - 1)) & ~bytes32(uint256(0xff));
@@ -163,12 +163,12 @@ contract RoyaltyPolicyLRP is
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
         uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
-        uint256 transferredAmount = $.transferredTokensLRP[ipId][ancestorIpId][token];
+        uint256 transferredAmount = $.transferredTokenLRP[ipId][ancestorIpId][token];
         if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
 
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
 
-        $.transferredTokensLRP[ipId][ancestorIpId][token] += amount;
+        $.transferredTokenLRP[ipId][ancestorIpId][token] += amount;
 
         IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amount);
         IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
@@ -205,7 +205,7 @@ contract RoyaltyPolicyLRP is
     /// @param token The token address to transfer
     /// @return The total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
     function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {
-        return _getRoyaltyPolicyLRPStorage().transferredTokensLRP[ipId][ancestorIpId][token];
+        return _getRoyaltyPolicyLRPStorage().transferredTokenLRP[ipId][ancestorIpId][token];
     }
 
     /// @notice Returns the royalty stack for a given IP asset for LRP royalty policy

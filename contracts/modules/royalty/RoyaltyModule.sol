@@ -223,7 +223,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         // it can not have any derivative and therefore is not allowed to mint a license
         if (_getAncestorCount(ipId) >= $.maxAncestors) revert Errors.RoyaltyModule__LastPositionNotAbleToMintLicense();
 
-        // deploy ipRoyaltyVault for the ipId given it does not exist yet
+        // deploy ipRoyaltyVault for the ipId given in case it does not exist yet
         if ($.ipRoyaltyVaults[ipId] == address(0)) {
             address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
                 ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)

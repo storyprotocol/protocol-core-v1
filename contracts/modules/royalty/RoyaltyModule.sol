@@ -311,8 +311,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
-        IDisputeModule dispute = DISPUTE_MODULE;
-        if (dispute.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (DISPUTE_MODULE.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
 
         // pay to the whitelisted royalty policies first
         uint256 amountPaid = _payToWhitelistedRoyaltyPolicies(receiverIpId, msg.sender, token, amount);

@@ -169,6 +169,9 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(ipId80LapBalance, 0);
         assertEq(ipId80Balance, 100 * 10 ** 6);
         assertEq(royaltyPolicyLAP.getPolicyRoyaltyStack(address(80)), 45 * 10 ** 6);
+        assertEq(royaltyPolicyLAP.getPolicyRoyalty(address(80), address(10)), 10 * 10 ** 6);
+        assertEq(royaltyPolicyLAP.getPolicyRoyalty(address(80), address(20)), 15 * 10 ** 6);
+        assertEq(royaltyPolicyLAP.getPolicyRoyalty(address(80), address(30)), 20 * 10 ** 6);
     }
 
     function test_RoyaltyPolicyLAP_transferToVault_revert_ZeroClaimableRoyalty() public {

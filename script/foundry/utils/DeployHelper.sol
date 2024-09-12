@@ -123,6 +123,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // DeployHelper variable
     bool private writeDeploys;
 
+    string private version;
+
     constructor(
         address erc6551Registry_,
         address create3Deployer_,
@@ -179,7 +181,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             revert RoleConfigError("Multisig roles not granted");
         }
 
-        if (writeDeploys) _writeDeployment();
+        if (writeDeploys) _writeDeployment(version);
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
@@ -738,7 +740,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ProtocolAdmin.UPGRADER_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(royaltyModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);

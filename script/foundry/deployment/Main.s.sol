@@ -16,6 +16,7 @@ contract Main is DeployHelper {
     address internal constant TREASURY_ADDRESS = address(200);
     // For royalty policy
     uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
+    string internal constant VERSION = "v1.2";
 
     constructor()
         DeployHelper(
@@ -44,8 +45,8 @@ contract Main is DeployHelper {
         super.run(
             seed, // create3 seed
             false, // runStorageLayoutCheck
-            true // writeDeployments
+            true // writeDeployments,
         );
-        _writeDeployment(); // write deployment json to deployments/deployment-{chainId}.json
+        _writeDeployment(VERSION); // write deployment json to deployments/deployment-{chainId}.json
     }
 }

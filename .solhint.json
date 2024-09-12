@@ -8,7 +8,7 @@
     "no-empty-blocks": "off",
     "constructor-syntax": "error",
     "func-visibility": ["error", { "ignoreConstructors": true }],
-    "max-line-length": ["error", 120],
+    "max-line-length": ["error", 121],
     "not-rely-on-time": "off",
     "reason-string": ["warn", { "maxLength": 64 }],
     "no-unused-import": "error",

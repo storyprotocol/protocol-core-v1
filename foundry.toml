@@ -9,6 +9,10 @@ optimizer_runs = 20000
 test = 'test'
 solc = '0.8.26'
 fs_permissions = [{ access = 'read-write', path = './deploy-out' }, { access = 'read', path = './out' }]
+##### Uncomment if running storage layout verification
+ffi = true
+ast = true
+build_info = true
 extra_output = ["storageLayout"]
 evm_version = "cancun"
 

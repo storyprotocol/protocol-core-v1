@@ -268,7 +268,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address ipRoyaltyVault = _deployIpRoyaltyVault(ipId, address(this));
 
         // send royalty tokens to the royalty policies
-        // and saves the ancestors royalty policies for the child
+        // and saves the ancestors accumulated royalty policies for the child
         _distributeRoyaltyTokensToPolicies(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, ipRoyaltyVault);
 
         // for whitelisted policies calls onLinkToParents
@@ -497,11 +497,14 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
         uint32 totalRtsRequiredToLink;
+        // this loop is limited to maxParents
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             if (parentIpIds[i] == address(0)) revert Errors.RoyaltyModule__ZeroParentIpId();
             if (licenseRoyaltyPolicies[i] == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
             _addToAccumulatedRoyaltyPolicies(parentIpIds[i], licenseRoyaltyPolicies[i]);
             address[] memory accParentRoyaltyPolicies = $.accumulatedRoyaltyPolicies[parentIpIds[i]].values();
+
+            // this loop is limited to accumulatedRoyaltyPoliciesLimit
             for (uint256 j = 0; j < accParentRoyaltyPolicies.length; j++) {
                 // add the parent ancestor royalty policies to the child
                 _addToAccumulatedRoyaltyPolicies(ipId, accParentRoyaltyPolicies[j]);

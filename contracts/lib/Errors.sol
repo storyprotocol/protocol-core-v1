@@ -512,9 +512,6 @@ library Errors {
     /// @notice Not a whitelisted royalty token.
     error RoyaltyModule__NotWhitelistedRoyaltyToken();
 
-    /// @notice Amount exceeds the claimable royalty.
-    error RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
-
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -549,6 +546,12 @@ library Errors {
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLAP__ZeroClaimableRoyalty();
 
+    /// @notice Amount exceeds the claimable royalty.
+    error RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
+
+    /// @notice Above maximum percentage.
+    error RoyaltyPolicyLAP__AboveMaxPercent();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -570,6 +573,9 @@ library Errors {
 
     /// @notice Claimer is not an ancestor of the IP.
     error RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
+
+    /// @notice Above maximum percentage.
+    error RoyaltyPolicyLRP__AboveMaxPercent();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

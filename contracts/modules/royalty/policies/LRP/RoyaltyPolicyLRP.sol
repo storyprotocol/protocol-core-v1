@@ -107,7 +107,11 @@ contract RoyaltyPolicyLRP is
         address ipId,
         uint32 licensePercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant {}
+    ) external onlyRoyaltyModule nonReentrant {
+        IRoyaltyModule royaltyModule = ROYALTY_MODULE;
+        if (royaltyModule.globalRoyaltyStack(ipId) + licensePercent > royaltyModule.maxPercent())
+            revert Errors.RoyaltyPolicyLRP__AboveMaxPercent();
+    }
 
     /// @notice Executes royalty related logic on linking to parents
     /// @dev Enforced to be only callable by RoyaltyModule

@@ -132,6 +132,12 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         royaltyPolicyLAP.onLicenseMinting(address(1), uint32(0), "");
     }
 
+    function test_RoyaltyPolicyLAP_onLicenseMinting_revert_AboveMaxPercent() public {
+        vm.startPrank(address(royaltyModule));
+        vm.expectRevert(Errors.RoyaltyPolicyLAP__AboveMaxPercent.selector);
+        royaltyPolicyLAP.onLicenseMinting(address(1), uint32(1000 * 10 ** 6), "");
+    }
+
     function test_RoyaltyPolicyLAP_onLinkToParents_revert_NotRoyaltyModule() public {
         vm.expectRevert(Errors.RoyaltyPolicyLAP__NotRoyaltyModule.selector);
         royaltyPolicyLAP.onLinkToParents(address(100), new address[](0), new address[](0), new uint32[](0), "");
@@ -292,6 +298,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     }
 
     function test_RoyaltyPolicyLAP_getPolicyRtsRequiredToLink() public {
-        assertEq(royaltyPolicyLAP.getPolicyRtsRequiredToLink(address(80), uint32(10 * 10 ** 6)), 0);
+        uint256 rtsRequiredToLink = royaltyPolicyLAP.getPolicyRtsRequiredToLink(address(80), uint32(10 * 10 ** 6));
+        assertEq(rtsRequiredToLink, 0);
     }
 }

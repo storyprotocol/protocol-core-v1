@@ -234,8 +234,6 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // for whitelisted policies calls onLicenseMinting
         if ($.isWhitelistedRoyaltyPolicy[royaltyPolicy]) {
-            if ($.globalRoyaltyStack[ipId] + licensePercent > MAX_PERCENT)
-                revert Errors.RoyaltyModule__AboveMaxPercent();
             IRoyaltyPolicy(royaltyPolicy).onLicenseMinting(ipId, licensePercent, externalData);
         }
 

@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { IRoyaltyModule } from "../../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IDisputeModule } from "../../../../contracts/interfaces/modules/dispute/IDisputeModule.sol";
+// solhint-disable-next-line max-line-length
 import { IGraphAwareRoyaltyPolicy } from "../../../../contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 
 contract MockRoyaltyPolicyLAP is IGraphAwareRoyaltyPolicy {

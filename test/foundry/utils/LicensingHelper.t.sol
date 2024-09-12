@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+// solhint-disable-next-line max-line-length
 import { IGraphAwareRoyaltyPolicy } from "../../../contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
 import { PILTerms } from "../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { PILicenseTemplate } from "../../../contracts/modules/licensing/PILicenseTemplate.sol";

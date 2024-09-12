@@ -5,7 +5,7 @@ import { IRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/
 
 /// @title IGraphAwareRoyaltyPolicy interface
 interface IGraphAwareRoyaltyPolicy is IRoyaltyPolicy {
-    /// @notice Event emitted when revenue tokens are transferred to a vault from a royalty policy 
+    /// @notice Event emitted when revenue tokens are transferred to a vault from a royalty policy
     /// @param ipId The ipId of the IP asset
     /// @param ancestorIpId The ancestor ipId of the IP asset whose vault will receive revenue tokens
     /// @param token The address of the token that is transferred

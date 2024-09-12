@@ -552,6 +552,9 @@ library Errors {
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLAP__AboveMaxPercent();
 
+    /// @notice Zero amount provided.
+    error RoyaltyPolicyLAP__ZeroAmount();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -576,6 +579,9 @@ library Errors {
 
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLRP__AboveMaxPercent();
+
+    /// @notice Zero amount provided.
+    error RoyaltyPolicyLRP__ZeroAmount();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

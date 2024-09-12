@@ -128,6 +128,8 @@ contract RoyaltyPolicyLAP is
     function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
 
+        if (amount == 0) revert Errors.RoyaltyPolicyLAP__ZeroAmount();
+
         uint32 ancestorPercent = $.ancestorPercentLAP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {
             // on the first transfer to a vault from a specific descendant the royalty between the two is set

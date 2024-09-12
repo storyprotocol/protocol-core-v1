@@ -173,6 +173,11 @@ contract TestRoyaltyPolicyLRP is BaseTest {
         assertEq(royaltyPolicyLRP.getPolicyRoyalty(address(80), address(30)), 20 * 10 ** 6);
     }
 
+    function test_RoyaltyPolicyLRP_transferToVault_revert_ZeroAmount() public {
+        vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroAmount.selector);
+        royaltyPolicyLRP.transferToVault(address(80), address(10), address(USDC), 0);
+    }
+
     function test_RoyaltyPolicyLRP_transferToVault_revert_ZeroClaimableRoyalty() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);

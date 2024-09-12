@@ -149,6 +149,8 @@ contract RoyaltyPolicyLRP is
     function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
         RoyaltyPolicyLRPStorage storage $ = _getRoyaltyPolicyLRPStorage();
 
+        if (amount == 0) revert Errors.RoyaltyPolicyLRP__ZeroAmount();
+
         uint32 ancestorPercent = $.ancestorPercentLRP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {
             // on the first transfer to a vault from a specific descendant the royalty between the two is set

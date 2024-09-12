@@ -43,7 +43,7 @@ format:
 # generate html report from lcov.info (ignore "line ... has branchcov but no linecov data" error)
 coverage:
 	mkdir -p coverage
-	forge coverage --report lcov
+	forge coverage --report lcov --no-match-path "test/foundry/invariants/*"
 	lcov --remove lcov.info -o coverage/lcov.info 'test/*' 'script/*' --rc lcov_branch_coverage=1
 	genhtml coverage/lcov.info -o coverage --rc lcov_branch_coverage=1
 

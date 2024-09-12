@@ -60,7 +60,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param isRegisteredExternalRoyaltyPolicy Indicates if an external royalty policy is registered
     /// @param ipRoyaltyVaults The royalty vault address for a given IP asset (if any)
-    /// @param globalRoyaltyStack The global royalty stack from whitelisted royalty policies for a given IP asset
+    /// @param globalRoyaltyStack Sum of royalty stack from each whitelisted royalty policy for a given IP asset
     /// @param accumulatedRoyaltyPolicies The accumulated royalty policies for a given IP asset
     /// @param totalRevenueTokensReceived The total lifetime revenue tokens received for a given IP asset
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule

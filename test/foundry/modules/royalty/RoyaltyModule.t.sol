@@ -34,6 +34,8 @@ contract TestRoyaltyModule is BaseTest {
         uint32[] licensesPercent,
         bytes externalData
     );
+    event RoyaltyFeePercentSet(uint32 royaltyFeePercent);
+    event TreasurySet(address treasury);
 
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
@@ -243,6 +245,48 @@ contract TestRoyaltyModule is BaseTest {
                 abi.encodeCall(RoyaltyModule.initialize, (address(1), uint256(8), uint256(1024), uint256(0)))
             )
         );
+    }
+
+    function test_RoyaltyModule_setTreasury_revert_ZeroTreasury() public {
+        vm.startPrank(u.admin);
+
+        vm.expectRevert(Errors.RoyaltyModule__ZeroTreasury.selector);
+        royaltyModule.setTreasury(address(0));
+    }
+
+    function test_RoyaltyModule_setTreasury() public {
+        vm.startPrank(u.admin);
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit TreasurySet(address(1));
+
+        royaltyModule.setTreasury(address(1));
+
+        assertEq(royaltyModule.treasury(), address(1));
+    }
+
+    function test_RoyaltyModule_setRoyaltyFeePercent_revert_AboveMaxPercent() public {
+        vm.startPrank(u.admin);
+
+        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
+        royaltyModule.setRoyaltyFeePercent(500 * 10 ** 6);
+    }
+
+    function test_RoyaltyModule_setRoyaltyFeePercent_revert_ZeroTreasury() public {
+        vm.startPrank(u.admin);
+
+        vm.expectRevert(Errors.RoyaltyModule__ZeroTreasury.selector);
+        royaltyModule.setRoyaltyFeePercent(10);
+    }
+
+    function test_RoyaltyModule_setRoyaltyFeePercent() public {
+        vm.startPrank(u.admin);
+
+        royaltyModule.setTreasury(address(1));
+
+        royaltyModule.setRoyaltyFeePercent(100);
+
+        assertEq(royaltyModule.royaltyFeePercent(), 100);
     }
 
     function test_RoyaltyModule_setIpGraphLimits_revert_ZeroMaxParents() public {
@@ -852,6 +896,60 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(pendingVaultAmountAfter - pendingVaultAmountBefore, royaltyAmount);
     }
 
+    function test_RoyaltyModule_payRoyaltyOnBehalf_WithFee() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(2);
+        address payerIpId = address(3);
+
+        // set fee and treasury
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(10 * 10 ** 6)); // 10%
+        vm.stopPrank();
+
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(receiverIpId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(receiverIpId);
+        vm.stopPrank();
+
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, royaltyAmount);
+        USDC.approve(address(royaltyModule), royaltyAmount);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 totalRevenueTokensReceivedBefore = royaltyModule.totalRevenueTokensReceived(
+            receiverIpId,
+            address(USDC)
+        );
+        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount);
+
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        assertEq(payerIpIdUSDCBalBefore - USDC.balanceOf(payerIpId), royaltyAmount);
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            USDC.balanceOf(address(100)) - usdcTreasuryAmountBefore,
+            (royaltyAmount * 10e6) / royaltyModule.maxPercent()
+        );
+    }
+
     function test_RoyaltyModule_payLicenseMintingFee_revert_ZeroAmount() public {
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__ZeroAmount.selector);
@@ -899,6 +997,11 @@ contract TestRoyaltyModule is BaseTest {
 
         uint256 payerAddressUSDCBalBefore = USDC.balanceOf(payerAddress);
         uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 totalRevenueTokensReceivedBefore = royaltyModule.totalRevenueTokensReceived(
+            receiverIpId,
+            address(USDC)
+        );
+        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount);
@@ -906,10 +1009,71 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);
 
-        uint256 payerAddressUSDCBalAfter = USDC.balanceOf(payerAddress);
-        uint256 ipRoyaltyVaultUSDCBalAfter = USDC.balanceOf(ipRoyaltyVault);
+        assertEq(payerAddressUSDCBalBefore - USDC.balanceOf(payerAddress), royaltyAmount);
+        assertEq(USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
+        assertEq(
+            royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
+            royaltyAmount
+        );
+        assertEq(
+            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
+            royaltyAmount
+        );
+    }
 
-        assertEq(payerAddressUSDCBalBefore - payerAddressUSDCBalAfter, royaltyAmount);
-        assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
+    function test_RoyaltyModule_payLicenseMintingFee_WithFee() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = address(2);
+        address payerAddress = address(3);
+        address token = address(USDC);
+
+        // set fee and treasury
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(10 * 10 ** 6)); // 10%
+        vm.stopPrank();
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(receiverIpId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(receiverIpId);
+        vm.stopPrank();
+
+        vm.startPrank(payerAddress);
+        USDC.mint(payerAddress, royaltyAmount);
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        vm.stopPrank();
+
+        uint256 payerAddressUSDCBalBefore = USDC.balanceOf(payerAddress);
+        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 totalRevenueTokensReceivedBefore = royaltyModule.totalRevenueTokensReceived(
+            receiverIpId,
+            address(USDC)
+        );
+        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);
+
+        assertEq(payerAddressUSDCBalBefore - USDC.balanceOf(payerAddress), royaltyAmount);
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            USDC.balanceOf(address(100)) - usdcTreasuryAmountBefore,
+            (royaltyAmount * 10e6) / royaltyModule.maxPercent()
+        );
     }
 }

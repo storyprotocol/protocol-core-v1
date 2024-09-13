@@ -449,6 +449,9 @@ library Errors {
     /// @notice Zero address provided for Licensing Module.
     error RoyaltyModule__ZeroLicensingModule();
 
+    /// @notice Zero address provided for Treasury.
+    error RoyaltyModule__ZeroTreasury();
+
     /// @notice Zero address provided for Royalty Policy.
     error RoyaltyModule__ZeroRoyaltyPolicy();
 

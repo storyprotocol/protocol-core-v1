@@ -187,7 +187,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             uint256 aliceBalanceBefore = mockToken.balanceOf(ipAcct[1]);
 
-            IpRoyaltyVault(vault).claimRevenueBySnapshotBatch(snapshotIds, address(mockToken));
+            IpRoyaltyVault(vault).claimRevenueOnBehalfBySnapshotBatch(snapshotIds, address(mockToken), ipAcct[1]);
 
             uint256 aliceBalanceAfter = mockToken.balanceOf(ipAcct[1]);
 

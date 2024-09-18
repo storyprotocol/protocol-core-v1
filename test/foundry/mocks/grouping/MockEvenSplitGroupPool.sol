@@ -136,7 +136,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         if (address(vault) == address(0)) return;
         uint256[] memory snapshotsToClaim = new uint256[](1);
         snapshotsToClaim[0] = vault.snapshot();
-        uint256 royalties = vault.claimRevenueBySnapshotBatch(snapshotsToClaim, token);
+        uint256 royalties = vault.claimRevenueOnBehalfBySnapshotBatch(snapshotsToClaim, token, address(this));
         poolInfo[groupId][token].availableBalance += royalties;
         poolInfo[groupId][token].accBalance += royalties;
         groupTokens[groupId].add(token);

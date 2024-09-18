@@ -53,8 +53,6 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     IGroupIPAssetRegistry public immutable IP_ASSET_REGISTRY;
 
     /// @dev Storage structure for the RoyaltyModule
-    /// @param treasury The treasury address
-    /// @param royaltyFeePercent The royalty fee percentage
     /// @param maxParents The maximum number of parents an IP asset can have
     /// @param maxAncestors The maximum number of ancestors an IP asset can have
     /// @param maxAccumulatedRoyaltyPolicies The maximum number of accumulated royalty policies an IP asset can have
@@ -65,10 +63,10 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param globalRoyaltyStack Sum of royalty stack from each whitelisted royalty policy for a given IP asset
     /// @param accumulatedRoyaltyPolicies The accumulated royalty policies for a given IP asset
     /// @param totalRevenueTokensReceived The total lifetime revenue tokens received for a given IP asset
+    /// @param treasury The treasury address
+    /// @param royaltyFeePercent The royalty fee percentage
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     struct RoyaltyModuleStorage {
-        address treasury;
-        uint32 royaltyFeePercent;
         uint256 maxParents;
         uint256 maxAncestors;
         uint256 maxAccumulatedRoyaltyPolicies;
@@ -79,6 +77,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         mapping(address ipId => uint32) globalRoyaltyStack;
         mapping(address ipId => EnumerableSet.AddressSet) accumulatedRoyaltyPolicies;
         mapping(address ipId => mapping(address token => uint256)) totalRevenueTokensReceived;
+        address treasury;
+        uint32 royaltyFeePercent;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyModule")) - 1)) & ~bytes32(uint256(0xff));

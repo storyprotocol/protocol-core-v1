@@ -61,7 +61,7 @@ Inherit from UpgradedImplHelper to compile the upgrade structs that `_writeUpgra
 Upgrading is a multi step process, we need to schedule first, then execute. Having an intermediary file helps the auditability
 of the process.
 
-Remember to use CREATE3 for proxies
+Remember to use CREATE3 for new proxy contracts
 
 Example:
 
@@ -198,7 +198,16 @@ contract ExecuteV1_2 is UpgradeExecutor {
 }
 ```
 
+## 5. Execute the scripts
 
-       
+Script name will deppend on your file names. For example:
 
+Deployment (remember to verify)
+```
+forge script script/foundry/deployment/upgrades/DeployerV1_2.s.sol --fork-url https://testnet.storyrpc.io --broadcast --verify --verifier blockscout --verifier-url https://testnet.storyscan.xyz/api\?
+```
 
+Executing the transaction
+```
+forge script script/foundry/deployment/upgrades/ExecuteV1_2.s.sol --fork-url https://testnet.storyrpc.io --broadcast
+```

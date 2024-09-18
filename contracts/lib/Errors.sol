@@ -623,6 +623,9 @@ library Errors {
     /// @notice Zero amount provided.
     error IpRoyaltyVault__ZeroAmount();
 
+    /// @notice Vaults must claim as self.
+    error IpRoyaltyVault__VaultsMustClaimAsSelf();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

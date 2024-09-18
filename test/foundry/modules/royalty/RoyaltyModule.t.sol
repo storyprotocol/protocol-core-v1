@@ -439,6 +439,7 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(ipIdRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(licensor) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(newVault), true);
     }
 
     function test_RoyaltyModule_onLicenseMinting_NewVaultGroup() public {
@@ -459,6 +460,7 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(groupPoolRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(groupId) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(newVault), true);
     }
 
     function test_RoyaltyModule_onLicenseMinting_ExistingVault() public {
@@ -748,6 +750,7 @@ contract TestRoyaltyModule is BaseTest {
         uint256 ipId80IpIdRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(80));
 
         assertFalse(royaltyModule.ipRoyaltyVaults(address(80)) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(80))), true);
         assertEq(ipId80RtLAPBalAfter, 0);
         assertEq(ipId80RtLRPBalAfter, 0);
         assertEq(ipId80RtLRPParentVaultBalAfter, 0);

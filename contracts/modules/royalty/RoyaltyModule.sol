@@ -60,6 +60,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param isWhitelistedRoyaltyToken Indicates if a royalty token is whitelisted
     /// @param isRegisteredExternalRoyaltyPolicy Indicates if an external royalty policy is registered
     /// @param ipRoyaltyVaults The royalty vault address for a given IP asset (if any)
+    /// @param isIpRoyaltyVault Indicates if an address is a royalty vault
     /// @param globalRoyaltyStack Sum of royalty stack from each whitelisted royalty policy for a given IP asset
     /// @param accumulatedRoyaltyPolicies The accumulated royalty policies for a given IP asset
     /// @param totalRevenueTokensReceived The total lifetime revenue tokens received for a given IP asset
@@ -74,6 +75,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         mapping(address token => bool) isWhitelistedRoyaltyToken;
         mapping(address royaltyPolicy => bool) isRegisteredExternalRoyaltyPolicy;
         mapping(address ipId => address ipRoyaltyVault) ipRoyaltyVaults;
+        mapping(address ipRoyaltyVault => bool) isIpRoyaltyVault;
         mapping(address ipId => uint32) globalRoyaltyStack;
         mapping(address ipId => EnumerableSet.AddressSet) accumulatedRoyaltyPolicies;
         mapping(address ipId => mapping(address token => uint256)) totalRevenueTokensReceived;
@@ -421,6 +423,13 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         return _getRoyaltyModuleStorage().isWhitelistedRoyaltyToken[token];
     }
 
+    /// @notice Indicates if an address is a royalty vault
+    /// @param ipRoyaltyVault The address to check
+    /// @return isIpRoyaltyVault True if the address is a royalty vault
+    function isIpRoyaltyVault(address ipRoyaltyVault) external view returns (bool) {
+        return _getRoyaltyModuleStorage().isIpRoyaltyVault[ipRoyaltyVault];
+    }
+
     /// @notice Indicates the royalty vault for a given IP asset
     /// @param ipId The ID of IP asset
     function ipRoyaltyVaults(address ipId) external view returns (address) {
@@ -461,6 +470,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address ipRoyaltyVault = address(new BeaconProxy(ipRoyaltyVaultBeacon(), ""));
         IIpRoyaltyVault(ipRoyaltyVault).initialize("Royalty Token", "RT", MAX_PERCENT, ipId, receiver);
         $.ipRoyaltyVaults[ipId] = ipRoyaltyVault;
+        $.isIpRoyaltyVault[ipRoyaltyVault] = true;
 
         return ipRoyaltyVault;
     }

@@ -189,6 +189,11 @@ interface IRoyaltyModule is IModule {
     /// @return isWhitelisted True if the royalty token is whitelisted
     function isWhitelistedRoyaltyToken(address token) external view returns (bool);
 
+    /// @notice Indicates if an address is a royalty vault
+    /// @param ipRoyaltyVault The address to check
+    /// @return isIpRoyaltyVault True if the address is a royalty vault
+    function isIpRoyaltyVault(address ipRoyaltyVault) external view returns (bool);
+
     /// @notice Indicates the royalty vault for a given IP asset
     /// @param ipId The ID of IP asset
     function ipRoyaltyVaults(address ipId) external view returns (address);

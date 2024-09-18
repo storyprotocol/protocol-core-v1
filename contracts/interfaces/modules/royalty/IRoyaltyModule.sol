@@ -5,6 +5,14 @@ import { IModule } from "../../modules/base/IModule.sol";
 
 /// @title RoyaltyModule interface
 interface IRoyaltyModule is IModule {
+    /// @notice Event emitted when the treasury is set
+    /// @param treasury The address of the treasury
+    event TreasurySet(address treasury);
+
+    /// @notice Event emitted when the royalty fee is set
+    /// @param royaltyFeePercent The royalty fee percent
+    event RoyaltyFeePercentSet(uint256 royaltyFeePercent);
+
     /// @notice Event emitted when a royalty policy is whitelisted
     /// @param royaltyPolicy The address of the royalty policy
     /// @param allowed Indicates if the royalty policy is whitelisted or not
@@ -60,6 +68,16 @@ interface IRoyaltyModule is IModule {
         uint32[] licensesPercent,
         bytes externalData
     );
+
+    /// @notice Sets the treasury address
+    /// @dev Enforced to be only callable by the protocol admin
+    /// @param treasury The address of the treasury
+    function setTreasury(address treasury) external;
+
+    /// @notice Sets the royalty fee percentage
+    /// @dev Enforced to be only callable by the protocol admin
+    /// @param royaltyFeePercent The royalty fee percentage
+    function setRoyaltyFeePercent(uint32 royaltyFeePercent) external;
 
     /// @notice Sets the ip graph limits
     /// @dev Enforced to be only callable by the protocol admin
@@ -141,6 +159,21 @@ interface IRoyaltyModule is IModule {
     /// @notice Returns the maximum percentage - represents 100%
     function maxPercent() external pure returns (uint32);
 
+    /// @notice Returns the treasury address
+    function treasury() external view returns (address);
+
+    /// @notice Returns the royalty fee percentage
+    function royaltyFeePercent() external view returns (uint32);
+
+    /// @notice Returns the maximum number of parents
+    function maxParents() external view returns (uint256);
+
+    /// @notice Returns the maximum number of total ancestors
+    function maxAncestors() external view returns (uint256);
+
+    /// @notice Returns the maximum number of accumulated royalty policies an IP asset can have
+    function maxAccumulatedRoyaltyPolicies() external view returns (uint256);
+
     /// @notice Indicates if a royalty policy is whitelisted
     /// @param royaltyPolicy The address of the royalty policy
     /// @return isWhitelisted True if the royalty policy is whitelisted
@@ -155,15 +188,6 @@ interface IRoyaltyModule is IModule {
     /// @param token The address of the royalty token
     /// @return isWhitelisted True if the royalty token is whitelisted
     function isWhitelistedRoyaltyToken(address token) external view returns (bool);
-
-    /// @notice Returns the maximum number of parents
-    function maxParents() external view returns (uint256);
-
-    /// @notice Returns the maximum number of total ancestors
-    function maxAncestors() external view returns (uint256);
-
-    /// @notice Returns the maximum number of accumulated royalty policies an IP asset can have
-    function maxAccumulatedRoyaltyPolicies() external view returns (uint256);
 
     /// @notice Indicates the royalty vault for a given IP asset
     /// @param ipId The ID of IP asset

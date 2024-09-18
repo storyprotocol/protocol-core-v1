@@ -12,11 +12,15 @@ import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 /// This contract allows Modules to store and retrieve data in a structured and conflict-free manner
 /// by utilizing namespaces, where the default namespace is determined by the
 /// `msg.sender` (the caller Module's address).
+/// This impl is not part of an upgradeable proxy/impl setup. We are
+/// adding OZ annotations to avoid false positives when running oz-foundry-upgrades
 contract IPAccountStorage is ERC165, IIPAccountStorage {
     using ShortStrings for *;
-
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable MODULE_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable LICENSE_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable IP_ASSET_REGISTRY;
 
     mapping(bytes32 => mapping(bytes32 => bytes)) public bytesData;
@@ -33,6 +37,7 @@ contract IPAccountStorage is ERC165, IIPAccountStorage {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(address ipAssetRegistry, address licenseRegistry, address moduleRegistry) {
         if (ipAssetRegistry == address(0)) revert Errors.IPAccountStorage__ZeroIpAssetRegistry();
         if (licenseRegistry == address(0)) revert Errors.IPAccountStorage__ZeroLicenseRegistry();

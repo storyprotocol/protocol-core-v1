@@ -26,7 +26,7 @@ contract MockAssets is Script, BroadcastManager, JsonDeploymentHandler {
 
         _deployProtocolContracts();
 
-        _writeDeployment(); // write deployment json to deploy-out/deployment-{chainId}.json
+        _writeDeployment("mock"); // write deployment json to deploy-out/deployment-{chainId}.json
         _endBroadcast(); // BroadcastManager.s.sol
     }
 

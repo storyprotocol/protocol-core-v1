@@ -53,17 +53,24 @@ interface IIpRoyaltyVault {
     /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
     /// @param snapshotId The snapshot id
     /// @param tokenList The list of revenue tokens to claim
+    /// @param claimer The address of the claimer
     /// @return The amount of revenue tokens claimed for each token
-    function claimRevenueByTokenBatch(
+    function claimRevenueOnBehalfByTokenBatch(
         uint256 snapshotId,
-        address[] calldata tokenList
+        address[] calldata tokenList,
+        address claimer
     ) external returns (uint256[] memory);
 
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
     /// @param token The revenue token to claim
+    /// @param claimer The address of the claimer
     /// @return The amount of revenue tokens claimed
-    function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) external returns (uint256);
+    function claimRevenueOnBehalfBySnapshotBatch(
+        uint256[] memory snapshotIds,
+        address token,
+        address claimer
+    ) external returns (uint256);
 
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault
     /// @param snapshotId The snapshot id

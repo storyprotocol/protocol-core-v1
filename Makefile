@@ -59,6 +59,7 @@ abi:
 	@$(call generate_abi,"PILicenseTemplate","./modules/licensing")
 	@$(call generate_abi,"CoreMetadataModule","./modules/metadata")
 	@$(call generate_abi,"CoreMetadataViewModule","./modules/metadata")
+	@$(call generate_abi,"GroupingModule","./modules/grouping")
 	@$(call generate_abi,"RoyaltyModule","./modules/royalty")
 	@$(call generate_abi,"IpRoyaltyVault","./modules/royalty/policies")
 	@$(call generate_abi,"RoyaltyPolicyLAP","./modules/royalty/policies/LAP")

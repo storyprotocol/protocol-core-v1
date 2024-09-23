@@ -14,7 +14,6 @@ import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.s
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
 import { Errors } from "../../lib/Errors.sol";
-import { ShortStringOps } from "../../lib/ShortStringOps.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 
 /// @title Dispute Module
@@ -203,15 +202,7 @@ contract DisputeModule is
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(msg.sender, data);
 
-        emit DisputeRaised(
-            disputeId,
-            targetIpId,
-            msg.sender,
-            arbitrationPolicy,
-            disputeEvidenceHash,
-            targetTag,
-            data
-        );
+        emit DisputeRaised(disputeId, targetIpId, msg.sender, arbitrationPolicy, disputeEvidenceHash, targetTag, data);
 
         return disputeId;
     }

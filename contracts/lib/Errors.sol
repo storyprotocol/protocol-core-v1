@@ -379,7 +379,7 @@ library Errors {
     error DisputeModule__NotAllowedToWhitelist();
 
     /// @notice Zero bytes provided for Dispute Evidence.
-    error DisputeModule__ZeroLinkToDisputeEvidence();
+    error DisputeModule__ZeroDisputeEvidenceHash();
 
     /// @notice Not a whitelisted arbitration policy.
     error DisputeModule__NotWhitelistedArbitrationPolicy();

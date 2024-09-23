@@ -171,22 +171,20 @@ contract DisputeModule is
 
     /// @notice Raises a dispute on a given ipId
     /// @param targetIpId The ipId that is the target of the dispute
-    /// @param linkToDisputeEvidence The link of the dispute evidence
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param data The data to initialize the policy
     /// @return disputeId The id of the newly raised dispute
     function raiseDispute(
         address targetIpId,
-        string memory linkToDisputeEvidence,
+        bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes calldata data
     ) external nonReentrant whenNotPaused returns (uint256) {
         if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
-
-        bytes32 linkToDisputeEvidenceBytes = ShortStringOps.stringToBytes32(linkToDisputeEvidence);
-        if (linkToDisputeEvidenceBytes == bytes32(0)) revert Errors.DisputeModule__ZeroLinkToDisputeEvidence();
+        if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
 
         address arbitrationPolicy = $.arbitrationPolicies[targetIpId];
         if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
@@ -197,7 +195,7 @@ contract DisputeModule is
             targetIpId: targetIpId,
             disputeInitiator: msg.sender,
             arbitrationPolicy: arbitrationPolicy,
-            linkToDisputeEvidence: linkToDisputeEvidenceBytes,
+            disputeEvidenceHash: disputeEvidenceHash,
             targetTag: targetTag,
             currentTag: IN_DISPUTE,
             parentDisputeId: 0
@@ -210,7 +208,7 @@ contract DisputeModule is
             targetIpId,
             msg.sender,
             arbitrationPolicy,
-            linkToDisputeEvidenceBytes,
+            disputeEvidenceHash,
             targetTag,
             data
         );
@@ -295,7 +293,7 @@ contract DisputeModule is
             targetIpId: derivativeIpId,
             disputeInitiator: msg.sender,
             arbitrationPolicy: arbitrationPolicy,
-            linkToDisputeEvidence: "",
+            disputeEvidenceHash: "",
             targetTag: parentDispute.currentTag,
             currentTag: parentDispute.currentTag,
             parentDisputeId: parentDisputeId
@@ -363,7 +361,7 @@ contract DisputeModule is
     /// @return targetIpId The ipId that is the target of the dispute
     /// @return disputeInitiator The address of the dispute initiator
     /// @return arbitrationPolicy The address of the arbitration policy
-    /// @return linkToDisputeEvidence The link of the dispute summary
+    /// @return disputeEvidenceHash The hash pointing to the dispute evidence
     /// @return targetTag The target tag of the dispute
     /// @return currentTag The current tag of the dispute
     /// @return parentDisputeId The parent dispute id
@@ -376,7 +374,7 @@ contract DisputeModule is
             address targetIpId,
             address disputeInitiator,
             address arbitrationPolicy,
-            bytes32 linkToDisputeEvidence,
+            bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
             uint256 parentDisputeId
@@ -387,7 +385,7 @@ contract DisputeModule is
             dispute.targetIpId,
             dispute.disputeInitiator,
             dispute.arbitrationPolicy,
-            dispute.linkToDisputeEvidence,
+            dispute.disputeEvidenceHash,
             dispute.targetTag,
             dispute.currentTag,
             dispute.parentDisputeId

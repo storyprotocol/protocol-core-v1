@@ -37,6 +37,8 @@ contract TestRoyaltyModule is BaseTest {
     event RoyaltyFeePercentSet(uint32 royaltyFeePercent);
     event TreasurySet(address treasury);
 
+    bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
+
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
     address internal ipAddr;
@@ -828,7 +830,7 @@ contract TestRoyaltyModule is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -969,7 +971,7 @@ contract TestRoyaltyModule is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement

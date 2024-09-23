@@ -19,6 +19,8 @@ contract TestArbitrationPolicySP is BaseTest {
     address public ipAddr;
     address internal arbitrationRelayer;
 
+    bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
+
     function setUp() public override {
         super.setUp();
 
@@ -181,7 +183,7 @@ contract TestArbitrationPolicySP is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -202,7 +204,7 @@ contract TestArbitrationPolicySP is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement

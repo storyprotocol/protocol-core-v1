@@ -10,7 +10,6 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 import { Errors } from "contracts/lib/Errors.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
-import { ShortStringOps } from "contracts/lib/ShortStringOps.sol";
 import { IDisputeModule } from "contracts/interfaces/modules/dispute/IDisputeModule.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
@@ -25,7 +24,7 @@ contract DisputeModuleTest is BaseTest {
         address targetIpId,
         address disputeInitiator,
         address arbitrationPolicy,
-        bytes32 linkToDisputeEvidence,
+        bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes data
     );
@@ -42,6 +41,8 @@ contract DisputeModuleTest is BaseTest {
     address internal ipAddr2;
     address internal arbitrationRelayer;
     ArbitrationPolicySP internal arbitrationPolicySP2;
+
+    bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
 
     function setUp() public override {
         super.setUp();
@@ -239,17 +240,17 @@ contract DisputeModuleTest is BaseTest {
 
     function test_DisputeModule_raiseDispute_revert_NotRegisteredIpId() public {
         vm.expectRevert(Errors.DisputeModule__NotRegisteredIpId.selector);
-        disputeModule.raiseDispute(address(1), string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", "");
     }
 
     function test_DisputeModule_raiseDispute_revert_NotWhitelistedDisputeTag() public {
         vm.expectRevert(Errors.DisputeModule__NotWhitelistedDisputeTag.selector);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "NOT_WHITELISTED", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "NOT_WHITELISTED", "");
     }
 
-    function test_DisputeModule_raiseDispute_revert_ZeroLinkToDisputeEvidence() public {
-        vm.expectRevert(Errors.DisputeModule__ZeroLinkToDisputeEvidence.selector);
-        disputeModule.raiseDispute(ipAddr, string(""), "PLAGIARISM", "");
+    function test_DisputeModule_raiseDispute_revert_ZeroDisputeEvidenceHash() public {
+        vm.expectRevert(Errors.DisputeModule__ZeroDisputeEvidenceHash.selector);
+        disputeModule.raiseDispute(ipAddr, bytes32(""), "PLAGIARISM", "");
     }
 
     function test_DisputeModule_raiseDispute_revert_paused() public {
@@ -259,7 +260,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(u.bob);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
     }
 
@@ -281,12 +282,12 @@ contract DisputeModuleTest is BaseTest {
             ipAddr,
             ipAccount1,
             address(arbitrationPolicySP2),
-            ShortStringOps.stringToBytes32("urlExample"),
+            disputeEvidenceHashExample,
             bytes32("PLAGIARISM"),
             ""
         );
 
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
 
         uint256 disputeIdAfter = disputeModule.disputeCounter();
         uint256 ipAccount1USDCBalanceAfter = IERC20(USDC).balanceOf(ipAccount1);
@@ -296,7 +297,7 @@ contract DisputeModuleTest is BaseTest {
             address targetIpId,
             address disputeInitiator,
             address arbitrationPolicy,
-            bytes32 linkToDisputeEvidence,
+            bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
             uint256 parentDisputeId
@@ -309,7 +310,7 @@ contract DisputeModuleTest is BaseTest {
         assertEq(targetIpId, ipAddr);
         assertEq(disputeInitiator, ipAccount1);
         assertEq(arbitrationPolicy, address(arbitrationPolicySP2));
-        assertEq(linkToDisputeEvidence, ShortStringOps.stringToBytes32("urlExample"));
+        assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
         assertEq(targetTag, bytes32("PLAGIARISM"));
         assertEq(currentTag, bytes32("IN_DISPUTE"));
         assertEq(parentDisputeId, 0);
@@ -329,12 +330,12 @@ contract DisputeModuleTest is BaseTest {
             ipAddr,
             ipAccount1,
             address(arbitrationPolicySP),
-            ShortStringOps.stringToBytes32("urlExample"),
+            disputeEvidenceHashExample,
             bytes32("PLAGIARISM"),
             ""
         );
 
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
 
         uint256 disputeIdAfter = disputeModule.disputeCounter();
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
@@ -344,7 +345,7 @@ contract DisputeModuleTest is BaseTest {
             address targetIpId,
             address disputeInitiator,
             address arbitrationPolicy,
-            bytes32 linkToDisputeEvidence,
+            bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
             uint256 parentDisputeId
@@ -356,7 +357,7 @@ contract DisputeModuleTest is BaseTest {
         assertEq(targetIpId, ipAddr);
         assertEq(disputeInitiator, ipAccount1);
         assertEq(arbitrationPolicy, address(arbitrationPolicySP));
-        assertEq(linkToDisputeEvidence, ShortStringOps.stringToBytes32("urlExample"));
+        assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
         assertEq(targetTag, bytes32("PLAGIARISM"));
         assertEq(currentTag, bytes32("IN_DISPUTE"));
         assertEq(parentDisputeId, 0);
@@ -371,7 +372,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         vm.expectRevert(Errors.DisputeModule__NotWhitelistedArbitrationRelayer.selector);
@@ -382,7 +383,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -411,7 +412,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -439,7 +440,7 @@ contract DisputeModuleTest is BaseTest {
     function test_DisputeModule_PolicySP_revert_paused() public {
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         vm.prank(u.admin);
@@ -456,7 +457,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         vm.expectRevert(Errors.DisputeModule__NotDisputeInitiator.selector);
@@ -472,7 +473,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         (, , , , , bytes32 currentTagBeforeCancel, ) = disputeModule.disputes(1);
@@ -508,7 +509,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         vm.expectRevert(Errors.DisputeModule__ParentNotTagged.selector);
@@ -519,7 +520,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -535,7 +536,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -560,7 +561,7 @@ contract DisputeModuleTest is BaseTest {
             address targetIpId,
             address disputeInitiator,
             address arbitrationPolicy,
-            bytes32 linkToDisputeEvidence,
+            bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
             uint256 parentDisputeId
@@ -572,7 +573,7 @@ contract DisputeModuleTest is BaseTest {
         assertEq(targetIpId, ipAddr2);
         assertEq(disputeInitiator, address(1));
         assertEq(arbitrationPolicy, address(arbitrationPolicySP));
-        assertEq(linkToDisputeEvidence, bytes32(0));
+        assertEq(disputeEvidenceHash, bytes32(0));
         assertEq(targetTag, bytes32("PLAGIARISM"));
         assertEq(currentTag, bytes32("PLAGIARISM"));
         assertEq(parentDisputeId, 1);
@@ -587,7 +588,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         vm.startPrank(ipAccount1);
@@ -599,7 +600,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -618,7 +619,7 @@ contract DisputeModuleTest is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement

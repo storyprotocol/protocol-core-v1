@@ -142,8 +142,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        if (address(ipGraphACL) == address(0))
-            newDeployedIpGraphACL = true;
 
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
@@ -161,6 +159,17 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         create3SaltSeed = create3SaltSeed_;
         writeDeploys = writeDeploys_;
         version = version_;
+
+        // check if IPGraphACL is deployed
+        if (address(ipGraphACL) == address(0)) {
+            newDeployedIpGraphACL = true;
+        } else if (address(ipGraphACL).code.length == 0) {
+            newDeployedIpGraphACL = true;
+            require(
+                address(ipGraphACL) == _getDeployedAddress(type(IPGraphACL).name),
+                "Deploy: IPGraphACL Address Mismatch with seed."
+            );
+        }
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         if (runStorageLayoutCheck) super.run();
@@ -662,8 +671,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                     abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager)))
                 )
             );
-            _postdeploy("IPGraphACL", address(ipGraphACL));
+        } else {
+            console2.log("IPGraphACL already deployed");
         }
+        _postdeploy("IPGraphACL", address(ipGraphACL));
     }
 
     function _predeploy(string memory contractKey) private view {

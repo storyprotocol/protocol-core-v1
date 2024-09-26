@@ -43,7 +43,7 @@ contract PrecompileTest is Script {
     // others
     MockERC721 mockNft;
     MockExternalRoyaltyPolicy1 mockExternalRoyaltyPolicy;
-    address internal user = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
+    address internal user = 0x0dB60602E9898Ea60669DBa7A5d98b2f22e8142F;
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
 
     function run() public {
@@ -118,6 +118,7 @@ contract PrecompileTest is Script {
         IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
         royaltyModule.payRoyaltyOnBehalf(ipAcct[4], ipAcct[5], SUSD, 1e18);
         royaltyModule.payRoyaltyOnBehalf(ipAcct[8], ipAcct[1], SUSD, 1e18);
+        //royaltyModule.payRoyaltyOnBehalf(ipAcct[9], ipAcct[1], SUSD, 1e18);
 
         //vm.startPrank(ipAcct[1]);
         //IRoyaltyPolicy(ROYALTY_POLICY_LAP).transferToVault()
@@ -127,6 +128,15 @@ contract PrecompileTest is Script {
         // logs
         console2.log("MockNft                  ", address(mockNft));
         console2.log("MockExternalRoyaltyPolicy", address(mockExternalRoyaltyPolicy));
+        console2.log("ipAcct[1]", ipAcct[1]);
+        console2.log("ipAcct[2]", ipAcct[2]);
+        console2.log("ipAcct[3]", ipAcct[3]);
+        console2.log("ipAcct[4]", ipAcct[4]);
+        console2.log("ipAcct[5]", ipAcct[5]);
+        console2.log("ipAcct[6]", ipAcct[6]);
+        console2.log("ipAcct[7]", ipAcct[7]);
+        console2.log("ipAcct[8]", ipAcct[8]);
+        console2.log("ipAcct[9]", ipAcct[9]);
     }
 
     function registerTerms() internal {
@@ -145,7 +155,7 @@ contract PrecompileTest is Script {
                 derivativesAllowed: true,
                 derivativesAttribution: false,
                 derivativesApproval: false,
-                derivativesReciprocal: false,
+                derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: SUSD,
                 uri: ""
@@ -167,7 +177,7 @@ contract PrecompileTest is Script {
                 derivativesAllowed: true,
                 derivativesAttribution: false,
                 derivativesApproval: false,
-                derivativesReciprocal: false,
+                derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: SUSD,
                 uri: ""
@@ -269,7 +279,7 @@ contract PrecompileTest is Script {
             royaltyContext: ""
         });
 
-        license_8_9[0] = licensingModule.mintLicenseTokens({
+        /* license_8_9[0] = licensingModule.mintLicenseTokens({
             licensorIpId: ipAcct[8],
             licenseTemplate: PIL_TEMPLATE,
             licenseTermsId: commDerivTermsIdLrp10,
@@ -281,7 +291,7 @@ contract PrecompileTest is Script {
         uint256[] memory licenses_4_8_9 = new uint256[](2);
         licenses_4_8_9[0] = license_4_9[0];
         licenses_4_8_9[1] = license_8_9[0];
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_4_8_9, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_4_8_9, ""); */
     }
 }
 

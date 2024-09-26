@@ -36,7 +36,6 @@ import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/LAP/Royalty
 import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
-import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
@@ -90,7 +89,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     CoreMetadataViewModule internal coreMetadataViewModule;
 
     // Policy
-    ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -511,27 +509,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // Story-specific Non-Core Contracts
         //
 
-        _predeploy("ArbitrationPolicySP");
-        impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
-        arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(
-                create3Deployer,
-                _getSalt(type(ArbitrationPolicySP).name),
-                impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager), TREASURY_ADDRESS))
-            )
-        );
-        require(
-            _getDeployedAddress(type(ArbitrationPolicySP).name) == address(arbitrationPolicySP),
-            "Deploy: Arbitration Policy Address Mismatch"
-        );
-        require(
-            _loadProxyImpl(address(arbitrationPolicySP)) == impl,
-            "ArbitrationPolicySP Proxy Implementation Mismatch"
-        );
-        impl = address(0);
-        _postdeploy("ArbitrationPolicySP", address(arbitrationPolicySP));
-
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
             address(royaltyModule),
@@ -718,11 +695,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
         // Dispute Module and SP Dispute Policy
-        address arbitrationRelayer = relayer;
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
-        disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), arbitrationRelayer, true);
-        disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicySP));
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
@@ -754,11 +727,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(
-            address(arbitrationPolicySP),
-            selectors,
-            ProtocolAdmin.UPGRADER_ROLE
-        );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);

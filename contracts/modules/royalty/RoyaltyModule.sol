@@ -472,6 +472,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         $.ipRoyaltyVaults[ipId] = ipRoyaltyVault;
         $.isIpRoyaltyVault[ipRoyaltyVault] = true;
 
+        emit IpRoyaltyVaultDeployed(ipId, ipRoyaltyVault);
+
         return ipRoyaltyVault;
     }
 

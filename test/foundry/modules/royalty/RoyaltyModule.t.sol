@@ -99,7 +99,7 @@ contract TestRoyaltyModule is BaseTest {
 
         // set arbitration policy
         vm.startPrank(ipAddr);
-        disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP));
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy));
         vm.stopPrank();
 
         // grouping
@@ -829,7 +829,7 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsTagged() public {
         // raise dispute
         vm.startPrank(ipAccount1);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
@@ -970,7 +970,7 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {
         // raise dispute
         vm.startPrank(ipAccount1);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 

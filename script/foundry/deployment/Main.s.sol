@@ -10,7 +10,7 @@ import { DeployHelper } from "../utils/DeployHelper.sol";
 contract Main is DeployHelper {
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
     address internal CREATE3_DEPLOYER = 0x384a891dFDE8180b054f04D66379f16B7a678Ad6;
-    uint256 internal CREATE3_DEFAULT_SEED = 0;
+    uint256 internal CREATE3_DEFAULT_SEED = 6;
     address internal IP_GRAPH_ACL = 0x680E66e4c7Df9133a7AFC1ed091089B32b89C4ae;
     // For arbitration policy
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC

@@ -69,6 +69,11 @@ interface IRoyaltyModule is IModule {
         bytes externalData
     );
 
+    /// @notice Event emitted when an IP royalty vault is deployed
+    /// @param ipId The ipId of IP asset
+    /// @param ipRoyaltyVault The address of the royalty vault
+    event IpRoyaltyVaultDeployed(address ipId, address ipRoyaltyVault);
+
     /// @notice Sets the treasury address
     /// @dev Enforced to be only callable by the protocol admin
     /// @param treasury The address of the treasury

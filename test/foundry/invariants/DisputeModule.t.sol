@@ -147,7 +147,7 @@ contract DisputeInvariants is BaseTest {
 
         mockToken.mint(address(harness), 1000 ether);
         vm.startPrank(address(harness));
-        mockToken.approve(address(arbitrationPolicySP), type(uint256).max);
+        mockToken.approve(address(mockArbitrationPolicy), type(uint256).max);
         vm.stopPrank();
         mockNFT.transferFrom(address(this), address(harness), 300);
         mockNFT.transferFrom(address(this), address(harness), 301);

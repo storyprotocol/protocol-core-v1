@@ -54,7 +54,6 @@ abi:
 	@$(call generate_abi,"LicenseToken",".")
 	@$(call generate_abi,"AccessController","./access")
 	@$(call generate_abi,"DisputeModule","./modules/dispute")
-	@$(call generate_abi,"ArbitrationPolicySP","./modules/dispute/policies")
 	@$(call generate_abi,"LicensingModule","./modules/licensing")
 	@$(call generate_abi,"PILicenseTemplate","./modules/licensing")
 	@$(call generate_abi,"CoreMetadataModule","./modules/metadata")

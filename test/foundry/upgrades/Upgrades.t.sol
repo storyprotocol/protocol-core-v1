@@ -164,21 +164,6 @@ contract UpgradesTest is BaseTest {
 
         (immediate, delay) = protocolAccessManager.canCall(
             multisig,
-            address(arbitrationPolicySP),
-            UUPSUpgradeable.upgradeToAndCall.selector
-        );
-        assertFalse(immediate);
-        assertEq(delay, execDelay);
-        assertEq(
-            protocolAccessManager.getTargetFunctionRole(
-                address(arbitrationPolicySP),
-                UUPSUpgradeable.upgradeToAndCall.selector
-            ),
-            ProtocolAdmin.UPGRADER_ROLE
-        );
-
-        (immediate, delay) = protocolAccessManager.canCall(
-            multisig,
             address(licensingModule),
             UUPSUpgradeable.upgradeToAndCall.selector
         );

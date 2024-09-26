@@ -415,25 +415,6 @@ library Errors {
     error DisputeModule__ParentDisputeNotResolved();
 
     ////////////////////////////////////////////////////////////////////////////
-    //                         ArbitrationPolicy SP                          //
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @notice Zero address provided for Access Manager in initializer.
-    error ArbitrationPolicySP__ZeroAccessManager();
-
-    /// @notice Zero address provided for Dispute Module.
-    error ArbitrationPolicySP__ZeroDisputeModule();
-
-    /// @notice Zero address provided for Treasury.
-    error ArbitrationPolicySP__ZeroTreasury();
-
-    /// @notice Zero address provided for Payment Token.
-    error ArbitrationPolicySP__ZeroPaymentToken();
-
-    /// @notice Caller is not the Dispute Module.
-    error ArbitrationPolicySP__NotDisputeModule();
-
-    ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
     ////////////////////////////////////////////////////////////////////////////
 

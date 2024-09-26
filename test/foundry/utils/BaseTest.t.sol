@@ -19,6 +19,7 @@ import { MockRoyaltyPolicyLAP } from "../mocks/policy/MockRoyaltyPolicyLAP.sol";
 import { Users, UsersLib } from "./Users.t.sol";
 import { LicenseRegistryHarness } from "../mocks/module/LicenseRegistryHarness.sol";
 import { MockIPGraph } from "../mocks/MockIPGraph.sol";
+import { MockArbitrationPolicy } from "../mocks/dispute/MockArbitrationPolicy.sol";
 
 /// @title Base Test Contract
 /// @notice This contract provides a set of protocol-related testing utilities
@@ -54,6 +55,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     address internal lrHarnessImpl;
     MockIPGraph ipGraph = MockIPGraph(address(0x1B));
+    MockArbitrationPolicy mockArbitrationPolicy;
 
     constructor()
         DeployHelper(
@@ -101,6 +103,14 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         lrHarnessImpl = address(
             new LicenseRegistryHarness(address(licensingModule), address(disputeModule), address(ipGraphACL))
         );
+
+        mockArbitrationPolicy = new MockArbitrationPolicy(address(disputeModule), address(USDC), ARBITRATION_PRICE);
+        vm.startPrank(u.admin);
+        disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy), true);
+        disputeModule.whitelistArbitrationRelayer(address(mockArbitrationPolicy), address(u.relayer), true);
+        disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy));
+        mockArbitrationPolicy.setTreasury(TREASURY_ADDRESS);
+        vm.stopPrank();
     }
 
     function dealMockAssets() public {
@@ -122,7 +132,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     function _disputeIp(address disputeInitiator, address ipAddrToDispute) internal returns (uint256 disputeId) {
         vm.startPrank(disputeInitiator);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
+        USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         disputeId = disputeModule.raiseDispute(ipAddrToDispute, string("urlExample"), "PLAGIARISM", "");
         vm.stopPrank();
 

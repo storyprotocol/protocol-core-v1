@@ -9,7 +9,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 // solhint-disable-next-line max-line-length
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
-import { IGroupingModule } from "contracts/interfaces/modules/grouping/IGroupingModule.sol";
+import { IGroupingModule } from "./interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupNFT } from "./interfaces/IGroupNFT.sol";
 import { Errors } from "./lib/Errors.sol";
 

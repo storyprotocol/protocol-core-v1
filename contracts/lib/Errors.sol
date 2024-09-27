@@ -763,4 +763,10 @@ library Errors {
     /// @notice Caller is not the GroupingModule.
     error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
 
+    /// @notice Unregistered currency token.
+    error EvenSplitGroupPool__UnregisteredCurrencyToken(address currencyToken);
+
+    /// @notice Unregistered group IP.
+    error EvenSplitGroupPool__UnregisteredGroupIP(address groupId);
+
 }

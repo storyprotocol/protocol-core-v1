@@ -9,7 +9,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 // solhint-disable-next-line max-line-length
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
-import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
+import { EvenSplitGroupPool } from "../../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 
 // test
@@ -38,7 +38,9 @@ contract Flows_Integration_Grouping is BaseIntegration {
 
     function setUp() public override {
         super.setUp();
-        rewardPool = address(new MockEvenSplitGroupPool(address(royaltyModule)));
+        rewardPool = address(
+            new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry))
+        );
         commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({

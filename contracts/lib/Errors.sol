@@ -746,4 +746,21 @@ library Errors {
 
     /// @notice Zero address provided for Access Manager.
     error GroupNFT__ZeroAccessManager();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                           EvenSplitGroup                               //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for GroupingModule.
+    error EvenSplitGroupPool__ZeroGroupingModule();
+
+    /// @notice Zero address provided for RoyaltyModule.
+    error EvenSplitGroupPool__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for IPAssetRegistry.
+    error EvenSplitGroupPool__ZeroIPAssetRegistry();
+
+    /// @notice Caller is not the GroupingModule.
+    error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
+
 }

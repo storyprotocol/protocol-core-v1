@@ -200,7 +200,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (rewards[i] == 0) continue;
             // calculate pending reward for each IP
-            $.ipRewardDebt[groupId][token][ipIds[i]]+= rewards[i];
+            $.ipRewardDebt[groupId][token][ipIds[i]] += rewards[i];
             // call royalty module to transfer reward to IP's vault as royalty
             IERC20(token).safeTransfer(ROYALTY_MODULE.ipRoyaltyVaults(ipIds[i]), rewards[i]);
         }
@@ -219,12 +219,10 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         _getEvenSplitGroupPoolStorage().poolBalance[groupId][token] += royalties;
     }
 
-
     /// @dev checks if IP is added to group pool
     function _isIpAdded(address groupId, address ipId) internal view returns (bool) {
         return _getEvenSplitGroupPoolStorage().ipAddedTime[groupId][ipId] != 0;
     }
-
 
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
 

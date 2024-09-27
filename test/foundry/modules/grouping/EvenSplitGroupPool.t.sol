@@ -5,8 +5,6 @@ pragma solidity 0.8.26;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 // contracts
-import { Errors } from "../../../../contracts/lib/Errors.sol";
-import { IGroupingModule } from "../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 // test
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
@@ -15,7 +13,6 @@ import { BaseTest } from "../../utils/BaseTest.t.sol";
 
 contract EvenSplitGroupPoolTest is BaseTest {
     using Strings for *;
-
 
     MockERC721 internal mockNft = new MockERC721("MockERC721");
 
@@ -101,7 +98,6 @@ contract EvenSplitGroupPoolTest is BaseTest {
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
     }
-
 
     // test add and remove ip from pool
     // test add an IP twice
@@ -204,5 +200,4 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         vm.stopPrank();
     }
-
 }

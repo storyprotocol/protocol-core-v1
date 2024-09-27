@@ -768,5 +768,4 @@ library Errors {
 
     /// @notice Unregistered group IP.
     error EvenSplitGroupPool__UnregisteredGroupIP(address groupId);
-
 }

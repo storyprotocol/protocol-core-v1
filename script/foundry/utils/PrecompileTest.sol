@@ -39,6 +39,9 @@ contract PrecompileTest is Script {
     uint256[] internal license_6_7 = new uint256[](1);
     uint256[] internal license_7_8 = new uint256[](1);
     uint256[] internal license_8_9 = new uint256[](1);
+    uint256[] internal license_1_3 = new uint256[](1);
+    uint256[] internal license_2_4 = new uint256[](1);
+    uint256[] internal license_4_5 = new uint256[](1);
 
     // others
     MockERC721 mockNft;
@@ -107,17 +110,17 @@ contract PrecompileTest is Script {
 
         // attach terms for roots
         ILicensingModule licensingModule = ILicensingModule(LICENSING_MODULE);
-        licensingModule.attachLicenseTerms(ipAcct[1], PIL_TEMPLATE, commDerivTermsIdLap10);
-        licensingModule.attachLicenseTerms(ipAcct[5], PIL_TEMPLATE, commDerivTermsIdLrp10);
+        licensingModule.attachLicenseTerms(ipAcct[1], PIL_TEMPLATE, commDerivTermsIdLrp10);
+        //licensingModule.attachLicenseTerms(ipAcct[5], PIL_TEMPLATE, commDerivTermsIdLrp10);
         // licensingModule.attachLicenseTerms(ipAcct[11], PIL_TEMPLATE, commDerivTermsIdExt10);
 
         // mint licenses and register derivatives
-        mintLicensesAndRegisterDerivatives();
+        mintLicensesAndRegisterDerivatives2();
 
         // make payment
         IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
-        royaltyModule.payRoyaltyOnBehalf(ipAcct[4], ipAcct[5], SUSD, 1e18);
-        royaltyModule.payRoyaltyOnBehalf(ipAcct[8], ipAcct[1], SUSD, 1e18);
+        royaltyModule.payRoyaltyOnBehalf(ipAcct[5], ipAcct[10], SUSD, 1e18);
+        //royaltyModule.payRoyaltyOnBehalf(ipAcct[8], ipAcct[1], SUSD, 1e18);
         //royaltyModule.payRoyaltyOnBehalf(ipAcct[9], ipAcct[1], SUSD, 1e18);
 
         //vm.startPrank(ipAcct[1]);
@@ -207,7 +210,7 @@ contract PrecompileTest is Script {
         ); */
     }
 
-    function mintLicensesAndRegisterDerivatives() internal {
+    function mintLicensesAndRegisterDerivatives1() internal {
         ILicensingModule licensingModule = ILicensingModule(LICENSING_MODULE);
         license_1_2[0] = licensingModule.mintLicenseTokens({
             licensorIpId: ipAcct[1],
@@ -292,6 +295,62 @@ contract PrecompileTest is Script {
         licenses_4_8_9[0] = license_4_9[0];
         licenses_4_8_9[1] = license_8_9[0];
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_4_8_9, ""); */
+    }
+
+    function mintLicensesAndRegisterDerivatives2() internal {
+        ILicensingModule licensingModule = ILicensingModule(LICENSING_MODULE);
+        license_1_2[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[2],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], license_1_2, "");
+
+        license_1_3[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[3],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], license_1_3, "");
+
+        license_2_4[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[2],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[4],
+            royaltyContext: ""
+        });
+
+        license_3_4[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[3],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[4],
+            royaltyContext: ""
+        });
+
+        uint256[] memory licenses_2_3_4 = new uint256[](2);
+        licenses_2_3_4[0] = license_2_4[0];
+        licenses_2_3_4[1] = license_3_4[0];
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenses_2_3_4, "");
+
+        license_4_5[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[4],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[5],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[5], license_4_5, "");
     }
 }
 

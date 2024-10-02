@@ -10,6 +10,10 @@ import { PILTerms, IPILicenseTemplate } from "../../../contracts/interfaces/modu
 import { IIPAssetRegistry } from "../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { ILicensingModule } from "../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { IRoyaltyModule } from "../../../contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IIpRoyaltyVault } from "../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { IIPAccount } from "../../../contracts/interfaces/IIPAccount.sol";
+import { IVaultController } from "../../../contracts/interfaces/modules/royalty/policies/IVaultController.sol";
+
 import { MockERC721 } from "../../../test/foundry/mocks/token/MockERC721.sol";
 import { MockExternalRoyaltyPolicy1 } from "../../../test/foundry/mocks/policy/MockExternalRoyaltyPolicy1.sol";
 
@@ -46,7 +50,7 @@ contract PrecompileTest is Script {
     // others
     MockERC721 mockNft;
     MockExternalRoyaltyPolicy1 mockExternalRoyaltyPolicy;
-    address internal user = 0x0dB60602E9898Ea60669DBa7A5d98b2f22e8142F;
+    address internal user = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
 
     function run() public {
@@ -110,8 +114,8 @@ contract PrecompileTest is Script {
 
         // attach terms for roots
         ILicensingModule licensingModule = ILicensingModule(LICENSING_MODULE);
-        licensingModule.attachLicenseTerms(ipAcct[1], PIL_TEMPLATE, commDerivTermsIdLrp10);
-        //licensingModule.attachLicenseTerms(ipAcct[5], PIL_TEMPLATE, commDerivTermsIdLrp10);
+        // licensingModule.attachLicenseTerms(ipAcct[1], PIL_TEMPLATE, commDerivTermsIdLrp10);
+        licensingModule.attachLicenseTerms(ipAcct[5], PIL_TEMPLATE, commDerivTermsIdLrp10);
         // licensingModule.attachLicenseTerms(ipAcct[11], PIL_TEMPLATE, commDerivTermsIdExt10);
 
         // mint licenses and register derivatives
@@ -119,12 +123,24 @@ contract PrecompileTest is Script {
 
         // make payment
         IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
-        royaltyModule.payRoyaltyOnBehalf(ipAcct[5], ipAcct[10], SUSD, 1e18);
+        royaltyModule.payRoyaltyOnBehalf(ipAcct[1], ipAcct[10], SUSD, 1e18);
+        //royaltyModule.payRoyaltyOnBehalf(ipAcct[5], ipAcct[10], SUSD, 1e18);
         //royaltyModule.payRoyaltyOnBehalf(ipAcct[8], ipAcct[1], SUSD, 1e18);
         //royaltyModule.payRoyaltyOnBehalf(ipAcct[9], ipAcct[1], SUSD, 1e18);
 
-        //vm.startPrank(ipAcct[1]);
-        //IRoyaltyPolicy(ROYALTY_POLICY_LAP).transferToVault()
+        IVaultController(address(royaltyModule)).setSnapshotInterval(0);
+
+        address vault2 = royaltyModule.ipRoyaltyVaults(ipAcct[2]);
+        bytes memory callData = abi.encodeWithSelector(IERC20.transfer.selector, user, 1000);
+        IIPAccount(payable(ipAcct[2])).execute(vault2, 0, callData);
+
+        bytes memory callData2 = abi.encodeWithSelector(IIpRoyaltyVault.snapshot.selector);
+        IIPAccount(payable(ipAcct[2])).execute(vault2, 0, callData2);
+
+        uint256[] memory snapshotIds = new uint256[](1);
+        snapshotIds[0] = 1;
+        bytes memory callData3 = abi.encodeWithSelector(IIpRoyaltyVault.claimRevenueBySnapshotBatch.selector, snapshotIds, SUSD);
+        IIPAccount(payable(ipAcct[2])).execute(vault2, 0, callData3);
         
         vm.stopBroadcast();
 
@@ -140,6 +156,9 @@ contract PrecompileTest is Script {
         console2.log("ipAcct[7]", ipAcct[7]);
         console2.log("ipAcct[8]", ipAcct[8]);
         console2.log("ipAcct[9]", ipAcct[9]);
+
+        console2.log("vault2", vault2);
+        console2.log("userRtBalance", IERC20(vault2).balanceOf(user));
     }
 
     function registerTerms() internal {
@@ -337,7 +356,7 @@ contract PrecompileTest is Script {
             royaltyContext: ""
         });
 
-        uint256[] memory licenses_2_3_4 = new uint256[](2);
+        /* uint256[] memory licenses_2_3_4 = new uint256[](2);
         licenses_2_3_4[0] = license_2_4[0];
         licenses_2_3_4[1] = license_3_4[0];
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenses_2_3_4, "");
@@ -350,7 +369,7 @@ contract PrecompileTest is Script {
             receiver: ipAcct[5],
             royaltyContext: ""
         });
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[5], license_4_5, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[5], license_4_5, ""); */
     }
 }
 

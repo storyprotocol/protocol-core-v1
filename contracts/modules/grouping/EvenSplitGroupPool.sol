@@ -128,20 +128,6 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         _collectRoyalties(groupId, token);
     }
 
-    /// @notice Deposits reward to the group pool directly
-    /// @param groupId The group ID
-    /// @param token The reward token
-    /// @param amount The amount of reward
-    function depositReward(address groupId, address token, uint256 amount) external whenNotPaused {
-        if (amount == 0) return;
-        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(token))
-            revert Errors.EvenSplitGroupPool__UnregisteredCurrencyToken(token);
-        if (!GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(groupId))
-            revert Errors.EvenSplitGroupPool__UnregisteredGroupIP(groupId);
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        _getEvenSplitGroupPoolStorage().poolBalance[groupId][token] += amount;
-    }
-
     function getTotalIps(address groupId) external view returns (uint256) {
         return _getEvenSplitGroupPoolStorage().totalMemberIps[groupId];
     }

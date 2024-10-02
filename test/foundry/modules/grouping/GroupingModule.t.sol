@@ -112,62 +112,6 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 100);
     }
 
-    function test_GroupingModule_addIp_later_after_depositedReward() public {
-        vm.warp(9999);
-        vm.prank(alice);
-        address groupId = groupingModule.registerGroup(address(rewardPool));
-        uint256 termsId = pilTemplate.registerLicenseTerms(
-            PILFlavors.commercialRemix({
-                mintingFee: 0,
-                commercialRevShare: 10,
-                currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
-            })
-        );
-
-        vm.prank(ipOwner1);
-        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
-        vm.prank(ipOwner2);
-        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
-        vm.prank(ipOwner3);
-        licensingModule.attachLicenseTerms(ipId3, address(pilTemplate), termsId);
-
-        vm.startPrank(alice);
-        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
-
-        address[] memory ipIds = new address[](2);
-        ipIds[0] = ipId1;
-        ipIds[1] = ipId2;
-        vm.expectEmit();
-        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
-        groupingModule.addIp(groupId, ipIds);
-        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.getTotalIps(groupId), 2);
-        assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 9999);
-
-        erc20.mint(alice, 100);
-        erc20.approve(address(rewardPool), 100);
-        rewardPool.depositReward(groupId, address(erc20), 100);
-
-        vm.warp(10000);
-        address[] memory ipIds2 = new address[](1);
-        ipIds2[0] = ipId3;
-        vm.expectEmit();
-        emit IGroupingModule.AddedIpToGroup(groupId, ipIds2);
-        groupingModule.addIp(groupId, ipIds2);
-        assertEq(ipAssetRegistry.totalMembers(groupId), 3);
-        assertEq(rewardPool.getTotalIps(groupId), 3);
-        assertEq(rewardPool.getIpAddedTime(groupId, ipId3), 10000);
-        uint256 rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId3);
-        assertEq(rewardDebt, 0);
-
-        rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId1);
-        assertEq(rewardDebt, 0);
-
-        rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId2);
-        assertEq(rewardDebt, 0);
-    }
-
     function test_GroupingModule_removeIp() public {
         vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
@@ -208,7 +152,7 @@ contract GroupingModuleTest is BaseTest {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 0,
-                commercialRevShare: 10,
+                commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
@@ -229,16 +173,30 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.addIp(groupId, ipIds);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
         assertEq(rewardPool.getTotalIps(groupId), 2);
+        vm.stopPrank();
 
-        erc20.mint(alice, 100);
-        erc20.approve(address(rewardPool), 100);
-        rewardPool.depositReward(groupId, address(erc20), 100);
-        assertEq(erc20.balanceOf(address(rewardPool)), 100);
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = groupId;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = termsId;
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "");
+
+        erc20.mint(ipOwner3, 1000);
+        vm.startPrank(ipOwner3);
+        erc20.approve(address(royaltyModule), 1000);
+        royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
+        vm.stopPrank();
+        royaltyPolicyLAP.transferToVault(
+            ipId3,
+            groupId,
+            address(erc20),
+            100
+        );
+        vm.warp(vm.getBlockTimestamp() + 7 days);
 
         address[] memory claimIpIds = new address[](1);
         claimIpIds[0] = ipId1;
-
-        assertEq(groupingModule.getClaimableReward(groupId, address(erc20), claimIpIds)[0], 50);
 
         uint256[] memory claimAmounts = new uint256[](1);
         claimAmounts[0] = 50;

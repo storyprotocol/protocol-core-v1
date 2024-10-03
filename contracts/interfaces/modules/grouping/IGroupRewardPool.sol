@@ -14,10 +14,11 @@ interface IGroupRewardPool {
         address[] calldata ipIds
     ) external returns (uint256[] memory rewards);
 
-    /// @notice Collects royalty revenue to the group pool through royalty module
+    /// @notice Deposits reward to the group pool directly
     /// @param groupId The group ID
     /// @param token The reward token
-    function collectRoyalties(address groupId, address token) external;
+    /// @param amount The amount of reward
+    function depositReward(address groupId, address token, uint256 amount) external;
 
     /// @notice Adds an IP to the group pool
     /// @param groupId The group ID

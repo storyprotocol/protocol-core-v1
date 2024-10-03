@@ -171,25 +171,15 @@ contract EvenSplitGroupPoolTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
         licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "");
-        licensingModule.attachLicenseTerms(group1, address(pilTemplate), commRemixTermsId);
 
         vm.prank(address(groupingModule));
         rewardPool.addIp(group1, ipId1);
 
-        address[] memory parentIpIds = new address[](1);
-        parentIpIds[0] = group1;
-        uint256[] memory licenseIds = new uint256[](1);
-        licenseIds[0] = commRemixTermsId;
-        vm.prank(ipOwner2);
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseIds, address(pilTemplate), "");
-
-        erc20.mint(address(this), 100);
-        erc20.approve(address(royaltyModule), 100);
-        royaltyModule.payRoyaltyOnBehalf(ipId2, address(this), address(erc20), 100);
-        royaltyPolicyLAP.transferToVault(ipId2, group1, address(erc20), 10);
-
-        vm.warp(vm.getBlockTimestamp() + 7 days);
-        rewardPool.collectRoyalties(group1, address(erc20));
+        vm.startPrank(address(groupingModule));
+        erc20.mint(address(rewardPool), 100);
+        rewardPool.depositReward(group1, address(erc20), 100);
+        assertEq(erc20.balanceOf(address(rewardPool)), 100);
+        vm.stopPrank();
 
         uint256 rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
         assertEq(rewardDebt, 0);
@@ -198,15 +188,15 @@ contract EvenSplitGroupPoolTest is BaseTest {
         ipIds[0] = ipId1;
 
         uint256[] memory rewards = rewardPool.getAvailableReward(group1, address(erc20), ipIds);
-        assertEq(rewards[0], 10);
+        assertEq(rewards[0], 100);
 
         rewards = rewardPool.distributeRewards(group1, address(erc20), ipIds);
-        assertEq(rewards[0], 10);
+        assertEq(rewards[0], 100);
 
         assertEq(erc20.balanceOf(address(rewardPool)), 0);
 
         rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
-        assertEq(rewardDebt, 10);
+        assertEq(rewardDebt, 100);
 
         vm.stopPrank();
     }

@@ -12,6 +12,7 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { IIpRoyaltyVault } from "../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
 contract GroupingModuleTest is BaseTest {
     // test register group
@@ -189,6 +190,20 @@ contract GroupingModuleTest is BaseTest {
         vm.stopPrank();
         royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20), 100);
         vm.warp(vm.getBlockTimestamp() + 7 days);
+
+        uint256 snapshotId = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId)).snapshot();
+        uint256[] memory snapshotIds = new uint256[](1);
+        snapshotIds[0] = snapshotId;
+
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(
+            groupId,
+            address(erc20),
+            address(rewardPool),
+            100,
+            snapshotIds
+        );
+        groupingModule.collectRoyalties(groupId, address(erc20), snapshotIds);
 
         address[] memory claimIpIds = new address[](1);
         claimIpIds[0] = ipId1;

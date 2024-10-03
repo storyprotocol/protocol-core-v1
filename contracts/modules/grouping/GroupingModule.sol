@@ -200,20 +200,20 @@ contract GroupingModule is
     /// @notice Collects royalties into the pool, making them claimable by group member IPs.
     /// @param groupId The address of the group.
     /// @param token The address of the token.
-    /// @param snapshots The snapshot IDs of the royalty vault for the given group to collect royalties.
+    /// @param snapshotIds The snapshot IDs of the royalty vault for the given group to collect royalties.
     function collectRoyalties(
         address groupId,
         address token,
-        uint256[] calldata snapshots
+        uint256[] calldata snapshotIds
     ) external whenNotPaused returns (uint256 royalties) {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
 
         if (address(vault) == address(0)) revert Errors.GroupingModule__GroupRoyaltyVaultNotCreated(groupId);
 
-        royalties = vault.claimRevenueOnBehalfBySnapshotBatch(snapshots, token, address(pool));
+        royalties = vault.claimRevenueOnBehalfBySnapshotBatch(snapshotIds, token, address(pool));
         pool.depositReward(groupId, token, royalties);
-        emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties, snapshots);
+        emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties, snapshotIds);
     }
 
     function name() external pure override returns (string memory) {

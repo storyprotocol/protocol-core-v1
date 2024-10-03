@@ -7,7 +7,6 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
-import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
@@ -128,8 +127,6 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
     ) external whenNotPaused returns (uint256[] memory rewards) {
         return _distributeRewards(groupId, token, ipIds);
     }
-
-
 
     function getTotalIps(address groupId) external view returns (uint256) {
         return _getEvenSplitGroupPoolStorage().totalMemberIps[groupId];

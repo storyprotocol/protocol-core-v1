@@ -88,7 +88,11 @@ contract PILicenseTemplate is
     /// @param terms The PILTerms to register.
     /// @return id The ID of the newly registered license terms.
     function registerLicenseTerms(PILTerms calldata terms) external nonReentrant returns (uint256 id) {
-        if (terms.royaltyPolicy != address(0) && !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(terms.royaltyPolicy)) {
+        if (
+            terms.royaltyPolicy != address(0) &&
+            !ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(terms.royaltyPolicy) &&
+            !ROYALTY_MODULE.isRegisteredExternalRoyaltyPolicy(terms.royaltyPolicy)
+        ) {
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyNotWhitelisted();
         }
 

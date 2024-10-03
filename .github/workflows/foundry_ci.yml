@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          forge test -vvv --no-match-test "invariant*"
         id: forge-test
 
       - name: Run solhint

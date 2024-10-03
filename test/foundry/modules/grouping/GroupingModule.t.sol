@@ -9,7 +9,7 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { IGroupingModule } from "../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 // test
-import { MockEvenSplitGroupPool } from "../../mocks/grouping/MockEvenSplitGroupPool.sol";
+import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
@@ -43,7 +43,7 @@ contract GroupingModuleTest is BaseTest {
     uint256 public tokenId3 = 3;
     uint256 public tokenId5 = 5;
 
-    MockEvenSplitGroupPool public rewardPool;
+    EvenSplitGroupPool public rewardPool;
 
     function setUp() public override {
         super.setUp();
@@ -63,7 +63,7 @@ contract GroupingModuleTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
 
-        rewardPool = new MockEvenSplitGroupPool(address(royaltyModule));
+        rewardPool = new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry));
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool));
     }
@@ -108,8 +108,8 @@ contract GroupingModuleTest is BaseTest {
         emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
         groupingModule.addIp(groupId, ipIds);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 100);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
+        assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 100);
     }
 
     function test_GroupingModule_addIp_later_after_depositedReward() public {
@@ -142,8 +142,8 @@ contract GroupingModuleTest is BaseTest {
         emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
         groupingModule.addIp(groupId, ipIds);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 9999);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
+        assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 9999);
 
         erc20.mint(alice, 100);
         erc20.approve(address(rewardPool), 100);
@@ -156,18 +156,15 @@ contract GroupingModuleTest is BaseTest {
         emit IGroupingModule.AddedIpToGroup(groupId, ipIds2);
         groupingModule.addIp(groupId, ipIds2);
         assertEq(ipAssetRegistry.totalMembers(groupId), 3);
-        assertEq(rewardPool.totalMemberIPs(groupId), 3);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId3), 10000);
-        (uint256 startPoolBalance, uint256 rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId3);
-        assertEq(startPoolBalance, 100);
+        assertEq(rewardPool.getTotalIps(groupId), 3);
+        assertEq(rewardPool.getIpAddedTime(groupId, ipId3), 10000);
+        uint256 rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId3);
         assertEq(rewardDebt, 0);
 
-        (startPoolBalance, rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId1);
-        assertEq(startPoolBalance, 0);
+        rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId1);
         assertEq(rewardDebt, 0);
 
-        (startPoolBalance, rewardDebt) = rewardPool.ipRewardInfo(groupId, address(erc20), ipId2);
-        assertEq(startPoolBalance, 0);
+        rewardDebt = rewardPool.getIpRewardDebt(groupId, address(erc20), ipId2);
         assertEq(rewardDebt, 0);
     }
 
@@ -231,7 +228,7 @@ contract GroupingModuleTest is BaseTest {
         ipIds[1] = ipId2;
         groupingModule.addIp(groupId, ipIds);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
 
         erc20.mint(alice, 100);
         erc20.approve(address(rewardPool), 100);
@@ -279,8 +276,8 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.addIp(groupId1, ipIds);
 
         assertEq(ipAssetRegistry.totalMembers(groupId1), 0);
-        assertEq(rewardPool.totalMemberIPs(groupId1), 0);
-        assertEq(rewardPool.ipAddedTime(groupId1, ipId1), 0);
+        assertEq(rewardPool.getTotalIps(groupId1), 0);
+        assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
     }
 
     function test_GroupingModule_addIp_revert_after_registerDerivative() public {
@@ -322,8 +319,8 @@ contract GroupingModuleTest is BaseTest {
         groupingModule.addIp(groupId, ipIds);
 
         assertEq(ipAssetRegistry.totalMembers(groupId), 0);
-        assertEq(rewardPool.totalMemberIPs(groupId), 0);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), 0);
+        assertEq(rewardPool.getTotalIps(groupId), 0);
+        assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 0);
     }
 
     function test_GroupingModule_removeIp_revert_after_registerDerivative() public {
@@ -353,8 +350,8 @@ contract GroupingModuleTest is BaseTest {
         vm.stopPrank();
 
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(rewardPool.totalMemberIPs(groupId), 2);
-        assertEq(rewardPool.ipAddedTime(groupId, ipId1), block.timestamp);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
+        assertEq(rewardPool.getIpAddedTime(groupId, ipId1), block.timestamp);
 
         vm.startPrank(ipOwner3);
         address[] memory parentIpIds = new address[](1);

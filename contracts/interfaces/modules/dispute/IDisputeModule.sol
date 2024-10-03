@@ -7,7 +7,7 @@ interface IDisputeModule {
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
     /// @param arbitrationPolicy The address of the arbitration policy
-    /// @param linkToDisputeEvidence The link of the dispute evidence
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param currentTag The current tag of the dispute
     /// @param parentDisputeId The parent dispute id
@@ -15,7 +15,7 @@ interface IDisputeModule {
         address targetIpId;
         address disputeInitiator;
         address arbitrationPolicy;
-        bytes32 linkToDisputeEvidence;
+        bytes32 disputeEvidenceHash;
         bytes32 targetTag;
         bytes32 currentTag;
         uint256 parentDisputeId;
@@ -51,7 +51,7 @@ interface IDisputeModule {
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
     /// @param arbitrationPolicy The address of the arbitration policy
-    /// @param linkToDisputeEvidence The link of the dispute evidence
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param data Custom data adjusted to each policy
     event DisputeRaised(
@@ -59,7 +59,7 @@ interface IDisputeModule {
         address targetIpId,
         address disputeInitiator,
         address arbitrationPolicy,
-        bytes32 linkToDisputeEvidence,
+        bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes data
     );
@@ -102,7 +102,7 @@ interface IDisputeModule {
     /// @return targetIpId The ipId that is the target of the dispute
     /// @return disputeInitiator The address of the dispute initiator
     /// @return arbitrationPolicy The address of the arbitration policy
-    /// @return linkToDisputeEvidence The link of the dispute summary
+    /// @return disputeEvidenceHash The link of the dispute summary
     /// @return targetTag The target tag of the dispute
     /// @return currentTag The current tag of the dispute
     /// @return parentDisputeId The parent dispute id
@@ -115,7 +115,7 @@ interface IDisputeModule {
             address targetIpId,
             address disputeInitiator,
             address arbitrationPolicy,
-            bytes32 linkToDisputeEvidence,
+            bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
             uint256 parentDisputeId
@@ -172,13 +172,13 @@ interface IDisputeModule {
 
     /// @notice Raises a dispute on a given ipId
     /// @param targetIpId The ipId that is the target of the dispute
-    /// @param linkToDisputeEvidence The link of the dispute evidence
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param data The data to raise a dispute
     /// @return disputeId The id of the newly raised dispute
     function raiseDispute(
         address targetIpId,
-        string memory linkToDisputeEvidence,
+        bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes calldata data
     ) external returns (uint256 disputeId);

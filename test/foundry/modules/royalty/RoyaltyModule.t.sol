@@ -37,6 +37,8 @@ contract TestRoyaltyModule is BaseTest {
     event RoyaltyFeePercentSet(uint32 royaltyFeePercent);
     event TreasurySet(address treasury);
 
+    bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
+
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
     address internal ipAddr;
@@ -97,7 +99,7 @@ contract TestRoyaltyModule is BaseTest {
 
         // set arbitration policy
         vm.startPrank(ipAddr);
-        disputeModule.setArbitrationPolicy(ipAddr, address(arbitrationPolicySP));
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy));
         vm.stopPrank();
 
         // grouping
@@ -439,6 +441,7 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(ipIdRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(licensor) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(newVault), true);
     }
 
     function test_RoyaltyModule_onLicenseMinting_NewVaultGroup() public {
@@ -459,6 +462,7 @@ contract TestRoyaltyModule is BaseTest {
 
         assertEq(groupPoolRtBalAfter, royaltyModule.maxPercent());
         assertFalse(royaltyModule.ipRoyaltyVaults(groupId) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(newVault), true);
     }
 
     function test_RoyaltyModule_onLicenseMinting_ExistingVault() public {
@@ -748,6 +752,7 @@ contract TestRoyaltyModule is BaseTest {
         uint256 ipId80IpIdRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(80));
 
         assertFalse(royaltyModule.ipRoyaltyVaults(address(80)) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(80))), true);
         assertEq(ipId80RtLAPBalAfter, 0);
         assertEq(ipId80RtLRPBalAfter, 0);
         assertEq(ipId80RtLRPParentVaultBalAfter, 0);
@@ -824,8 +829,8 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpIsTagged() public {
         // raise dispute
         vm.startPrank(ipAccount1);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -965,8 +970,8 @@ contract TestRoyaltyModule is BaseTest {
     function test_RoyaltyModule_payLicenseMintingFee_revert_IpIsTagged() public {
         // raise dispute
         vm.startPrank(ipAccount1);
-        USDC.approve(address(arbitrationPolicySP), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, string("urlExample"), "PLAGIARISM", "");
+        USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
         // set dispute judgement

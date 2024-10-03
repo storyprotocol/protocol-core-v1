@@ -379,7 +379,7 @@ library Errors {
     error DisputeModule__NotAllowedToWhitelist();
 
     /// @notice Zero bytes provided for Dispute Evidence.
-    error DisputeModule__ZeroLinkToDisputeEvidence();
+    error DisputeModule__ZeroDisputeEvidenceHash();
 
     /// @notice Not a whitelisted arbitration policy.
     error DisputeModule__NotWhitelistedArbitrationPolicy();
@@ -413,25 +413,6 @@ library Errors {
 
     /// @notice Provided parent dispute has not been resolved.
     error DisputeModule__ParentDisputeNotResolved();
-
-    ////////////////////////////////////////////////////////////////////////////
-    //                         ArbitrationPolicy SP                          //
-    ////////////////////////////////////////////////////////////////////////////
-
-    /// @notice Zero address provided for Access Manager in initializer.
-    error ArbitrationPolicySP__ZeroAccessManager();
-
-    /// @notice Zero address provided for Dispute Module.
-    error ArbitrationPolicySP__ZeroDisputeModule();
-
-    /// @notice Zero address provided for Treasury.
-    error ArbitrationPolicySP__ZeroTreasury();
-
-    /// @notice Zero address provided for Payment Token.
-    error ArbitrationPolicySP__ZeroPaymentToken();
-
-    /// @notice Caller is not the Dispute Module.
-    error ArbitrationPolicySP__NotDisputeModule();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
@@ -623,6 +604,9 @@ library Errors {
     /// @notice Zero amount provided.
     error IpRoyaltyVault__ZeroAmount();
 
+    /// @notice Vaults must claim as self.
+    error IpRoyaltyVault__VaultsMustClaimAsSelf();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////
@@ -762,4 +746,26 @@ library Errors {
 
     /// @notice Zero address provided for Access Manager.
     error GroupNFT__ZeroAccessManager();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                           EvenSplitGroup                               //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for GroupingModule.
+    error EvenSplitGroupPool__ZeroGroupingModule();
+
+    /// @notice Zero address provided for RoyaltyModule.
+    error EvenSplitGroupPool__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for IPAssetRegistry.
+    error EvenSplitGroupPool__ZeroIPAssetRegistry();
+
+    /// @notice Caller is not the GroupingModule.
+    error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
+
+    /// @notice Unregistered currency token.
+    error EvenSplitGroupPool__UnregisteredCurrencyToken(address currencyToken);
+
+    /// @notice Unregistered group IP.
+    error EvenSplitGroupPool__UnregisteredGroupIP(address groupId);
 }

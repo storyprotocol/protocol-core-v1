@@ -3,11 +3,6 @@ pragma solidity 0.8.26;
 
 /// @title Arbitration Policy Interface
 interface IArbitrationPolicy {
-    /// @notice Allows governance set the treasury address
-    /// @dev Enforced to be only callable by the governance protocol admin
-    /// @param newTreasury The new address of the treasury
-    function setTreasury(address newTreasury) external;
-
     /// @notice Executes custom logic on raising dispute.
     /// @dev Enforced to be only callable by the DisputeModule.
     /// @param caller Address of the caller
@@ -34,7 +29,4 @@ interface IArbitrationPolicy {
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to resolve the dispute
     function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external;
-
-    /// @notice Returns the treasury address
-    function treasury() external view returns (address);
 }

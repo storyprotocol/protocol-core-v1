@@ -36,7 +36,6 @@ import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/LAP/Royalty
 import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
-import { ArbitrationPolicySP } from "contracts/modules/dispute/policies/ArbitrationPolicySP.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
@@ -90,7 +89,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     CoreMetadataViewModule internal coreMetadataViewModule;
 
     // Policy
-    ArbitrationPolicySP internal arbitrationPolicySP;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -142,8 +140,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        if (address(ipGraphACL) == address(0))
-            newDeployedIpGraphACL = true;
 
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
@@ -157,9 +153,21 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run(uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_) public virtual {
+    function run(uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version_) public virtual {
         create3SaltSeed = create3SaltSeed_;
         writeDeploys = writeDeploys_;
+        version = version_;
+
+        // check if IPGraphACL is deployed
+        if (address(ipGraphACL) == address(0)) {
+            newDeployedIpGraphACL = true;
+        } else if (address(ipGraphACL).code.length == 0) {
+            newDeployedIpGraphACL = true;
+            require(
+                address(ipGraphACL) == _getDeployedAddress(type(IPGraphACL).name),
+                "Deploy: IPGraphACL Address Mismatch with seed."
+            );
+        }
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         if (runStorageLayoutCheck) super.run();
@@ -501,27 +509,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // Story-specific Non-Core Contracts
         //
 
-        _predeploy("ArbitrationPolicySP");
-        impl = address(new ArbitrationPolicySP(address(disputeModule), address(erc20), ARBITRATION_PRICE));
-        arbitrationPolicySP = ArbitrationPolicySP(
-            TestProxyHelper.deployUUPSProxy(
-                create3Deployer,
-                _getSalt(type(ArbitrationPolicySP).name),
-                impl,
-                abi.encodeCall(ArbitrationPolicySP.initialize, (address(protocolAccessManager), TREASURY_ADDRESS))
-            )
-        );
-        require(
-            _getDeployedAddress(type(ArbitrationPolicySP).name) == address(arbitrationPolicySP),
-            "Deploy: Arbitration Policy Address Mismatch"
-        );
-        require(
-            _loadProxyImpl(address(arbitrationPolicySP)) == impl,
-            "ArbitrationPolicySP Proxy Implementation Mismatch"
-        );
-        impl = address(0);
-        _postdeploy("ArbitrationPolicySP", address(arbitrationPolicySP));
-
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
             address(royaltyModule),
@@ -661,8 +648,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                     abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager)))
                 )
             );
-            _postdeploy("IPGraphACL", address(ipGraphACL));
+        } else {
+            console2.log("IPGraphACL already deployed");
         }
+        _postdeploy("IPGraphACL", address(ipGraphACL));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -706,11 +695,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
         // Dispute Module and SP Dispute Policy
-        address arbitrationRelayer = relayer;
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
-        disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicySP), true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicySP), arbitrationRelayer, true);
-        disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicySP));
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
@@ -742,11 +727,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(
-            address(arbitrationPolicySP),
-            selectors,
-            ProtocolAdmin.UPGRADER_ROLE
-        );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);

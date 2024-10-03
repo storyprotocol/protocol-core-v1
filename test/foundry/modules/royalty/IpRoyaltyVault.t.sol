@@ -203,7 +203,7 @@ contract TestIpRoyaltyVault is BaseTest {
         address[] memory tokens = new address[](1);
         tokens[0] = address(USDC);
         vm.startPrank(address(2));
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(1, tokens, address(2));
         vm.stopPrank();
 
         // take snapshot
@@ -225,10 +225,10 @@ contract TestIpRoyaltyVault is BaseTest {
         royaltyModule.pause();
 
         vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
+        ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(new uint256[](0), address(USDC), u.admin);
 
         vm.expectRevert(Errors.IpRoyaltyVault__EnforcedPause.selector);
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, new address[](0));
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(1, new address[](0), u.admin);
     }
 
     function test_IpRoyaltyVault_claimableRevenue() public {
@@ -262,7 +262,18 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(claimableRevenueMinHolder, (royaltyAmount * 30e6) / 100e6);
     }
 
-    function test_IpRoyaltyVault_claimRevenueByTokenBatch_revert_claimRevenueByTokenBatch() public {
+    function test_IpRoyaltyVault_claimRevenueOnBehalfByTokenBatch_revert_VaultsMustClaimAsSelf() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__VaultsMustClaimAsSelf.selector);
+        IIpRoyaltyVault(ipRoyaltyVault).claimRevenueOnBehalfByTokenBatch(1, new address[](0), address(ipRoyaltyVault));
+    }
+
+    function test_IpRoyaltyVault_claimRevenueOnBehalfByTokenBatch_revert_NoClaimableTokens() public {
         // deploy vault
         vm.startPrank(address(licensingModule));
         royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
@@ -281,10 +292,10 @@ contract TestIpRoyaltyVault is BaseTest {
         tokens[0] = address(USDC);
 
         vm.expectRevert(Errors.IpRoyaltyVault__NoClaimableTokens.selector);
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(1, tokens, u.admin);
     }
 
-    function test_IpRoyaltyVault_claimRevenueByTokenBatch() public {
+    function test_IpRoyaltyVault_claimRevenueOnBehalfByTokenBatch() public {
         // payment is made to vault
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(2), royaltyAmount); // 100k USDC
@@ -323,7 +334,7 @@ contract TestIpRoyaltyVault is BaseTest {
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), expectedAmount);
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(LINK), expectedAmount);
 
-        ipRoyaltyVault.claimRevenueByTokenBatch(1, tokens);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(1, tokens, address(2));
 
         assertEq(USDC.balanceOf(address(2)) - userUsdcBalanceBefore, expectedAmount);
         assertEq(LINK.balanceOf(address(2)) - userLinkBalanceBefore, expectedAmount);
@@ -335,7 +346,18 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(LINK)), true);
     }
 
-    function test_IpRoyaltyVault_claimRevenueBySnapshotBatch_revert_NoClaimableTokens() public {
+    function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch_revert_VaultsMustClaimAsSelf() public {
+        // deploy vault
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(1)));
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.IpRoyaltyVault__VaultsMustClaimAsSelf.selector);
+        ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(new uint256[](0), address(USDC), address(ipRoyaltyVault));
+    }
+
+    function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch_revert_NoClaimableTokens() public {
         // deploy vault
         vm.startPrank(address(licensingModule));
         royaltyModule.onLicenseMinting(address(1), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
@@ -343,10 +365,10 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.stopPrank();
 
         vm.expectRevert(Errors.IpRoyaltyVault__NoClaimableTokens.selector);
-        ipRoyaltyVault.claimRevenueBySnapshotBatch(new uint256[](0), address(USDC));
+        ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(new uint256[](0), address(USDC), u.admin);
     }
 
-    function test_IpRoyaltyVault_claimRevenueBySnapshotBatch() public {
+    function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch() public {
         uint256 royaltyAmount = 100000 * 10 ** 6;
         USDC.mint(address(2), royaltyAmount); // 100k USDC
 
@@ -386,7 +408,7 @@ contract TestIpRoyaltyVault is BaseTest {
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), expectedAmount);
 
         vm.startPrank(address(2));
-        ipRoyaltyVault.claimRevenueBySnapshotBatch(snapshots, address(USDC));
+        ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(snapshots, address(USDC), address(2));
 
         assertEq(USDC.balanceOf(address(2)) - userUsdcBalanceBefore, expectedAmount);
         assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);

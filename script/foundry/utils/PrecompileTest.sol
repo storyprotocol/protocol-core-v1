@@ -402,7 +402,7 @@ contract PrecompileTest is Script {
 
         uint256[] memory snapshotIds = new uint256[](1);
         snapshotIds[0] = 1;
-        bytes memory callData = abi.encodeWithSelector(IIpRoyaltyVault.claimRevenueBySnapshotBatch.selector, snapshotIds, SUSD);
+        bytes memory callData = abi.encodeWithSelector(oldVault.claimRevenueBySnapshotBatch.selector, snapshotIds, SUSD);
         IIPAccount(payable(ipAcct[8])).execute(vault8, 0, callData);
     }
 
@@ -449,4 +449,8 @@ contract PrecompileTest is Script {
 
 interface ISUSD is IERC20 {
     function mint(address to, uint256 amount) external;
+}
+
+interface oldVault {
+    function claimRevenueBySnapshotBatch(uint256[] calldata snapshotIds, address currency) external;
 }

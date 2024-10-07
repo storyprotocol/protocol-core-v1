@@ -120,7 +120,7 @@ contract PrecompileTest is Script {
         _setupTree2();
 
         // setup tree 11-12-13-14
-        _setupTree3();
+        //_setupTree3();
         
         vm.stopBroadcast();
 

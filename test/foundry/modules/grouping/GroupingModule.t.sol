@@ -81,7 +81,6 @@ contract GroupingModuleTest is BaseTest {
         assertEq(ipAssetRegistry.totalMembers(groupId), 0);
     }
 
-
     function test_GroupingModule_whitelistRewardPool() public {
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool));

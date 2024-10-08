@@ -81,6 +81,15 @@ contract GroupingModuleTest is BaseTest {
         assertEq(ipAssetRegistry.totalMembers(groupId), 0);
     }
 
+
+    function test_GroupingModule_whitelistRewardPool() public {
+        vm.prank(admin);
+        groupingModule.whitelistGroupRewardPool(address(rewardPool));
+        assertEq(ipAssetRegistry.isWhitelistedGroupRewardPool(address(rewardPool)), true);
+
+        assertEq(ipAssetRegistry.isWhitelistedGroupRewardPool(address(0x123)), false);
+    }
+
     function test_GroupingModule_addIp() public {
         vm.warp(100);
         vm.prank(alice);

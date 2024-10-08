@@ -19,6 +19,8 @@ import { MockERC721 } from "../../../test/foundry/mocks/token/MockERC721.sol";
 import { MockExternalRoyaltyPolicy1 } from "../../../test/foundry/mocks/policy/MockExternalRoyaltyPolicy1.sol";
 
 contract PrecompileTest is Script {
+    // user
+    address internal USER = 0x304D6EAA54AD10aF8E98F980aC34ca667F8eB9fd;
 
     // protocol addresses
     address internal ROYALTY_POLICY_LAP = 0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6;
@@ -28,9 +30,6 @@ contract PrecompileTest is Script {
     address internal IP_ASSET_REGISTRY = 0x28E59E91C0467e89fd0f0438D47Ca839cDfEc095;
     address internal LICENSING_MODULE = 0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae;
     address internal ROYALTY_MODULE = 0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B;
-
-    // user
-    address internal USER = 0x304D6EAA54AD10aF8E98F980aC34ca667F8eB9fd;
 
     // terms
     uint256 internal mintingFee = 1000e18;

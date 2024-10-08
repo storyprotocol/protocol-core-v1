@@ -338,9 +338,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address token,
         uint256 amount
     ) external nonReentrant whenNotPaused {
-        _payRoyalty(receiverIpId, msg.sender, token, amount);
+        uint256 amountAfterFee = _payRoyalty(receiverIpId, msg.sender, token, amount);
 
-        emit RoyaltyPaid(receiverIpId, payerIpId, msg.sender, token, amount);
+        emit RoyaltyPaid(receiverIpId, payerIpId, msg.sender, token, amount, amountAfterFee);
     }
 
     /// @notice Allows to pay the minting fee for a license
@@ -354,9 +354,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address token,
         uint256 amount
     ) external onlyLicensingModule {
-        _payRoyalty(receiverIpId, payerAddress, token, amount);
+        uint256 amountAfterFee = _payRoyalty(receiverIpId, payerAddress, token, amount);
 
-        emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount);
+        emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount, amountAfterFee);
     }
 
     /// @notice Returns the number of ancestors for a given IP asset
@@ -542,7 +542,13 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param payerAddress The address that pays the royalties
     /// @param token The token to use to pay the royalties
     /// @param amount The amount to pay
-    function _payRoyalty(address receiverIpId, address payerAddress, address token, uint256 amount) internal {
+    /// @return amountAfterFee The amount after fee
+    function _payRoyalty(
+        address receiverIpId,
+        address payerAddress,
+        address token,
+        uint256 amount
+    ) internal returns (uint256) {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
         if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
@@ -562,6 +568,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if (remainingAmount > 0) _payToReceiverVault(receiverIpId, payerAddress, token, remainingAmount);
 
         $.totalRevenueTokensReceived[receiverIpId][token] += amountAfterFee;
+
+        return amountAfterFee;
     }
 
     /// @notice Transfers to each whitelisted policy its share of the total payment

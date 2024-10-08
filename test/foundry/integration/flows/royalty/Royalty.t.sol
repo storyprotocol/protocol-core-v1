@@ -66,7 +66,13 @@ contract Flows_Integration_Disputes is BaseIntegration {
             uint256[] memory licenseIds = new uint256[](3);
 
             vm.expectEmit(address(royaltyModule));
-            emit IRoyaltyModule.LicenseMintingFeePaid(ipAcct[1], u.bob, address(erc20), mintAmount * mintingFee);
+            emit IRoyaltyModule.LicenseMintingFeePaid(
+                ipAcct[1],
+                u.bob,
+                address(erc20),
+                mintAmount * mintingFee,
+                mintAmount * mintingFee
+            );
 
             licenseIds[0] = licensingModule.mintLicenseTokens({
                 licensorIpId: ipAcct[1],
@@ -112,7 +118,13 @@ contract Flows_Integration_Disputes is BaseIntegration {
             erc20.approve(address(royaltyModule), 2 * mintAmount * mintingFee);
 
             vm.expectEmit(address(royaltyModule));
-            emit IRoyaltyModule.LicenseMintingFeePaid(ipAcct[1], u.carl, address(erc20), mintAmount * mintingFee);
+            emit IRoyaltyModule.LicenseMintingFeePaid(
+                ipAcct[1],
+                u.carl,
+                address(erc20),
+                mintAmount * mintingFee,
+                mintAmount * mintingFee
+            );
             licenseIds[0] = licensingModule.mintLicenseTokens({
                 licensorIpId: ipAcct[1],
                 licenseTemplate: address(pilTemplate),
@@ -123,7 +135,13 @@ contract Flows_Integration_Disputes is BaseIntegration {
             });
 
             vm.expectEmit(address(royaltyModule));
-            emit IRoyaltyModule.LicenseMintingFeePaid(ipAcct[2], u.carl, address(erc20), mintAmount * mintingFee);
+            emit IRoyaltyModule.LicenseMintingFeePaid(
+                ipAcct[2],
+                u.carl,
+                address(erc20),
+                mintAmount * mintingFee,
+                mintAmount * mintingFee
+            );
             licenseIds[1] = licensingModule.mintLicenseTokens({
                 licensorIpId: ipAcct[2], // parent, is child IP of ipAcct[1]
                 licenseTemplate: address(pilTemplate),

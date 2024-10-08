@@ -114,13 +114,13 @@ contract PrecompileTest is Script {
         registerTerms();
 
         // setup tree 1-2-3-4-5
-        //_setupTree1();
+        // _setupTree1();
 
         // setup tree 6-7-8-9-10
-        //_setupTree2();
+        // _setupTree2();
 
         // setup tree 11-12-13-14
-        //_setupTree3();
+        // _setupTree3();
         
         vm.stopBroadcast();
 

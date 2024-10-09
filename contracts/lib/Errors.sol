@@ -415,6 +415,19 @@ library Errors {
     error DisputeModule__ParentDisputeNotResolved();
 
     ////////////////////////////////////////////////////////////////////////////
+    //                             Arbitration Policy UMA                     //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Only dispute module can call.
+    error ArbitrationPolicyUMA__OnlyDisputeModule();
+
+    /// @notice Zero liveness provided.
+    error ArbitrationPolicyUMA__ZeroLiveness();
+
+    /// @notice Liveness is too short.
+    error ArbitrationPolicyUMA__LivenessTooShort();
+
+    ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
     ////////////////////////////////////////////////////////////////////////////
 

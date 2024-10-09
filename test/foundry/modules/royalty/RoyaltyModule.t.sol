@@ -22,8 +22,21 @@ contract TestRoyaltyModule is BaseTest {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
     event RoyaltyTokenWhitelistUpdated(address token, bool allowed);
     event RoyaltyPolicySet(address ipId, address royaltyPolicy, bytes data);
-    event RoyaltyPaid(address receiverIpId, address payerIpId, address sender, address token, uint256 amount);
-    event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
+    event RoyaltyPaid(
+        address receiverIpId,
+        address payerIpId,
+        address sender,
+        address token,
+        uint256 amount,
+        uint256 amountAfterFee
+    );
+    event LicenseMintingFeePaid(
+        address receiverIpId,
+        address payerAddress,
+        address token,
+        uint256 amount,
+        uint256 amountAfterFee
+    );
     event RoyaltyVaultAddedToIp(address ipId, address ipRoyaltyVault);
     event ExternalRoyaltyPolicyRegistered(address externalRoyaltyPolicy);
     event LicensedWithRoyalty(address ipId, address royaltyPolicy, uint32 licensePercent, bytes externalData);
@@ -886,7 +899,7 @@ contract TestRoyaltyModule is BaseTest {
         uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount);
+        emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount, royaltyAmount);
 
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
 
@@ -932,7 +945,14 @@ contract TestRoyaltyModule is BaseTest {
         uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount);
+        emit RoyaltyPaid(
+            receiverIpId,
+            payerIpId,
+            payerIpId,
+            address(USDC),
+            royaltyAmount,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
 
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
 
@@ -1009,7 +1029,7 @@ contract TestRoyaltyModule is BaseTest {
         uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount);
+        emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount, royaltyAmount);
 
         vm.startPrank(address(licensingModule));
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);
@@ -1058,7 +1078,13 @@ contract TestRoyaltyModule is BaseTest {
         uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
-        emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount);
+        emit LicenseMintingFeePaid(
+            receiverIpId,
+            payerAddress,
+            address(USDC),
+            royaltyAmount,
+            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
+        );
 
         vm.startPrank(address(licensingModule));
         royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);

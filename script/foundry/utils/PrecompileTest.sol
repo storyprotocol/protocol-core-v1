@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity 0.8.26;
 
 import { Script } from "forge-std/Script.sol";
 import { console2 } from "forge-std/console2.sol";
@@ -23,13 +23,13 @@ contract PrecompileTest is Script {
     address internal USER = 0x304D6EAA54AD10aF8E98F980aC34ca667F8eB9fd;
 
     // protocol addresses
-    address internal ROYALTY_POLICY_LAP = 0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6;
-    address internal ROYALTY_POLICY_LRP = 0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd;
-    address internal SUSD = 0x12A8b0DcC6e3bB0915638361D9D49942Da07F455;
-    address internal PIL_TEMPLATE = 0x58E2c909D557Cd23EF90D14f8fd21667A5Ae7a93;
-    address internal IP_ASSET_REGISTRY = 0x28E59E91C0467e89fd0f0438D47Ca839cDfEc095;
-    address internal LICENSING_MODULE = 0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae;
-    address internal ROYALTY_MODULE = 0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B;
+    address internal ROYALTY_POLICY_LAP = 0x4074CEC2B3427f983D14d0C5E962a06B7162Ab92;
+    address internal ROYALTY_POLICY_LRP = 0x7F6a8f43EC6059eC80C172441CEe3423988a0be9;
+    address internal SUSD = 0x2C30F1a7fD58806f57930063850BCBcFf81b46e8;
+    address internal PIL_TEMPLATE = 0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9;
+    address internal IP_ASSET_REGISTRY = 0x1a9d0d28a0422F26D31Be72Edc6f13ea4371E11B;
+    address internal LICENSING_MODULE = 0xd81fd78f557b457b4350cB95D20b547bFEb4D857;
+    address internal ROYALTY_MODULE = 0x3C27b2D7d30131D4b58C3584FD7c86e3358744de;
 
     // terms
     uint256 internal mintingFee = 1000e18;

@@ -29,14 +29,29 @@ interface IRoyaltyModule is IModule {
     /// @param sender The address that pays the royalties on behalf of the payer ID of IP asset
     /// @param token The token that is used to pay the royalties
     /// @param amount The amount that is paid
-    event RoyaltyPaid(address receiverIpId, address payerIpId, address sender, address token, uint256 amount);
+    /// @param amountAfterFee The amount after fee
+    event RoyaltyPaid(
+        address receiverIpId,
+        address payerIpId,
+        address sender,
+        address token,
+        uint256 amount,
+        uint256 amountAfterFee
+    );
 
     /// @notice Event emitted when the license minting fee is paid
     /// @param receiverIpId The ipId that receives the royalties
     /// @param payerAddress The address that pays the royalties
     /// @param token The token that is used to pay the royalties
-    /// @param amount The amount paid
-    event LicenseMintingFeePaid(address receiverIpId, address payerAddress, address token, uint256 amount);
+    /// @param amount The amount that is paid
+    /// @param amountAfterFee The amount after fee
+    event LicenseMintingFeePaid(
+        address receiverIpId,
+        address payerAddress,
+        address token,
+        uint256 amount,
+        uint256 amountAfterFee
+    );
 
     /// @notice Event emitted when a royalty policy is registered
     /// @param externalRoyaltyPolicy The address of the external royalty policy

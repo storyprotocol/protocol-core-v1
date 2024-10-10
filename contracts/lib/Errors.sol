@@ -115,6 +115,9 @@ library Errors {
     /// @notice The IP has no attached the same license terms of Group IPA.
     error GroupingModule__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice The Royalty Vault has not been created.
+    error GroupingModule__GroupRoyaltyVaultNotCreated(address groupId);
+
     /// @notice The Group IP's license terms should not have minting fee.
     error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
 

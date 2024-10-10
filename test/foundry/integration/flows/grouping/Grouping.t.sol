@@ -11,6 +11,8 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { EvenSplitGroupPool } from "../../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
+import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
@@ -80,7 +82,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
         {
             vm.startPrank(u.bob);
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.bob);
-            vm.label(ipAcct[1], "IPAccount2");
+            vm.label(ipAcct[2], "IPAccount2");
             licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), commRemixTermsId);
             vm.stopPrank();
         }
@@ -153,6 +155,20 @@ contract Flows_Integration_Grouping is BaseIntegration {
             rewards[0] = 1 ether / 2;
             rewards[1] = 1 ether / 2;
 
+            uint256 snapshotId = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId)).snapshot();
+            uint256[] memory snapshotIds = new uint256[](1);
+            snapshotIds[0] = snapshotId;
+
+            vm.expectEmit(address(groupingModule));
+            emit IGroupingModule.CollectedRoyaltiesToGroupPool(
+                groupId,
+                address(mockToken),
+                IGroupIPAssetRegistry(ipAssetRegistry).getGroupRewardPool(groupId),
+                1 ether,
+                snapshotIds
+            );
+            uint256 royalties = groupingModule.collectRoyalties(groupId, address(mockToken), snapshotIds);
+            assertEq(royalties, 1 ether);
             vm.expectEmit(address(groupingModule));
             emit IGroupingModule.ClaimedReward(groupId, address(erc20), ipIds, rewards);
             groupingModule.claimReward(groupId, address(erc20), ipIds);

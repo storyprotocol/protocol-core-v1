@@ -175,11 +175,11 @@ contract EvenSplitGroupPoolTest is BaseTest {
         vm.prank(address(groupingModule));
         rewardPool.addIp(group1, ipId1);
 
-        erc20.mint(address(this), 100);
-        erc20.approve(address(rewardPool), 100);
-
+        vm.startPrank(address(groupingModule));
+        erc20.mint(address(rewardPool), 100);
         rewardPool.depositReward(group1, address(erc20), 100);
         assertEq(erc20.balanceOf(address(rewardPool)), 100);
+        vm.stopPrank();
 
         uint256 rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
         assertEq(rewardDebt, 0);

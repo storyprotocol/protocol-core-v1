@@ -118,6 +118,13 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         return _getGroupIPAssetRegistryStorage().rewardPools[groupId];
     }
 
+    /// @notice Checks whether a group reward pool is whitelisted
+    /// @param rewardPool The address of the group reward pool.
+    /// @return isWhitelisted Whether the group reward pool is whitelisted.
+    function isWhitelistedGroupRewardPool(address rewardPool) external view returns (bool isWhitelisted) {
+        return _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool];
+    }
+
     /// @notice Retrieves the group members for a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @param startIndex The start index of the group members to retrieve

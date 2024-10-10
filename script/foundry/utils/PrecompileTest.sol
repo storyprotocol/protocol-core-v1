@@ -20,16 +20,16 @@ import { MockExternalRoyaltyPolicy1 } from "../../../test/foundry/mocks/policy/M
 
 contract PrecompileTest is Script {
     // user
-    address internal USER = 0x304D6EAA54AD10aF8E98F980aC34ca667F8eB9fd;
+    address internal USER = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
 
     // protocol addresses
-    address internal ROYALTY_POLICY_LAP = 0x4074CEC2B3427f983D14d0C5E962a06B7162Ab92;
-    address internal ROYALTY_POLICY_LRP = 0x7F6a8f43EC6059eC80C172441CEe3423988a0be9;
-    address internal SUSD = 0x2C30F1a7fD58806f57930063850BCBcFf81b46e8;
-    address internal PIL_TEMPLATE = 0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9;
-    address internal IP_ASSET_REGISTRY = 0x1a9d0d28a0422F26D31Be72Edc6f13ea4371E11B;
-    address internal LICENSING_MODULE = 0xd81fd78f557b457b4350cB95D20b547bFEb4D857;
-    address internal ROYALTY_MODULE = 0x3C27b2D7d30131D4b58C3584FD7c86e3358744de;
+    address internal ROYALTY_POLICY_LAP = 0xFDCe5630Dd9680b6E421E8eD9328Eb432E598e45;
+    address internal ROYALTY_POLICY_LRP = 0x602f427468d42271210b45b22890f082f5bd1b0a;
+    address internal SUSD = 0x025045449F5251A7199501da5e5DF7DA3eAd191C;
+    address internal PIL_TEMPLATE = 0xa21CBF586E81cadA8A7599F1F82E3Ac612aE554c;
+    address internal IP_ASSET_REGISTRY = 0x4aEE84f5724C6B3eA189872573D4DB5ae622bFdc;
+    address internal LICENSING_MODULE = 0xC6f8AE0613Fed4350b20C726b5feEd430eeA6317;
+    address internal ROYALTY_MODULE = 0xf32bB404B0BBDC2939DD97627438854A2d21dBa3;
 
     // terms
     uint256 internal mintingFee = 1000e18;
@@ -46,7 +46,8 @@ contract PrecompileTest is Script {
     mapping(uint256 tokenId => address ipAccount) internal ipAcct;
 
     function run() public {
-        vm.startBroadcast();
+        uint256 privateKey = vm.envUint("STORY_PRIVATEKEY");
+        vm.startBroadcast(privateKey);
 
         ISUSD(SUSD).mint(USER, 1000000e18);
         ISUSD(SUSD).approve(address(ROYALTY_MODULE), type(uint256).max);
@@ -116,7 +117,7 @@ contract PrecompileTest is Script {
         // _setupTree1();
 
         // setup tree 6-7-8-9-10
-        // _setupTree2();
+        _setupTree2();
 
         // setup tree 11-12-13-14
         // _setupTree3();

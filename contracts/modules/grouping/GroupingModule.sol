@@ -235,12 +235,6 @@ contract GroupingModule is
         return pool.getAvailableReward(groupId, token, ipIds);
     }
 
-    /// @notice Checks whether a group reward pool is whitelisted
-    /// @param rewardPool The address of the group reward pool.
-    /// @return Whether the group reward pool is whitelisted.
-    function isWhitelistGroupRewardPool(address rewardPool) external view returns (bool) {
-        return GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(rewardPool);
-    }
 
     /// @dev The group members are locked if the group has derivative IPs or license tokens minted.
     function _checkIfGroupMembersLocked(address groupIpId) internal view {

@@ -91,9 +91,4 @@ interface IGroupingModule is IModule {
         address token,
         address[] calldata ipIds
     ) external view returns (uint256[] memory);
-
-    /// @notice Checks whether a group reward pool is whitelisted
-    /// @param rewardPool The address of the group reward pool.
-    /// @return Whether the group reward pool is whitelisted.
-    function isWhitelistGroupRewardPool(address rewardPool) external view returns (bool);
 }

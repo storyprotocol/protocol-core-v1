@@ -125,7 +125,21 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         address token,
         address[] calldata ipIds
     ) external whenNotPaused returns (uint256[] memory rewards) {
-        return _distributeRewards(groupId, token, ipIds);
+        rewards = _getAvailableReward(groupId, token, ipIds);
+        uint256 totalRewards = 0;
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            totalRewards += rewards[i];
+        }
+        if (totalRewards == 0) return rewards;
+        IERC20(token).approve(address(ROYALTY_MODULE), totalRewards);
+        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            if (rewards[i] == 0) continue;
+            // calculate pending reward for each IP
+            $.ipRewardDebt[groupId][token][ipIds[i]] += rewards[i];
+            // call royalty module to transfer reward to IP's vault as royalty
+            ROYALTY_MODULE.payRoyaltyOnBehalf(ipIds[i], groupId, token, rewards[i]);
+        }
     }
 
     function getTotalIps(address groupId) external view returns (uint256) {
@@ -157,7 +171,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         uint256 totalIps = $.totalMemberIps[groupId];
         if (totalIps == 0) return new uint256[](ipIds.length);
 
-        uint256 totalAccumulatePoolBalance = $.poolBalance[groupId][token];
+        uint256 totalAccumulatedPoolBalance = $.poolBalance[groupId][token];
         uint256[] memory rewards = new uint256[](ipIds.length);
         for (uint256 i = 0; i < ipIds.length; i++) {
             // ignore if IP is not added to pool
@@ -165,36 +179,10 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
                 rewards[i] = 0;
                 continue;
             }
-            uint256 rewardPerIP = totalAccumulatePoolBalance / totalIps;
+            uint256 rewardPerIP = totalAccumulatedPoolBalance / totalIps;
             rewards[i] = rewardPerIP - $.ipRewardDebt[groupId][token][ipIds[i]];
         }
         return rewards;
-    }
-
-    /// @dev Distributes rewards to the given IP accounts in pool
-    /// @param groupId The group ID
-    /// @param token The reward tokens
-    /// @param ipIds The IP IDs
-    function _distributeRewards(
-        address groupId,
-        address token,
-        address[] memory ipIds
-    ) internal returns (uint256[] memory rewards) {
-        rewards = _getAvailableReward(groupId, token, ipIds);
-        uint256 totalRewards = 0;
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            totalRewards += rewards[i];
-        }
-        if (totalRewards == 0) return rewards;
-        IERC20(token).approve(address(ROYALTY_MODULE), totalRewards);
-        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            if (rewards[i] == 0) continue;
-            // calculate pending reward for each IP
-            $.ipRewardDebt[groupId][token][ipIds[i]] += rewards[i];
-            // call royalty module to transfer reward to IP's vault as royalty
-            ROYALTY_MODULE.payRoyaltyOnBehalf(ipIds[i], groupId, token, rewards[i]);
-        }
     }
 
     /// @dev checks if IP is added to group pool

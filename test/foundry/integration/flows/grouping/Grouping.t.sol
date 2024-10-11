@@ -9,7 +9,6 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 // solhint-disable-next-line max-line-length
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
-import { EvenSplitGroupPool } from "../../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";

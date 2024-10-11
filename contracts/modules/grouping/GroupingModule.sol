@@ -235,7 +235,6 @@ contract GroupingModule is
         return pool.getAvailableReward(groupId, token, ipIds);
     }
 
-
     /// @dev The group members are locked if the group has derivative IPs or license tokens minted.
     function _checkIfGroupMembersLocked(address groupIpId) internal view {
         if (LICENSE_REGISTRY.hasDerivativeIps(groupIpId)) {

@@ -37,4 +37,20 @@ interface IOptimisticOracleV3 {
         bytes32 identifier,
         bytes32 domainId
     ) external returns (bytes32 assertionId);
+
+    /// @notice Disputes an assertion. Depending on how the assertion was configured, this may either escalate to the
+    /// UMA DVM or the configured escalation manager for arbitration.
+    /// @dev The caller must approve this contract to spend at least bond amount of currency for the associated
+    /// assertion.
+    /// @param assertionId unique identifier for the assertion to dispute.
+    /// @param disputer receives bonds back at settlement.
+    function disputeAssertion(bytes32 assertionId, address disputer) external;
+
+    /// @notice Resolves an assertion. If the assertion has not been disputed, the assertion is resolved as true and the
+    /// asserter receives the bond. If the assertion has been disputed, the assertion is resolved depending on the
+    /// oracle result. Based on the result, the asserter or disputer receives the bond. If the assertion was disputed
+    /// then an amount of the bond is sent to the UMA Store as an oracle fee based on the burnedBondPercentage.
+    /// The remainder of the bond is returned to the asserter or disputer.
+    /// @param assertionId unique identifier for the assertion to resolve.
+    function settleAssertion(bytes32 assertionId) external;
 }

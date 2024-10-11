@@ -16,7 +16,7 @@ import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
 import { MockExternalRoyaltyPolicy1 } from "../../mocks/policy/MockExternalRoyaltyPolicy1.sol";
 import { MockExternalRoyaltyPolicy2 } from "../../mocks/policy/MockExternalRoyaltyPolicy2.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
-import { MockEvenSplitGroupPool } from "../../mocks/grouping/MockEvenSplitGroupPool.sol";
+import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
 contract TestRoyaltyModule is BaseTest {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
@@ -64,7 +64,7 @@ contract TestRoyaltyModule is BaseTest {
     address public ipId1;
     address public ipOwner1 = address(0x111);
     uint256 public tokenId1 = 1;
-    MockEvenSplitGroupPool public rewardPool;
+    EvenSplitGroupPool public rewardPool;
 
     function setUp() public override {
         super.setUp();
@@ -118,9 +118,7 @@ contract TestRoyaltyModule is BaseTest {
         // grouping
         mockNft.mintId(ipOwner1, tokenId1);
         ipId1 = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId1);
-        rewardPool = new MockEvenSplitGroupPool(address(royaltyModule));
-        vm.prank(admin);
-        groupingModule.whitelistGroupRewardPool(address(rewardPool));
+        rewardPool = evenSplitGroupPool;
     }
 
     function _setupTree() internal {

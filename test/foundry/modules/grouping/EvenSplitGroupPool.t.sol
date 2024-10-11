@@ -52,9 +52,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
 
-        rewardPool = new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry));
-        vm.prank(admin);
-        groupingModule.whitelistGroupRewardPool(address(rewardPool));
+        rewardPool = evenSplitGroupPool;
         group1 = groupingModule.registerGroup(address(rewardPool));
         group2 = groupingModule.registerGroup(address(rewardPool));
         group3 = groupingModule.registerGroup(address(rewardPool));

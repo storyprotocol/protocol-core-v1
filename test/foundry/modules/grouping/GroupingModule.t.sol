@@ -64,9 +64,7 @@ contract GroupingModuleTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
 
-        rewardPool = new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry));
-        vm.prank(admin);
-        groupingModule.whitelistGroupRewardPool(address(rewardPool));
+        rewardPool = evenSplitGroupPool;
     }
 
     function test_GroupingModule_registerGroup() public {

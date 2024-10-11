@@ -46,6 +46,7 @@ import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicen
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
 import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
+import { EvenSplitGroupPool } from "contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
@@ -110,6 +111,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Grouping
     GroupNFT internal groupNft;
     GroupingModule internal groupingModule;
+    EvenSplitGroupPool internal evenSplitGroupPool;
 
     // Token
     ERC20 private erc20; // keep private to avoid conflict with inheriting contracts
@@ -652,6 +654,28 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             console2.log("IPGraphACL already deployed");
         }
         _postdeploy("IPGraphACL", address(ipGraphACL));
+
+        _predeploy("EvenSplitGroupPool");
+        impl = address(new EvenSplitGroupPool(
+            address(groupingModule),
+            address(royaltyModule),
+            address(ipAssetRegistry)
+        ));
+        evenSplitGroupPool = EvenSplitGroupPool(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(EvenSplitGroupPool).name),
+                impl,
+                abi.encodeCall(EvenSplitGroupPool.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(EvenSplitGroupPool).name) == address(evenSplitGroupPool),
+            "Deploy: EvenSplitGroupPool Address Mismatch"
+        );
+        require(_loadProxyImpl(address(evenSplitGroupPool)) == impl, "EvenSplitGroupPool Proxy Implementation Mismatch");
+        impl = address(0);
+        _postdeploy("EvenSplitGroupPool", address(evenSplitGroupPool));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -714,6 +738,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // set default license to non-commercial social remixing
         uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
+
+        // add evenSplitGroupPool to whitelist of group pools
+        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool));
     }
 
     function _configureRoles() private {

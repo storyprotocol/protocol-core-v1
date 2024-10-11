@@ -28,7 +28,7 @@ contract DisputeModuleTest is BaseTest {
     );
     event DisputeJudgementSet(uint256 disputeId, bool decision, bytes data);
     event DisputeCancelled(uint256 disputeId, bytes data);
-    event DisputeResolved(uint256 disputeId);
+    event DisputeResolved(uint256 disputeId, bytes data);
     event DefaultArbitrationPolicyUpdated(address arbitrationPolicy);
     event ArbitrationPolicySet(address ipId, address arbitrationPolicy);
 
@@ -624,7 +624,7 @@ contract DisputeModuleTest is BaseTest {
         // resolve dispute
         vm.startPrank(ipAccount1);
         vm.expectEmit(true, true, true, true, address(disputeModule));
-        emit DisputeResolved(1);
+        emit DisputeResolved(1, "");
 
         disputeModule.resolveDispute(1, "");
 

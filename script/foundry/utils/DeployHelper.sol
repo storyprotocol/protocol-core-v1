@@ -36,6 +36,7 @@ import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/LAP/Royalty
 import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
+import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
@@ -89,6 +90,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     CoreMetadataViewModule internal coreMetadataViewModule;
 
     // Policy
+    ArbitrationPolicyUMA internal arbitrationPolicyUMA;
+    address internal optimisticOracleV3;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -136,18 +139,26 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         erc6551Registry = ERC6551Registry(erc6551Registry_);
         create3Deployer = ICreate3Deployer(create3Deployer_);
         erc20 = ERC20(erc20_);
-        ARBITRATION_PRICE = arbitrationPrice_;
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-
+        optimisticOracleV3 = address(1); // mock address replaced below depending on chainid
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
-        if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        else if (block.chainid == 1513) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-        else if (block.chainid == 1337) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+        if (block.chainid == 1) {
+            erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        } 
+        else if (block.chainid == 11155111) {
+            erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
+        }
+        else if (block.chainid == 1513) {
+            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+            optimisticOracleV3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
+        }
+        else if (block.chainid == 1337) {
+            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+        } 
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -509,6 +520,27 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // Story-specific Non-Core Contracts
         //
 
+        _predeploy("ArbitrationPolicyUMA");
+        impl = address(new ArbitrationPolicyUMA(address(disputeModule), optimisticOracleV3));
+        arbitrationPolicyUMA = ArbitrationPolicyUMA(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(ArbitrationPolicyUMA).name),
+                impl,
+                abi.encodeCall(ArbitrationPolicyUMA.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(ArbitrationPolicyUMA).name) == address(arbitrationPolicyUMA),
+            "Deploy: Arbitration Policy Address Mismatch"
+        );
+        require(
+            _loadProxyImpl(address(arbitrationPolicyUMA)) == impl,
+            "ArbitrationPolicyUMA Proxy Implementation Mismatch"
+        );
+        impl = address(0);
+        _postdeploy("ArbitrationPolicyUMA", address(arbitrationPolicyUMA));
+
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
             address(royaltyModule),
@@ -694,8 +726,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
-        // Dispute Module and SP Dispute Policy
+        // Dispute Module and Dispute Policy
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
+        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
+        disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
+        arbitrationPolicyUMA.setLiveness(30 days, 365 days);
+        arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
@@ -727,6 +764,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicyUMA),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
@@ -812,7 +854,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     }
 
     /// @dev get the salt for the contract deployment with CREATE3
-    function _getSalt(string memory name) private view returns (bytes32 salt) {
+    function _getSalt(string memory name) internal view returns (bytes32 salt) {
         salt = keccak256(abi.encode(name, create3SaltSeed));
     }
 

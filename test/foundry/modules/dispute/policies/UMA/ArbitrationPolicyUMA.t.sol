@@ -193,7 +193,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
-        
+
         vm.expectRevert(Errors.ArbitrationPolicyUMA__CannotCancel.selector);
         newDisputeModule.cancelDispute(1, "");
     }

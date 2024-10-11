@@ -421,11 +421,38 @@ library Errors {
     /// @notice Only dispute module can call.
     error ArbitrationPolicyUMA__OnlyDisputeModule();
 
-    /// @notice Zero liveness provided.
-    error ArbitrationPolicyUMA__ZeroLiveness();
+    /// @notice Zero address provided for Dispute Module.
+    error ArbitrationPolicyUMA__ZeroDisputeModule();
+
+    /// @notice Zero address provided for Optimistic Oracle V3.
+    error ArbitrationPolicyUMA__ZeroOptimisticOracleV3();
+
+    /// @notice Zero address provided for Access Manager.
+    error ArbitrationPolicyUMA__ZeroAccessManager();
+
+    /// @notice Zero min liveness provided.
+    error ArbitrationPolicyUMA__ZeroMinLiveness();
+
+    /// @notice Zero max liveness provided.
+    error ArbitrationPolicyUMA__ZeroMaxLiveness();
 
     /// @notice Liveness is too short.
-    error ArbitrationPolicyUMA__LivenessTooShort();
+    error ArbitrationPolicyUMA__LivenessBelowMin();
+
+    /// @notice Liveness is too long.
+    error ArbitrationPolicyUMA__LivenessAboveMax();
+
+    /// @notice Min liveness is above max liveness.
+    error ArbitrationPolicyUMA__MinLivenessAboveMax();
+
+    /// @notice Bond size is above max.
+    error ArbitrationPolicyUMA__BondAboveMax();
+
+    /// @notice Cannot cancel.
+    error ArbitrationPolicyUMA__CannotCancel();
+
+    /// @notice Only Optimistic Oracle V3 can call.
+    error ArbitrationPolicyUMA__OnlyOptimisticOracleV3();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //

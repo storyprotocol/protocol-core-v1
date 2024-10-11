@@ -324,7 +324,7 @@ contract DisputeModule is
 
         IArbitrationPolicy(dispute.arbitrationPolicy).onResolveDispute(msg.sender, disputeId, data);
 
-        emit DisputeResolved(disputeId);
+        emit DisputeResolved(disputeId, data);
     }
 
     /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)

@@ -89,7 +89,8 @@ interface IDisputeModule {
 
     /// @notice Event emitted when a dispute is resolved
     /// @param disputeId The dispute id
-    event DisputeResolved(uint256 disputeId);
+    /// @param data Custom data adjusted to each policy
+    event DisputeResolved(uint256 disputeId, bytes data);
 
     /// @notice Dispute ID counter
     function disputeCounter() external view returns (uint256);

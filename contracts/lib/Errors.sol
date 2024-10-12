@@ -252,6 +252,12 @@ library Errors {
     /// @notice Zero address provided for IP Graph ACL.
     error LicenseRegistry__ZeroIPGraphACL();
 
+    error LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
+    error LicensingModule__CannotOverrideRoyaltyPercent(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 newRoyaltyPercent
+    );
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

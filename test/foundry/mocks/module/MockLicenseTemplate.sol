@@ -149,4 +149,8 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function getLicenseTermsURI(uint256 licenseTermsId) external view returns (string memory) {
         return "";
     }
+
+    function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
+        return true;
+    }
 }

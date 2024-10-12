@@ -20,5 +20,6 @@ library Licensing {
         uint256 mintingFee;
         address licensingHook;
         bytes hookData;
+        uint32 commercialRevShare;
     }
 }

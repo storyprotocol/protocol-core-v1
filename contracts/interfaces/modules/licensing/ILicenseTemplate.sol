@@ -137,4 +137,6 @@ interface ILicenseTemplate is IERC165 {
         uint256[] calldata licenseTermsIds,
         address childIpOwner
     ) external returns (bool);
+
+    function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool);
 }

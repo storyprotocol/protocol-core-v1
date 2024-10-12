@@ -366,6 +366,28 @@ contract LicensingModule is
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) whenNotPaused {
+        if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
+            revert Errors.LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
+        }
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        if (licenseTemplate != address(0)) {
+            if (!lct.supportsInterface(type(ILicenseTemplate).interfaceId)) {
+                revert Errors.LicenseRegistry__NotLicenseTemplate(licenseTemplate);
+            }
+            if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
+                revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
+            }
+        }
+        if (licensingConfig.commercialRevShare != 0) {
+            if(!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
+                revert Errors.LicensingModule__CannotOverrideRoyaltyPercent(
+                    licenseTemplate,
+                    licenseTermsId,
+                    licensingConfig.commercialRevShare
+                );
+            }
+        }
+
         if (
             licensingConfig.licensingHook != address(0) &&
             (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||

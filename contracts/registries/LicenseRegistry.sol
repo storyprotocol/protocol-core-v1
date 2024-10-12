@@ -147,10 +147,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData
+            hookData: licensingConfig.hookData,
+            commercialRevShare: licensingConfig.commercialRevShare
         });
 
-        emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId);
+        emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
     }
 
     /// @notice Sets the LicensingConfig for an IP and applies it to all licenses attached to the IP.
@@ -167,7 +168,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData
+            hookData: licensingConfig.hookData,
+            commercialRevShare: licensingConfig.commercialRevShare
         });
         emit LicensingConfigSetForIP(ipId, licensingConfig);
     }

@@ -10,6 +10,7 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 contract EvenSplitGroupPoolTest is BaseTest {
     using Strings for *;
@@ -188,6 +189,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         uint256[] memory rewards = rewardPool.getAvailableReward(group1, address(erc20), ipIds);
         assertEq(rewards[0], 100);
 
+        vm.prank(address(groupingModule));
         rewards = rewardPool.distributeRewards(group1, address(erc20), ipIds);
         assertEq(rewards[0], 100);
 
@@ -195,6 +197,21 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
         assertEq(rewardDebt, 100);
+
+        vm.stopPrank();
+    }
+
+    function test_EvenSplitGroupPool_revert_Only_GroupingModule() public {
+        vm.startPrank(address(0x123));
+        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        rewardPool.removeIp(group1, ipId1);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        rewardPool.addIp(group1, ipId1);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        rewardPool.distributeRewards(group1, address(erc20), new address[](0));
+
 
         vm.stopPrank();
     }

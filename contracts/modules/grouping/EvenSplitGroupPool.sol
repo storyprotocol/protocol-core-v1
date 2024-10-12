@@ -124,7 +124,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         address groupId,
         address token,
         address[] calldata ipIds
-    ) external whenNotPaused returns (uint256[] memory rewards) {
+    ) external whenNotPaused onlyGroupingModule returns (uint256[] memory rewards) {
         rewards = _getAvailableReward(groupId, token, ipIds);
         uint256 totalRewards = 0;
         for (uint256 i = 0; i < ipIds.length; i++) {

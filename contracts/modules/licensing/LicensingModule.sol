@@ -331,7 +331,7 @@ contract LicensingModule is
         uint32[] memory rPercents = new uint32[](parentIpIds.length);
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
-            Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
+            Licensing.LicensingConfig lsc = LICENSE_REGISTRY.getLicensingConfig(
                 parentIpIds[i],
                 licenseTemplate,
                 licenseTermsIds[i]
@@ -378,13 +378,8 @@ contract LicensingModule is
             revert Errors.LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
         }
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (licenseTemplate != address(0)) {
-            if (!lct.supportsInterface(type(ILicenseTemplate).interfaceId)) {
-                revert Errors.LicenseRegistry__NotLicenseTemplate(licenseTemplate);
-            }
-            if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
-                revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
-            }
+        if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
+            revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
         if (licensingConfig.commercialRevShare != 0) {
             if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {

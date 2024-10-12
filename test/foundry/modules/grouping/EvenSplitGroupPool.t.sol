@@ -203,15 +203,20 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
     function test_EvenSplitGroupPool_revert_Only_GroupingModule() public {
         vm.startPrank(address(0x123));
-        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
         rewardPool.removeIp(group1, ipId1);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
         rewardPool.addIp(group1, ipId1);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123)));
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
         rewardPool.distributeRewards(group1, address(erc20), new address[](0));
-
 
         vm.stopPrank();
     }

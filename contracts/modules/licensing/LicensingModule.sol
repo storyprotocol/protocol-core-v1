@@ -331,7 +331,7 @@ contract LicensingModule is
         uint32[] memory rPercents = new uint32[](parentIpIds.length);
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
-            Licensing.LicensingConfig lsc = LICENSE_REGISTRY.getLicensingConfig(
+            Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
                 parentIpIds[i],
                 licenseTemplate,
                 licenseTermsIds[i]

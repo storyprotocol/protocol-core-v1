@@ -419,7 +419,7 @@ library Errors {
     ////////////////////////////////////////////////////////////////////////////
 
     /// @notice Only dispute module can call.
-    error ArbitrationPolicyUMA__OnlyDisputeModule();
+    error ArbitrationPolicyUMA__NotDisputeModule();
 
     /// @notice Zero address provided for Dispute Module.
     error ArbitrationPolicyUMA__ZeroDisputeModule();
@@ -452,7 +452,22 @@ library Errors {
     error ArbitrationPolicyUMA__CannotCancel();
 
     /// @notice Only Optimistic Oracle V3 can call.
-    error ArbitrationPolicyUMA__OnlyOptimisticOracleV3();
+    error ArbitrationPolicyUMA__NotOptimisticOracleV3();
+
+    /// @notice No counter evidence provided.
+    error ArbitrationPolicyUMA__NoCounterEvidence();
+
+    /// @notice Dispute not found.
+    error ArbitrationPolicyUMA__DisputeNotFound();
+
+    /// @notice Cannot dispute assertion if tag is inherited.
+    error ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
+
+    /// @notice Only target IP id can dispute.
+    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDispute();
+
+    /// @notice Not the UMA dispute policy.
+    error ArbitrationPolicyUMA__OnlyDisputePolicyUMA();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //

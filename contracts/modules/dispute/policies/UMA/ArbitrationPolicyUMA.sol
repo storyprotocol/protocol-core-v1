@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
@@ -10,9 +11,21 @@ import { IOptimisticOracleV3 } from "../../../../interfaces/modules/dispute/poli
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 
-contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradeable, UUPSUpgradeable {
+/// @title Arbitration Policy UMA
+/// @notice The arbitration policy UMA acts as an enforcement layer for IP assets that allows raising and judging
+/// disputes according to the UMA protocol rules.
+contract ArbitrationPolicyUMA is
+    IArbitrationPolicyUMA,
+    ProtocolPausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
+{
+    /// @notice Dispute module address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable DISPUTE_MODULE;
 
+    /// @notice UMA Optimistic oracle v3 address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IOptimisticOracleV3 public immutable OPTIMISTIC_ORACLE_V3;
 
     /// @dev Storage structure for the ArbitrationPolicyUMA
@@ -21,6 +34,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
     /// @param maxBonds The maximum bond size for each token
     /// @param disputeIdToAssertionId The mapping of dispute id to assertion id
     /// @param assertionIdToDisputeId The mapping of assertion id to dispute id
+    /// @param counterEvidenceHashes The mapping of assertion id to counter evidence hash
     /// @custom:storage-location erc7201:story-protocol.ArbitrationPolicyUMA
     struct ArbitrationPolicyUMAStorage {
         uint64 minLiveness;
@@ -28,6 +42,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
         mapping(address token => uint256 maxBondSize) maxBonds;
         mapping(uint256 disputeId => bytes32 assertionId) disputeIdToAssertionId;
         mapping(bytes32 assertionId => uint256 disputeId) assertionIdToDisputeId;
+        mapping(bytes32 assertionId => bytes32 counterEvidenceHash) counterEvidenceHashes;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.ArbitrationPolicyUMA")) - 1)) & ~bytes32(uint256(0xff));
@@ -36,7 +51,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
 
     /// @dev Restricts the calls to the dispute module
     modifier onlyDisputeModule() {
-        if (msg.sender != DISPUTE_MODULE) revert Errors.ArbitrationPolicyUMA__OnlyDisputeModule();
+        if (msg.sender != DISPUTE_MODULE) revert Errors.ArbitrationPolicyUMA__NotDisputeModule();
         _;
     }
 
@@ -50,6 +65,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
 
         DISPUTE_MODULE = disputeModule;
         OPTIMISTIC_ORACLE_V3 = IOptimisticOracleV3(optimisticOracleV3);
+        _disableInitializers();
     }
 
     /// @notice Initializer for this implementation contract
@@ -58,6 +74,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
         if (accessManager == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroAccessManager();
 
         __ProtocolPausable_init(accessManager);
+        __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
     }
 
@@ -90,7 +107,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule {
+    function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule nonReentrant {
         (bytes memory claim, uint64 liveness, address currency, uint256 bond, bytes32 identifier) = abi.decode(
             data,
             (bytes, uint64, address, uint256, bytes32)
@@ -143,11 +160,36 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
     /// @param data The arbitrary data used to resolve the dispute
     function onResolveDispute(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {}
 
+    /// @notice Allows the IP that was targeted to dispute the assertion while providing counter evidence
+    /// @param assertionId The identifier of the assertion that was disputed
+    /// @param counterEvidenceHash The hash of the counter evidence
+    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external nonReentrant {
+        if (counterEvidenceHash == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
+
+        ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        uint256 disputeId = $.assertionIdToDisputeId[assertionId];
+        if (disputeId == 0) revert Errors.ArbitrationPolicyUMA__DisputeNotFound();
+
+        (address targetIpId, , address arbitrationPolicy, , , , uint256 parentDisputeId) = IDisputeModule(
+            DISPUTE_MODULE
+        ).disputes(disputeId);
+
+        if (msg.sender != targetIpId) revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDispute();
+        if (arbitrationPolicy != address(this)) revert Errors.ArbitrationPolicyUMA__OnlyDisputePolicyUMA();
+        if (parentDisputeId > 0) revert Errors.ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
+
+        $.counterEvidenceHashes[assertionId] = counterEvidenceHash;
+
+        OPTIMISTIC_ORACLE_V3.disputeAssertion(assertionId, targetIpId);
+
+        emit AssertionDisputed(assertionId, counterEvidenceHash);
+    }
+
     /// @notice Callback function that is called by Optimistic Oracle V3 when an assertion is resolved
     /// @param assertionId The identifier of the assertion that was resolved
     /// @param assertedTruthfully Whether the assertion was resolved as truthful or not
-    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external {
-        if (msg.sender != address(OPTIMISTIC_ORACLE_V3)) revert Errors.ArbitrationPolicyUMA__OnlyOptimisticOracleV3();
+    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant {
+        if (msg.sender != address(OPTIMISTIC_ORACLE_V3)) revert Errors.ArbitrationPolicyUMA__NotOptimisticOracleV3();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
@@ -157,7 +199,12 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
 
     /// @notice Callback function that is called by Optimistic Oracle V3 when an assertion is disputed
     /// @param assertionId The identifier of the assertion that was disputed
-    function assertionDisputedCallback(bytes32 assertionId) external {}
+    function assertionDisputedCallback(bytes32 assertionId) external {
+        if (msg.sender != address(OPTIMISTIC_ORACLE_V3)) revert Errors.ArbitrationPolicyUMA__NotOptimisticOracleV3();
+
+        ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        if ($.counterEvidenceHashes[assertionId] == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
+    }
 
     /// @notice Returns the minimum liveness for UMA disputes
     function minLiveness() external view returns (uint64) {
@@ -171,7 +218,7 @@ contract ArbitrationPolicyUMA is IArbitrationPolicyUMA, ProtocolPausableUpgradea
 
     /// @notice Returns the maximum bond for a given token for UMA disputes
     /// @param token The token address
-    function maxBond(address token) external view returns (uint256) {
+    function maxBonds(address token) external view returns (uint256) {
         return _getArbitrationPolicyUMAStorage().maxBonds[token];
     }
 

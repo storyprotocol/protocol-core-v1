@@ -148,20 +148,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
-
-        if (block.chainid == 1) {
-            erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        } 
-        else if (block.chainid == 11155111) {
-            erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        }
-        else if (block.chainid == 1513) {
-            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-            optimisticOracleV3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
-        }
-        else if (block.chainid == 1337) {
-            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-        } 
         if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
         else if (block.chainid == 1513) {

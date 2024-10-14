@@ -5,6 +5,31 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title Optimistic Oracle V3 Interface
 interface IOptimisticOracleV3 {
+    // Struct grouping together the settings related to the escalation manager stored in the assertion.
+    struct EscalationManagerSettings {
+        bool arbitrateViaEscalationManager; // False if the DVM is used as an oracle (EscalationManager on True).
+        bool discardOracle; // False if Oracle result is used for resolving assertion after dispute.
+        bool validateDisputers; // True if the EM isDisputeAllowed should be checked on disputes.
+        address assertingCaller; // Stores msg.sender when assertion was made.
+        address escalationManager; // Address of the escalation manager (zero address if not configured).
+    }
+    
+    // Struct for storing properties and lifecycle of an assertion.
+    struct Assertion {
+        EscalationManagerSettings escalationManagerSettings; // Settings related to the escalation manager.
+        address asserter; // Address of the asserter.
+        uint64 assertionTime; // Time of the assertion.
+        bool settled; // True if the request is settled.
+        IERC20 currency; // ERC20 token used to pay rewards and fees.
+        uint64 expirationTime; // Unix timestamp marking threshold when the assertion can no longer be disputed.
+        bool settlementResolution; // Resolution of the assertion (false till resolved).
+        bytes32 domainId; // Optional domain that can be used to relate the assertion to others in the escalationManager.
+        bytes32 identifier; // UMA DVM identifier to use for price requests in the event of a dispute.
+        uint256 bond; // Amount of currency that the asserter has bonded.
+        address callbackRecipient; // Address that receives the callback.
+        address disputer; // Address of the disputer.
+    }
+
     /// @notice Asserts a truth about the world, using a fully custom configuration.
     /// @param claim the truth claim being asserted. This is an assertion about the world, and is verified by disputers.
     /// @param asserter account that receives bonds back at settlement. This could be msg.sender or
@@ -53,4 +78,15 @@ interface IOptimisticOracleV3 {
     /// The remainder of the bond is returned to the asserter or disputer.
     /// @param assertionId unique identifier for the assertion to resolve.
     function settleAssertion(bytes32 assertionId) external;
+
+
+    /// @notice Fetches information about a specific assertion and returns it.
+    /// @param assertionId unique identifier for the assertion to fetch information for.
+    /// @return assertion information about the assertion.
+    function getAssertion(bytes32 assertionId) external view returns (Assertion memory);
+
+    /// @notice Appends information onto an assertionId to construct ancillary data used for dispute resolution.
+    /// @param assertionId unique identifier for the assertion to construct ancillary data for.
+    /// @return ancillaryData stamped assertion information.
+    function stampAssertion(bytes32 assertionId) external view returns (bytes memory);
 }

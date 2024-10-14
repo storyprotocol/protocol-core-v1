@@ -34,6 +34,11 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3Callba
         bytes32 identifier
     );
 
+    /// @notice Emitted when an assertion is disputed
+    /// @param assertionId The assertion id
+    /// @param counterEvidenceHash The counter evidence hash
+    event AssertionDisputed(bytes32 assertionId, bytes32 counterEvidenceHash);
+
     /// @notice Sets the liveness for UMA disputes
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
@@ -43,4 +48,27 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3Callba
     /// @param token The token address
     /// @param maxBond The maximum bond value
     function setMaxBond(address token, uint256 maxBond) external;
+
+    /// @notice Allows the IP that was targeted with a dispute to dispute the assertion while providing counter evidence
+    /// @param assertionId The identifier of the assertion that was disputed
+    /// @param counterEvidenceHash The hash of the counter evidence
+    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external;
+
+    /// @notice Returns the minimum liveness for UMA disputes
+    function minLiveness() external view returns (uint64);
+
+    /// @notice Returns the maximum liveness for UMA disputes
+    function maxLiveness() external view returns (uint64);
+
+    /// @notice Returns the maximum bond for a given token for UMA disputes
+    /// @param token The token address
+    function maxBonds(address token) external view returns (uint256);
+
+    /// @notice Returns the assertion id for a given dispute id
+    /// @param disputeId The dispute id
+    function disputeIdToAssertionId(uint256 disputeId) external view returns (bytes32);
+
+    /// @notice Returns the dispute id for a given assertion id
+    /// @param assertionId The assertion id
+    function assertionIdToDisputeId(bytes32 assertionId) external view returns (uint256);
 }

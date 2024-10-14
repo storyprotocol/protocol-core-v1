@@ -155,6 +155,9 @@ library Errors {
     /// @notice The NFT token id does not exist or invalid.
     error IPAssetRegistry__InvalidToken(address contractAddress, uint256 tokenId);
 
+    /// @notice Zero address provided for IP Asset Registry.
+    error IPAssetRegistry__ZeroAddress(string name);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            License Registry                            //
     ////////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,7 @@ interface IOptimisticOracleV3 {
         address assertingCaller; // Stores msg.sender when assertion was made.
         address escalationManager; // Address of the escalation manager (zero address if not configured).
     }
-    
+
     // Struct for storing properties and lifecycle of an assertion.
     struct Assertion {
         EscalationManagerSettings escalationManagerSettings; // Settings related to the escalation manager.
@@ -23,7 +23,7 @@ interface IOptimisticOracleV3 {
         IERC20 currency; // ERC20 token used to pay rewards and fees.
         uint64 expirationTime; // Unix timestamp marking threshold when the assertion can no longer be disputed.
         bool settlementResolution; // Resolution of the assertion (false till resolved).
-        bytes32 domainId; // Optional domain that can be used to relate the assertion to others in the escalationManager.
+        bytes32 domainId; // Optional domain to be used to relate the assertion to others in the escalationManager.
         bytes32 identifier; // UMA DVM identifier to use for price requests in the event of a dispute.
         uint256 bond; // Amount of currency that the asserter has bonded.
         address callbackRecipient; // Address that receives the callback.
@@ -78,7 +78,6 @@ interface IOptimisticOracleV3 {
     /// The remainder of the bond is returned to the asserter or disputer.
     /// @param assertionId unique identifier for the assertion to resolve.
     function settleAssertion(bytes32 assertionId) external;
-
 
     /// @notice Fetches information about a specific assertion and returns it.
     /// @param assertionId unique identifier for the assertion to fetch information for.

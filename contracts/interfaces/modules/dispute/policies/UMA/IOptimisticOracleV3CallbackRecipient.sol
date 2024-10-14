@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 /// @title Optimistic Oracle V3 Callback Recipient Interface
-/// @notice Interface for contracts implementing callbacks to be received from the Optimistic Oracle V3.
+/// @notice Interface for contracts implementing callbacks to be received from the Optimistic Oracle V3
 interface IOptimisticOracleV3CallbackRecipient {
     /// @notice Callback function that is called by Optimistic Oracle V3 when an assertion is resolved
     /// @param assertionId The identifier of the assertion that was resolved

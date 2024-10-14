@@ -172,13 +172,10 @@ contract IPAssetRegistryTest is BaseTest {
         vm.prank(alice);
         erc20.approve(address(registry), 100);
 
-
         vm.expectRevert(abi.encodeWithSelector(ERC20InsufficientAllowance.selector, address(registry), 100, 1000));
         vm.prank(alice);
         registry.register(block.chainid, tokenAddress, tokenId);
-
     }
-
 
     /// @notice Tests registration of IP permissionlessly for IPAccount already created.
     function test_IPAssetRegistry_RegisterPermissionless_IPAccountAlreadyExist() public {

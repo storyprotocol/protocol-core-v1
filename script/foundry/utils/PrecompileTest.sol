@@ -24,13 +24,13 @@ contract PrecompileTest is Script {
     address internal USER = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
 
     // protocol addresses
-    address internal ROYALTY_POLICY_LAP = 0xFDCe5630Dd9680b6E421E8eD9328Eb432E598e45;
-    address internal ROYALTY_POLICY_LRP = 0x602f427468d42271210b45b22890f082f5bd1b0a;
-    address internal SUSD = 0x025045449F5251A7199501da5e5DF7DA3eAd191C;
-    address internal PIL_TEMPLATE = 0xa21CBF586E81cadA8A7599F1F82E3Ac612aE554c;
-    address internal IP_ASSET_REGISTRY = 0x4aEE84f5724C6B3eA189872573D4DB5ae622bFdc;
-    address internal LICENSING_MODULE = 0xC6f8AE0613Fed4350b20C726b5feEd430eeA6317;
-    address internal ROYALTY_MODULE = 0xf32bB404B0BBDC2939DD97627438854A2d21dBa3;
+    address internal ROYALTY_POLICY_LAP = 0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6;
+    address internal ROYALTY_POLICY_LRP = 0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd;
+    address internal SUSD = 0x12A8b0DcC6e3bB0915638361D9D49942Da07F455;
+    address internal PIL_TEMPLATE = 0x58E2c909D557Cd23EF90D14f8fd21667A5Ae7a93;
+    address internal IP_ASSET_REGISTRY = 0x28E59E91C0467e89fd0f0438D47Ca839cDfEc095;
+    address internal LICENSING_MODULE = 0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae;
+    address internal ROYALTY_MODULE = 0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B;
 
     // terms
     uint256 internal mintingFee = 1000e18;
@@ -115,6 +115,8 @@ contract PrecompileTest is Script {
         // register terms
         registerTerms();
 
+        IVaultController(ROYALTY_MODULE).setSnapshotInterval(0);
+
         // setup tree 1-2-3-4-5
         // _setupTree1();
 
@@ -123,7 +125,9 @@ contract PrecompileTest is Script {
 
         // setup tree 11-12-13-14
         // _setupTree3();
-        
+
+        IVaultController(ROYALTY_MODULE).setSnapshotInterval(1 days);
+
         vm.stopBroadcast();
 
         // logs
@@ -339,76 +343,80 @@ contract PrecompileTest is Script {
 
         // attach terms to root
         ILicensingModule licensingModule = ILicensingModule(LICENSING_MODULE);
-//        licensingModule.attachLicenseTerms(ipAcct[6], PIL_TEMPLATE, commDerivTermsIdLrp10);
+        licensingModule.attachLicenseTerms(ipAcct[6], PIL_TEMPLATE, commDerivTermsIdLrp10);
 
-//        license_6_7[0] = licensingModule.mintLicenseTokens({
-//            licensorIpId: ipAcct[6],
-//            licenseTemplate: PIL_TEMPLATE,
-//            licenseTermsId: commDerivTermsIdLrp10,
-//            amount: 1,
-//            receiver: ipAcct[7],
-//            royaltyContext: ""
-//        });
-//        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[7], license_6_7, "");
-//
-//        license_6_8[0] = licensingModule.mintLicenseTokens({
-//            licensorIpId: ipAcct[6],
-//            licenseTemplate: PIL_TEMPLATE,
-//            licenseTermsId: commDerivTermsIdLrp10,
-//            amount: 1,
-//            receiver: ipAcct[8],
-//            royaltyContext: ""
-//        });
-//        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[8], license_6_8, "");
-//
-//        licenses_7_8_9[0] = licensingModule.mintLicenseTokens({
-//            licensorIpId: ipAcct[7],
-//            licenseTemplate: PIL_TEMPLATE,
-//            licenseTermsId: commDerivTermsIdLrp10,
-//            amount: 1,
-//            receiver: ipAcct[9],
-//            royaltyContext: ""
-//        });
-//
-//        licenses_7_8_9[1] = licensingModule.mintLicenseTokens({
-//            licensorIpId: ipAcct[8],
-//            licenseTemplate: PIL_TEMPLATE,
-//            licenseTermsId: commDerivTermsIdLrp10,
-//            amount: 1,
-//            receiver: ipAcct[9],
-//            royaltyContext: ""
-//        });
-//
-//        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_7_8_9, "");
-//
-//        license_9_10[0] = licensingModule.mintLicenseTokens({
-//            licensorIpId: ipAcct[9],
-//            licenseTemplate: PIL_TEMPLATE,
-//            licenseTermsId: commDerivTermsIdLrp10,
-//            amount: 1,
-//            receiver: ipAcct[10],
-//            royaltyContext: ""
-//        });
-//        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[10], license_9_10, "");
-//
-//        // A tip is made
-//        IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
-//        royaltyModule.payRoyaltyOnBehalf(ipAcct[10], address(0), SUSD, 1e18);
-//
-//        // transfer to vault
-//        address vault8 = royaltyModule.ipRoyaltyVaults(ipAcct[8]);
-//        IGraphAwareRoyaltyPolicy(ROYALTY_POLICY_LRP).transferToVault(ipAcct[10], ipAcct[8], SUSD, 1e16);
-//
-//        // claim revenue
-//        IIpRoyaltyVault(vault8).snapshot();
-//
-//        uint256[] memory snapshotIds = new uint256[](1);
-//        snapshotIds[0] = 1;
-//        bytes memory callData = abi.encodeWithSelector(IIpRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch.selector, snapshotIds, SUSD);
-//        IIPAccount(payable(ipAcct[8])).execute(vault8, 0, callData);
+        license_6_7[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[6],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[7],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[7], license_6_7, "");
+
+        license_6_8[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[6],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[8],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[8], license_6_8, "");
+
+        licenses_7_8_9[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[7],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[9],
+            royaltyContext: ""
+        });
+
+        licenses_7_8_9[1] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[8],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[9],
+            royaltyContext: ""
+        });
+
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_7_8_9, "");
+
+        license_9_10[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct[9],
+            licenseTemplate: PIL_TEMPLATE,
+            licenseTermsId: commDerivTermsIdLrp10,
+            amount: 1,
+            receiver: ipAcct[10],
+            royaltyContext: ""
+        });
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[10], license_9_10, "");
+
+        // A tip is made
+        IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
+        royaltyModule.payRoyaltyOnBehalf(ipAcct[10], address(0), SUSD, 1e18);
+
+        // transfer to vault
+        address vault8 = royaltyModule.ipRoyaltyVaults(ipAcct[8]);
+        IGraphAwareRoyaltyPolicy(ROYALTY_POLICY_LRP).transferToVault(ipAcct[10], ipAcct[8], SUSD, 1e16);
+
+        // claim revenue
+        IIpRoyaltyVault(vault8).snapshot();
+
+        uint256[] memory snapshotIds = new uint256[](1);
+        snapshotIds[0] = 1;
+        bytes memory callData = abi.encodeWithSelector(IIpRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch.selector, snapshotIds, SUSD, ipAcct[8]);
+        IIPAccount(payable(ipAcct[8])).execute(vault8, 0, callData);
+
+        FakeEvent fakeEvent = new FakeEvent();
+        fakeEvent.emitEvent(ipAcct[8], SUSD, 1e16);
+        console2.log("fakeEvent", address(fakeEvent));
     }
 
-    function _setupTree3() internal {
+    /* function _setupTree3() internal {
         uint256[] memory license_11_12_14 = new uint256[](2);
         // uint256[] memory license_11_12_13_14 = new uint256[](3);
 
@@ -446,9 +454,17 @@ contract PrecompileTest is Script {
 
         // claim revenue
         // TODO claim revenue via IP14 after upgrade
-    }
+    } */
 }
 
 interface ISUSD is IERC20 {
     function mint(address to, uint256 amount) external;
+}
+
+contract FakeEvent {
+    event RevenueTokenClaimed(address claimer, address token, uint256 amount);
+
+    function emitEvent(address claimer, address token, uint256 amount) public {
+        emit RevenueTokenClaimed(claimer, token, amount);
+    }
 }

@@ -377,11 +377,12 @@ contract LicensingModule is
         if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
             revert Errors.LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
         }
-        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
-            revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
-        }
+
         if (licensingConfig.commercialRevShare != 0) {
+            ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+            if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
+                revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
+            }
             if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
                 revert Errors.LicensingModule__CannotOverrideRoyaltyPercent(
                     licenseTemplate,

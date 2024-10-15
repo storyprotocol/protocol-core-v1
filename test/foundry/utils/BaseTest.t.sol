@@ -54,7 +54,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     address internal constant TREASURY_ADDRESS = address(200);
 
     address internal lrHarnessImpl;
-    MockIPGraph ipGraph = MockIPGraph(address(0x1B));
+    MockIPGraph ipGraph = MockIPGraph(address(0x0101));
     MockArbitrationPolicy mockArbitrationPolicy;
 
     constructor()
@@ -71,7 +71,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {
-        vm.etch(address(0x1B), address(new MockIPGraph()).code);
+        vm.etch(address(0x0101), address(new MockIPGraph()).code);
 
         u = UsersLib.createMockUsers(vm);
 

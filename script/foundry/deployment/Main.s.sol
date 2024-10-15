@@ -34,7 +34,7 @@ contract Main is DeployHelper {
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run() public virtual override {
+    function run() public virtual {
         _run(CREATE3_DEFAULT_SEED);
     }
 

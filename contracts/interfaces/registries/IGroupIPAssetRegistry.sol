@@ -35,6 +35,11 @@ interface IGroupIPAssetRegistry {
     /// @return groupPool The address of the group policy.
     function getGroupRewardPool(address groupId) external view returns (address);
 
+    /// @notice Checks whether a group reward pool is whitelisted
+    /// @param rewardPool The address of the group reward pool.
+    /// @return isWhitelisted Whether the group reward pool is whitelisted.
+    function isWhitelistedGroupRewardPool(address rewardPool) external view returns (bool isWhitelisted);
+
     /// @notice Retrieves the group members for a Group IPA
     /// @param groupId The address of the Group IPA.
     /// @param startIndex The start index of the group members to retrieve

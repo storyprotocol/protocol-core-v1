@@ -5,7 +5,7 @@ import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.s
 
 library TestProxyHelper {
     /// Deploys a new UUPS proxy with the provided implementation and data
-    /// @dev WARNING: DO NOT USE IN PRODUCTION, this doesn't check for storage layout compatibility
+    /// @dev WARNING: DO NOT USE IN PRODUCTION without checking storage layout compatibility
     /// @param impl address of the implementation contract
     /// @param data encoded initializer call
     function deployUUPSProxy(address impl, bytes memory data) internal returns (address) {

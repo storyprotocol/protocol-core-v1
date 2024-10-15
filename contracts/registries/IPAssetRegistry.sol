@@ -40,6 +40,10 @@ contract IPAssetRegistry is
 
     /// @dev Storage structure for the IPAssetRegistry
     /// @notice Tracks the total number of IP assets in existence.
+    /// @param totalSupply The total number of IP assets registered.
+    /// @param treasury The address of the treasury that receives registration fees.
+    /// @param feeToken The address of the token used to pay registration fees.
+    /// @param feeAmount The amount of the registration fee.
     /// @custom:storage-location erc7201:story-protocol.IPAssetRegistry
     struct IPAssetRegistryStorage {
         uint256 totalSupply;
@@ -93,10 +97,8 @@ contract IPAssetRegistry is
         if (feeAmount > 0) {
             address feeToken = $.feeToken;
             address treasury = $.treasury;
-            if (feeToken != address(0) && treasury != address(0)) {
-                IERC20(feeToken).safeTransferFrom(msg.sender, treasury, uint256(feeAmount));
-                emit IPRegistrationFeePaid(msg.sender, treasury, feeToken, feeAmount);
-            }
+            IERC20(feeToken).safeTransferFrom(msg.sender, treasury, uint256(feeAmount));
+            emit IPRegistrationFeePaid(msg.sender, treasury, feeToken, feeAmount);
         }
 
         id = _registerIpAccount(chainid, tokenContract, tokenId);

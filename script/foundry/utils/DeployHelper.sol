@@ -752,7 +752,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
-        arbitrationPolicyUMA.setLiveness(30 days, 365 days);
+        arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
         arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
 
         // Core Metadata Module

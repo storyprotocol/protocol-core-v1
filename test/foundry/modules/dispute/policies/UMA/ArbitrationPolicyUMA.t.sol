@@ -15,7 +15,7 @@ import { IMockAncillary } from "test/foundry/mocks/IMockAncillary.sol";
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 contract ArbitrationPolicyUMATest is BaseTest {
-    event LivenessSet(uint64 minLiveness, uint64 maxLiveness);
+    event LivenessSet(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent);
     event MaxBondSet(address token, uint256 maxBond);
     event DisputeRaisedUMA(
         uint256 disputeId,
@@ -80,7 +80,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         );
 
         // setup UMA parameters
-        newArbitrationPolicyUMA.setLiveness(30 days, 365 days);
+        newArbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
         newArbitrationPolicyUMA.setMaxBond(susd, 25000e18); // 25k USD max bond
 
         // whitelist dispute tag, arbitration policy and arbitration relayer
@@ -106,27 +106,33 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_setLiveness_revert_ZeroMinLiveness() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroMinLiveness.selector);
-        newArbitrationPolicyUMA.setLiveness(0, 10);
+        newArbitrationPolicyUMA.setLiveness(0, 10, 10);
     }
 
     function test_ArbitrationPolicyUMA_setLiveness_revert_ZeroMaxLiveness() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroMaxLiveness.selector);
-        newArbitrationPolicyUMA.setLiveness(10, 0);
+        newArbitrationPolicyUMA.setLiveness(10, 0, 10);
     }
 
     function test_ArbitrationPolicyUMA_setLiveness_revert_MinLivenessAboveMax() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__MinLivenessAboveMax.selector);
-        newArbitrationPolicyUMA.setLiveness(100, 10);
+        newArbitrationPolicyUMA.setLiveness(100, 10, 10);
+    }
+
+    function test_ArbitrationPolicyUMA_setLiveness_revert_IpOwnerTimePercentAboveMax() public {
+        vm.expectRevert(Errors.ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax.selector);
+        newArbitrationPolicyUMA.setLiveness(10, 100, 100_000_001);
     }
 
     function test_ArbitrationPolicyUMA_setLiveness() public {
         vm.expectEmit(true, true, true, true);
-        emit LivenessSet(10, 100);
+        emit LivenessSet(10, 100, 10);
 
-        newArbitrationPolicyUMA.setLiveness(10, 100);
+        newArbitrationPolicyUMA.setLiveness(10, 100, 10);
 
         assertEq(newArbitrationPolicyUMA.minLiveness(), 10);
         assertEq(newArbitrationPolicyUMA.maxLiveness(), 100);
+        assertEq(newArbitrationPolicyUMA.ipOwnerTimePercent(), 10);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessBelowMin() public {
@@ -277,13 +283,13 @@ contract ArbitrationPolicyUMATest is BaseTest {
         // wait for assertion to expire
         vm.warp(block.timestamp + liveness + 1);
 
-        (, , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
 
         // settle the assertion
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
         IOptimisticOracleV3(newOptimisticOracleV3).settleAssertion(assertionId);
 
-        (, , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32("PLAGIARISM"));
@@ -308,7 +314,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
         newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
 
-        (, , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
 
         // settle the assertion
         IOptimisticOracleV3.Assertion memory assertion = IOptimisticOracleV3(newOptimisticOracleV3).getAssertion(
@@ -320,7 +326,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 1e18);
         IOptimisticOracleV3(newOptimisticOracleV3).settleAssertion(assertionId);
 
-        (, , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32("PLAGIARISM"));
@@ -395,11 +401,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
 
         vm.startPrank(address(2));
-        vm.expectRevert(Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDispute.selector);
+        vm.expectRevert(Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow.selector);
         newArbitrationPolicyUMA.disputeAssertion(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
     }
 
-    function test_ArbitrationPolicyUMA_disputeAssertion() public {
+    function test_ArbitrationPolicyUMA_disputeAssertion_IPA() public {
         bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
         IERC20 currency = IERC20(susd);
@@ -420,7 +426,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
 
-        (, , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
 
         // settle the assertion
         IOptimisticOracleV3.Assertion memory assertion = IOptimisticOracleV3(newOptimisticOracleV3).getAssertion(
@@ -432,7 +438,48 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 0);
         IOptimisticOracleV3(newOptimisticOracleV3).settleAssertion(assertionId);
 
-        (, , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
+        (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
+
+        assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
+        assertEq(currentTagAfter, bytes32(0));
+    }
+
+    function test_ArbitrationPolicyUMA_disputeAssertion_NotIPA() public {
+        bytes memory claim = "test claim";
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(susd);
+        uint256 bond = 0;
+        bytes32 identifier = bytes32("ASSERT_TRUTH");
+        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+
+        address targetIpId = address(1);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+
+        vm.warp(block.timestamp + (liveness * 66_666_666) / 100_000_000 + 1);
+
+        // dispute the assertion
+        vm.startPrank(address(2));
+        bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+        bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
+
+        vm.expectEmit(true, true, true, true);
+        emit AssertionDisputed(assertionId, counterEvidenceHash);
+
+        newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
+
+        (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
+
+        // settle the assertion
+        IOptimisticOracleV3.Assertion memory assertion = IOptimisticOracleV3(newOptimisticOracleV3).getAssertion(
+            assertionId
+        );
+        uint64 assertionTimestamp = assertion.assertionTime;
+        bytes memory ancillaryData = IOptimisticOracleV3(newOptimisticOracleV3).stampAssertion(assertionId);
+        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 0);
+        IOptimisticOracleV3(newOptimisticOracleV3).settleAssertion(assertionId);
+
+        (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32(0));

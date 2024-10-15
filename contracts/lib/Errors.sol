@@ -448,6 +448,9 @@ library Errors {
     /// @notice Min liveness is above max liveness.
     error ArbitrationPolicyUMA__MinLivenessAboveMax();
 
+    /// @notice IP owner time percent is above max.
+    error ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
+
     /// @notice Bond size is above max.
     error ArbitrationPolicyUMA__BondAboveMax();
 
@@ -466,8 +469,8 @@ library Errors {
     /// @notice Cannot dispute assertion if tag is inherited.
     error ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
 
-    /// @notice Only target IP id can dispute.
-    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDispute();
+    /// @notice Only target IP id can dispute within time window.
+    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow();
 
     /// @notice Not the UMA dispute policy.
     error ArbitrationPolicyUMA__OnlyDisputePolicyUMA();

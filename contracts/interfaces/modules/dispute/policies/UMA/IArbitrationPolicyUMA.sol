@@ -9,7 +9,8 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3Callba
     /// @notice Emitted when liveness is set
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
-    event LivenessSet(uint64 minLiveness, uint64 maxLiveness);
+    /// @param ipOwnerTimePercent The percentage of liveness time the IP owner has priority to respond to a dispute
+    event LivenessSet(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent);
 
     /// @notice Emitted when max bond is set
     /// @param token The token address
@@ -42,7 +43,8 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3Callba
     /// @notice Sets the liveness for UMA disputes
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
-    function setLiveness(uint64 minLiveness, uint64 maxLiveness) external;
+    /// @param ipOwnerTimePercent The percentage of liveness time the IP owner has priority to respond to a dispute
+    function setLiveness(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent) external;
 
     /// @notice Sets the max bond for UMA disputes
     /// @param token The token address
@@ -54,11 +56,17 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3Callba
     /// @param counterEvidenceHash The hash of the counter evidence
     function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external;
 
+    /// @notice Returns the maximum percentage - represents 100%
+    function maxPercent() external view returns (uint32);
+
     /// @notice Returns the minimum liveness for UMA disputes
     function minLiveness() external view returns (uint64);
 
     /// @notice Returns the maximum liveness for UMA disputes
     function maxLiveness() external view returns (uint64);
+
+    /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
+    function ipOwnerTimePercent() external view returns (uint32);
 
     /// @notice Returns the maximum bond for a given token for UMA disputes
     /// @param token The token address

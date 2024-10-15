@@ -40,7 +40,7 @@ contract MockArbitrationPolicy is IArbitrationPolicy {
 
     function onDisputeJudgement(uint256 disputeId, bool decision, bytes calldata data) external onlyDisputeModule {
         if (decision) {
-            (, address disputeInitiator, , , , , ) = IDisputeModule(DISPUTE_MODULE).disputes(disputeId);
+            (, address disputeInitiator, , , , , , ) = IDisputeModule(DISPUTE_MODULE).disputes(disputeId);
             IERC20(PAYMENT_TOKEN).safeTransfer(disputeInitiator, ARBITRATION_PRICE);
         } else {
             IERC20(PAYMENT_TOKEN).safeTransfer(treasury, ARBITRATION_PRICE);

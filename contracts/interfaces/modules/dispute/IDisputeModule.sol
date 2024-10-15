@@ -6,6 +6,7 @@ interface IDisputeModule {
     /// @notice Dispute struct
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeTimestamp The timestamp of the dispute
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
@@ -14,6 +15,7 @@ interface IDisputeModule {
     struct Dispute {
         address targetIpId;
         address disputeInitiator;
+        uint256 disputeTimestamp;
         address arbitrationPolicy;
         bytes32 disputeEvidenceHash;
         bytes32 targetTag;
@@ -50,6 +52,7 @@ interface IDisputeModule {
     /// @param disputeId The dispute id
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeTimestamp The timestamp of the dispute
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
@@ -58,6 +61,7 @@ interface IDisputeModule {
         uint256 disputeId,
         address targetIpId,
         address disputeInitiator,
+        uint256 disputeTimestamp,
         address arbitrationPolicy,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
@@ -80,11 +84,13 @@ interface IDisputeModule {
     /// @param derivativeIpId The derivative ipId which was tagged
     /// @param parentDisputeId The parent dispute id in which infringement was found
     /// @param tag The tag of the dispute applied to the derivative
+    /// @param disputeTimestamp The timestamp of the dispute
     event DerivativeTaggedOnParentInfringement(
         address parentIpId,
         address derivativeIpId,
         uint256 parentDisputeId,
-        bytes32 tag
+        bytes32 tag,
+        uint256 disputeTimestamp
     );
 
     /// @notice Event emitted when a dispute is resolved
@@ -102,6 +108,7 @@ interface IDisputeModule {
     /// @param disputeId The dispute id
     /// @return targetIpId The ipId that is the target of the dispute
     /// @return disputeInitiator The address of the dispute initiator
+    /// @return disputeTimestamp The timestamp of the dispute
     /// @return arbitrationPolicy The address of the arbitration policy
     /// @return disputeEvidenceHash The link of the dispute summary
     /// @return targetTag The target tag of the dispute
@@ -115,6 +122,7 @@ interface IDisputeModule {
         returns (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,

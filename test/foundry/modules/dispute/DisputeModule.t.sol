@@ -21,6 +21,7 @@ contract DisputeModuleTest is BaseTest {
         uint256 disputeId,
         address targetIpId,
         address disputeInitiator,
+        uint256 disputeTimestamp,
         address arbitrationPolicy,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
@@ -273,6 +274,7 @@ contract DisputeModuleTest is BaseTest {
             disputeIdBefore + 1,
             ipAddr,
             ipAccount1,
+            block.timestamp,
             address(mockArbitrationPolicy2),
             disputeEvidenceHashExample,
             bytes32("PLAGIARISM"),
@@ -288,6 +290,7 @@ contract DisputeModuleTest is BaseTest {
         (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
@@ -301,6 +304,7 @@ contract DisputeModuleTest is BaseTest {
         assertEq(mockArbitrationPolicyUSDCBalanceAfter - mockArbitrationPolicyUSDCBalanceBefore, ARBITRATION_PRICE);
         assertEq(targetIpId, ipAddr);
         assertEq(disputeInitiator, ipAccount1);
+        assertEq(disputeTimestamp, block.timestamp);
         assertEq(arbitrationPolicy, address(mockArbitrationPolicy2));
         assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
         assertEq(targetTag, bytes32("PLAGIARISM"));
@@ -321,6 +325,7 @@ contract DisputeModuleTest is BaseTest {
             disputeIdBefore + 1,
             ipAddr,
             ipAccount1,
+            block.timestamp,
             address(mockArbitrationPolicy),
             disputeEvidenceHashExample,
             bytes32("PLAGIARISM"),
@@ -336,6 +341,7 @@ contract DisputeModuleTest is BaseTest {
         (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
@@ -348,6 +354,7 @@ contract DisputeModuleTest is BaseTest {
         assertEq(mockArbitrationPolicyUSDCBalanceAfter - mockArbitrationPolicyUSDCBalanceBefore, ARBITRATION_PRICE);
         assertEq(targetIpId, ipAddr);
         assertEq(disputeInitiator, ipAccount1);
+        assertEq(disputeTimestamp, block.timestamp);
         assertEq(arbitrationPolicy, address(mockArbitrationPolicy));
         assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
         assertEq(targetTag, bytes32("PLAGIARISM"));
@@ -379,7 +386,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         // set dispute judgement
-        (, , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceBefore = USDC.balanceOf(ipAccount1);
         uint256 mockArbitrationPolicyUSDCBalanceBefore = USDC.balanceOf(address(mockArbitrationPolicy));
 
@@ -389,7 +396,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(arbitrationRelayer);
         disputeModule.setDisputeJudgement(1, true, "");
 
-        (, , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
         uint256 mockArbitrationPolicyUSDCBalanceAfter = USDC.balanceOf(address(mockArbitrationPolicy));
 
@@ -408,7 +415,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         // set dispute judgement
-        (, , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceBefore = USDC.balanceOf(ipAccount1);
         uint256 mockArbitrationPolicyUSDCBalanceBefore = USDC.balanceOf(address(mockArbitrationPolicy));
 
@@ -418,7 +425,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(arbitrationRelayer);
         disputeModule.setDisputeJudgement(1, false, "");
 
-        (, , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(1);
         uint256 ipAccount1USDCBalanceAfter = USDC.balanceOf(ipAccount1);
         uint256 mockArbitrationPolicyUSDCBalanceAfter = USDC.balanceOf(address(mockArbitrationPolicy));
 
@@ -468,7 +475,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagBeforeCancel, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagBeforeCancel, ) = disputeModule.disputes(1);
 
         vm.startPrank(ipAccount1);
         vm.expectEmit(true, true, true, true, address(disputeModule));
@@ -477,7 +484,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.cancelDispute(1, "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagAfterCancel, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagAfterCancel, ) = disputeModule.disputes(1);
 
         assertEq(currentTagBeforeCancel, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfterCancel, bytes32(0));
@@ -541,7 +548,7 @@ contract DisputeModuleTest is BaseTest {
         // tag child ip
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
-        emit IDisputeModule.DerivativeTaggedOnParentInfringement(ipAddr, ipAddr2, 1, "PLAGIARISM");
+        emit IDisputeModule.DerivativeTaggedOnParentInfringement(ipAddr, ipAddr2, 1, "PLAGIARISM", block.timestamp);
 
         uint256 disputeIdBefore = disputeModule.disputeCounter();
 
@@ -552,6 +559,7 @@ contract DisputeModuleTest is BaseTest {
         (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
@@ -564,6 +572,7 @@ contract DisputeModuleTest is BaseTest {
         assertTrue(disputeModule.isIpTagged(ipAddr2));
         assertEq(targetIpId, ipAddr2);
         assertEq(disputeInitiator, address(1));
+        assertEq(disputeTimestamp, block.timestamp);
         assertEq(arbitrationPolicy, address(mockArbitrationPolicy));
         assertEq(disputeEvidenceHash, bytes32(0));
         assertEq(targetTag, bytes32("PLAGIARISM"));
@@ -619,7 +628,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.setDisputeJudgement(1, true, "");
         vm.stopPrank();
 
-        (, , , , , bytes32 currentTagBeforeResolve, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagBeforeResolve, ) = disputeModule.disputes(1);
 
         // resolve dispute
         vm.startPrank(ipAccount1);
@@ -628,7 +637,7 @@ contract DisputeModuleTest is BaseTest {
 
         disputeModule.resolveDispute(1, "");
 
-        (, , , , , bytes32 currentTagAfterResolve, ) = disputeModule.disputes(1);
+        (, , , , , , bytes32 currentTagAfterResolve, ) = disputeModule.disputes(1);
 
         assertEq(currentTagBeforeResolve, bytes32("PLAGIARISM"));
         assertEq(currentTagAfterResolve, bytes32(0));

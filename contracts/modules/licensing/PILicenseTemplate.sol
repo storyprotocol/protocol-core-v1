@@ -294,6 +294,11 @@ contract PILicenseTemplate is
         return _getPILicenseTemplateStorage().licenseTermsCounter;
     }
 
+    /// @notice Verifies if the royalty percentage defined in the licenseTermsId can be overridden with
+    /// the given newRoyaltyPercent.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @param newRoyaltyPercent The new royalty percentage.
+    /// @return True if the royalty percentage can be overridden, false otherwise.
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
         if (licenseTermsId == 0 || newRoyaltyPercent == 0) return false;
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];

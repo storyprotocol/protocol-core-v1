@@ -384,7 +384,7 @@ contract LicensingModule is
                 revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
             }
             if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
-                revert Errors.LicensingModule__CannotOverrideRoyaltyPercent(
+                revert Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
                     licenseTemplate,
                     licenseTermsId,
                     licensingConfig.commercialRevShare

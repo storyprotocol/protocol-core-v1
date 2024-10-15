@@ -1716,7 +1716,7 @@ contract LicensingModuleTest is BaseTest {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Errors.LicensingModule__CannotOverrideRoyaltyPercent.selector,
+                Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent.selector,
                 address(pilTemplate),
                 socialRemixTermsId,
                 1000

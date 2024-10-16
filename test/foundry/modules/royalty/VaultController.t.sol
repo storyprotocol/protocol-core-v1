@@ -35,7 +35,7 @@ contract TestRoyaltyModule is BaseTest {
     }
 
     function test_VaultController_upgradeVaults() public {
-        address newVault = address(new IpRoyaltyVault(address(1), address(2)));
+        address newVault = address(new IpRoyaltyVault(address(1), address(2), address(3), address(4)));
 
         (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
             address(royaltyModule),

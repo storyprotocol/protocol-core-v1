@@ -21,7 +21,14 @@ contract UpgradesTest is BaseTest {
     }
 
     function test_upgradeVaults() public {
-        address newVault = address(new MockIpRoyaltyVaultV2(address(royaltyPolicyLAP), address(disputeModule)));
+        address newVault = address(
+            new MockIpRoyaltyVaultV2(
+                address(royaltyPolicyLAP),
+                address(disputeModule),
+                address(licenseRegistry),
+                address(groupingModule)
+            )
+        );
         (bool immediate, uint32 delay) = protocolAccessManager.canCall(
             u.bob,
             address(royaltyModule),

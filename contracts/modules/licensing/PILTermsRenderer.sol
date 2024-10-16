@@ -36,7 +36,7 @@ contract PILTermsRenderer {
                 '{"trait_type": "URI", "value": "',
                 terms.uri,
                 '"},',
-                // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
+                // Skip transferable, it's already added in the common attributes by LicenseToken (See {LicenseToken-tokenURI}).
                 _policyCommercialTraitsToJson(terms),
                 _policyDerivativeTraitsToJson(terms)
             )

@@ -594,7 +594,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getSalt(type(IpRoyaltyVault).name),
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(disputeModule), address(royaltyModule))
+                    abi.encode(address(disputeModule), address(royaltyModule), address(ipAssetRegistry), address(groupingModule))
                 )
             )
         );

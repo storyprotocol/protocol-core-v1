@@ -583,6 +583,12 @@ library Errors {
     /// @notice Zero address provided for Royalty Module.
     error IpRoyaltyVault__ZeroRoyaltyModule();
 
+    /// @notice Zero address provided for IP Asset Registry.
+    error IpRoyaltyVault__ZeroIpAssetRegistry();
+
+    /// @notice Zero address provided for Grouping Module.
+    error IpRoyaltyVault__ZeroGroupingModule();
+
     /// @notice Caller is not Royalty Module.
     error IpRoyaltyVault__NotAllowedToAddTokenToVault();
 
@@ -612,6 +618,9 @@ library Errors {
 
     /// @notice Vaults must claim as self.
     error IpRoyaltyVault__VaultsMustClaimAsSelf();
+
+    /// @notice Group reward pool must claim via GroupingModule.
+    error IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //

@@ -302,10 +302,7 @@ contract PILicenseTemplate is
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
         if (licenseTermsId == 0 || newRoyaltyPercent == 0) return false;
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-        if (terms.commercialUse) {
-            return terms.commercialRevCeiling == 0 || newRoyaltyPercent <= terms.commercialRevCeiling;
-        }
-        return false;
+        return terms.commercialUse;
     }
 
     /// @notice checks the contract whether supports the given interface.

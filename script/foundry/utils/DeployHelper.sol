@@ -763,6 +763,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(evenSplitGroupPool), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(
             address(coreMetadataModule),
             selectors,
@@ -827,6 +829,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         protocolAccessManager.setTargetFunctionRole(
             address(groupingModule),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(evenSplitGroupPool),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );

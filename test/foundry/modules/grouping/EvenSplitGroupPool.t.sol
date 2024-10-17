@@ -169,7 +169,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "");
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
 
         vm.prank(address(groupingModule));
         rewardPool.addIp(group1, ipId1);

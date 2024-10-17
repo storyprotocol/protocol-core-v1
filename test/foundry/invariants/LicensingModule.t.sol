@@ -75,7 +75,8 @@ contract LicensingModuleHarness is Test {
             licenseTermsId,
             amount,
             receiver,
-            royaltyContext
+            royaltyContext,
+            0
         );
 
         mintedOrRegisterDerivative = true;
@@ -102,7 +103,7 @@ contract LicensingModuleHarness is Test {
             require(parentIpIdsNth[i] < availableIpIds.length, "LicensingModuleHarness: invalid parentIpIdsNth");
             parentIpIds[i] = availableIpIds[parentIpIdsNth[i]];
         }
-        licensingModule.registerDerivative(childIpId, parentIpIds, licenseTermsIds, licenseTemplate, royaltyContext);
+        licensingModule.registerDerivative(childIpId, parentIpIds, licenseTermsIds, licenseTemplate, royaltyContext, 0);
 
         mintedOrRegisterDerivative = true;
     }

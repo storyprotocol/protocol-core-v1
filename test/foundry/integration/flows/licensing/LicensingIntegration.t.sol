@@ -122,7 +122,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 1;
 
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[2], address(pilTemplate), 1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[2]), 2);
@@ -145,7 +145,8 @@ contract LicensingIntegrationTest is BaseIntegration {
             1,
             1,
             address(u.carl),
-            ""
+            "",
+            0
         );
         assertEq(licenseToken.ownerOf(lcTokenId), u.carl);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 1);
@@ -182,7 +183,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         erc20.mint(u.dan, 1000);
         erc20.approve(address(royaltyModule), 100);
 
-        lcTokenId = licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), 2, 1, address(u.dan), "");
+        lcTokenId = licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), 2, 1, address(u.dan), "", 0);
 
         assertEq(licenseToken.ownerOf(lcTokenId), u.dan);
         assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
@@ -225,7 +226,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         parentIpIds[0] = ipAcct[1];
         licenseTermsIds[0] = 2;
 
-        licensingModule.registerDerivative(ipAcct[7], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        licensingModule.registerDerivative(ipAcct[7], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[7], address(pilTemplate), 2), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[7]), 2);
@@ -272,7 +273,8 @@ contract LicensingIntegrationTest is BaseIntegration {
             parentIpIds: parentIpIds,
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(anotherPILTemplate),
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
     }
 
@@ -318,7 +320,8 @@ contract LicensingIntegrationTest is BaseIntegration {
             parentIpIds: parentIpIds,
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(pilTemplate),
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
     }
 }

@@ -365,6 +365,9 @@ library Errors {
     /// @notice Grouping Module is zero address.
     error LicensingModule__ZeroGroupingModule();
 
+    /// @notice licensing minting fee is above the maximum minting fee.
+    error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////

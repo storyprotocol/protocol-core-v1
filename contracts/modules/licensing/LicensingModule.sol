@@ -48,6 +48,13 @@ contract LicensingModule is
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
 
+    struct RoyaltyPolicyInfo {
+        address royaltyPolicy;
+        uint32 royaltyPercent;
+        uint256 mintingFeeByLicense;
+        address currencyToken;
+    }
+
     /// @inheritdoc IModule
     string public constant override name = LICENSING_MODULE_KEY;
 
@@ -148,6 +155,7 @@ contract LicensingModule is
     /// @param amount The amount of license tokens to mint.
     /// @param receiver The address of the receiver.
     /// @param royaltyContext The context of the royalty.
+    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay. if set to 0 then no limit.
     /// @return startLicenseTokenId The start ID of the minted license tokens.
     function mintLicenseTokens(
         address licensorIpId,
@@ -155,7 +163,8 @@ contract LicensingModule is
         uint256 licenseTermsId,
         uint256 amount,
         address receiver,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) external whenNotPaused nonReentrant returns (uint256 startLicenseTokenId) {
         if (amount == 0) {
             revert Errors.LicensingModule__MintAmountZero();
@@ -186,7 +195,16 @@ contract LicensingModule is
             );
         }
 
-        _payMintingFee(licensorIpId, licenseTemplate, licenseTermsId, amount, royaltyContext, lsc, mintingFeeByHook);
+        _payMintingFee(
+            licensorIpId,
+            licenseTemplate,
+            licenseTermsId,
+            amount,
+            royaltyContext,
+            lsc,
+            mintingFeeByHook,
+            maxMintingFee
+        );
 
         if (!ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, licensorIpId, amount)) {
             revert Errors.LicensingModule__LicenseDenyMintLicenseToken(licenseTemplate, licenseTermsId, licensorIpId);
@@ -223,12 +241,14 @@ contract LicensingModule is
     /// @param licenseTermsIds The IDs of the license terms that the parent IP supports.
     /// @param licenseTemplate The address of the license template of the license terms Ids.
     /// @param royaltyContext The context of the royalty.
+    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay. if set to 0 then no limit.
     function registerDerivative(
         address childIpId,
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) external whenNotPaused nonReentrant verifyPermission(childIpId) {
         if (parentIpIds.length != licenseTermsIds.length) {
             revert Errors.LicensingModule__LicenseTermsLengthMismatch(parentIpIds.length, licenseTermsIds.length);
@@ -243,8 +263,14 @@ contract LicensingModule is
         // All license terms must be compatible with each other.
         // Verify that the derivative IP is permitted under all license terms from the parent IPs.
         address childIpOwner = IIPAccount(payable(childIpId)).owner();
-        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!lct.verifyRegisterDerivativeForAllParents(childIpId, parentIpIds, licenseTermsIds, childIpOwner)) {
+        if (
+            !ILicenseTemplate(licenseTemplate).verifyRegisterDerivativeForAllParents(
+                childIpId,
+                parentIpIds,
+                licenseTermsIds,
+                childIpOwner
+            )
+        ) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(childIpId);
         }
 
@@ -266,7 +292,8 @@ contract LicensingModule is
             licenseTermsIds,
             licenseTemplate,
             childIpOwner,
-            royaltyContext
+            royaltyContext,
+            maxMintingFee
         );
         // emit event
         emit DerivativeRegistered(
@@ -475,7 +502,8 @@ contract LicensingModule is
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
         address childIpOwner,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) private returns (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) {
         royaltyPolicies = new address[](licenseTermsIds.length);
         royaltyPercents = new uint32[](licenseTermsIds.length);
@@ -487,7 +515,8 @@ contract LicensingModule is
                 licenseTemplate,
                 licenseTermsIds[i],
                 childIpOwner,
-                royaltyContext
+                royaltyContext,
+                maxMintingFee
             );
             royaltyPolicies[i] = royaltyPolicy;
             royaltyPercents[i] = royaltyPercent;
@@ -500,7 +529,8 @@ contract LicensingModule is
         address licenseTemplate,
         uint256 licenseTermsId,
         address childIpOwner,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
             parentIpId,
@@ -526,7 +556,8 @@ contract LicensingModule is
             1,
             royaltyContext,
             lsc,
-            mintingFeeByHook
+            mintingFeeByHook,
+            maxMintingFee
         );
     }
 
@@ -540,6 +571,8 @@ contract LicensingModule is
     /// @param amount The amount of license tokens to mint.
     /// @param royaltyContext The context of the royalty.
     /// @param licensingConfig The minting license config
+    /// @param mintingFeeByHook The minting fee set by the hook.
+    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay.
     /// @return royaltyPolicy The address of the royalty policy.
     /// @return royaltyPercent The license royalty percentage
     function _payMintingFee(
@@ -549,24 +582,49 @@ contract LicensingModule is
         uint256 amount,
         bytes calldata royaltyContext,
         Licensing.LicensingConfig memory licensingConfig,
-        uint256 mintingFeeByHook
+        uint256 mintingFeeByHook,
+        uint256 maxMintingFee
     ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
-        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        uint256 mintingFeeByLicense = 0;
-        address currencyToken = address(0);
-        (royaltyPolicy, royaltyPercent, mintingFeeByLicense, currencyToken) = lct.getRoyaltyPolicy(licenseTermsId);
+        RoyaltyPolicyInfo memory royaltyInfo = _getRoyaltyPolicyInfo(licenseTemplate, licenseTermsId);
+        royaltyPolicy = royaltyInfo.royaltyPolicy;
+        royaltyPercent = royaltyInfo.royaltyPercent;
         // override royalty percent if it is set in licensing config
         if (licensingConfig.isSet && licensingConfig.commercialRevShare != 0) {
             royaltyPercent = licensingConfig.commercialRevShare;
         }
         if (royaltyPolicy != address(0)) {
             ROYALTY_MODULE.onLicenseMinting(parentIpId, royaltyPolicy, royaltyPercent, royaltyContext);
-            uint256 tmf = _getTotalMintingFee(licensingConfig, mintingFeeByHook, mintingFeeByLicense, amount);
+            uint256 tmf = _getTotalMintingFee(
+                licensingConfig,
+                mintingFeeByHook,
+                royaltyInfo.mintingFeeByLicense,
+                amount
+            );
+            if (maxMintingFee != 0 && tmf > maxMintingFee) {
+                revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(tmf, maxMintingFee);
+            }
             // pay minting fee
             if (tmf > 0) {
-                ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, currencyToken, tmf);
+                ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, royaltyInfo.currencyToken, tmf);
             }
         }
+    }
+
+    /// @dev get royalty policy info from given license terms
+    /// @param licenseTemplate The address of the license template.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return RoyaltyPolicyInfo The royalty policy info
+    function _getRoyaltyPolicyInfo(
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) private view returns (RoyaltyPolicyInfo memory) {
+        (
+            address royaltyPolicy,
+            uint32 royaltyPercent,
+            uint256 mintingFeeByLicense,
+            address currencyToken
+        ) = ILicenseTemplate(licenseTemplate).getRoyaltyPolicy(licenseTermsId);
+        return RoyaltyPolicyInfo(royaltyPolicy, royaltyPercent, mintingFeeByLicense, currencyToken);
     }
 
     /// @dev get total minting fee

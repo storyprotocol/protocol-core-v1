@@ -138,7 +138,8 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
 
@@ -150,7 +151,8 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: commTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
 
@@ -162,7 +164,8 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: commRemixTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "");
 

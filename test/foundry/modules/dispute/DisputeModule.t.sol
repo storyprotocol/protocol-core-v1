@@ -97,7 +97,8 @@ contract DisputeModuleTest is BaseTest {
             licenseTermsId: getSelectedPILicenseTermsId("cheap_flexible"),
             amount: mintAmount,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         }); // first license minted
 
         ipAddr2 = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);

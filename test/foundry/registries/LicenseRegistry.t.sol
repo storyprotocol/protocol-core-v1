@@ -175,7 +175,7 @@ contract LicenseRegistryTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = socialRemixTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.expectRevert(Errors.LicensingModule__DerivativesCannotAddLicenseTerms.selector);
@@ -212,7 +212,7 @@ contract LicenseRegistryTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = socialRemixTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__IndexOutOfBounds.selector, ipAcct[1], 1, 1));
         licenseRegistry.getDerivativeIp(ipAcct[1], 1);
@@ -228,7 +228,7 @@ contract LicenseRegistryTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = socialRemixTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "");
+        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__IndexOutOfBounds.selector, ipAcct[2], 1, 1));
         licenseRegistry.getParentIp(ipAcct[2], 1);

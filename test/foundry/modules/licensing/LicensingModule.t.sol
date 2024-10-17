@@ -1710,7 +1710,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(0x123), 1, licensingConfig);
 
-        vm.expectRevert(Errors.LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent.selector);
+        vm.expectRevert(Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent.selector);
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(0), socialRemixTermsId, licensingConfig);
 

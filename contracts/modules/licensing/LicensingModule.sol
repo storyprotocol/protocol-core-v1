@@ -375,7 +375,7 @@ contract LicensingModule is
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) whenNotPaused {
         if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
-            revert Errors.LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
+            revert Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
         }
 
         if (licensingConfig.commercialRevShare != 0) {

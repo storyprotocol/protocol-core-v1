@@ -253,7 +253,7 @@ library Errors {
     error LicenseRegistry__ZeroIPGraphACL();
 
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
-    error LicensingModule__LicenseTemplateCannotZeroAddressForOverrideRoyaltyPercent();
+    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
 
     /// @notice Current License does not allow to override royalty percentage.
     error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(

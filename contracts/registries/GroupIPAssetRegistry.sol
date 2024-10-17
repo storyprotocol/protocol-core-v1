@@ -67,11 +67,12 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
 
     /// @notice Whitelists a group reward pool
     /// @param rewardPool The address of the group reward pool
-    function whitelistGroupRewardPool(address rewardPool) external onlyGroupingModule whenNotPaused {
+    /// @param allowed Whether the group reward pool is whitelisted
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external onlyGroupingModule whenNotPaused {
         if (rewardPool == address(0)) {
             revert Errors.GroupIPAssetRegistry__InvalidGroupRewardPool(rewardPool);
         }
-        _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool] = true;
+        _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool] = allowed;
     }
 
     /// @notice Adds a member to a Group IPA

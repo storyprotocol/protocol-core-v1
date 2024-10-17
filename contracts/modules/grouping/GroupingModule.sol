@@ -123,12 +123,13 @@ contract GroupingModule is
 
     /// @notice Whitelists a group reward pool.
     /// @param rewardPool The address of the group reward pool.
-    function whitelistGroupRewardPool(address rewardPool) external restricted {
+    /// @param allowed Whether the group reward pool is whitelisted.
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external restricted {
         if (rewardPool == address(0)) {
             revert Errors.GroupingModule__ZeroGroupRewardPool();
         }
 
-        GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool);
+        GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool, allowed);
     }
 
     /// @notice Adds IP to group.

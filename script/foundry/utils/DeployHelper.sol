@@ -743,7 +743,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
 
         // add evenSplitGroupPool to whitelist of group pools
-        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool));
+        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
     }
 
     function _configureRoles() private {

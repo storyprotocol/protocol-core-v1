@@ -154,6 +154,13 @@ contract Licensing_Scenarios is BaseIntegration {
             royaltyContext: "",
             maxMintingFee: 0
         });
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative.selector,
+                ipAcct[3],
+                licenseIds
+            )
+        );
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
 
         // Mint license for commercial remixing, then link to new IPA to make it a derivative

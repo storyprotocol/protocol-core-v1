@@ -319,27 +319,27 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     function test_PILicenseTemplate_verifyMintLicenseToken_FromDerivativeIp_ButNotAttachedLicense() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
-            PILFlavors.commercialUse({
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
                 mintingFee: 0,
+                commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
         vm.prank(ipOwner[1]);
-        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commUseTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
 
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipAcct[1];
         uint256[] memory licenseTermsIds = new uint256[](1);
-        licenseTermsIds[0] = commUseTermsId;
+        licenseTermsIds[0] = commRemixTermsId;
         vm.prank(ipOwner[2]);
         licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
         uint256 anotherTermsId = pilTemplate.registerLicenseTerms(
-            PILFlavors.commercialRemix({
+            PILFlavors.commercialUse({
                 mintingFee: 0,
-                commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
@@ -350,24 +350,26 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     function test_PILicenseTemplate_verifyMintLicenseToken_FromDerivativeIp_NotReciprocal() public {
-        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
-            PILFlavors.commercialUse({
-                mintingFee: 0,
-                currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
-            })
-        );
+        // create a terms that allow derivative but not allow derivative of derivative
+        PILTerms memory commNoReciprocalTerms = PILFlavors.commercialUse({
+            mintingFee: 0,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        commNoReciprocalTerms.derivativesAllowed = true;
+
+        uint256 commNoReciprocalTermsId = pilTemplate.registerLicenseTerms(commNoReciprocalTerms);
         vm.prank(ipOwner[1]);
-        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commUseTermsId);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commNoReciprocalTermsId);
 
         address[] memory parentIpIds = new address[](1);
         parentIpIds[0] = ipAcct[1];
         uint256[] memory licenseTermsIds = new uint256[](1);
-        licenseTermsIds[0] = commUseTermsId;
+        licenseTermsIds[0] = commNoReciprocalTermsId;
         vm.prank(ipOwner[2]);
         licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
 
-        bool result = pilTemplate.verifyMintLicenseToken(commUseTermsId, ipOwner[3], ipAcct[2], 1);
+        bool result = pilTemplate.verifyMintLicenseToken(commNoReciprocalTermsId, ipOwner[3], ipAcct[2], 1);
         assertFalse(result);
     }
 
@@ -384,7 +386,7 @@ contract PILicenseTemplateTest is BaseTest {
     }
 
     // test verifyRegisterDerivative
-    function test_PILicenseTemplate_verifyRegisterDerivative() public {
+    function test_PILicenseTemplate_verifyRegisterDerivative_ForCommercialUse() public {
         uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
                 mintingFee: 100,
@@ -394,6 +396,20 @@ contract PILicenseTemplateTest is BaseTest {
         );
 
         bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], commUseTermsId, ipOwner[2]);
+        assertFalse(result);
+    }
+
+    function test_PILicenseTemplate_verifyRegisterDerivative_ForCommercialRemix() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 100,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        bool result = pilTemplate.verifyRegisterDerivative(ipAcct[2], ipAcct[1], commRemixTermsId, ipOwner[2]);
         assertTrue(result);
     }
 

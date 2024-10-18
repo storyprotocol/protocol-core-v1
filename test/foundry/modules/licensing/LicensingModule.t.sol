@@ -1620,6 +1620,34 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
     }
 
+    function test_LicensingModule_registerDerivative_revert_CommercialUseOnlyLicense() public {
+        (, uint256 defaultTermsId) = licenseRegistry.getDefaultLicenseTerms();
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commUseTermsId);
+
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = ipId1;
+        parentIpIds[1] = ipId2;
+
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = defaultTermsId;
+        licenseTermsIds[1] = commUseTermsId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicenseNotCompatibleForDerivative.selector, ipId3)
+        );
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+    }
+
     function test_LicensingModule_registerDerivative_revert_NotAllowDerivativesReciprocal() public {
         // register license terms allow derivative but not allow derivative of derivative
         PILTerms memory terms = PILFlavors.nonCommercialSocialRemixing();

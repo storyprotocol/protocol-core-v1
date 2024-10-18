@@ -355,26 +355,22 @@ contract DisputeModule is
     /// @param ipId The ipId
     /// @return isTagged True if the ipId is tagged
     function isIpTagged(address ipId) external view returns (bool) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.successfulDisputesPerIp[ipId] > 0;
+        return _getDisputeModuleStorage().successfulDisputesPerIp[ipId] > 0;
     }
 
     /// @notice Dispute ID counter
     function disputeCounter() external view returns (uint256) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.disputeCounter;
+        return _getDisputeModuleStorage().disputeCounter;
     }
 
     /// @notice Returns the arbitration policy cooldown
     function arbitrationPolicyCooldown() external view returns (uint256) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.arbitrationPolicyCooldown;
+        return _getDisputeModuleStorage().arbitrationPolicyCooldown;
     }
 
     /// @notice The address of the base arbitration policy
     function baseArbitrationPolicy() external view returns (address) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.baseArbitrationPolicy;
+        return _getDisputeModuleStorage().baseArbitrationPolicy;
     }
 
     /// @notice Returns the dispute information for a given dispute id

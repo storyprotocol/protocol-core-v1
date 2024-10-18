@@ -208,6 +208,7 @@ contract DisputeInvariants is BaseTest {
             (
                 address targetIpId,
                 address disputeInitiator,
+                uint256 disputeTimestamp,
                 address arbitrationPolicy,
                 bytes32 _disputeEvidenceHash,
                 bytes32 targetTag,

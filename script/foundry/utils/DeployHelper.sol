@@ -704,6 +704,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(royaltyPolicyLRP));
         protocolPauser.addPausable(address(ipAssetRegistry));
         protocolPauser.addPausable(address(groupingModule));
+        protocolPauser.addPausable(address(evenSplitGroupPool));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));

@@ -432,6 +432,9 @@ library Errors {
     /// @notice Provided parent dispute has not been resolved.
     error DisputeModule__ParentDisputeNotResolved();
 
+    /// @notice Zero arbitration policy cooldown provided.
+    error DisputeModule__ZeroArbitrationPolicyCooldown();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
     ////////////////////////////////////////////////////////////////////////////

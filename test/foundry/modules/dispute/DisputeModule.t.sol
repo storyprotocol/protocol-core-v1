@@ -30,7 +30,6 @@ contract DisputeModuleTest is BaseTest {
     event DisputeCancelled(uint256 disputeId, bytes data);
     event DisputeResolved(uint256 disputeId);
     event DefaultArbitrationPolicyUpdated(address arbitrationPolicy);
-    event ArbitrationPolicySet(address ipId, address arbitrationPolicy);
 
     address internal ipAccount1 = address(0x111000aaa);
     address internal ipAccount2 = address(0x111000bbb);
@@ -54,7 +53,7 @@ contract DisputeModuleTest is BaseTest {
 
         vm.startPrank(u.admin);
         disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy2), true);
-        disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy2));
+        disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy));
         vm.stopPrank();
 
         registerSelectedPILicenseTerms_Commercial({
@@ -194,6 +193,21 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.baseArbitrationPolicy(), address(mockArbitrationPolicy2));
     }
 
+    function test_DisputeModule_setArbitrationPolicyCooldown_revert_ZeroCooldown() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.DisputeModule__ZeroArbitrationPolicyCooldown.selector);
+        disputeModule.setArbitrationPolicyCooldown(0);
+    }
+
+    function test_DisputeModule_setArbitrationPolicyCooldown() public {
+        vm.startPrank(u.admin);
+        vm.expectEmit(true, true, true, true, address(disputeModule));
+        emit IDisputeModule.ArbitrationPolicyCooldownUpdated(100);
+
+        disputeModule.setArbitrationPolicyCooldown(100);
+        assertEq(disputeModule.arbitrationPolicyCooldown(), 100);
+    }
+
     function test_DisputeModule_setArbitrationPolicy_revert_UnauthorizedAccess() public {
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -225,10 +239,13 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(ipAddr);
 
         vm.expectEmit(true, true, true, true, address(disputeModule));
-        emit ArbitrationPolicySet(ipAddr, address(mockArbitrationPolicy2));
+        emit IDisputeModule.ArbitrationPolicySet(ipAddr, address(mockArbitrationPolicy2), block.timestamp + 7 days);
 
         disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
-        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+
+        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(0));
+        assertEq(disputeModule.nextArbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), block.timestamp + 7 days);
     }
 
     function test_DisputeModule_raiseDispute_revert_NotRegisteredIpId() public {
@@ -257,8 +274,9 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_DisputeModule_PolicySP_raiseDispute_BlacklistedPolicy() public {
+    function test_DisputeModule_raiseDispute_BlacklistedPolicy() public {
         vm.startPrank(u.admin);
+        disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy2));
         disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy), false);
         vm.stopPrank();
 
@@ -430,7 +448,7 @@ contract DisputeModuleTest is BaseTest {
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_PolicySP_revert_paused() public {
+    function test_DisputeModule_revert_paused() public {
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
@@ -446,7 +464,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
     }
 
-    function test_DisputeModule_PolicySP_cancelDispute_revert_NotDisputeInitiator() public {
+    function test_DisputeModule_cancelDispute_revert_NotDisputeInitiator() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -639,6 +657,52 @@ contract DisputeModuleTest is BaseTest {
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
         disputeModule.resolveDispute(1, "");
         vm.stopPrank();
+    }
+
+    function test_DisputeModule_updateActiveArbitrationPolicy_BaseArbitrationPolicyToStart() public {
+        address currentArbPolicy = disputeModule.updateActiveArbitrationPolicy(address(1));
+
+        assertEq(currentArbPolicy, address(mockArbitrationPolicy));
+        assertEq(disputeModule.arbitrationPolicies(address(1)), address(0));
+        assertEq(disputeModule.nextArbitrationPolicies(address(1)), address(0));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(address(1)), 0);
+    }
+
+    function test_DisputeModule_updateActiveArbitrationPolicy_UpdateToNextArbitrationPolicy() public {        vm.startPrank(ipAddr);
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
+
+        vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
+
+        disputeModule.updateActiveArbitrationPolicy(ipAddr);
+
+        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+        assertEq(disputeModule.nextArbitrationPolicies(ipAddr), address(0));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), 0);
+
+        disputeModule.updateActiveArbitrationPolicy(ipAddr);
+
+        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+        assertEq(disputeModule.nextArbitrationPolicies(ipAddr), address(0));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), 0);
+    }
+
+    function test_DisputeModule_updateActiveArbitrationPolicy_UpdateToBlacklistedPolicy() public {
+        vm.startPrank(ipAddr);
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
+        vm.stopPrank();
+
+        vm.startPrank(u.admin);
+        disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy2), false);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
+        
+        address currentArbPolicy = disputeModule.updateActiveArbitrationPolicy(ipAddr);
+
+        assertEq(currentArbPolicy, disputeModule.baseArbitrationPolicy());
+        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+        assertEq(disputeModule.nextArbitrationPolicies(ipAddr), address(0));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), 0);
     }
 
     function test_DisputeModule_name() public {

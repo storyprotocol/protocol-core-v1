@@ -41,10 +41,15 @@ interface IDisputeModule {
     /// @param arbitrationPolicy The address of the arbitration policy
     event DefaultArbitrationPolicyUpdated(address arbitrationPolicy);
 
+    /// @notice Event emitted when the arbitration policy cooldown is updated
+    /// @param cooldown The cooldown in seconds
+    event ArbitrationPolicyCooldownUpdated(uint256 cooldown);
+
     /// @notice Event emitted when an arbitration policy is set for an ipId
     /// @param ipId The ipId address
     /// @param arbitrationPolicy The address of the arbitration policy
-    event ArbitrationPolicySet(address ipId, address arbitrationPolicy);
+    /// @param nextArbitrationUpdateTimestamp The timestamp of the next arbitration update
+    event ArbitrationPolicySet(address ipId, address arbitrationPolicy, uint256 nextArbitrationUpdateTimestamp);
 
     /// @notice Event emitted when a dispute is raised
     /// @param disputeId The dispute id
@@ -165,6 +170,10 @@ interface IDisputeModule {
     /// @param arbitrationPolicy The address of the arbitration policy
     function setBaseArbitrationPolicy(address arbitrationPolicy) external;
 
+    /// @notice Sets the arbitration policy cooldown
+    /// @param cooldown The cooldown in seconds
+    function setArbitrationPolicyCooldown(uint256 cooldown) external;
+
     /// @notice Sets the arbitration policy for an ipId
     /// @param ipId The ipId
     /// @param arbitrationPolicy The address of the arbitration policy
@@ -208,6 +217,11 @@ interface IDisputeModule {
     /// @param disputeId The dispute
     /// @param data The data to resolve the dispute
     function resolveDispute(uint256 disputeId, bytes calldata data) external;
+
+    /// @notice Updates the active arbitration policy for a given ipId
+    /// @param ipId The ipId
+    /// @return arbitrationPolicy The address of the arbitration policy
+    function updateActiveArbitrationPolicy(address ipId) external returns (address arbitrationPolicy);
 
     /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)
     /// @param ipId The ipId

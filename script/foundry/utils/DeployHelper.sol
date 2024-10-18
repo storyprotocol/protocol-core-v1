@@ -724,6 +724,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // Dispute Module and SP Dispute Policy
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        disputeModule.setArbitrationPolicyCooldown(7 days);
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();

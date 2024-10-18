@@ -146,7 +146,7 @@ contract RoyaltyPolicyLRP is
     /// @param ancestorIpId The ancestor ipId of the IP asset
     /// @param token The token address to transfer
     /// @param amount The amount of tokens to transfer
-    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
+    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external whenNotPaused {
         RoyaltyPolicyLRPStorage storage $ = _getRoyaltyPolicyLRPStorage();
 
         if (amount == 0) revert Errors.RoyaltyPolicyLRP__ZeroAmount();

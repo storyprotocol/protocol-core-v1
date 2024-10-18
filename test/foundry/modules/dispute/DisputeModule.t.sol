@@ -668,7 +668,8 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.nextArbitrationUpdateTimestamps(address(1)), 0);
     }
 
-    function test_DisputeModule_updateActiveArbitrationPolicy_UpdateToNextArbitrationPolicy() public {        vm.startPrank(ipAddr);
+    function test_DisputeModule_updateActiveArbitrationPolicy_UpdateToNextArbitrationPolicy() public {
+        vm.startPrank(ipAddr);
         disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
 
         vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
@@ -696,7 +697,7 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
-        
+
         address currentArbPolicy = disputeModule.updateActiveArbitrationPolicy(ipAddr);
 
         assertEq(currentArbPolicy, disputeModule.baseArbitrationPolicy());

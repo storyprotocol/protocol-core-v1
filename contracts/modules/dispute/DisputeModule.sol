@@ -416,15 +416,13 @@ contract DisputeModule is
     /// @notice Indicates if a dispute tag is whitelisted
     /// @param tag The dispute tag
     function isWhitelistedDisputeTag(bytes32 tag) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedDisputeTag[tag];
+        return _getDisputeModuleStorage().isWhitelistedDisputeTag[tag];
     }
 
     /// @notice Indicates if an arbitration policy is whitelisted
     /// @param arbitrationPolicy The address of the arbitration policy
     function isWhitelistedArbitrationPolicy(address arbitrationPolicy) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedArbitrationPolicy[arbitrationPolicy];
+        return _getDisputeModuleStorage().isWhitelistedArbitrationPolicy[arbitrationPolicy];
     }
 
     /// @notice Indicates if an arbitration relayer is whitelisted for a given arbitration policy
@@ -434,29 +432,25 @@ contract DisputeModule is
         address arbitrationPolicy,
         address arbitrationRelayer
     ) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
+        return _getDisputeModuleStorage().isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
     }
 
     /// @notice Returns the arbitration policy for a given ipId
     /// @param ipId The ipId
     function arbitrationPolicies(address ipId) external view returns (address policy) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.arbitrationPolicies[ipId];
+        return _getDisputeModuleStorage().arbitrationPolicies[ipId];
     }
 
     /// @notice Returns the next arbitration policy for a given ipId
     /// @param ipId The ipId
     function nextArbitrationPolicies(address ipId) external view returns (address policy) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.nextArbitrationPolicies[ipId];
+        return _getDisputeModuleStorage().nextArbitrationPolicies[ipId];
     }
 
     /// @notice Returns the next arbitration update timestamp for a given ipId
     /// @param ipId The ipId
     function nextArbitrationUpdateTimestamps(address ipId) external view returns (uint256 timestamp) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.nextArbitrationUpdateTimestamps[ipId];
+        return _getDisputeModuleStorage().nextArbitrationUpdateTimestamps[ipId];
     }
 
     /// @notice Updates the active arbitration policy for a given ipId

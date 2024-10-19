@@ -198,7 +198,11 @@ contract ArbitrationPolicyUMA is
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
         bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / MAX_PERCENT;
         if (inIpOwnerTimeWindow && msg.sender != targetIpId)
-            revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow();
+            revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
+                elapsedTime,
+                liveness,
+                msg.sender
+            );
 
         $.counterEvidenceHashes[assertionId] = counterEvidenceHash;
 

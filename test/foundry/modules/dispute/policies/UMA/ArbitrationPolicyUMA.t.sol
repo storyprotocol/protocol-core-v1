@@ -475,7 +475,9 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
 
         vm.startPrank(address(2));
-        vm.expectRevert(Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow.selector, 0, liveness, address(2))
+        );
         newArbitrationPolicyUMA.disputeAssertion(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
     }
 

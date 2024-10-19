@@ -488,7 +488,11 @@ library Errors {
     error ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
 
     /// @notice Only target IP id can dispute within time window.
-    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow();
+    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
+        uint64 elapsedTime,
+        uint64 liveness,
+        address caller
+    );
 
     /// @notice Not the UMA dispute policy.
     error ArbitrationPolicyUMA__OnlyDisputePolicyUMA();

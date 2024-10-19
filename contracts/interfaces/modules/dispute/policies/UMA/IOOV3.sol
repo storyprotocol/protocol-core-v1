@@ -47,4 +47,6 @@ interface IOOV3 {
     function getAssertion(bytes32 assertionId) external view returns (Assertion memory);
 
     function stampAssertion(bytes32 assertionId) external view returns (bytes memory);
+
+    function burnedBondPercentage() external view returns (uint256);
 }

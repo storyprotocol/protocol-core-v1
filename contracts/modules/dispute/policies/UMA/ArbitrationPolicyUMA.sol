@@ -2,12 +2,13 @@
 pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
-import { IOptimisticOracleV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOptimisticOracleV3.sol";
+import { IOOV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 
@@ -20,6 +21,8 @@ contract ArbitrationPolicyUMA is
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
+    using SafeERC20 for IERC20;
+
     /// @notice Returns the percentage scale - represents 100%
     uint32 public constant MAX_PERCENT = 100_000_000;
 
@@ -27,9 +30,9 @@ contract ArbitrationPolicyUMA is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable DISPUTE_MODULE;
 
-    /// @notice UMA Optimistic oracle v3 address
+    /// @notice OOV3 address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IOptimisticOracleV3 public immutable OPTIMISTIC_ORACLE_V3;
+    IOOV3 public immutable OOV3;
 
     /// @dev Storage structure for the ArbitrationPolicyUMA
     /// @param minLiveness The minimum liveness value
@@ -62,14 +65,14 @@ contract ArbitrationPolicyUMA is
 
     /// Constructor
     /// @param disputeModule The address of the dispute module
-    /// @param optimisticOracleV3 The address of the optimistic oracle v3
+    /// @param oov3 The address of the OOV3
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule, address optimisticOracleV3) {
+    constructor(address disputeModule, address oov3) {
         if (disputeModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroDisputeModule();
-        if (optimisticOracleV3 == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroOptimisticOracleV3();
+        if (oov3 == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroOOV3();
 
         DISPUTE_MODULE = disputeModule;
-        OPTIMISTIC_ORACLE_V3 = IOptimisticOracleV3(optimisticOracleV3);
+        OOV3 = IOOV3(oov3);
         _disableInitializers();
     }
 
@@ -126,13 +129,17 @@ contract ArbitrationPolicyUMA is
         if (liveness > $.maxLiveness) revert Errors.ArbitrationPolicyUMA__LivenessAboveMax();
         if (bond > $.maxBonds[currency]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
 
-        bytes32 assertionId = OPTIMISTIC_ORACLE_V3.assertTruth(
+        IERC20 currencyToken = IERC20(currency);
+        currencyToken.safeTransferFrom(caller, address(this), bond);
+        currencyToken.safeIncreaseAllowance(address(OOV3), bond);
+
+        bytes32 assertionId = OOV3.assertTruth(
             claim,
             caller, // asserter
             address(this), // callbackRecipient
             address(0), // escalationManager
             liveness,
-            IERC20(currency),
+            currencyToken,
             bond,
             identifier,
             bytes32(0) // domainId
@@ -186,7 +193,7 @@ contract ArbitrationPolicyUMA is
         if (parentDisputeId > 0) revert Errors.ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
 
         // Check if the address can dispute the assertion depending on the liveness and the elapsed time
-        IOptimisticOracleV3.Assertion memory assertion = OPTIMISTIC_ORACLE_V3.getAssertion(assertionId);
+        IOOV3.Assertion memory assertion = OOV3.getAssertion(assertionId);
         uint64 liveness = assertion.expirationTime - assertion.assertionTime;
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
         bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / MAX_PERCENT;
@@ -195,16 +202,20 @@ contract ArbitrationPolicyUMA is
 
         $.counterEvidenceHashes[assertionId] = counterEvidenceHash;
 
-        OPTIMISTIC_ORACLE_V3.disputeAssertion(assertionId, targetIpId);
+        IERC20 currencyToken = IERC20(assertion.currency);
+        currencyToken.safeTransferFrom(msg.sender, address(this), assertion.bond);
+        currencyToken.safeIncreaseAllowance(address(OOV3), assertion.bond);
+
+        OOV3.disputeAssertion(assertionId, msg.sender);
 
         emit AssertionDisputed(assertionId, counterEvidenceHash);
     }
 
-    /// @notice Callback function that is called by Optimistic Oracle V3 when an assertion is resolved
-    /// @param assertionId The identifier of the assertion that was resolved
-    /// @param assertedTruthfully Whether the assertion was resolved as truthful or not
+    /// @notice OOV3 callback function forwhen an assertion is resolved
+    /// @param assertionId The resolved assertion identifier
+    /// @param assertedTruthfully Indicates if the assertion was resolved as truthful or not
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant {
-        if (msg.sender != address(OPTIMISTIC_ORACLE_V3)) revert Errors.ArbitrationPolicyUMA__NotOptimisticOracleV3();
+        if (msg.sender != address(OOV3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
@@ -212,10 +223,10 @@ contract ArbitrationPolicyUMA is
         IDisputeModule(DISPUTE_MODULE).setDisputeJudgement(disputeId, assertedTruthfully, "");
     }
 
-    /// @notice Callback function that is called by Optimistic Oracle V3 when an assertion is disputed
-    /// @param assertionId The identifier of the assertion that was disputed
+    /// @notice OOV3 callback function for when an assertion is disputed
+    /// @param assertionId The disputed assertion identifier
     function assertionDisputedCallback(bytes32 assertionId) external {
-        if (msg.sender != address(OPTIMISTIC_ORACLE_V3)) revert Errors.ArbitrationPolicyUMA__NotOptimisticOracleV3();
+        if (msg.sender != address(OOV3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if ($.counterEvidenceHashes[assertionId] == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();

@@ -430,8 +430,8 @@ library Errors {
     /// @notice Zero address provided for Dispute Module.
     error ArbitrationPolicyUMA__ZeroDisputeModule();
 
-    /// @notice Zero address provided for Optimistic Oracle V3.
-    error ArbitrationPolicyUMA__ZeroOptimisticOracleV3();
+    /// @notice Zero address provided for OOV3.
+    error ArbitrationPolicyUMA__ZeroOOV3();
 
     /// @notice Zero address provided for Access Manager.
     error ArbitrationPolicyUMA__ZeroAccessManager();
@@ -460,8 +460,8 @@ library Errors {
     /// @notice Cannot cancel.
     error ArbitrationPolicyUMA__CannotCancel();
 
-    /// @notice Only Optimistic Oracle V3 can call.
-    error ArbitrationPolicyUMA__NotOptimisticOracleV3();
+    /// @notice Only OOV3 can call.
+    error ArbitrationPolicyUMA__NotOOV3();
 
     /// @notice No counter evidence provided.
     error ArbitrationPolicyUMA__NoCounterEvidence();

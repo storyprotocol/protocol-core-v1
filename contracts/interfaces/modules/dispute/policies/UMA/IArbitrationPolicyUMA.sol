@@ -2,10 +2,10 @@
 pragma solidity 0.8.26;
 
 import { IArbitrationPolicy } from "../IArbitrationPolicy.sol";
-import { IOptimisticOracleV3CallbackRecipient } from "./IOptimisticOracleV3CallbackRecipient.sol";
+import { IOOV3Callbacks } from "./IOOV3Callbacks.sol";
 
 /// @title Arbitration Policy UMA Interface
-interface IArbitrationPolicyUMA is IArbitrationPolicy, IOptimisticOracleV3CallbackRecipient {
+interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
     /// @notice Emitted when liveness is set
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value

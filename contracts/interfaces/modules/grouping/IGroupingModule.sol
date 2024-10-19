@@ -51,7 +51,8 @@ interface IGroupingModule is IModule {
 
     /// @notice Whitelists a group reward pool.
     /// @param rewardPool The address of the group reward pool.
-    function whitelistGroupRewardPool(address rewardPool) external;
+    /// @param allowed Whether the group reward pool is whitelisted.
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external;
 
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.

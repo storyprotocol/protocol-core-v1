@@ -620,7 +620,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getSalt(type(IpRoyaltyVault).name),
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(disputeModule), address(royaltyModule))
+                    abi.encode(address(disputeModule), address(royaltyModule), address(ipAssetRegistry), address(groupingModule))
                 )
             )
         );
@@ -730,6 +730,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(royaltyPolicyLRP));
         protocolPauser.addPausable(address(ipAssetRegistry));
         protocolPauser.addPausable(address(groupingModule));
+        protocolPauser.addPausable(address(evenSplitGroupPool));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -754,6 +755,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
         arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
         arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
+        disputeModule.setArbitrationPolicyCooldown(7 days);
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
@@ -774,7 +776,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
 
         // add evenSplitGroupPool to whitelist of group pools
-        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool));
+        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
     }
 
     function _configureRoles() private {
@@ -799,6 +801,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(evenSplitGroupPool), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(
             address(coreMetadataModule),
             selectors,
@@ -863,6 +867,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         protocolAccessManager.setTargetFunctionRole(
             address(groupingModule),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(evenSplitGroupPool),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );

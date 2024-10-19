@@ -138,7 +138,8 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
 
@@ -150,8 +151,16 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: commTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative.selector,
+                ipAcct[3],
+                licenseIds
+            )
+        );
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
 
         // Mint license for commercial remixing, then link to new IPA to make it a derivative
@@ -162,7 +171,8 @@ contract Licensing_Scenarios is BaseIntegration {
             licenseTermsId: commRemixTermsId,
             amount: 1,
             receiver: u.bob,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "");
 

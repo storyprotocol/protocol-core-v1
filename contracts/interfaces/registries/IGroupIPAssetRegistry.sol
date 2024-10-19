@@ -13,7 +13,8 @@ interface IGroupIPAssetRegistry {
 
     /// @notice Whitelists a group reward pool
     /// @param rewardPool The address of the group reward pool
-    function whitelistGroupRewardPool(address rewardPool) external;
+    /// @param allowed Whether the group reward pool is whitelisted
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external;
 
     /// @notice Adds a member to a Group IPA
     /// @param groupId The address of the Group IPA.

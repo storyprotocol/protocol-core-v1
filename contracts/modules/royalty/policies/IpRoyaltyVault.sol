@@ -15,6 +15,7 @@ import { IVaultController } from "../../../interfaces/modules/royalty/policies/I
 import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IRoyaltyModule } from "../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { IGroupIPAssetRegistry } from "../../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { Errors } from "../../../lib/Errors.sol";
 
 /// @title Ip Royalty Vault
@@ -50,6 +51,14 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     bytes32 private constant IpRoyaltyVaultStorageLocation =
         0xe1c3e3b0c445d504edb1b9e6fa2ca4fab60584208a4bc973fe2db2b554d1df00;
 
+    /// @notice Grouping module address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable GROUPING_MODULE;
+
+    /// @notice IP Asset Registry address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IGroupIPAssetRegistry public immutable IP_ASSET_REGISTRY;
+
     /// @notice Dispute module address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
@@ -67,13 +76,19 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @notice Constructor
     /// @param disputeModule The address of the dispute module
     /// @param royaltyModule The address of the royalty module
+    /// @param ipAssetRegistry The address of the group IP asset registry
+    /// @param groupingModule The address of the grouping module
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule, address royaltyModule) {
+    constructor(address disputeModule, address royaltyModule, address ipAssetRegistry, address groupingModule) {
         if (disputeModule == address(0)) revert Errors.IpRoyaltyVault__ZeroDisputeModule();
         if (royaltyModule == address(0)) revert Errors.IpRoyaltyVault__ZeroRoyaltyModule();
+        if (ipAssetRegistry == address(0)) revert Errors.IpRoyaltyVault__ZeroIpAssetRegistry();
+        if (groupingModule == address(0)) revert Errors.IpRoyaltyVault__ZeroGroupingModule();
 
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+        IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
+        GROUPING_MODULE = groupingModule;
 
         _disableInitializers();
     }
@@ -183,6 +198,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         if (ROYALTY_MODULE.isIpRoyaltyVault(claimer) && msg.sender != claimer)
             revert Errors.IpRoyaltyVault__VaultsMustClaimAsSelf();
 
+        if (IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(claimer) && msg.sender != GROUPING_MODULE)
+            revert Errors.IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
+
         uint256[] memory claimableAmounts = new uint256[](tokenList.length);
         for (uint256 i = 0; i < tokenList.length; i++) {
             claimableAmounts[i] = _claimableRevenue(claimer, snapshotId, tokenList[i]);
@@ -212,6 +230,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
         if (ROYALTY_MODULE.isIpRoyaltyVault(claimer) && msg.sender != claimer)
             revert Errors.IpRoyaltyVault__VaultsMustClaimAsSelf();
+
+        if (IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(claimer) && msg.sender != GROUPING_MODULE)
+            revert Errors.IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
 
         uint256 claimableAmount;
         for (uint256 i = 0; i < snapshotIds.length; i++) {

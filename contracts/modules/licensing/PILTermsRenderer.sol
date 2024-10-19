@@ -21,6 +21,12 @@ contract PILTermsRenderer {
         // **Attributions**
         string memory json = string(
             abi.encodePacked(
+                '{"trait_type": "Royalty Policy", "value": "',
+                terms.royaltyPolicy.toHexString(),
+                '"},',
+                '{"trait_type": "Default Minting Fee", "value": "',
+                terms.defaultMintingFee.toString(),
+                '"},',
                 '{"trait_type": "Expiration", "value": "',
                 terms.expiration == 0 ? "never" : terms.expiration.toString(),
                 '"},',
@@ -30,7 +36,7 @@ contract PILTermsRenderer {
                 '{"trait_type": "URI", "value": "',
                 terms.uri,
                 '"},',
-                // Skip transferable, it's already added in the common attributes by the LicenseRegistry.
+                // Skip transferable, it's already added in the common attributes by LicenseToken (See {LicenseToken-tokenURI}).
                 _policyCommercialTraitsToJson(terms),
                 _policyDerivativeTraitsToJson(terms)
             )
@@ -61,7 +67,7 @@ contract PILTermsRenderer {
                     '{"trait_type": "Commercial Revenue Ceiling", "value": ',
                     terms.commercialRevCeiling.toString(),
                     "},",
-                    '{"trait_type": "Commercializer Check", "value": "',
+                    '{"trait_type": "Commercializer Checker", "value": "',
                     terms.commercializerChecker.toHexString(),
                     // Skip on commercializerCheckerData as it's bytes as irrelevant for the user metadata
                     '"},'

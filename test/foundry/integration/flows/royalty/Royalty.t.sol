@@ -80,7 +80,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 licenseTermsId: commRemixTermsId,
                 amount: mintAmount,
                 receiver: u.bob,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             }); // first license minted
             licenseIds[1] = licenseIds[0] + 1; // second license minted
             licenseIds[2] = licenseIds[0] + 2; // third license minted
@@ -131,7 +132,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 licenseTermsId: commRemixTermsId,
                 amount: mintAmount,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             vm.expectEmit(address(royaltyModule));
@@ -148,7 +150,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 licenseTermsId: commRemixTermsId,
                 amount: mintAmount,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             ipAcct[3] = registerIpAccount(address(mockNFT), 3, u.carl);
@@ -247,7 +250,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
                 licenseTermsId: commRemixExternalTermsId,
                 amount: 1,
                 receiver: u.alice,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             mockNFT.mintId(u.alice, 5);

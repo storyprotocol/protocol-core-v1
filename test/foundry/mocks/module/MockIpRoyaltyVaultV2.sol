@@ -15,7 +15,12 @@ contract MockIpRoyaltyVaultV2 is IpRoyaltyVault {
         0x2942176f94974e015a9b06f79a3a2280d18f1872591c134ba237fa184e378300;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyPolicyLAP, address disputeModule) IpRoyaltyVault(royaltyPolicyLAP, disputeModule) {
+    constructor(
+        address royaltyPolicyLAP,
+        address disputeModule,
+        address licenseRegistry,
+        address groupingModule
+    ) IpRoyaltyVault(royaltyPolicyLAP, disputeModule, licenseRegistry, groupingModule) {
         _disableInitializers();
     }
 

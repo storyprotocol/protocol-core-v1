@@ -82,6 +82,7 @@ interface ILicensingModule is IModule {
     /// @param amount The amount of license tokens to mint.
     /// @param receiver The address of the receiver.
     /// @param royaltyContext The context of the royalty.
+    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay. if set to 0 then no limit.
     /// @return startLicenseTokenId The start ID of the minted license tokens.
     function mintLicenseTokens(
         address licensorIpId,
@@ -89,7 +90,8 @@ interface ILicensingModule is IModule {
         uint256 licenseTermsId,
         uint256 amount,
         address receiver,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) external returns (uint256 startLicenseTokenId);
 
     /// @notice Registers a derivative directly with parent IP's license terms, without needing license tokens,
@@ -102,12 +104,14 @@ interface ILicensingModule is IModule {
     /// @param licenseTermsIds The IDs of the license terms that the parent IP supports.
     /// @param licenseTemplate The address of the license template of the license terms Ids.
     /// @param royaltyContext The context of the royalty.
+    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay. if set to 0 then no limit.
     function registerDerivative(
         address childIpId,
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
-        bytes calldata royaltyContext
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee
     ) external;
 
     /// @notice Registers a derivative with license tokens.

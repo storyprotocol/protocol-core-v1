@@ -153,7 +153,7 @@ contract ArbitrationPolicyUMA is
     }
 
     /// @notice Executes custom logic on disputing judgement
-    /// @dev Enforced to be only callable by the DisputeModule
+    /// @dev Enforced to be only callable by the DisputeModule. For UMA arbitration, no custom logic is required.
     /// @param disputeId The dispute id
     /// @param decision The decision of the dispute
     /// @param data The arbitrary data used to set the dispute judgement
@@ -169,7 +169,7 @@ contract ArbitrationPolicyUMA is
     }
 
     /// @notice Executes custom logic on resolving dispute
-    /// @dev Enforced to be only callable by the DisputeModule
+    /// @dev Enforced to be only callable by the DisputeModule. For UMA arbitration, no custom logic is required.
     /// @param caller Address of the caller
     /// @param disputeId The dispute id
     /// @param data The arbitrary data used to resolve the dispute

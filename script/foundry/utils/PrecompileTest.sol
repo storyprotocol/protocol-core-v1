@@ -24,13 +24,13 @@ contract PrecompileTest is Script {
     address internal USER = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
 
     // protocol addresses
-    address internal ROYALTY_POLICY_LAP = 0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6;
-    address internal ROYALTY_POLICY_LRP = 0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd;
-    address internal SUSD = 0x12A8b0DcC6e3bB0915638361D9D49942Da07F455;
-    address internal PIL_TEMPLATE = 0x58E2c909D557Cd23EF90D14f8fd21667A5Ae7a93;
-    address internal IP_ASSET_REGISTRY = 0x28E59E91C0467e89fd0f0438D47Ca839cDfEc095;
-    address internal LICENSING_MODULE = 0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae;
-    address internal ROYALTY_MODULE = 0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B;
+    address internal ROYALTY_POLICY_LAP = 0xe9009284f22b1701A0dfD8160ED351fa6914F7D5;
+    address internal ROYALTY_POLICY_LRP = 0x196c6b5B3B1Fb5e209eb880FF63a6d365A630b4D;
+    address internal SUSD = 0x4b2400be7E48fCF7b0724aB8c1A7612f63b1d6eb;
+    address internal PIL_TEMPLATE = 0x1dF6c8854f7804Be5A6671d06fB6887fAA1A638C;
+    address internal IP_ASSET_REGISTRY = 0xcB6aCe386bD02351aFfA857D9425666c3fc38579;
+    address internal LICENSING_MODULE = 0xdB3F59a924C3F5c6566Fefd5674BeFBa8B4F64B5;
+    address internal ROYALTY_MODULE = 0x0A5978E0a9814B096E3625234bc3e91C041A51bB;
 
     // terms
     uint256 internal mintingFee = 1000e18;
@@ -351,7 +351,8 @@ contract PrecompileTest is Script {
             licenseTermsId: commDerivTermsIdLrp10,
             amount: 1,
             receiver: ipAcct[7],
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 1e30
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[7], license_6_7, "");
 
@@ -361,7 +362,8 @@ contract PrecompileTest is Script {
             licenseTermsId: commDerivTermsIdLrp10,
             amount: 1,
             receiver: ipAcct[8],
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 1e30
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[8], license_6_8, "");
 
@@ -371,7 +373,8 @@ contract PrecompileTest is Script {
             licenseTermsId: commDerivTermsIdLrp10,
             amount: 1,
             receiver: ipAcct[9],
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 1e30
         });
 
         licenses_7_8_9[1] = licensingModule.mintLicenseTokens({
@@ -380,7 +383,8 @@ contract PrecompileTest is Script {
             licenseTermsId: commDerivTermsIdLrp10,
             amount: 1,
             receiver: ipAcct[9],
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 1e30
         });
 
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[9], licenses_7_8_9, "");
@@ -391,7 +395,8 @@ contract PrecompileTest is Script {
             licenseTermsId: commDerivTermsIdLrp10,
             amount: 1,
             receiver: ipAcct[10],
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 1e30
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[10], license_9_10, "");
 

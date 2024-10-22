@@ -45,7 +45,7 @@ contract MockAssets is Script, BroadcastManager, JsonDeploymentHandler {
     }
 
     function _postdeploy(string memory contractKey, address newAddress) private {
-        _writeAddress(contractKey, newAddress);
         console2.log(string.concat(contractKey, " deployed to:"), newAddress);
+        _writeAddress(contractKey, newAddress);
     }
 }

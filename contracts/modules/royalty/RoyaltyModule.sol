@@ -31,7 +31,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     using SafeERC20 for IERC20;
 
     /// @notice Ip graph precompile contract address
-    address public constant IP_GRAPH = address(0x1B);
+    address public constant IP_GRAPH = address(0x0101);
 
     /// @notice Returns the percentage scale - represents 100%
     uint32 public constant MAX_PERCENT = 100_000_000;

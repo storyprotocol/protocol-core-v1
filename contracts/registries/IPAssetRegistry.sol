@@ -6,6 +6,8 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { GroupIPAssetRegistry } from "./GroupIPAssetRegistry.sol";
@@ -34,12 +36,20 @@ contract IPAssetRegistry is
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
+    using SafeERC20 for IERC20;
 
     /// @dev Storage structure for the IPAssetRegistry
     /// @notice Tracks the total number of IP assets in existence.
+    /// @param totalSupply The total number of IP assets registered.
+    /// @param treasury The address of the treasury that receives registration fees.
+    /// @param feeToken The address of the token used to pay registration fees.
+    /// @param feeAmount The amount of the registration fee.
     /// @custom:storage-location erc7201:story-protocol.IPAssetRegistry
     struct IPAssetRegistryStorage {
         uint256 totalSupply;
+        address treasury;
+        address feeToken;
+        uint96 feeAmount;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -80,6 +90,17 @@ contract IPAssetRegistry is
     }
 
     function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal override returns (address id) {
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+
+        // Pay registration fee
+        uint96 feeAmount = $.feeAmount;
+        if (feeAmount > 0) {
+            address feeToken = $.feeToken;
+            address treasury = $.treasury;
+            IERC20(feeToken).safeTransferFrom(msg.sender, treasury, uint256(feeAmount));
+            emit IPRegistrationFeePaid(msg.sender, treasury, feeToken, feeAmount);
+        }
+
         id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 
@@ -93,9 +114,25 @@ contract IPAssetRegistry is
         ipAccount.setString("URI", uri);
         ipAccount.setUint256("REGISTRATION_DATE", registrationDate);
 
-        _getIPAssetRegistryStorage().totalSupply++;
+        $.totalSupply++;
 
         emit IPRegistered(id, chainid, tokenContract, tokenId, name, uri, registrationDate);
+    }
+
+    /// @notice Sets the registration fee for IP assets.
+    /// @param treasury The address of the treasury that will receive the fee.
+    /// @param feeToken The address of the token used to pay the fee.
+    /// @param feeAmount The amount of the fee.
+    function setRegistrationFee(address treasury, address feeToken, uint96 feeAmount) external restricted {
+        if (feeAmount > 0) {
+            if (treasury == address(0)) revert Errors.IPAssetRegistry__ZeroAddress("treasury");
+            if (feeToken == address(0)) revert Errors.IPAssetRegistry__ZeroAddress("feeToken");
+        }
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+        $.feeToken = feeToken;
+        $.feeAmount = feeAmount;
+        $.treasury = treasury;
+        emit RegistrationFeeSet(treasury, feeToken, feeAmount);
     }
 
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
@@ -118,6 +155,24 @@ contract IPAssetRegistry is
     /// @notice Gets the total number of IP assets registered in the protocol.
     function totalSupply() external view returns (uint256) {
         return _getIPAssetRegistryStorage().totalSupply;
+    }
+
+    /// @notice Retrieves the treasury address for IP assets.
+    /// @return treasury The address of the treasury.
+    function getTreasury() external view returns (address) {
+        return _getIPAssetRegistryStorage().treasury;
+    }
+
+    /// @notice Retrieves the registration fee token for IP assets.
+    /// @return feeToken The address of the token used to pay the fee.
+    function getFeeToken() external view returns (address) {
+        return _getIPAssetRegistryStorage().feeToken;
+    }
+
+    /// @notice Retrieves the registration fee amount for IP assets.
+    /// @return feeAmount The amount of the fee.
+    function getFeeAmount() external view returns (uint96) {
+        return _getIPAssetRegistryStorage().feeAmount;
     }
 
     /// @dev Retrieves the name and URI of from IP NFT.

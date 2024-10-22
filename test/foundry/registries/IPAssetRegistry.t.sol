@@ -32,6 +32,8 @@ contract IPAssetRegistryTest is BaseTest {
     uint256 public tokenId;
     address public ipId;
 
+    error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
+
     /// @notice Initializes the IP asset registry testing contract.
     function setUp() public virtual override {
         super.setUp();
@@ -75,6 +77,104 @@ contract IPAssetRegistryTest is BaseTest {
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
+    function test_IPAssetRegistry_SetRegisterFee() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(treasury, address(erc20), 1000);
+        registry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        assertEq(registry.getTreasury(), treasury, "Treasury not set");
+        assertEq(registry.getFeeToken(), address(erc20), "Fee token not set");
+        assertEq(registry.getFeeAmount(), 1000, "Fee amount not set");
+    }
+
+    function test_IPAssetRegistry_revert_SetRegisterFeeZeroTreasury() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__ZeroAddress.selector, "treasury"));
+        vm.prank(u.admin);
+        registry.setRegistrationFee(address(0), address(erc20), 1000);
+    }
+
+    function test_IPAssetRegistry_revert_SetRegisterFeeZeroTokenAddress() public {
+        vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__ZeroAddress.selector, "feeToken"));
+        vm.prank(u.admin);
+        registry.setRegistrationFee(address(0x123), address(0), 1000);
+    }
+
+    function test_IPAssetRegistry_resetRegisterFeeBackToZero() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(treasury, address(erc20), 1000);
+        registry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        assertEq(registry.getTreasury(), treasury, "Treasury not set");
+        assertEq(registry.getFeeToken(), address(erc20), "Fee token not set");
+        assertEq(registry.getFeeAmount(), 1000, "Fee amount not set");
+
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(address(0), address(0), 0);
+        registry.setRegistrationFee(address(0), address(0), 0);
+
+        assertEq(registry.getTreasury(), address(0), "Treasury not reset");
+        assertEq(registry.getFeeToken(), address(0), "Fee token not reset");
+        assertEq(registry.getFeeAmount(), 0, "Fee amount not reset");
+    }
+
+    /// @notice Tests registration of IP permissionlessly.
+    function test_IPAssetRegistry_RegisterWithPayRegisterFee() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(treasury, address(erc20), 1000);
+        registry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        erc20.mint(alice, 1000);
+        vm.prank(alice);
+        erc20.approve(address(registry), 1000);
+
+        uint256 totalSupply = registry.totalSupply();
+
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegistrationFeePaid(alice, treasury, address(erc20), 1000);
+        emit IIPAssetRegistry.IPRegistered(
+            ipId,
+            block.chainid,
+            tokenAddress,
+            tokenId,
+            name,
+            "https://storyprotocol.xyz/erc721/99",
+            block.timestamp
+        );
+        vm.prank(alice);
+        registry.register(block.chainid, tokenAddress, tokenId);
+
+        assertEq(totalSupply + 1, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
+    /// @notice Tests registration of IP permissionlessly.
+    function test_IPAssetRegistry_revert_RegisterNotEnoughRegisterFee() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(treasury, address(erc20), 1000);
+        registry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        erc20.mint(alice, 100);
+        vm.prank(alice);
+        erc20.approve(address(registry), 100);
+
+        vm.expectRevert(abi.encodeWithSelector(ERC20InsufficientAllowance.selector, address(registry), 100, 1000));
+        vm.prank(alice);
+        registry.register(block.chainid, tokenAddress, tokenId);
     }
 
     /// @notice Tests registration of IP permissionlessly for IPAccount already created.

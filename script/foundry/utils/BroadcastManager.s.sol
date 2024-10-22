@@ -2,6 +2,7 @@
 pragma solidity ^0.8.23;
 
 import { Script } from "forge-std/Script.sol";
+import { console2 } from "forge-std/console2.sol";
 
 import { StringUtil } from "./StringUtil.sol";
 import { MockERC20 } from "../../../test/foundry/mocks/token/MockERC20.sol";
@@ -43,6 +44,13 @@ contract BroadcastManager is Script {
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
             upgraderExecDelay = 10 minutes;
             vm.startBroadcast(deployerPrivateKey);
+        } else if (block.chainid == 1516) {
+            deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
+            deployer = vm.addr(deployerPrivateKey);
+            multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
+            relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
+            upgraderExecDelay = 10 minutes;
+            vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 1315) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
@@ -67,6 +75,7 @@ contract BroadcastManager is Script {
             upgraderExecDelay = 10 minutes;
             vm.startPrank(deployer);
         } else {
+            console2.log("Unsupported chain", block.chainid);
             revert("Unsupported chain");
         }
     }

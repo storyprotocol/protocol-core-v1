@@ -32,6 +32,7 @@ contract DisputeModule is
 
     /// @dev Storage for DisputeModule
     /// @param disputeCounter The dispute ID counter
+    /// @param arbitrationPolicyCooldown The cooldown for updating the arbitration policy
     /// @param baseArbitrationPolicy The address of the base arbitration policy
     /// @param disputes Returns the dispute information for a given dispute id
     /// @param isWhitelistedDisputeTag Indicates if a dispute tag is whitelisted
@@ -39,16 +40,21 @@ contract DisputeModule is
     /// @param isWhitelistedArbitrationRelayer Indicates if an arbitration relayer
     /// is whitelisted for a given arbitration policy
     /// @param arbitrationPolicies Arbitration policy for a given ipId
+    /// @param nextArbitrationPolicies Next arbitration policy for a given ipId
+    /// @param arbitrationUpdateTimestamps Timestamp of when the arbitration policy will be updated for a given ipId
     /// @param successfulDisputesPerIp Counter of successful disputes per ipId
     /// @custom:storage-location erc7201:story-protocol.DisputeModule
     struct DisputeModuleStorage {
         uint256 disputeCounter;
+        uint256 arbitrationPolicyCooldown;
         address baseArbitrationPolicy;
         mapping(uint256 => Dispute) disputes;
         mapping(bytes32 => bool) isWhitelistedDisputeTag;
         mapping(address => bool) isWhitelistedArbitrationPolicy;
         mapping(address => mapping(address => bool)) isWhitelistedArbitrationRelayer;
         mapping(address => address) arbitrationPolicies;
+        mapping(address => address) nextArbitrationPolicies;
+        mapping(address => uint256) nextArbitrationUpdateTimestamps;
         mapping(address => uint256) successfulDisputesPerIp;
     }
 
@@ -155,17 +161,30 @@ contract DisputeModule is
         emit DefaultArbitrationPolicyUpdated(arbitrationPolicy);
     }
 
+    /// @notice Sets the arbitration policy cooldown
+    /// @param cooldown The cooldown in seconds
+    function setArbitrationPolicyCooldown(uint256 cooldown) external restricted {
+        if (cooldown == 0) revert Errors.DisputeModule__ZeroArbitrationPolicyCooldown();
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        $.arbitrationPolicyCooldown = cooldown;
+
+        emit ArbitrationPolicyCooldownUpdated(cooldown);
+    }
+
     /// @notice Sets the arbitration policy for an ipId
     /// @param ipId The ipId
-    /// @param arbitrationPolicy The address of the arbitration policy
-    function setArbitrationPolicy(address ipId, address arbitrationPolicy) external verifyPermission(ipId) {
+    /// @param nextArbitrationPolicy The address of the arbitration policy
+    function setArbitrationPolicy(address ipId, address nextArbitrationPolicy) external verifyPermission(ipId) {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy])
+        if (!$.isWhitelistedArbitrationPolicy[nextArbitrationPolicy])
             revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
 
-        $.arbitrationPolicies[ipId] = arbitrationPolicy;
+        $.nextArbitrationPolicies[ipId] = nextArbitrationPolicy;
 
-        emit ArbitrationPolicySet(ipId, arbitrationPolicy);
+        uint256 nextArbitrationUpdateTimestamp = block.timestamp + $.arbitrationPolicyCooldown;
+        $.nextArbitrationUpdateTimestamps[ipId] = nextArbitrationUpdateTimestamp;
+
+        emit ArbitrationPolicySet(ipId, nextArbitrationPolicy, nextArbitrationUpdateTimestamp);
     }
 
     /// @notice Raises a dispute on a given ipId
@@ -185,14 +204,14 @@ contract DisputeModule is
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
         if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
 
-        address arbitrationPolicy = $.arbitrationPolicies[targetIpId];
-        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
-
+        address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
         uint256 disputeId = ++$.disputeCounter;
+        uint256 disputeTimestamp = block.timestamp;
 
         $.disputes[disputeId] = Dispute({
             targetIpId: targetIpId,
             disputeInitiator: msg.sender,
+            disputeTimestamp: disputeTimestamp,
             arbitrationPolicy: arbitrationPolicy,
             disputeEvidenceHash: disputeEvidenceHash,
             targetTag: targetTag,
@@ -202,7 +221,16 @@ contract DisputeModule is
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(msg.sender, data);
 
-        emit DisputeRaised(disputeId, targetIpId, msg.sender, arbitrationPolicy, disputeEvidenceHash, targetTag, data);
+        emit DisputeRaised(
+            disputeId,
+            targetIpId,
+            msg.sender,
+            disputeTimestamp,
+            arbitrationPolicy,
+            disputeEvidenceHash,
+            targetTag,
+            data
+        );
 
         return disputeId;
     }
@@ -279,10 +307,12 @@ contract DisputeModule is
         if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
 
         uint256 disputeId = ++$.disputeCounter;
+        uint256 disputeTimestamp = block.timestamp;
 
         $.disputes[disputeId] = Dispute({
             targetIpId: derivativeIpId,
             disputeInitiator: msg.sender,
+            disputeTimestamp: disputeTimestamp,
             arbitrationPolicy: arbitrationPolicy,
             disputeEvidenceHash: "",
             targetTag: parentDispute.currentTag,
@@ -296,7 +326,8 @@ contract DisputeModule is
             parentIpId,
             derivativeIpId,
             parentDisputeId,
-            parentDispute.currentTag
+            parentDispute.currentTag,
+            disputeTimestamp
         );
     }
 
@@ -324,33 +355,43 @@ contract DisputeModule is
 
         IArbitrationPolicy(dispute.arbitrationPolicy).onResolveDispute(msg.sender, disputeId, data);
 
-        emit DisputeResolved(disputeId);
+        emit DisputeResolved(disputeId, data);
+    }
+
+    /// @notice Updates the active arbitration policy for a given ipId
+    /// @param ipId The ipId
+    /// @return arbitrationPolicy The address of the arbitration policy
+    function updateActiveArbitrationPolicy(address ipId) external returns (address arbitrationPolicy) {
+        return _updateActiveArbitrationPolicy(ipId);
     }
 
     /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)
     /// @param ipId The ipId
     /// @return isTagged True if the ipId is tagged
     function isIpTagged(address ipId) external view returns (bool) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.successfulDisputesPerIp[ipId] > 0;
+        return _getDisputeModuleStorage().successfulDisputesPerIp[ipId] > 0;
     }
 
     /// @notice Dispute ID counter
     function disputeCounter() external view returns (uint256) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.disputeCounter;
+        return _getDisputeModuleStorage().disputeCounter;
+    }
+
+    /// @notice Returns the arbitration policy cooldown
+    function arbitrationPolicyCooldown() external view returns (uint256) {
+        return _getDisputeModuleStorage().arbitrationPolicyCooldown;
     }
 
     /// @notice The address of the base arbitration policy
     function baseArbitrationPolicy() external view returns (address) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.baseArbitrationPolicy;
+        return _getDisputeModuleStorage().baseArbitrationPolicy;
     }
 
     /// @notice Returns the dispute information for a given dispute id
     /// @param disputeId The dispute id
     /// @return targetIpId The ipId that is the target of the dispute
     /// @return disputeInitiator The address of the dispute initiator
+    /// @return disputeTimestamp The timestamp of the dispute
     /// @return arbitrationPolicy The address of the arbitration policy
     /// @return disputeEvidenceHash The hash pointing to the dispute evidence
     /// @return targetTag The target tag of the dispute
@@ -364,6 +405,7 @@ contract DisputeModule is
         returns (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
@@ -375,6 +417,7 @@ contract DisputeModule is
         return (
             dispute.targetIpId,
             dispute.disputeInitiator,
+            dispute.disputeTimestamp,
             dispute.arbitrationPolicy,
             dispute.disputeEvidenceHash,
             dispute.targetTag,
@@ -385,38 +428,68 @@ contract DisputeModule is
 
     /// @notice Indicates if a dispute tag is whitelisted
     /// @param tag The dispute tag
-    /// @return allowed Indicates if the dispute tag is whitelisted
     function isWhitelistedDisputeTag(bytes32 tag) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedDisputeTag[tag];
+        return _getDisputeModuleStorage().isWhitelistedDisputeTag[tag];
     }
 
     /// @notice Indicates if an arbitration policy is whitelisted
     /// @param arbitrationPolicy The address of the arbitration policy
-    /// @return allowed Indicates if the arbitration policy is whitelisted
     function isWhitelistedArbitrationPolicy(address arbitrationPolicy) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedArbitrationPolicy[arbitrationPolicy];
+        return _getDisputeModuleStorage().isWhitelistedArbitrationPolicy[arbitrationPolicy];
     }
 
     /// @notice Indicates if an arbitration relayer is whitelisted for a given arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param arbitrationRelayer The address of the arbitration relayer
-    /// @return allowed Indicates if the arbitration relayer is whitelisted
     function isWhitelistedArbitrationRelayer(
         address arbitrationPolicy,
         address arbitrationRelayer
     ) external view returns (bool allowed) {
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
+        return _getDisputeModuleStorage().isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
     }
 
-    /// @notice Arbitration policy for a given ipId
+    /// @notice Returns the arbitration policy for a given ipId
     /// @param ipId The ipId
-    /// @return policy The address of the arbitration policy
     function arbitrationPolicies(address ipId) external view returns (address policy) {
+        return _getDisputeModuleStorage().arbitrationPolicies[ipId];
+    }
+
+    /// @notice Returns the next arbitration policy for a given ipId
+    /// @param ipId The ipId
+    function nextArbitrationPolicies(address ipId) external view returns (address policy) {
+        return _getDisputeModuleStorage().nextArbitrationPolicies[ipId];
+    }
+
+    /// @notice Returns the next arbitration update timestamp for a given ipId
+    /// @param ipId The ipId
+    function nextArbitrationUpdateTimestamps(address ipId) external view returns (uint256 timestamp) {
+        return _getDisputeModuleStorage().nextArbitrationUpdateTimestamps[ipId];
+    }
+
+    /// @notice Updates the active arbitration policy for a given ipId
+    /// @param ipId The ipId
+    /// @return arbitrationPolicy The address of the arbitration policy
+    function _updateActiveArbitrationPolicy(address ipId) internal returns (address arbitrationPolicy) {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        return $.arbitrationPolicies[ipId];
+
+        // in normal conditions the active arbitration policy is in arbitrationPolicies
+        arbitrationPolicy = $.arbitrationPolicies[ipId];
+
+        // if the next arbitration policy is set and the cooldown has passed
+        // then the active arbitration policy is updated
+        uint256 nextArbitrationUpdateTimestamp = $.nextArbitrationUpdateTimestamps[ipId];
+        if (nextArbitrationUpdateTimestamp > 0 && nextArbitrationUpdateTimestamp < block.timestamp) {
+            address nextArbitrationPolicy = $.nextArbitrationPolicies[ipId];
+            $.arbitrationPolicies[ipId] = nextArbitrationPolicy;
+            arbitrationPolicy = nextArbitrationPolicy;
+
+            delete $.nextArbitrationUpdateTimestamps[ipId];
+            delete $.nextArbitrationPolicies[ipId];
+        }
+
+        // if the resulting arbitration policy is not whitelisted or has been blacklisted
+        // then the active arbitration policy is the base arbitration policy
+        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

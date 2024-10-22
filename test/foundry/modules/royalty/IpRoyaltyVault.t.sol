@@ -90,18 +90,55 @@ contract TestIpRoyaltyVault is BaseTest {
 
     function test_IpRoyaltyVault_constructor_revert_ZeroDisputeModule() public {
         vm.expectRevert(Errors.IpRoyaltyVault__ZeroDisputeModule.selector);
-        IpRoyaltyVault vault = new IpRoyaltyVault(address(0), address(royaltyModule));
+        IpRoyaltyVault vault = new IpRoyaltyVault(
+            address(0),
+            address(royaltyModule),
+            address(licenseRegistry),
+            address(groupingModule)
+        );
     }
 
     function test_IpRoyaltyVault_constructor_revert_ZeroRoyaltyModule() public {
         vm.expectRevert(Errors.IpRoyaltyVault__ZeroRoyaltyModule.selector);
-        IpRoyaltyVault vault = new IpRoyaltyVault(address(disputeModule), address(0));
+        IpRoyaltyVault vault = new IpRoyaltyVault(
+            address(disputeModule),
+            address(0),
+            address(licenseRegistry),
+            address(groupingModule)
+        );
+    }
+
+    function test_IpRoyaltyVault_constructor_revert_ZeroIpAssetRegistry() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__ZeroIpAssetRegistry.selector);
+        IpRoyaltyVault vault = new IpRoyaltyVault(
+            address(disputeModule),
+            address(royaltyModule),
+            address(0),
+            address(groupingModule)
+        );
+    }
+
+    function test_IpRoyaltyVault_constructor_revert_ZeroGroupingModule() public {
+        vm.expectRevert(Errors.IpRoyaltyVault__ZeroGroupingModule.selector);
+        IpRoyaltyVault vault = new IpRoyaltyVault(
+            address(disputeModule),
+            address(royaltyModule),
+            address(licenseRegistry),
+            address(0)
+        );
     }
 
     function test_IpRoyaltyVault_constructor() public {
-        IpRoyaltyVault vault = new IpRoyaltyVault(address(disputeModule), address(royaltyModule));
+        IpRoyaltyVault vault = new IpRoyaltyVault(
+            address(disputeModule),
+            address(royaltyModule),
+            address(licenseRegistry),
+            address(groupingModule)
+        );
         assertEq(address(vault.DISPUTE_MODULE()), address(disputeModule));
         assertEq(address(vault.ROYALTY_MODULE()), address(royaltyModule));
+        assertEq(address(vault.IP_ASSET_REGISTRY()), address(licenseRegistry));
+        assertEq(address(vault.GROUPING_MODULE()), address(groupingModule));
     }
 
     function test_IpRoyaltyVault_initialize() public {
@@ -273,6 +310,21 @@ contract TestIpRoyaltyVault is BaseTest {
         IIpRoyaltyVault(ipRoyaltyVault).claimRevenueOnBehalfByTokenBatch(1, new address[](0), address(ipRoyaltyVault));
     }
 
+    function test_IpRoyaltyVault_claimRevenueOnBehalfByTokenBatch_revert_GroupPoolMustClaimViaGroupingModule() public {
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+        address rewardPool = ipAssetRegistry.getGroupRewardPool(groupId);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(groupId), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(groupId)));
+        vm.stopPrank();
+
+        assertEq(IERC20(address(ipRoyaltyVault)).balanceOf(address(rewardPool)), 100e6);
+
+        vm.expectRevert(Errors.IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule.selector);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(1, new address[](0), address(rewardPool));
+    }
+
     function test_IpRoyaltyVault_claimRevenueOnBehalfByTokenBatch_revert_NoClaimableTokens() public {
         // deploy vault
         vm.startPrank(address(licensingModule));
@@ -357,6 +409,23 @@ contract TestIpRoyaltyVault is BaseTest {
         ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(new uint256[](0), address(USDC), address(ipRoyaltyVault));
     }
 
+    function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch_revert_GroupPoolMustClaimViaGroupingModule()
+        public
+    {
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+        address rewardPool = ipAssetRegistry.getGroupRewardPool(groupId);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(address(groupId), address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(groupId)));
+        vm.stopPrank();
+
+        assertEq(IERC20(address(ipRoyaltyVault)).balanceOf(address(rewardPool)), 100e6);
+
+        vm.expectRevert(Errors.IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule.selector);
+        ipRoyaltyVault.claimRevenueOnBehalfBySnapshotBatch(new uint256[](0), address(USDC), address(rewardPool));
+    }
+
     function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch_revert_NoClaimableTokens() public {
         // deploy vault
         vm.startPrank(address(licensingModule));
@@ -415,6 +484,58 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(usdcClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(USDC)), expectedAmount);
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, address(2), address(USDC)), true);
         assertEq(ipRoyaltyVault.isClaimedAtSnapshot(2, address(2), address(USDC)), true);
+    }
+
+    function test_IpRoyaltyVault_claimRevenueOnBehalfBySnapshotBatch_GroupPool() public {
+        uint256 royaltyAmount = 100000 * 10 ** 6;
+        USDC.mint(address(2), royaltyAmount); // 100k USDC
+
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+        address rewardPool = ipAssetRegistry.getGroupRewardPool(groupId);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId));
+        vm.stopPrank();
+
+        // 1st payment is made to vault
+        vm.startPrank(address(2));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(groupId, address(2), address(USDC), royaltyAmount / 2);
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
+
+        // 2nt payment is made to vault
+        royaltyModule.payRoyaltyOnBehalf(groupId, address(2), address(USDC), royaltyAmount / 2);
+        vm.stopPrank();
+
+        // take snapshot
+        vm.warp(block.timestamp + 7 days + 1);
+        ipRoyaltyVault.snapshot();
+
+        uint256[] memory snapshots = new uint256[](2);
+        snapshots[0] = 1;
+        snapshots[1] = 2;
+
+        uint256 userUsdcBalanceBefore = USDC.balanceOf(rewardPool);
+        uint256 contractUsdcBalanceBefore = USDC.balanceOf(address(ipRoyaltyVault));
+        uint256 usdcClaimVaultBefore = ipRoyaltyVault.claimVaultAmount(address(USDC));
+
+        uint256 expectedAmount = royaltyAmount;
+
+        vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(rewardPool, address(USDC), expectedAmount);
+
+        vm.startPrank(address(2));
+        groupingModule.collectRoyalties(groupId, address(USDC), snapshots);
+
+        assertEq(USDC.balanceOf(rewardPool) - userUsdcBalanceBefore, expectedAmount);
+        assertEq(contractUsdcBalanceBefore - USDC.balanceOf(address(ipRoyaltyVault)), expectedAmount);
+        assertEq(usdcClaimVaultBefore - ipRoyaltyVault.claimVaultAmount(address(USDC)), expectedAmount);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(1, rewardPool, address(USDC)), true);
+        assertEq(ipRoyaltyVault.isClaimedAtSnapshot(2, rewardPool, address(USDC)), true);
     }
 
     function test_IpRoyaltyVault_claimByTokenBatchAsSelf_revert_InvalidTargetIpId() public {

@@ -29,7 +29,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
-    address public constant IP_GRAPH = address(0x1B);
+    address public constant IP_GRAPH = address(0x0101);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -147,10 +147,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData
+            hookData: licensingConfig.hookData,
+            commercialRevShare: licensingConfig.commercialRevShare
         });
 
-        emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId);
+        emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
     }
 
     /// @notice Sets the LicensingConfig for an IP and applies it to all licenses attached to the IP.
@@ -167,7 +168,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             isSet: licensingConfig.isSet,
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData
+            hookData: licensingConfig.hookData,
+            commercialRevShare: licensingConfig.commercialRevShare
         });
         emit LicensingConfigSetForIP(ipId, licensingConfig);
     }

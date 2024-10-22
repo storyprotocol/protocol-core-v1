@@ -16,7 +16,8 @@ interface ILicenseRegistry {
     event LicensingConfigSetForLicense(
         address indexed ipId,
         address indexed licenseTemplate,
-        uint256 indexed licenseTermsId
+        uint256 indexed licenseTermsId,
+        Licensing.LicensingConfig licensingConfig
     );
 
     /// @notice Emitted when set new default license terms.

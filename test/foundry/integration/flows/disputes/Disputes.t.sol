@@ -55,7 +55,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.carl,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -69,7 +70,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.carl,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
     }
 
@@ -83,7 +85,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.carl,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -113,7 +116,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             parentIpIds: parentIpIds,
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(pilTemplate),
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
     }
 
@@ -127,7 +131,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.carl,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -154,7 +159,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsId: ncSocialRemixTermsId,
             amount: 1,
             receiver: u.carl,
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
     }

@@ -67,11 +67,12 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
 
     /// @notice Whitelists a group reward pool
     /// @param rewardPool The address of the group reward pool
-    function whitelistGroupRewardPool(address rewardPool) external onlyGroupingModule whenNotPaused {
+    /// @param allowed Whether the group reward pool is whitelisted
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external onlyGroupingModule whenNotPaused {
         if (rewardPool == address(0)) {
             revert Errors.GroupIPAssetRegistry__InvalidGroupRewardPool(rewardPool);
         }
-        _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool] = true;
+        _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool] = allowed;
     }
 
     /// @notice Adds a member to a Group IPA
@@ -116,6 +117,13 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @return rewardPool The address of the group policy.
     function getGroupRewardPool(address groupId) external view returns (address) {
         return _getGroupIPAssetRegistryStorage().rewardPools[groupId];
+    }
+
+    /// @notice Checks whether a group reward pool is whitelisted
+    /// @param rewardPool The address of the group reward pool.
+    /// @return isWhitelisted Whether the group reward pool is whitelisted.
+    function isWhitelistedGroupRewardPool(address rewardPool) external view returns (bool isWhitelisted) {
+        return _getGroupIPAssetRegistryStorage().whitelistedGroupRewardPools[rewardPool];
     }
 
     /// @notice Retrieves the group members for a Group IPA

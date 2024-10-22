@@ -5,7 +5,7 @@ import { Script } from "forge-std/Script.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 import { console2 } from "forge-std/console2.sol";
 
-import { UpgradedImplHelper } from "../utils/upgrades/UpgradedImplHelper.sol";
+import { UpgradedImplHelper } from "./upgrades/UpgradedImplHelper.sol";
 import { StringUtil } from "../../../script/foundry/utils/StringUtil.sol";
 
 contract JsonDeploymentHandler is Script {

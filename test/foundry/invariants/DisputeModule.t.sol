@@ -180,7 +180,8 @@ contract DisputeInvariants is BaseTest {
             parentIpIds: parentIpIds,
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(pilTemplate),
-            royaltyContext: ""
+            royaltyContext: "",
+            maxMintingFee: 0
         });
 
         /*         targetContract(address(harness));
@@ -207,6 +208,7 @@ contract DisputeInvariants is BaseTest {
             (
                 address targetIpId,
                 address disputeInitiator,
+                uint256 disputeTimestamp,
                 address arbitrationPolicy,
                 bytes32 _disputeEvidenceHash,
                 bytes32 targetTag,

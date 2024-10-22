@@ -9,8 +9,9 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 // solhint-disable-next-line max-line-length
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
-import { EvenSplitGroupPool } from "../../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
+import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
@@ -31,16 +32,12 @@ contract Flows_Integration_Grouping is BaseIntegration {
 
     uint32 internal defaultCommRevShare = 10 * 10 ** 6; // 10%
     uint256 internal commRemixTermsId;
-    address internal rewardPool;
 
     address internal groupOwner;
     address internal groupId;
 
     function setUp() public override {
         super.setUp();
-        rewardPool = address(
-            new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry))
-        );
         commRemixTermsId = registerSelectedPILicenseTerms(
             "commercial_remix",
             PILFlavors.commercialRemix({
@@ -59,12 +56,10 @@ contract Flows_Integration_Grouping is BaseIntegration {
     }
 
     function test_Integration_Grouping() public {
-        vm.prank(admin);
-        groupingModule.whitelistGroupRewardPool(rewardPool);
         // create a group
         {
             vm.startPrank(groupOwner);
-            groupId = groupingModule.registerGroup(rewardPool);
+            groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
             vm.label(groupId, "Group1");
             licensingModule.attachLicenseTerms(groupId, address(pilTemplate), commRemixTermsId);
             vm.stopPrank();
@@ -80,13 +75,13 @@ contract Flows_Integration_Grouping is BaseIntegration {
         {
             vm.startPrank(u.bob);
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.bob);
-            vm.label(ipAcct[1], "IPAccount2");
+            vm.label(ipAcct[2], "IPAccount2");
             licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), commRemixTermsId);
             vm.stopPrank();
         }
 
-        licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), commRemixTermsId, 1, address(this), "");
-        licensingModule.mintLicenseTokens(ipAcct[2], address(pilTemplate), commRemixTermsId, 1, address(this), "");
+        licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipAcct[2], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
         {
             address[] memory ipIds = new address[](2);
             ipIds[0] = ipAcct[1];
@@ -103,7 +98,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             parentIpIds[0] = groupId;
             uint256[] memory licenseIds = new uint256[](1);
             licenseIds[0] = commRemixTermsId;
-            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "");
+            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "", 0);
             vm.stopPrank();
         }
 
@@ -153,6 +148,20 @@ contract Flows_Integration_Grouping is BaseIntegration {
             rewards[0] = 1 ether / 2;
             rewards[1] = 1 ether / 2;
 
+            uint256 snapshotId = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId)).snapshot();
+            uint256[] memory snapshotIds = new uint256[](1);
+            snapshotIds[0] = snapshotId;
+
+            vm.expectEmit(address(groupingModule));
+            emit IGroupingModule.CollectedRoyaltiesToGroupPool(
+                groupId,
+                address(mockToken),
+                IGroupIPAssetRegistry(ipAssetRegistry).getGroupRewardPool(groupId),
+                1 ether,
+                snapshotIds
+            );
+            uint256 royalties = groupingModule.collectRoyalties(groupId, address(mockToken), snapshotIds);
+            assertEq(royalties, 1 ether);
             vm.expectEmit(address(groupingModule));
             emit IGroupingModule.ClaimedReward(groupId, address(erc20), ipIds, rewards);
             groupingModule.claimReward(groupId, address(erc20), ipIds);

@@ -6,6 +6,7 @@ interface IDisputeModule {
     /// @notice Dispute struct
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeTimestamp The timestamp of the dispute
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
@@ -14,6 +15,7 @@ interface IDisputeModule {
     struct Dispute {
         address targetIpId;
         address disputeInitiator;
+        uint256 disputeTimestamp;
         address arbitrationPolicy;
         bytes32 disputeEvidenceHash;
         bytes32 targetTag;
@@ -41,15 +43,21 @@ interface IDisputeModule {
     /// @param arbitrationPolicy The address of the arbitration policy
     event DefaultArbitrationPolicyUpdated(address arbitrationPolicy);
 
+    /// @notice Event emitted when the arbitration policy cooldown is updated
+    /// @param cooldown The cooldown in seconds
+    event ArbitrationPolicyCooldownUpdated(uint256 cooldown);
+
     /// @notice Event emitted when an arbitration policy is set for an ipId
     /// @param ipId The ipId address
     /// @param arbitrationPolicy The address of the arbitration policy
-    event ArbitrationPolicySet(address ipId, address arbitrationPolicy);
+    /// @param nextArbitrationUpdateTimestamp The timestamp of the next arbitration update
+    event ArbitrationPolicySet(address ipId, address arbitrationPolicy, uint256 nextArbitrationUpdateTimestamp);
 
     /// @notice Event emitted when a dispute is raised
     /// @param disputeId The dispute id
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeTimestamp The timestamp of the dispute
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
@@ -58,6 +66,7 @@ interface IDisputeModule {
         uint256 disputeId,
         address targetIpId,
         address disputeInitiator,
+        uint256 disputeTimestamp,
         address arbitrationPolicy,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
@@ -80,16 +89,19 @@ interface IDisputeModule {
     /// @param derivativeIpId The derivative ipId which was tagged
     /// @param parentDisputeId The parent dispute id in which infringement was found
     /// @param tag The tag of the dispute applied to the derivative
+    /// @param disputeTimestamp The timestamp of the dispute
     event DerivativeTaggedOnParentInfringement(
         address parentIpId,
         address derivativeIpId,
         uint256 parentDisputeId,
-        bytes32 tag
+        bytes32 tag,
+        uint256 disputeTimestamp
     );
 
     /// @notice Event emitted when a dispute is resolved
     /// @param disputeId The dispute id
-    event DisputeResolved(uint256 disputeId);
+    /// @param data Custom data adjusted to each policy
+    event DisputeResolved(uint256 disputeId, bytes data);
 
     /// @notice Dispute ID counter
     function disputeCounter() external view returns (uint256);
@@ -101,6 +113,7 @@ interface IDisputeModule {
     /// @param disputeId The dispute id
     /// @return targetIpId The ipId that is the target of the dispute
     /// @return disputeInitiator The address of the dispute initiator
+    /// @return disputeTimestamp The timestamp of the dispute
     /// @return arbitrationPolicy The address of the arbitration policy
     /// @return disputeEvidenceHash The link of the dispute summary
     /// @return targetTag The target tag of the dispute
@@ -114,6 +127,7 @@ interface IDisputeModule {
         returns (
             address targetIpId,
             address disputeInitiator,
+            uint256 disputeTimestamp,
             address arbitrationPolicy,
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
@@ -165,6 +179,10 @@ interface IDisputeModule {
     /// @param arbitrationPolicy The address of the arbitration policy
     function setBaseArbitrationPolicy(address arbitrationPolicy) external;
 
+    /// @notice Sets the arbitration policy cooldown
+    /// @param cooldown The cooldown in seconds
+    function setArbitrationPolicyCooldown(uint256 cooldown) external;
+
     /// @notice Sets the arbitration policy for an ipId
     /// @param ipId The ipId
     /// @param arbitrationPolicy The address of the arbitration policy
@@ -208,6 +226,11 @@ interface IDisputeModule {
     /// @param disputeId The dispute
     /// @param data The data to resolve the dispute
     function resolveDispute(uint256 disputeId, bytes calldata data) external;
+
+    /// @notice Updates the active arbitration policy for a given ipId
+    /// @param ipId The ipId
+    /// @return arbitrationPolicy The address of the arbitration policy
+    function updateActiveArbitrationPolicy(address ipId) external returns (address arbitrationPolicy);
 
     /// @notice Returns true if the ipId is tagged with any tag (meaning at least one dispute went through)
     /// @param ipId The ipId

@@ -21,6 +21,8 @@ import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupReward
 import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
+import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
 /// @title Grouping Module
 /// @notice Grouping module is the main entry point for the IPA grouping. It is responsible for:
@@ -39,6 +41,10 @@ contract GroupingModule is
     using ERC165Checker for address;
     using Strings for *;
     using IPAccountStorageOps for IIPAccount;
+
+    /// @notice Returns the canonical protocol-wide RoyaltyModule
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IRoyaltyModule public immutable ROYALTY_MODULE;
 
     /// @notice Returns the canonical protocol-wide LicenseToken
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -72,16 +78,19 @@ contract GroupingModule is
         address ipAssetRegistry,
         address licenseRegistry,
         address licenseToken,
-        address groupNFT
+        address groupNFT,
+        address royaltyModule
     ) AccessControlled(accessController, ipAssetRegistry) {
         if (licenseToken == address(0)) revert Errors.GroupingModule__ZeroLicenseToken();
         if (licenseRegistry == address(0)) revert Errors.GroupingModule__ZeroLicenseRegistry();
         if (groupNFT == address(0)) revert Errors.GroupingModule__ZeroGroupNFT();
         if (ipAssetRegistry == address(0)) revert Errors.GroupingModule__ZeroIpAssetRegistry();
+        if (royaltyModule == address(0)) revert Errors.GroupingModule__ZeroRoyaltyModule();
 
         LICENSE_TOKEN = ILicenseToken(licenseToken);
         GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+        ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
 
         if (!groupNFT.supportsInterface(type(IGroupNFT).interfaceId)) {
             revert Errors.GroupingModule__InvalidGroupNFT(groupNFT);
@@ -114,12 +123,13 @@ contract GroupingModule is
 
     /// @notice Whitelists a group reward pool.
     /// @param rewardPool The address of the group reward pool.
-    function whitelistGroupRewardPool(address rewardPool) external restricted {
+    /// @param allowed Whether the group reward pool is whitelisted.
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external restricted {
         if (rewardPool == address(0)) {
             revert Errors.GroupingModule__ZeroGroupRewardPool();
         }
 
-        GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool);
+        GROUP_IP_ASSET_REGISTRY.whitelistGroupRewardPool(rewardPool, allowed);
     }
 
     /// @notice Adds IP to group.
@@ -183,11 +193,28 @@ contract GroupingModule is
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external whenNotPaused {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
-        // claim reward from group IPA's RoyaltyVault to group pool
-        pool.collectRoyalties(groupId, token);
         // trigger group pool to distribute rewards to group members vault
         uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
         emit ClaimedReward(groupId, token, ipIds, rewards);
+    }
+
+    /// @notice Collects royalties into the pool, making them claimable by group member IPs.
+    /// @param groupId The address of the group.
+    /// @param token The address of the token.
+    /// @param snapshotIds The snapshot IDs of the royalty vault for the given group to collect royalties.
+    function collectRoyalties(
+        address groupId,
+        address token,
+        uint256[] calldata snapshotIds
+    ) external whenNotPaused returns (uint256 royalties) {
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
+        IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
+
+        if (address(vault) == address(0)) revert Errors.GroupingModule__GroupRoyaltyVaultNotCreated(groupId);
+
+        royalties = vault.claimRevenueOnBehalfBySnapshotBatch(snapshotIds, token, address(pool));
+        pool.depositReward(groupId, token, royalties);
+        emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties, snapshotIds);
     }
 
     function name() external pure override returns (string memory) {

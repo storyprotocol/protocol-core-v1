@@ -115,6 +115,9 @@ library Errors {
     /// @notice The IP has no attached the same license terms of Group IPA.
     error GroupingModule__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice The Royalty Vault has not been created.
+    error GroupingModule__GroupRoyaltyVaultNotCreated(address groupId);
+
     /// @notice The Group IP's license terms should not have minting fee.
     error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
@@ -151,6 +154,9 @@ library Errors {
 
     /// @notice The NFT token id does not exist or invalid.
     error IPAssetRegistry__InvalidToken(address contractAddress, uint256 tokenId);
+
+    /// @notice Zero address provided for IP Asset Registry.
+    error IPAssetRegistry__ZeroAddress(string name);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            License Registry                            //
@@ -249,6 +255,15 @@ library Errors {
     /// @notice Zero address provided for IP Graph ACL.
     error LicenseRegistry__ZeroIPGraphACL();
 
+    /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
+    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
+
+    /// @notice Current License does not allow to override royalty percentage.
+    error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 newRoyaltyPercent
+    );
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -350,6 +365,9 @@ library Errors {
     /// @notice Grouping Module is zero address.
     error LicensingModule__ZeroGroupingModule();
 
+    /// @notice licensing minting fee is above the maximum minting fee.
+    error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -413,6 +431,71 @@ library Errors {
 
     /// @notice Provided parent dispute has not been resolved.
     error DisputeModule__ParentDisputeNotResolved();
+
+    /// @notice Zero arbitration policy cooldown provided.
+    error DisputeModule__ZeroArbitrationPolicyCooldown();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //                             Arbitration Policy UMA                     //
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Only dispute module can call.
+    error ArbitrationPolicyUMA__NotDisputeModule();
+
+    /// @notice Zero address provided for Dispute Module.
+    error ArbitrationPolicyUMA__ZeroDisputeModule();
+
+    /// @notice Zero address provided for OOV3.
+    error ArbitrationPolicyUMA__ZeroOOV3();
+
+    /// @notice Zero address provided for Access Manager.
+    error ArbitrationPolicyUMA__ZeroAccessManager();
+
+    /// @notice Zero min liveness provided.
+    error ArbitrationPolicyUMA__ZeroMinLiveness();
+
+    /// @notice Zero max liveness provided.
+    error ArbitrationPolicyUMA__ZeroMaxLiveness();
+
+    /// @notice Liveness is too short.
+    error ArbitrationPolicyUMA__LivenessBelowMin();
+
+    /// @notice Liveness is too long.
+    error ArbitrationPolicyUMA__LivenessAboveMax();
+
+    /// @notice Min liveness is above max liveness.
+    error ArbitrationPolicyUMA__MinLivenessAboveMax();
+
+    /// @notice IP owner time percent is above max.
+    error ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
+
+    /// @notice Bond size is above max.
+    error ArbitrationPolicyUMA__BondAboveMax();
+
+    /// @notice Cannot cancel.
+    error ArbitrationPolicyUMA__CannotCancel();
+
+    /// @notice Only OOV3 can call.
+    error ArbitrationPolicyUMA__NotOOV3();
+
+    /// @notice No counter evidence provided.
+    error ArbitrationPolicyUMA__NoCounterEvidence();
+
+    /// @notice Dispute not found.
+    error ArbitrationPolicyUMA__DisputeNotFound();
+
+    /// @notice Cannot dispute assertion if tag is inherited.
+    error ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
+
+    /// @notice Only target IP id can dispute within time window.
+    error ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
+        uint64 elapsedTime,
+        uint64 liveness,
+        address caller
+    );
+
+    /// @notice Not the UMA dispute policy.
+    error ArbitrationPolicyUMA__OnlyDisputePolicyUMA();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Module                              //
@@ -577,6 +660,12 @@ library Errors {
     /// @notice Zero address provided for Royalty Module.
     error IpRoyaltyVault__ZeroRoyaltyModule();
 
+    /// @notice Zero address provided for IP Asset Registry.
+    error IpRoyaltyVault__ZeroIpAssetRegistry();
+
+    /// @notice Zero address provided for Grouping Module.
+    error IpRoyaltyVault__ZeroGroupingModule();
+
     /// @notice Caller is not Royalty Module.
     error IpRoyaltyVault__NotAllowedToAddTokenToVault();
 
@@ -606,6 +695,9 @@ library Errors {
 
     /// @notice Vaults must claim as self.
     error IpRoyaltyVault__VaultsMustClaimAsSelf();
+
+    /// @notice Group reward pool must claim via GroupingModule.
+    error IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //

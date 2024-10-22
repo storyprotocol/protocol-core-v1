@@ -10,6 +10,7 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 contract EvenSplitGroupPoolTest is BaseTest {
     using Strings for *;
@@ -52,9 +53,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         vm.label(ipId3, "IPAccount3");
         vm.label(ipId5, "IPAccount5");
 
-        rewardPool = new EvenSplitGroupPool(address(groupingModule), address(royaltyModule), address(ipAssetRegistry));
-        vm.prank(admin);
-        groupingModule.whitelistGroupRewardPool(address(rewardPool));
+        rewardPool = evenSplitGroupPool;
         group1 = groupingModule.registerGroup(address(rewardPool));
         group2 = groupingModule.registerGroup(address(rewardPool));
         group3 = groupingModule.registerGroup(address(rewardPool));
@@ -170,16 +169,16 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "");
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
 
         vm.prank(address(groupingModule));
         rewardPool.addIp(group1, ipId1);
 
-        erc20.mint(address(this), 100);
-        erc20.approve(address(rewardPool), 100);
-
+        vm.startPrank(address(groupingModule));
+        erc20.mint(address(rewardPool), 100);
         rewardPool.depositReward(group1, address(erc20), 100);
         assertEq(erc20.balanceOf(address(rewardPool)), 100);
+        vm.stopPrank();
 
         uint256 rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
         assertEq(rewardDebt, 0);
@@ -190,6 +189,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         uint256[] memory rewards = rewardPool.getAvailableReward(group1, address(erc20), ipIds);
         assertEq(rewards[0], 100);
 
+        vm.prank(address(groupingModule));
         rewards = rewardPool.distributeRewards(group1, address(erc20), ipIds);
         assertEq(rewards[0], 100);
 
@@ -197,6 +197,26 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
         assertEq(rewardDebt, 100);
+
+        vm.stopPrank();
+    }
+
+    function test_EvenSplitGroupPool_revert_Only_GroupingModule() public {
+        vm.startPrank(address(0x123));
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
+        rewardPool.removeIp(group1, ipId1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
+        rewardPool.addIp(group1, ipId1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
+        );
+        rewardPool.distributeRewards(group1, address(erc20), new address[](0));
 
         vm.stopPrank();
     }

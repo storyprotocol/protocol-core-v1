@@ -30,6 +30,20 @@ interface IGroupingModule is IModule {
     /// @param amount The amount of reward.
     event ClaimedReward(address indexed groupId, address indexed token, address[] ipId, uint256[] amount);
 
+    /// @notice Emitted when collected royalties into the group pool.
+    /// @param groupId The address of the group.
+    /// @param token The address of the token.
+    /// @param pool The address of the pool.
+    /// @param amount The amount of reward.
+    /// @param snapshots The snapshot IDs of the royalty vault for the given group to collect royalties.
+    event CollectedRoyaltiesToGroupPool(
+        address indexed groupId,
+        address indexed token,
+        address indexed pool,
+        uint256 amount,
+        uint256[] snapshots
+    );
+
     /// @notice Registers a Group IPA.
     /// @param groupPool The address of the group pool.
     /// @return groupId The address of the newly registered Group IPA.
@@ -37,7 +51,8 @@ interface IGroupingModule is IModule {
 
     /// @notice Whitelists a group reward pool.
     /// @param rewardPool The address of the group reward pool.
-    function whitelistGroupRewardPool(address rewardPool) external;
+    /// @param allowed Whether the group reward pool is whitelisted.
+    function whitelistGroupRewardPool(address rewardPool, bool allowed) external;
 
     /// @notice Adds IP to group.
     /// the function must be called by the Group IP owner or an authorized operator.
@@ -56,6 +71,16 @@ interface IGroupingModule is IModule {
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external;
+
+    /// @notice Collects royalties into the pool, making them claimable by group member IPs.
+    /// @param groupId The address of the group.
+    /// @param token The address of the token.
+    /// @param snapshotIds The snapshot IDs of the royalty vault for the given group to collect royalties.
+    function collectRoyalties(
+        address groupId,
+        address token,
+        uint256[] calldata snapshotIds
+    ) external returns (uint256 royalties);
 
     /// @notice Returns the available reward for each IP in the group.
     /// @param groupId The address of the group.

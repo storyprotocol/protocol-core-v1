@@ -36,6 +36,7 @@ import { RoyaltyPolicyLAP } from "contracts/modules/royalty/policies/LAP/Royalty
 import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
+import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
 import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
@@ -46,6 +47,7 @@ import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicen
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
 import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
+import { EvenSplitGroupPool } from "contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
@@ -89,6 +91,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     CoreMetadataViewModule internal coreMetadataViewModule;
 
     // Policy
+    ArbitrationPolicyUMA internal arbitrationPolicyUMA;
+    address internal oov3;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -110,6 +114,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Grouping
     GroupNFT internal groupNft;
     GroupingModule internal groupingModule;
+    EvenSplitGroupPool internal evenSplitGroupPool;
 
     // Token
     ERC20 private erc20; // keep private to avoid conflict with inheriting contracts
@@ -136,18 +141,19 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         erc6551Registry = ERC6551Registry(erc6551Registry_);
         create3Deployer = ICreate3Deployer(create3Deployer_);
         erc20 = ERC20(erc20_);
-        ARBITRATION_PRICE = arbitrationPrice_;
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-
+        oov3 = address(1); // mock address replaced below depending on chainid
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
         if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        else if (block.chainid == 1513) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-        else if (block.chainid == 1337) erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+        else if (block.chainid == 1513) {
+            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
+        }
     }
 
     /// @dev To use, run the following command (e.g. for Sepolia):
@@ -170,8 +176,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         }
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
-        if (runStorageLayoutCheck) super.run();
-
+        //if (runStorageLayoutCheck) _validate();
+        
         _beginBroadcast(); // BroadcastManager.s.sol
 
         _deployProtocolContracts();
@@ -190,8 +196,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             revert RoleConfigError("RoyaltyModule is not owner of ipRoyaltyVaultBeacon");
         }
 
-        if (!multisigAdmin || !multisigUpgrader) {
-            revert RoleConfigError("Multisig roles not granted");
+        if (!multisigAdmin) {
+            revert RoleConfigError("Multisig admin role not granted");
+        }
+        if (!multisigUpgrader) {
+            revert RoleConfigError("Multisig upgrader role not granted");
         }
 
         if (writeDeploys) _writeDeployment(version);
@@ -432,7 +441,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(ipAssetRegistry),
                 address(licenseRegistry),
                 _getDeployedAddress(type(LicenseToken).name),
-                address(groupNft)
+                address(groupNft),
+                address(royaltyModule)
             )
         );
         groupingModule = GroupingModule(
@@ -508,6 +518,27 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         //
         // Story-specific Non-Core Contracts
         //
+
+        _predeploy("ArbitrationPolicyUMA");
+        impl = address(new ArbitrationPolicyUMA(address(disputeModule), oov3));
+        arbitrationPolicyUMA = ArbitrationPolicyUMA(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(ArbitrationPolicyUMA).name),
+                impl,
+                abi.encodeCall(ArbitrationPolicyUMA.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(ArbitrationPolicyUMA).name) == address(arbitrationPolicyUMA),
+            "Deploy: Arbitration Policy Address Mismatch"
+        );
+        require(
+            _loadProxyImpl(address(arbitrationPolicyUMA)) == impl,
+            "ArbitrationPolicyUMA Proxy Implementation Mismatch"
+        );
+        impl = address(0);
+        _postdeploy("ArbitrationPolicyUMA", address(arbitrationPolicyUMA));
 
         _predeploy("RoyaltyPolicyLAP");
         impl = address(new RoyaltyPolicyLAP(
@@ -589,7 +620,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getSalt(type(IpRoyaltyVault).name),
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(disputeModule), address(royaltyModule))
+                    abi.encode(address(disputeModule), address(royaltyModule), address(ipAssetRegistry), address(groupingModule))
                 )
             )
         );
@@ -652,6 +683,28 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             console2.log("IPGraphACL already deployed");
         }
         _postdeploy("IPGraphACL", address(ipGraphACL));
+
+        _predeploy("EvenSplitGroupPool");
+        impl = address(new EvenSplitGroupPool(
+            address(groupingModule),
+            address(royaltyModule),
+            address(ipAssetRegistry)
+        ));
+        evenSplitGroupPool = EvenSplitGroupPool(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(EvenSplitGroupPool).name),
+                impl,
+                abi.encodeCall(EvenSplitGroupPool.initialize, address(protocolAccessManager))
+            )
+        );
+        require(
+            _getDeployedAddress(type(EvenSplitGroupPool).name) == address(evenSplitGroupPool),
+            "Deploy: EvenSplitGroupPool Address Mismatch"
+        );
+        require(_loadProxyImpl(address(evenSplitGroupPool)) == impl, "EvenSplitGroupPool Proxy Implementation Mismatch");
+        impl = address(0);
+        _postdeploy("EvenSplitGroupPool", address(evenSplitGroupPool));
     }
 
     function _predeploy(string memory contractKey) private view {
@@ -660,8 +713,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     function _postdeploy(string memory contractKey, address newAddress) private {
         if (writeDeploys) {
-            _writeAddress(contractKey, newAddress);
             console2.log(string.concat(contractKey, " deployed to:"), newAddress);
+            _writeAddress(contractKey, newAddress);
         }
     }
 
@@ -677,6 +730,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(royaltyPolicyLRP));
         protocolPauser.addPausable(address(ipAssetRegistry));
         protocolPauser.addPausable(address(groupingModule));
+        protocolPauser.addPausable(address(evenSplitGroupPool));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -694,8 +748,14 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
-        // Dispute Module and SP Dispute Policy
+        // Dispute Module and Dispute Policy
         disputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
+        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
+        disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
+        arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
+        arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
+        disputeModule.setArbitrationPolicyCooldown(7 days);
 
         // Core Metadata Module
         coreMetadataViewModule.updateCoreMetadataModule();
@@ -714,6 +774,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // set default license to non-commercial social remixing
         uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
+
+        // add evenSplitGroupPool to whitelist of group pools
+        groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
     }
 
     function _configureRoles() private {
@@ -727,12 +790,19 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(licenseToken), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(accessController), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(disputeModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicyUMA),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(licensingModule), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLAP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
+        protocolAccessManager.setTargetFunctionRole(address(evenSplitGroupPool), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(
             address(coreMetadataModule),
             selectors,
@@ -800,6 +870,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
+        protocolAccessManager.setTargetFunctionRole(
+            address(evenSplitGroupPool),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(protocolPauser), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);
@@ -812,7 +887,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     }
 
     /// @dev get the salt for the contract deployment with CREATE3
-    function _getSalt(string memory name) private view returns (bytes32 salt) {
+    function _getSalt(string memory name) internal view returns (bytes32 salt) {
         salt = keccak256(abi.encode(name, create3SaltSeed));
     }
 

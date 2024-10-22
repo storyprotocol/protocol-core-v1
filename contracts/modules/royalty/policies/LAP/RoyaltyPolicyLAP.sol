@@ -39,7 +39,7 @@ contract RoyaltyPolicyLAP is
         0x0c915ba68e2c4e37f19454bb13066f18f9db418fcefbf3c585b4b7d0fb0e0600;
 
     /// @notice Ip graph precompile contract address
-    address public constant IP_GRAPH = address(0x1B);
+    address public constant IP_GRAPH = address(0x0101);
 
     /// @notice Returns the RoyaltyModule address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -125,7 +125,7 @@ contract RoyaltyPolicyLAP is
     /// @param ancestorIpId The ancestor ipId of the IP asset
     /// @param token The token address to transfer
     /// @param amount The amount of tokens to transfer
-    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {
+    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external whenNotPaused {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
 
         if (amount == 0) revert Errors.RoyaltyPolicyLAP__ZeroAmount();

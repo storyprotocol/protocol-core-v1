@@ -137,4 +137,11 @@ interface ILicenseTemplate is IERC165 {
         uint256[] calldata licenseTermsIds,
         address childIpOwner
     ) external returns (bool);
+
+    /// @notice Verifies if the royalty percentage defined in the licenseTermsId can be overridden with
+    /// the given newRoyaltyPercent.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @param newRoyaltyPercent The new royalty percentage.
+    /// @return True if the royalty percentage can be overridden, false otherwise.
+    function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool);
 }

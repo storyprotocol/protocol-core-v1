@@ -153,7 +153,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: commDerivTermsId,
                 amount: 1,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             ipAcct[6] = registerIpAccount(mockNFT, 6, u.carl);
@@ -178,7 +179,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: ncSocialRemixTermsId,
                 amount: 1,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -207,7 +209,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: commDerivTermsId,
                 amount: 2,
                 receiver: u.alice,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             }); // ID 0 (first license)
 
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.alice);
@@ -243,7 +246,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: commDerivTermsId,
                 amount: license0_mintAmount,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             // NC Social Remix license
@@ -253,7 +257,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: ncSocialRemixTermsId, // ipAcct[3] has this policy attached
                 amount: 1,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -278,7 +283,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 licenseTermsId: commDerivTermsId,
                 amount: license1_mintAmount,
                 receiver: u.carl,
-                royaltyContext: ""
+                royaltyContext: "",
+                maxMintingFee: 0
             });
             carl_licenses[1] = carl_licenses[1] + license1_mintAmount - 1; // use last license ID minted from above
 

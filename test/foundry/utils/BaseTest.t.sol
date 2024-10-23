@@ -135,7 +135,10 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         bytes32 disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
         disputeId = disputeModule.raiseDispute(
-            ipAddrToDispute, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", ""
+            ipAddrToDispute,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            ""
         );
         vm.stopPrank();
 

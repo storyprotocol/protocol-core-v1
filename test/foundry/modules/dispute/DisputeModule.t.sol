@@ -568,7 +568,11 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit IDisputeModule.DerivativeTaggedOnParentInfringement(
-            ipAddr, ipAddr2, 1, "IMPROPER_REGISTRATION", block.timestamp
+            ipAddr,
+            ipAddr2,
+            1,
+            "IMPROPER_REGISTRATION",
+            block.timestamp
         );
 
         uint256 disputeIdBefore = disputeModule.disputeCounter();

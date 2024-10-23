@@ -119,7 +119,7 @@ contract DisputeInvariants is BaseTest {
         tags[0] = "INAPPROPRIATE_CONTENT";
         tags[1] = "COPYRIGHT_INFRINGEMENT";
         tags[2] = "TRADEMARK_INFRINGEMENT";
-        tags[3] = "PLAGIARISM";
+        tags[3] = "IMPROPER_REGISTRATION";
         tags[4] = "RANDOM_TAG5";
         tags[5] = "RANDOM_TAG";
         tags[6] = "RANDOM_TAG1";

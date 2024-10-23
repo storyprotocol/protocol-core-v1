@@ -841,7 +841,7 @@ contract TestRoyaltyModule is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -989,7 +989,7 @@ contract TestRoyaltyModule is BaseTest {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "PLAGIARISM", "");
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
         // set dispute judgement

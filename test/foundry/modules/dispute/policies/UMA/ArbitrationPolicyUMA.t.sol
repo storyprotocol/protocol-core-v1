@@ -83,7 +83,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newArbitrationPolicyUMA.setMaxBond(susd, 25000e18); // 25k USD max bond
 
         // whitelist dispute tag, arbitration policy and arbitration relayer
-        newDisputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        newDisputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
         newDisputeModule.whitelistArbitrationPolicy(address(newArbitrationPolicyUMA), true);
         newDisputeModule.whitelistArbitrationRelayer(
             address(newArbitrationPolicyUMA),
@@ -150,7 +150,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__LivenessBelowMin.selector);
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessAboveMax() public {
@@ -163,7 +163,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__LivenessAboveMax.selector);
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_setMaxBond() public {
@@ -190,7 +190,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__BondAboveMax.selector);
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_UnsupportedCurrency() public {
@@ -203,7 +203,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         vm.expectRevert("Unsupported currency");
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_UnsupportedIdentifier() public {
@@ -216,7 +216,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         vm.expectRevert("Unsupported identifier");
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute() public {
@@ -232,7 +232,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         emit DisputeRaisedUMA(1, address(2), claim, liveness, address(currency), bond, identifier);
 
         vm.startPrank(address(2));
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         uint256 disputeId = newDisputeModule.disputeCounter();
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -260,7 +260,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         uint256 raiserBalBefore = currency.balanceOf(address(2));
         uint256 oov3BalBefore = currency.balanceOf(address(newOOV3));
 
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         uint256 raiserBalAfter = currency.balanceOf(address(2));
         uint256 oov3BalAfter = currency.balanceOf(address(newOOV3));
@@ -284,7 +284,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__CannotCancel.selector);
         newDisputeModule.cancelDispute(1, "");
@@ -299,7 +299,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
-        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // settle the assertion
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -317,7 +317,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
-        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // wait for assertion to expire
         vm.warp(block.timestamp + liveness + 1);
@@ -331,7 +331,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
-        assertEq(currentTagAfter, bytes32("PLAGIARISM"));
+        assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDisputeWithBond() public {
@@ -348,7 +348,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         vm.startPrank(disputer);
         MockERC20(susd).mint(disputer, bond);
         currency.approve(address(newArbitrationPolicyUMA), bond);
-        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // wait for assertion to expire
         vm.warp(block.timestamp + liveness + 1);
@@ -366,7 +366,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
-        assertEq(currentTagAfter, bytes32("PLAGIARISM"));
+        assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
         assertEq(disputerBalAfter - disputerBalBefore, bond);
     }
 
@@ -381,7 +381,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         address targetIpId = address(1);
 
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // dispute the assertion
         vm.startPrank(targetIpId);
@@ -403,7 +403,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
-        assertEq(currentTagAfter, bytes32("PLAGIARISM"));
+        assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_CannotDisputeAssertionTwice() public {
@@ -415,7 +415,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // dispute the assertion
         vm.startPrank(targetIpId);
@@ -436,7 +436,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // dispute the assertion
         vm.startPrank(targetIpId);
@@ -455,7 +455,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__DisputeNotFound.selector);
         newArbitrationPolicyUMA.disputeAssertion(bytes32(0), bytes32("COUNTER_EVIDENCE_HASH"));
@@ -470,7 +470,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
 
@@ -495,7 +495,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         // dispute the assertion
         vm.startPrank(targetIpId);
@@ -533,7 +533,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
 
         address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(targetIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         vm.warp(block.timestamp + (liveness * 66_666_666) / 100_000_000 + 1);
 
@@ -579,7 +579,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         vm.startPrank(address(2));
         MockERC20(susd).mint(address(2), bond);
         currency.approve(address(newArbitrationPolicyUMA), bond);
-        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
         vm.stopPrank();
 
         // dispute the assertion
@@ -618,7 +618,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         uint256 bondRecipientAmount = assertion.bond * 2 - oracleFee;
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
-        assertEq(currentTagAfter, bytes32("PLAGIARISM"));
+        assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
         assertEq(disputeInitiatorBalAfter - disputeInitiatorBalBefore, bondRecipientAmount);
         assertEq(defenderIpIdOwnerBalAfter - defenderIpIdOwnerBalBefore, 0);
     }
@@ -638,7 +638,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         vm.startPrank(address(2));
         MockERC20(susd).mint(address(2), bond);
         currency.approve(address(newArbitrationPolicyUMA), bond);
-        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "PLAGIARISM", data);
+        uint256 disputeId = newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
         vm.stopPrank();
 
         // dispute the assertion

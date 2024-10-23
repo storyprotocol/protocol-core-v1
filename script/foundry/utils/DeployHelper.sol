@@ -749,7 +749,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
         // Dispute Module and Dispute Policy
-        disputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_USAGE", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_PAYMENT", true);
+        disputeModule.whitelistDisputeTag("CONTENT_STANDARDS_VIOLATION", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));

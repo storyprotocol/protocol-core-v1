@@ -61,6 +61,11 @@ interface IIpRoyaltyVault {
         address claimer
     ) external returns (uint256[] memory);
 
+    function claimRevenueOnBehalfByTokenBatch(
+        address[] calldata tokenList,
+        address claimer
+    ) external returns (uint256[] memory);
+
     /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
     /// @param snapshotIds The list of snapshot ids
     /// @param token The revenue token to claim

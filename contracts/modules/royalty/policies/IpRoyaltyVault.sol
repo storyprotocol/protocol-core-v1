@@ -45,6 +45,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
         mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
+        // Info of each token pool. token => PoolInfo
+        mapping(address token => uint256 accBalance) poolInfo;
+        // Info of each user of a token. token => { user => UserRewardInfo }
+        mapping(address token => mapping(address user => uint256 rewardDebt)) userRewardInfo;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IpRoyaltyVault")) - 1)) & ~bytes32(uint256(0xff));
@@ -384,6 +388,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
 
         $.tokens.add(token);
         $.pendingVaultAmount[token] += amount;
+        $.poolInfo[token] += amount;
 
         emit RevenueTokenAddedToVault(token, amount);
     }
@@ -393,5 +398,79 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         assembly {
             $.slot := IpRoyaltyVaultStorageLocation
         }
+    }
+
+    function claimRevenueOnBehalfByTokenBatch(
+        address[] calldata tokenList,
+        address claimer
+    ) external nonReentrant whenNotPaused returns (uint256[] memory) {
+        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
+
+        if (ROYALTY_MODULE.isIpRoyaltyVault(claimer) && msg.sender != claimer)
+            revert Errors.IpRoyaltyVault__VaultsMustClaimAsSelf();
+
+        if (IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(claimer) && msg.sender != GROUPING_MODULE)
+            revert Errors.IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
+
+        uint256[] memory claimableAmounts = new uint256[](tokenList.length);
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            claimableAmounts[i] = _clearPendingRewards(claimer, tokenList[i]);
+            if (claimableAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
+            $.userRewardInfo[tokenList[i]][claimer] += claimableAmounts[i];
+
+            $.claimVaultAmount[tokenList[i]] -= claimableAmounts[i];
+
+            emit RevenueTokenClaimed(claimer, tokenList[i], claimableAmounts[i]);
+        }
+
+        return claimableAmounts;
+    }
+
+    function pendingRewards(address user, address token) external view returns (uint256) {
+        return _pendingRewards(user, token);
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal override {
+        // when transferring RoyaltyTokens (Vault) from a user to another user:
+        // 1. clear pending rewards of the (from) user
+        // 2. clear pending rewards of the (to) another user, if pending rewards of another user is not zero
+        // 3. update the rewardDebt of the (to) another user to accBalancePerShare * userAmount
+        // 4. update the rewardDebt of the (from) user to accBalancePerShare * userAmount
+        // 5. transfer the RoyaltyTokens (Vault) from the (from) user to the (to) another user
+        if (balanceOf(from) == 0) revert Errors.IpRoyaltyVault__ZeroBalance(address(this), from);
+        if (balanceOf(from) < amount) revert Errors.IpRoyaltyVault__InsufficientBalance(address(this), from, amount);
+
+        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
+        address[] memory tokenList = $.tokens.values();
+        for (uint256 i = 0; i < tokenList.length; i++) {
+            address token = tokenList[i];
+            _clearPendingRewards(from, token);
+            _clearPendingRewards(to, token);
+            $.userRewardInfo[token][to] = ($.poolInfo[token] * (balanceOf(to) + amount)) / totalSupply();
+            $.userRewardInfo[token][from] = ($.poolInfo[token] * (balanceOf(from) - amount)) / totalSupply();
+        }
+
+        super._transfer(from, to, amount);
+    }
+
+    function _clearPendingRewards(address user, address token) internal returns (uint256 pending) {
+        pending = _pendingRewards(user, token);
+        if (pending > 0) {
+            IERC20Upgradeable(token).safeTransfer(user, pending);
+        }
+    }
+
+    function _pendingRewards(address user, address token) internal view returns (uint256) {
+        // accBalance // accumulate revenue tokens in the vault
+        // totalSupply = totalSupply() // totalSupply of RoyaltyTokens of the vault (IpRoyaltyVault)
+        // accBalancePerShare = accBalance / totalSupply
+        // userAmount = balanceOf(user) // user amount of RoyaltyTokens (IpRoyaltyVault),
+        // means how many share the user has
+        // pending = (accBalancePerShare * userAmount) - userRewardInfo[token][user].rewardDebt
+        IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
+        uint256 accBalance = $.poolInfo[token];
+        uint256 userAmount = balanceOf(user);
+        uint256 rewardDebt = $.userRewardInfo[token][user];
+        return (accBalance * userAmount) / totalSupply() - rewardDebt;
     }
 }

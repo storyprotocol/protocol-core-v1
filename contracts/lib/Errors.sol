@@ -699,6 +699,9 @@ library Errors {
     /// @notice Group reward pool must claim via GroupingModule.
     error IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
 
+    error IpRoyaltyVault__ZeroBalance(address token, address account);
+
+    error IpRoyaltyVault__InsufficientBalance(address token, address account, uint256 amount);
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

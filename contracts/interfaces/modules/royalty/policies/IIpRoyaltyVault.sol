@@ -8,10 +8,12 @@ interface IIpRoyaltyVault {
     /// @param amount The amount of revenue token added
     event RevenueTokenAddedToVault(address token, uint256 amount);
 
-    /// @notice Event emitted when a snapshot is taken
+    /// @notice Event emitted when a snapshot is taken for a given revenue token
     /// @param snapshotId The snapshot id
     /// @param snapshotTimestamp The timestamp of the snapshot
-    event SnapshotCompleted(uint256 snapshotId, uint256 snapshotTimestamp);
+    /// @param token The revenue token that was snapshotted
+    /// @param amount The amount of revenue token that was snapshotted
+    event SnapshotCompleted(uint256 snapshotId, uint256 snapshotTimestamp, address token, uint256 amount);
 
     /// @notice Event emitted when a revenue token is claimed
     /// @param claimer The address of the claimer

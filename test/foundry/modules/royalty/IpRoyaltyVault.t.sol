@@ -222,7 +222,8 @@ contract TestIpRoyaltyVault is BaseTest {
         uint256 linkPendingVaultBefore = ipRoyaltyVault.pendingVaultAmount(address(LINK));
 
         vm.expectEmit(true, true, true, true, address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp);
+        emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp, address(USDC), royaltyAmount);
+        emit IIpRoyaltyVault.SnapshotCompleted(1, block.timestamp, address(LINK), royaltyAmount);
 
         ipRoyaltyVault.snapshot();
 

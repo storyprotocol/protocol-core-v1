@@ -161,11 +161,11 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             $.claimableAtSnapshot[snapshotId][tokenList[i]] = newRevenue;
             $.claimVaultAmount[tokenList[i]] += newRevenue;
             $.pendingVaultAmount[tokenList[i]] = 0;
+
+            emit SnapshotCompleted(snapshotId, block.timestamp, tokenList[i], newRevenue);
         }
 
         if (noRevenueCounter == tokenList.length) revert Errors.IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
-
-        emit SnapshotCompleted(snapshotId, block.timestamp);
 
         return snapshotId;
     }

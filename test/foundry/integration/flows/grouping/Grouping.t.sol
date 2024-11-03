@@ -148,19 +148,14 @@ contract Flows_Integration_Grouping is BaseIntegration {
             rewards[0] = 1 ether / 2;
             rewards[1] = 1 ether / 2;
 
-            uint256 snapshotId = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId)).snapshot();
-            uint256[] memory snapshotIds = new uint256[](1);
-            snapshotIds[0] = snapshotId;
-
             vm.expectEmit(address(groupingModule));
             emit IGroupingModule.CollectedRoyaltiesToGroupPool(
                 groupId,
                 address(mockToken),
                 IGroupIPAssetRegistry(ipAssetRegistry).getGroupRewardPool(groupId),
-                1 ether,
-                snapshotIds
+                1 ether
             );
-            uint256 royalties = groupingModule.collectRoyalties(groupId, address(mockToken), snapshotIds);
+            uint256 royalties = groupingModule.collectRoyalties(groupId, address(mockToken));
             assertEq(royalties, 1 ether);
             vm.expectEmit(address(groupingModule));
             emit IGroupingModule.ClaimedReward(groupId, address(erc20), ipIds, rewards);

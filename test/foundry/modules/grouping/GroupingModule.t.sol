@@ -201,19 +201,14 @@ contract GroupingModuleTest is BaseTest {
         royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20), 100);
         vm.warp(vm.getBlockTimestamp() + 7 days);
 
-        uint256 snapshotId = IIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId)).snapshot();
-        uint256[] memory snapshotIds = new uint256[](1);
-        snapshotIds[0] = snapshotId;
-
         vm.expectEmit();
         emit IGroupingModule.CollectedRoyaltiesToGroupPool(
             groupId,
             address(erc20),
             address(rewardPool),
-            100,
-            snapshotIds
+            100
         );
-        groupingModule.collectRoyalties(groupId, address(erc20), snapshotIds);
+        groupingModule.collectRoyalties(groupId, address(erc20));
 
         address[] memory claimIpIds = new address[](1);
         claimIpIds[0] = ipId1;

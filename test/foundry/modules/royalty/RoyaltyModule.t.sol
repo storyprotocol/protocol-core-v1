@@ -894,7 +894,6 @@ contract TestRoyaltyModule is BaseTest {
             receiverIpId,
             address(USDC)
         );
-        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit RoyaltyPaid(receiverIpId, payerIpId, payerIpId, address(USDC), royaltyAmount, royaltyAmount);
@@ -904,12 +903,10 @@ contract TestRoyaltyModule is BaseTest {
         uint256 payerIpIdUSDCBalAfter = USDC.balanceOf(payerIpId);
         uint256 ipRoyaltyVaultUSDCBalAfter = USDC.balanceOf(ipRoyaltyVault);
         uint256 totalRevenueTokensReceivedAfter = royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC));
-        uint256 pendingVaultAmountAfter = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, royaltyAmount);
         assertEq(ipRoyaltyVaultUSDCBalAfter - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
         assertEq(totalRevenueTokensReceivedAfter - totalRevenueTokensReceivedBefore, royaltyAmount);
-        assertEq(pendingVaultAmountAfter - pendingVaultAmountBefore, royaltyAmount);
     }
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_WithFee() public {
@@ -939,7 +936,6 @@ contract TestRoyaltyModule is BaseTest {
             receiverIpId,
             address(USDC)
         );
-        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
         uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
@@ -961,10 +957,6 @@ contract TestRoyaltyModule is BaseTest {
         );
         assertEq(
             royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
-            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
-        );
-        assertEq(
-            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
             (royaltyAmount * 90e6) / royaltyModule.maxPercent()
         );
         assertEq(
@@ -1024,7 +1016,6 @@ contract TestRoyaltyModule is BaseTest {
             receiverIpId,
             address(USDC)
         );
-        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, address(USDC), royaltyAmount, royaltyAmount);
@@ -1036,10 +1027,6 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore, royaltyAmount);
         assertEq(
             royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
-            royaltyAmount
-        );
-        assertEq(
-            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
             royaltyAmount
         );
     }
@@ -1072,7 +1059,6 @@ contract TestRoyaltyModule is BaseTest {
             receiverIpId,
             address(USDC)
         );
-        uint256 pendingVaultAmountBefore = IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC));
         uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
 
         vm.expectEmit(true, true, true, true, address(royaltyModule));
@@ -1094,10 +1080,6 @@ contract TestRoyaltyModule is BaseTest {
         );
         assertEq(
             royaltyModule.totalRevenueTokensReceived(receiverIpId, address(USDC)) - totalRevenueTokensReceivedBefore,
-            (royaltyAmount * 90e6) / royaltyModule.maxPercent()
-        );
-        assertEq(
-            IIpRoyaltyVault(ipRoyaltyVault).pendingVaultAmount(address(USDC)) - pendingVaultAmountBefore,
             (royaltyAmount * 90e6) / royaltyModule.maxPercent()
         );
         assertEq(

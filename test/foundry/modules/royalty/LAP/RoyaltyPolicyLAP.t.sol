@@ -283,9 +283,6 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         );
         uint256 usdcAncestorVaultBalanceBefore = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLAPContractBalanceBefore = USDC.balanceOf(address(royaltyPolicyLAP));
-        uint256 ancestorPendingVaultAmountBefore = IIpRoyaltyVault(ancestorIpRoyaltyVault).pendingVaultAmount(
-            address(USDC)
-        );
 
         vm.expectEmit(true, true, true, true, address(royaltyPolicyLAP));
         emit RevenueTransferredToVault(address(80), address(10), address(USDC), 10 * 10 ** 6);
@@ -295,14 +292,10 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         uint256 transferredAmountAfter = royaltyPolicyLAP.getTransferredTokens(address(80), address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceAfter = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLAPContractBalanceAfter = USDC.balanceOf(address(royaltyPolicyLAP));
-        uint256 ancestorPendingVaultAmountAfter = IIpRoyaltyVault(ancestorIpRoyaltyVault).pendingVaultAmount(
-            address(USDC)
-        );
 
         assertEq(transferredAmountAfter - transferredAmountBefore, 10 * 10 ** 6);
         assertEq(usdcAncestorVaultBalanceAfter - usdcAncestorVaultBalanceBefore, 10 * 10 ** 6);
         assertEq(usdcLAPContractBalanceBefore - usdcLAPContractBalanceAfter, 10 * 10 ** 6);
-        assertEq(ancestorPendingVaultAmountAfter - ancestorPendingVaultAmountBefore, 10 * 10 ** 6);
     }
 
     function test_RoyaltyPolicyLAP_getPolicyRtsRequiredToLink() public {

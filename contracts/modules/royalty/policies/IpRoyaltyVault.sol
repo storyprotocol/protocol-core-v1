@@ -3,13 +3,10 @@ pragma solidity 0.8.26;
 
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-// solhint-disable-next-line max-line-length
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable-v4/security/ReentrancyGuardUpgradeable.sol";
-// solhint-disable-next-line max-line-length
-import { ERC20SnapshotUpgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/extensions/ERC20SnapshotUpgradeable.sol";
-// solhint-disable-next-line max-line-length
-import { SafeERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/IERC20Upgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IRoyaltyModule } from "../../../interfaces/modules/royalty/IRoyaltyModule.sol";
@@ -23,9 +20,9 @@ import { Errors } from "../../../lib/Errors.sol";
 ///      Do not transfer ERC20 tokens directly to the ip royalty vault as they can be lost if the poolInfo
 ///      is not updated along with an ERC20 transfer.
 ///      Use appropriate callpaths that can update the poolInfo when an ERC20 transfer to the vault is made.
-contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, ReentrancyGuardUpgradeable {
+contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for IERC20;
 
     /// @dev Storage structure for the IpRoyaltyVault
     /// @param ipId The ip id to whom this royalty vault belongs to
@@ -117,7 +114,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         _mint(rtReceiver, supply);
 
         __ReentrancyGuard_init();
-        __ERC20Snapshot_init();
         __ERC20_init(name, symbol);
     }
 
@@ -217,7 +213,12 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         emit RevenueTokenAddedToVault(token, amount);
     }
 
-    function _transfer(address from, address to, uint256 amount) internal override {
+    function _update(address from, address to, uint256 amount) internal override {
+        if (from == address(0)) {
+            super._update(from, to, amount);
+            return;
+        }
+        if (from == to) revert Errors.IpRoyaltyVault__SameFromToAddress(address(this), from);
         // when transferring RoyaltyTokens (Vault) from a user to another user:
         // 1. clear pending rewards of the (from) user
         // 2. clear pending rewards of the (to) another user, if pending rewards of another user is not zero
@@ -238,13 +239,13 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
             $.claimerInfo[token][from] = ($.poolInfo[token] * (balanceOf(from) - amount)) / totalSupply;
         }
 
-        super._transfer(from, to, amount);
+        super._update(from, to, amount);
     }
 
     function _clearPendingRewards(address user, address token) internal returns (uint256 pending) {
         pending = _claimableRevenue(user, token);
         if (pending > 0) {
-            IERC20Upgradeable(token).safeTransfer(user, pending);
+            IERC20(token).safeTransfer(user, pending);
         }
     }
 

@@ -23,14 +23,6 @@ abstract contract VaultController is IVaultController, ProtocolPausableUpgradeab
     bytes32 private constant VaultControllerStorageLocation =
         0x88cf5a7bd03e240c4fc740fb2d1a8664ec6fa4816f867d60f968080755fb1700;
 
-    /// @dev Set the snapshot interval
-    /// @dev Enforced to be only callable by the protocol admin in governance
-    /// @param timestampInterval The minimum timestamp interval between snapshots
-    function setSnapshotInterval(uint256 timestampInterval) external restricted {
-        VaultControllerStorage storage $ = _getVaultControllerStorage();
-        $.snapshotInterval = timestampInterval;
-    }
-
     /// @dev Set the ip royalty vault beacon
     /// @dev Enforced to be only callable by the protocol admin in governance
     /// @param beacon The ip royalty vault beacon address
@@ -48,12 +40,6 @@ abstract contract VaultController is IVaultController, ProtocolPausableUpgradeab
         // no need to check for zero address
         VaultControllerStorage storage $ = _getVaultControllerStorage();
         UpgradeableBeacon($.ipRoyaltyVaultBeacon).upgradeTo(newVault);
-    }
-
-    /// @notice Returns the snapshot interval
-    /// @return snapshotInterval The minimum time interval between snapshots
-    function snapshotInterval() public view returns (uint256) {
-        return _getVaultControllerStorage().snapshotInterval;
     }
 
     /// @notice Returns the ip royalty vault beacon

@@ -50,7 +50,6 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         // whitelist royalty policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(LINK), true);
-        royaltyModule.setSnapshotInterval(7 days);
         vm.stopPrank();
 
         vm.startPrank(address(licensingModule));

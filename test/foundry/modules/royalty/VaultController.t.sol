@@ -17,12 +17,6 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(u.admin);
     }
 
-    function test_VaultController_setSnapshotInterval() public {
-        uint256 timestampInterval = 100;
-        royaltyModule.setSnapshotInterval(timestampInterval);
-        assertEq(royaltyModule.snapshotInterval(), timestampInterval);
-    }
-
     function test_VaultController_setIpRoyaltyVaultBeacon_revert_ZeroIpRoyaltyVaultBeacon() public {
         vm.expectRevert(Errors.VaultController__ZeroIpRoyaltyVaultBeacon.selector);
         royaltyModule.setIpRoyaltyVaultBeacon(address(0));

@@ -746,7 +746,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLRP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
         royaltyModule.whitelistRoyaltyToken(WIP, true);
-        royaltyModule.setSnapshotInterval(7 days);
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 

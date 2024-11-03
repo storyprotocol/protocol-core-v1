@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 /// @title VaultController interface
 interface IVaultController {
-
     /// @dev Set the ip royalty vault beacon
     /// @dev Enforced to be only callable by the protocol admin in governance
     /// @param beacon The ip royalty vault beacon address

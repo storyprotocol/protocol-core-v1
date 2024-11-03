@@ -34,15 +34,11 @@ interface IIpRoyaltyVault {
     /// @dev Only callable by the royalty module or whitelisted royalty policy
     function updateVaultBalance(address token, uint256 amount) external;
 
-
     /// @notice Allows token holders to claim revenue token
     /// @param token The revenue tokens to claim
     /// @param claimer The address of the claimer
     /// @return The amount of revenue tokens claimed
-    function claimRevenueOnBehalf(
-        address token,
-        address claimer
-    ) external returns (uint256);
+    function claimRevenueOnBehalf(address token, address claimer) external returns (uint256);
 
     /// @notice Allows token holders to claim a batch of revenue tokens
     /// @param tokenList The list of revenue tokens to claim

@@ -5,7 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contracts
 import { RoyaltyPolicyLAP } from "../../../../../contracts/modules/royalty/policies/LAP/RoyaltyPolicyLAP.sol";
-import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Errors } from "../../../../../contracts/lib/Errors.sol";
 
 // tests

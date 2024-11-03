@@ -73,10 +73,7 @@ interface IGroupingModule is IModule {
     /// @notice Collects royalties into the pool, making them claimable by group member IPs.
     /// @param groupId The address of the group.
     /// @param token The address of the token.
-    function collectRoyalties(
-        address groupId,
-        address token
-    ) external returns (uint256 royalties);
+    function collectRoyalties(address groupId, address token) external returns (uint256 royalties);
 
     /// @notice Returns the available reward for each IP in the group.
     /// @param groupId The address of the group.

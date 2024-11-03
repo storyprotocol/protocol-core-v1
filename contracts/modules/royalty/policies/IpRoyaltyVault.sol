@@ -11,7 +11,6 @@ import { ERC20SnapshotUpgradeable } from "@openzeppelin/contracts-upgradeable-v4
 import { SafeERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import { IERC20Upgradeable } from "@openzeppelin/contracts-upgradeable-v4/token/ERC20/IERC20Upgradeable.sol";
 
-import { IVaultController } from "../../../interfaces/modules/royalty/policies/IVaultController.sol";
 import { IDisputeModule } from "../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IRoyaltyModule } from "../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IIpRoyaltyVault } from "../../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
@@ -34,7 +33,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
     /// @param pendingVaultAmount [DEPRECATED] Amount of revenue token pending to be snapshotted
     /// @param claimVaultAmount [DEPRECATED] Amount of revenue token in the claim vault
     /// @param claimableAtSnapshot [DEPRECATED] Amount of revenue token claimable at a given snapshot
-    /// @param isClaimedAtSnapshot [DEPRECATED] Indicates whether the claimer has claimed the revenue tokens at a given snapshot
+    /// @param isClaimedAtSnapshot [DEPRECATED] Indicates whether the claimer has claimed the token at a given snapshot
     /// @param tokens The list of revenue tokens in the vault
     /// @param poolInfo The accumulated balance of revenue tokens in the vault
     /// @param claimerInfo The revenue debt of the claimer
@@ -161,14 +160,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         return _claimRevenueOnBehalf(tokenList, claimer);
     }
 
-
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault
     /// @param tokenList The list of revenue tokens to claim
     /// @param targetIpId The target ip id to claim revenue tokens from
-    function claimByTokenBatchAsSelf(
-        address[] calldata tokenList,
-        address targetIpId
-    ) external whenNotPaused {
+    function claimByTokenBatchAsSelf(address[] calldata tokenList, address targetIpId) external whenNotPaused {
         address targetIpVault = ROYALTY_MODULE.ipRoyaltyVaults(targetIpId);
         if (targetIpVault == address(0)) revert Errors.IpRoyaltyVault__InvalidTargetIpId();
 
@@ -253,10 +248,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20SnapshotUpgradeable, Reentrancy
         }
     }
 
-    function _claimRevenueOnBehalf(
-        address[] memory tokenList,
-        address claimer
-    ) internal returns (uint256[] memory) {
+    function _claimRevenueOnBehalf(address[] memory tokenList, address claimer) internal returns (uint256[] memory) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         if (ROYALTY_MODULE.isIpRoyaltyVault(claimer) && msg.sender != claimer)

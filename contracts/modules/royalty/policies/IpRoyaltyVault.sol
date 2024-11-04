@@ -264,7 +264,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             claimedAmounts[i] = _clearPendingRewards(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
             $.claimerInfo[tokenList[i]][claimer] += claimedAmounts[i];
-
         }
 
         return claimedAmounts;

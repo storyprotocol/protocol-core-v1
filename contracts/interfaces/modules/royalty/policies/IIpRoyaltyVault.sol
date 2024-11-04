@@ -35,18 +35,18 @@ interface IIpRoyaltyVault {
     function updateVaultBalance(address token, uint256 amount) external;
 
     /// @notice Allows token holders to claim revenue token
-    /// @param token The revenue tokens to claim
     /// @param claimer The address of the claimer
+    /// @param token The revenue tokens to claim
     /// @return The amount of revenue tokens claimed
-    function claimRevenueOnBehalf(address token, address claimer) external returns (uint256);
+    function claimRevenueOnBehalf(address claimer, address token) external returns (uint256);
 
     /// @notice Allows token holders to claim a batch of revenue tokens
-    /// @param tokenList The list of revenue tokens to claim
     /// @param claimer The address of the claimer
+    /// @param tokenList The list of revenue tokens to claim
     /// @return The amount of revenue tokens claimed of each token
     function claimRevenueOnBehalfByTokenBatch(
-        address[] calldata tokenList,
-        address claimer
+        address claimer,
+        address[] calldata tokenList
     ) external returns (uint256[] memory);
 
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault

@@ -21,7 +21,7 @@ contract IpRoyaltyVaultHarness is Test {
     }
 
     function claimRevenueByTokenBatch(address[] calldata tokenList) public {
-        vault.claimRevenueOnBehalfByTokenBatch(tokenList, address(this));
+        vault.claimRevenueOnBehalfByTokenBatch(address(this), tokenList);
     }
 
     function claimByTokenBatchAsSelf(address[] calldata tokenList, address targetIpId) public {

@@ -133,27 +133,27 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     }
 
     /// @notice Allows token holders to claim revenue token
-    /// @param token The revenue tokens to claim
     /// @param claimer The address of the claimer
+    /// @param token The revenue tokens to claim
     /// @return The amount of revenue tokens claimed
     function claimRevenueOnBehalf(
-        address token,
-        address claimer
+        address claimer,
+        address token
     ) external nonReentrant whenNotPaused returns (uint256) {
         address[] memory tokenList = new address[](1);
         tokenList[0] = token;
-        return _claimRevenueOnBehalf(tokenList, claimer)[0];
+        return _claimRevenueOnBehalf(claimer, tokenList)[0];
     }
 
     /// @notice Allows token holders to claim a batch of revenue tokens
-    /// @param tokenList The list of revenue tokens to claim
     /// @param claimer The address of the claimer
+    /// @param tokenList The list of revenue tokens to claim
     /// @return The amount of revenue tokens claimed of each token
     function claimRevenueOnBehalfByTokenBatch(
-        address[] calldata tokenList,
-        address claimer
+        address claimer,
+        address[] calldata tokenList
     ) external nonReentrant whenNotPaused returns (uint256[] memory) {
-        return _claimRevenueOnBehalf(tokenList, claimer);
+        return _claimRevenueOnBehalf(claimer, tokenList);
     }
 
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault
@@ -170,8 +170,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             revert Errors.IpRoyaltyVault__VaultDoesNotBelongToAnAncestor();
 
         uint256[] memory claimedAmounts = IIpRoyaltyVault(targetIpVault).claimRevenueOnBehalfByTokenBatch(
-            tokenList,
-            address(this)
+            address(this),
+            tokenList
         );
 
         // only tokens that have claimable revenue higher than zero will be added to the vault
@@ -242,14 +242,15 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         super._update(from, to, amount);
     }
 
-    function _clearPendingRewards(address user, address token) internal returns (uint256 pending) {
-        pending = _claimableRevenue(user, token);
+    function _clearPendingRewards(address claimer, address token) internal returns (uint256 pending) {
+        pending = _claimableRevenue(claimer, token);
         if (pending > 0) {
-            IERC20(token).safeTransfer(user, pending);
+            emit RevenueTokenClaimed(claimer, token, pending);
+            IERC20(token).safeTransfer(claimer, pending);
         }
     }
 
-    function _claimRevenueOnBehalf(address[] memory tokenList, address claimer) internal returns (uint256[] memory) {
+    function _claimRevenueOnBehalf(address claimer, address[] memory tokenList) internal returns (uint256[] memory) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         if (ROYALTY_MODULE.isIpRoyaltyVault(claimer) && msg.sender != claimer)
@@ -264,7 +265,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
             $.claimerInfo[tokenList[i]][claimer] += claimedAmounts[i];
 
-            emit RevenueTokenClaimed(claimer, tokenList[i], claimedAmounts[i]);
         }
 
         return claimedAmounts;

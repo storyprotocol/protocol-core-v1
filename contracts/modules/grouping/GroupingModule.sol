@@ -206,7 +206,7 @@ contract GroupingModule is
         IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
 
         if (address(vault) == address(0)) revert Errors.GroupingModule__GroupRoyaltyVaultNotCreated(groupId);
-        royalties = vault.claimRevenueOnBehalf(token, address(pool));
+        royalties = vault.claimRevenueOnBehalf(address(pool), token);
         pool.depositReward(groupId, token, royalties);
         emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties);
     }

@@ -134,7 +134,7 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
         IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
         // ignore if group IP vault is not created
         if (address(vault) == address(0)) return;
-        uint256 royalties = vault.claimRevenueOnBehalf(token, address(this));
+        uint256 royalties = vault.claimRevenueOnBehalf(address(this), token);
         poolInfo[groupId][token].availableBalance += royalties;
         poolInfo[groupId][token].accBalance += royalties;
         groupTokens[groupId].add(token);

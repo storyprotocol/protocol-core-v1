@@ -551,20 +551,26 @@ contract TestIpRoyaltyVault is BaseTest {
         // IP owner transfers 30% of rts to alice
         vm.prank(address(2));
         vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), (royaltyAmount * 100e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(LINK), (royaltyAmount * 100e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(address(2), alice, 30e6);
         IERC20(address(ipRoyaltyVault)).transfer(alice, 30e6);
 
         assertEq(ipRoyaltyVault.balanceOf(alice), 30e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 70e6);
         assertEq(USDC.balanceOf(alice), aliceUsdcBalanceBefore);
-        assertEq(USDC.balanceOf(address(ipRoyaltyVault)), 0);
-        assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6);
-        assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), 0);
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault)), (royaltyAmount * 100e6) / 100e6);
+        assertEq(USDC.balanceOf(address(2)), 0);
+        assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), (royaltyAmount * 100e6) / 100e6);
         assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), 0);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(USDC);
+        tokens[1] = address(LINK);
+
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), (royaltyAmount * 100e6) / 100e6);
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(LINK), (royaltyAmount * 100e6) / 100e6);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(address(2), tokens);
 
         // IP owner transfer another 20% of rts to alice
         // payment is made to vault
@@ -579,24 +585,36 @@ contract TestIpRoyaltyVault is BaseTest {
 
         vm.prank(address(2));
         vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), (royaltyAmount * 70e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(USDC), (royaltyAmount * 30e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(LINK), (royaltyAmount * 70e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(LINK), (royaltyAmount * 30e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(address(2), alice, 20e6);
         IERC20(address(ipRoyaltyVault)).transfer(alice, 20e6);
 
         assertEq(ipRoyaltyVault.balanceOf(alice), 50e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 50e6);
+        assertEq(USDC.balanceOf(alice), aliceUsdcBalanceBefore);
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault)), royaltyAmount);
+
+        assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), (royaltyAmount * 70e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), (royaltyAmount * 30e6) / 100e6);
+
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), (royaltyAmount * 70e6) / 100e6);
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(LINK), (royaltyAmount * 70e6) / 100e6);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(address(2), tokens);
+
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(USDC), (royaltyAmount * 30e6) / 100e6);
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(LINK), (royaltyAmount * 30e6) / 100e6);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(alice, tokens);
+
         assertEq(USDC.balanceOf(alice), aliceUsdcBalanceBefore + (royaltyAmount * 30e6) / 100e6);
         assertEq(USDC.balanceOf(address(ipRoyaltyVault)), 0);
         assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6 + (royaltyAmount * 70e6) / 100e6);
         assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), 0);
         assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), 0);
+
 
         // alice transfer 20% of rts to bob
         // payment is made to vault
@@ -613,16 +631,29 @@ contract TestIpRoyaltyVault is BaseTest {
 
         vm.prank(alice);
         vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(USDC), (royaltyAmount * 50e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
-        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(LINK), (royaltyAmount * 50e6) / 100e6);
-        vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(alice, bob, 20e6);
         IERC20(address(ipRoyaltyVault)).transfer(bob, 20e6);
 
         assertEq(ipRoyaltyVault.balanceOf(alice), 30e6);
         assertEq(ipRoyaltyVault.balanceOf(bob), 20e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 50e6);
+        assertEq(
+            USDC.balanceOf(alice),
+            aliceUsdcBalanceBefore + (royaltyAmount * 30e6) / 100e6
+        );
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault)), (royaltyAmount * 100e6) / 100e6);
+        assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6 + (royaltyAmount * 70e6) / 100e6);
+        assertEq(USDC.balanceOf(bob), bobUsdcBalanceBefore);
+        assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), (royaltyAmount * 50e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), (royaltyAmount * 50e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(bob, address(USDC)), 0);
+
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(USDC), (royaltyAmount * 50e6) / 100e6);
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(LINK), (royaltyAmount * 50e6) / 100e6);
+        ipRoyaltyVault.claimRevenueOnBehalfByTokenBatch(alice, tokens);
+
         assertEq(
             USDC.balanceOf(alice),
             aliceUsdcBalanceBefore + (royaltyAmount * 30e6) / 100e6 + (royaltyAmount * 50e6) / 100e6
@@ -633,6 +664,38 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), (royaltyAmount * 50e6) / 100e6);
         assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), 0);
         assertEq(ipRoyaltyVault.claimableRevenue(bob, address(USDC)), 0);
+
+
+        // alice transfer 30% of rts to bob
+        // payment is made to vault
+        USDC.mint(address(1), royaltyAmount); // 100k USDC
+        LINK.mint(address(1), royaltyAmount); // 100k LINK
+        vm.startPrank(address(1));
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(1), address(USDC), royaltyAmount);
+        LINK.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(address(2), address(1), address(LINK), royaltyAmount);
+        vm.stopPrank();
+
+        vm.prank(alice);
+        vm.expectEmit(address(ipRoyaltyVault));
+        emit IERC20.Transfer(alice, bob, 30e6);
+        IERC20(address(ipRoyaltyVault)).transfer(bob, 30e6);
+
+
+        assertEq(ipRoyaltyVault.balanceOf(alice), 0e6);
+        assertEq(ipRoyaltyVault.balanceOf(bob), 50e6);
+        assertEq(ipRoyaltyVault.balanceOf(address(2)), 50e6);
+        assertEq(
+            USDC.balanceOf(alice),
+            aliceUsdcBalanceBefore + (royaltyAmount * 30e6) / 100e6 + (royaltyAmount * 50e6) / 100e6
+        );
+        assertEq(USDC.balanceOf(address(ipRoyaltyVault)), (royaltyAmount * 50e6) / 100e6 + (royaltyAmount * 100e6) / 100e6);
+        assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6 + (royaltyAmount * 70e6) / 100e6);
+        assertEq(USDC.balanceOf(bob), bobUsdcBalanceBefore);
+        assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), (royaltyAmount * 50e6) / 100e6 + (royaltyAmount * 50e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), (royaltyAmount * 30e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimableRevenue(bob, address(USDC)), (royaltyAmount * 20e6) / 100e6);
     }
 
     function test_IpRoyaltyVault_payRev_then_claimRev_then_transferRTs() public {

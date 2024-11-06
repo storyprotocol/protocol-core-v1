@@ -235,11 +235,12 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         for (uint256 i = 0; i < tokenList.length; i++) {
             uint256 pendingFrom = _claimableRevenue(from, tokenList[i]);
             uint256 pendingTo = _claimableRevenue(to, tokenList[i]);
+            uint256 accBalance = $.poolInfo[tokenList[i]];
             $.claimerInfo[tokenList[i]][to] =
-                int256(($.poolInfo[tokenList[i]] * (balanceOf(to) + amount)) / totalSupply) -
+                int256((accBalance * (balanceOf(to) + amount)) / totalSupply) -
                 int256(pendingTo);
             $.claimerInfo[tokenList[i]][from] =
-                int256(($.poolInfo[tokenList[i]] * (balanceOfFrom - amount)) / totalSupply) -
+                int256((accBalance * (balanceOfFrom - amount)) / totalSupply) -
                 int256(pendingFrom);
         }
 

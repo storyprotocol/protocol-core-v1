@@ -179,8 +179,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         }
     }
 
-    /// @notice Get total amount of revenue token claimable by a token holder
-    /// @param claimer The address of the token holder
+    /// @notice Get total amount of revenue token claimable by a royalty token holder
+    /// @param claimer The address of the royalty token holder
     /// @param token The revenue token to claim
     /// @return The amount of revenue token claimable
     function claimableRevenue(address claimer, address token) external view whenNotPaused returns (uint256) {
@@ -214,6 +214,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         emit RevenueTokenAddedToVault(token, amount);
     }
 
+    /// @dev Updates the balance of the vault when transferring RoyaltyTokens (Vault) from a user to another user
     function _update(address from, address to, uint256 amount) internal override {
         if (from == address(0)) {
             super._update(from, to, amount);
@@ -221,11 +222,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         }
         if (from == to) revert Errors.IpRoyaltyVault__SameFromToAddress(address(this), from);
         // when transferring RoyaltyTokens (Vault) from a user to another user:
-        // 1. clear pending rewards of the (from) user
-        // 2. clear pending rewards of the (to) another user, if pending rewards of another user is not zero
-        // 3. update the rewardDebt of the (to) another user to accBalancePerShare * userAmount
-        // 4. update the rewardDebt of the (from) user to accBalancePerShare * userAmount
-        // 5. transfer the RoyaltyTokens (Vault) from the (from) user to the (to) another user
+        // 1. update the rewardDebt of the (to) another user to accBalancePerShare * userAmount - pending
+        // 2. update the rewardDebt of the (from) user to accBalancePerShare * userAmount - pending
+        // 3. transfer the RoyaltyTokens (Vault) from the (from) user to the (to) another user
         uint256 balanceOfFrom = balanceOf(from);
         if (balanceOfFrom == 0) revert Errors.IpRoyaltyVault__ZeroBalance(address(this), from);
         if (balanceOfFrom < amount) revert Errors.IpRoyaltyVault__InsufficientBalance(address(this), from, amount);
@@ -247,6 +246,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         super._update(from, to, amount);
     }
 
+    /// @dev Claims the pending revenue token for a claimer
+    /// @param claimer The address of the claimer
+    /// @param token The revenue token to claim
     function _claimPendingRevenue(address claimer, address token) internal returns (uint256 pending) {
         // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
         if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
@@ -257,6 +259,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         }
     }
 
+    /// @dev Claims a list of revenue tokens for a claimer
+    /// @param claimer The address of the claimer
+    /// @param tokenList The list of revenue tokens to claim
     function _claimRevenueOnBehalf(address claimer, address[] memory tokenList) internal returns (uint256[] memory) {
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
@@ -276,13 +281,16 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         return claimedAmounts;
     }
 
+    /// @dev Returns the claimable revenue for a claimer of a given token
+    /// @param claimer The address of the claimer
+    /// @param token The revenue token to claim
     function _claimableRevenue(address claimer, address token) internal view returns (uint256) {
-        // accBalance // accumulate revenue tokens in the vault
-        // totalSupply = totalSupply() // totalSupply of RoyaltyTokens of the vault (IpRoyaltyVault)
+        // accBalance - accumulated revenue tokens in the vault
+        // totalSupply = totalSupply() - totalSupply of RoyaltyTokens of the vault (IpRoyaltyVault)
         // accBalancePerShare = accBalance / totalSupply
-        // userAmount = balanceOf(user) // user amount of RoyaltyTokens (IpRoyaltyVault),
-        // means how many share the user has
-        // pending = (accBalancePerShare * userAmount) - userRewardInfo[token][user].rewardDebt
+        // userAmount = balanceOf(user) - user amount of RoyaltyTokens (IpRoyaltyVault)
+        // means how much share the user has
+        // pending = (accBalancePerShare * userAmount) - rewardDebt
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
         uint256 accBalance = $.poolInfo[token];
         uint256 userAmount = balanceOf(claimer);

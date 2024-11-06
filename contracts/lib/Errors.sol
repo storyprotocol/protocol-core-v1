@@ -669,12 +669,6 @@ library Errors {
     /// @notice Caller is not Royalty Module.
     error IpRoyaltyVault__NotAllowedToAddTokenToVault();
 
-    /// @notice Wait for the interval to pass for the next snapshot.
-    error IpRoyaltyVault__InsufficientTimeElapsedSinceLastSnapshot();
-
-    /// @notice No new revenue since the last snapshot.
-    error IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
-
     /// @notice There is no ip royalty vault for the provided IP.
     error IpRoyaltyVault__InvalidTargetIpId();
 

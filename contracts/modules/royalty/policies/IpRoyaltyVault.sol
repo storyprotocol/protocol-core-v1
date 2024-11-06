@@ -109,7 +109,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
 
         $.ipId = ipIdAddress;
-        $.lastSnapshotTimestamp = uint40(block.timestamp);
 
         _mint(rtReceiver, supply);
 
@@ -235,21 +234,20 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         address[] memory tokenList = $.tokens.values();
         uint256 totalSupply = totalSupply();
         for (uint256 i = 0; i < tokenList.length; i++) {
-            address token = tokenList[i];
-            uint256 pendingFrom = _claimableRevenue(from, token);
-            uint256 pendingTo = _claimableRevenue(to, token);
-            $.claimerInfo[token][to] =
-                int256(($.poolInfo[token] * (balanceOf(to) + amount)) / totalSupply) -
+            uint256 pendingFrom = _claimableRevenue(from, tokenList[i]);
+            uint256 pendingTo = _claimableRevenue(to, tokenList[i]);
+            $.claimerInfo[tokenList[i]][to] =
+                int256(($.poolInfo[tokenList[i]] * (balanceOf(to) + amount)) / totalSupply) -
                 int256(pendingTo);
-            $.claimerInfo[token][from] =
-                int256(($.poolInfo[token] * (balanceOfFrom - amount)) / totalSupply) -
+            $.claimerInfo[tokenList[i]][from] =
+                int256(($.poolInfo[tokenList[i]] * (balanceOfFrom - amount)) / totalSupply) -
                 int256(pendingFrom);
         }
 
         super._update(from, to, amount);
     }
 
-    function _distributeClaimableRevenue(address claimer, address token) internal returns (uint256 pending) {
+    function _claimPendingRevenue(address claimer, address token) internal returns (uint256 pending) {
         // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
         if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
         pending = _claimableRevenue(claimer, token);
@@ -270,7 +268,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
 
         uint256[] memory claimedAmounts = new uint256[](tokenList.length);
         for (uint256 i = 0; i < tokenList.length; i++) {
-            claimedAmounts[i] = _distributeClaimableRevenue(claimer, tokenList[i]);
+            claimedAmounts[i] = _claimPendingRevenue(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
             $.claimerInfo[tokenList[i]][claimer] += int256(claimedAmounts[i]);
         }

@@ -185,6 +185,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @param token The revenue token to claim
     /// @return The amount of revenue token claimable
     function claimableRevenue(address claimer, address token) external view whenNotPaused returns (uint256) {
+        // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
+        if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
         return _claimableRevenue(claimer, token);
     }
 
@@ -247,6 +249,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     }
 
     function _clearPendingRewards(address claimer, address token) internal returns (uint256 pending) {
+        // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
+        if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
         pending = _claimableRevenue(claimer, token);
         if (pending > 0) {
             emit RevenueTokenClaimed(claimer, token, pending);

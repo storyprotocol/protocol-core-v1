@@ -304,7 +304,9 @@ contract DisputeModule is
 
         if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
 
-        address arbitrationPolicy = $.arbitrationPolicies[derivativeIpId];
+        // Update the active arbitration policy before using it
+        address arbitrationPolicy = _updateActiveArbitrationPolicy(derivativeIpId);
+
         if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
 
         uint256 disputeId = ++$.disputeCounter;

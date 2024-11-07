@@ -75,6 +75,6 @@ interface IIpRoyaltyVault {
     /// positive value means claimed need to deducted, negative value means claimable from vault
     /// @param claimer The address of the claimer
     /// @param token The revenue token to check
-    /// @return The revenue debt of the claimer
-    function claimerRevenueDebt(address claimer, address token) external view returns (int256);
+    /// @return The revenue debt of the claimer for the token
+    function revenueDebt(address claimer, address token) external view returns (int256);
 }

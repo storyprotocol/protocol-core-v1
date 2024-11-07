@@ -207,7 +207,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @param claimer The address of the claimer
     /// @param token The revenue token to check
     /// @return The revenue debt of the claimer
-    function claimerRevenueDebt(address claimer, address token) external view returns (int256) {
+    function revenueDebt(address claimer, address token) external view returns (int256) {
         return _getIpRoyaltyVaultStorage().claimerRevenueDebt[token][claimer];
     }
 

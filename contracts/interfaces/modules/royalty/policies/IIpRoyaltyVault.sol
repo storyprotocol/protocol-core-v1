@@ -65,4 +65,16 @@ interface IIpRoyaltyVault {
 
     /// @notice The list of revenue tokens in the vault
     function tokens() external view returns (address[] memory);
+
+    /// @notice The accumulated balance of revenue tokens in the vault
+    /// @param token The revenue token to check
+    /// @return The accumulated balance of revenue tokens in the vault
+    function vaultAccBalances(address token) external view returns (uint256);
+
+    /// @notice The revenue debt of the claimer, used to calculate the claimable revenue
+    /// positive value means claimed need to deducted, negative value means claimable from vault
+    /// @param claimer The address of the claimer
+    /// @param token The revenue token to check
+    /// @return The revenue debt of the claimer
+    function claimerRevenueDebt(address claimer, address token) external view returns (int256);
 }

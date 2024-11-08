@@ -76,5 +76,5 @@ interface IIpRoyaltyVault {
     /// @param claimer The address of the claimer
     /// @param token The revenue token to check
     /// @return The revenue debt of the claimer for the token
-    function revenueDebt(address claimer, address token) external view returns (int256);
+    function claimerRevenueDebt(address claimer, address token) external view returns (int256);
 }

@@ -45,7 +45,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
         mapping(address token => uint256 accBalance) vaultAccBalances;
-        mapping(address token => mapping(address claimer => int256 revenueDebt)) revenueDebt;
+        mapping(address token => mapping(address claimer => int256 revenueDebt)) claimerRevenueDebt;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IpRoyaltyVault")) - 1)) & ~bytes32(uint256(0xff));
@@ -207,8 +207,8 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @param claimer The address of the claimer
     /// @param token The revenue token to check
     /// @return The revenue debt of the claimer
-    function revenueDebt(address claimer, address token) external view returns (int256) {
-        return _getIpRoyaltyVaultStorage().revenueDebt[token][claimer];
+    function claimerRevenueDebt(address claimer, address token) external view returns (int256) {
+        return _getIpRoyaltyVaultStorage().claimerRevenueDebt[token][claimer];
     }
 
     /// @notice Returns list of revenue tokens in the vault
@@ -253,10 +253,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             uint256 pendingFrom = _claimableRevenue(from, tokenList[i]);
             uint256 pendingTo = _claimableRevenue(to, tokenList[i]);
             uint256 accBalance = $.vaultAccBalances[tokenList[i]];
-            $.revenueDebt[tokenList[i]][to] =
+            $.claimerRevenueDebt[tokenList[i]][to] =
                 int256((accBalance * (balanceOf(to) + amount)) / totalSupply) -
                 int256(pendingTo);
-            $.revenueDebt[tokenList[i]][from] =
+            $.claimerRevenueDebt[tokenList[i]][from] =
                 int256((accBalance * (balanceOfFrom - amount)) / totalSupply) -
                 int256(pendingFrom);
         }
@@ -293,7 +293,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         for (uint256 i = 0; i < tokenList.length; i++) {
             claimedAmounts[i] = _claimPendingRevenue(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
-            $.revenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]);
+            $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]);
         }
 
         return claimedAmounts;
@@ -312,7 +312,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
         uint256 accBalance = $.vaultAccBalances[token];
         uint256 userAmount = balanceOf(claimer);
-        int256 rewardDebt = $.revenueDebt[token][claimer];
+        int256 rewardDebt = $.claimerRevenueDebt[token][claimer];
         return uint256(int256((accBalance * userAmount) / totalSupply()) - rewardDebt);
     }
 

@@ -220,4 +220,65 @@ contract EvenSplitGroupPoolTest is BaseTest {
 
         vm.stopPrank();
     }
+
+    function test_EvenSplitGroupPool_claimRewards_duplicateIps() public {
+        uint256 commRemixTermsId = registerSelectedPILicenseTerms(
+            "commercial_remix",
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000, // 10%
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(erc20)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commRemixTermsId);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+
+        vm.startPrank(address(groupingModule));
+        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId2);
+        vm.stopPrank();
+
+        vm.startPrank(address(groupingModule));
+        erc20.mint(address(rewardPool), 100);
+        rewardPool.depositReward(group1, address(erc20), 100);
+        assertEq(erc20.balanceOf(address(rewardPool)), 100);
+        vm.stopPrank();
+
+        uint256 rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
+        assertEq(rewardDebt, 0);
+        rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId2);
+        assertEq(rewardDebt, 0);
+
+        address[] memory ipIds = new address[](3);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        ipIds[2] = ipId1;
+
+        uint256[] memory rewards = rewardPool.getAvailableReward(group1, address(erc20), ipIds);
+        assertEq(rewards[0], 50);
+        assertEq(rewards[1], 50);
+        assertEq(rewards[2], 50);
+
+        vm.prank(address(groupingModule));
+        rewards = rewardPool.distributeRewards(group1, address(erc20), ipIds);
+        assertEq(rewards[0], 50);
+        assertEq(rewards[1], 50);
+        assertEq(rewards[2], 0);
+
+        assertEq(erc20.balanceOf(address(rewardPool)), 0);
+
+        rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId1);
+        assertEq(rewardDebt, 50);
+        rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId2);
+        assertEq(rewardDebt, 50);
+
+        vm.stopPrank();
+    }
 }

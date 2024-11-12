@@ -214,11 +214,22 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
 
         vm.prank(alice);
-        registry.register(block.chainid, tokenAddress, tokenId);
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegistered(
+            ipId,
+            block.chainid,
+            tokenAddress,
+            tokenId,
+            name,
+            "https://storyprotocol.xyz/erc721/99",
+            block.timestamp
+        );
+        address ipId = registry.register(block.chainid, tokenAddress, tokenId);
 
-        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
         vm.prank(alice);
-        registry.register(block.chainid, tokenAddress, tokenId);
+        address ipIdAgain = registry.register(block.chainid, tokenAddress, tokenId);
+        assertEq(ipId, ipIdAgain);
     }
 
     function test_IPAssetRegistry_revert_paused() public {
@@ -311,10 +322,10 @@ contract IPAssetRegistryTest is BaseTest {
         assertTrue(!registry.isRegistered(ipId));
         assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
 
-        registry.register(chainid, tokenAddress, tokenId);
+        address ipId = registry.register(chainid, tokenAddress, tokenId);
 
-        vm.expectRevert(Errors.IPAssetRegistry__AlreadyRegistered.selector);
-        registry.register(chainid, tokenAddress, tokenId);
+        address ipIdAgain = registry.register(chainid, tokenAddress, tokenId);
+        assertEq(ipId, ipIdAgain);
     }
 
     /// @notice Helper function for generating an account address.

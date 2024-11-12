@@ -10,7 +10,6 @@ import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import { Errors } from "contracts/lib/Errors.sol";
 import { Test } from "forge-std/Test.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
@@ -169,10 +168,9 @@ contract IPAssetRegistryAllRegisteredInvariants is IPAssetRegistryInvariants {
         harness.register(3);
     }
 
-    /// @dev Invariant: every registration should revert when the IP Account is already registered
-    function invariant_allRevert() public {
+    /// @dev Invariant: every registration should return existing IP Account address
+    function invariant_idempotency() public {
         for (uint256 i = 0; i < harness.ipAccountCount(); i++) {
-            vm.expectRevert(abi.encodeWithSelector(Errors.IPAssetRegistry__AlreadyRegistered.selector));
             harness.register(uint8(i));
         }
     }

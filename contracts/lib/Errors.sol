@@ -143,9 +143,6 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error IPAssetRegistry__ZeroAccessManager();
 
-    /// @notice The IP asset has already been registered.
-    error IPAssetRegistry__AlreadyRegistered();
-
     /// @notice The NFT token contract is not valid ERC721 contract.
     error IPAssetRegistry__UnsupportedIERC721(address contractAddress);
 

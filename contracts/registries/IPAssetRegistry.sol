@@ -75,7 +75,8 @@ contract IPAssetRegistry is
         __UUPSUpgradeable_init();
     }
 
-    /// @notice Registers an NFT as an IP asset.
+    /// @notice Registers an NFT as an IP asset and creates an IP account for it.
+    ///         if the IP was already registered, return the IP address.
     /// @dev The IP required metadata name and URI are derived from the NFT's metadata.
     /// @param chainid The chain identifier of where the IP NFT resides.
     /// @param tokenContract The address of the NFT.
@@ -104,8 +105,9 @@ contract IPAssetRegistry is
         id = _registerIpAccount(chainid, tokenContract, tokenId);
         IIPAccount ipAccount = IIPAccount(payable(id));
 
+        // return if the IP was already registered
         if (bytes(ipAccount.getString("NAME")).length != 0) {
-            revert Errors.IPAssetRegistry__AlreadyRegistered();
+            return id;
         }
 
         (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);

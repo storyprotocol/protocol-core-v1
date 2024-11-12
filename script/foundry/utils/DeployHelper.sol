@@ -154,6 +154,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         else if (block.chainid == 1513) {
             erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
             oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
+        } else if (block.chainid == 1516) {
+            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
         }
     }
 

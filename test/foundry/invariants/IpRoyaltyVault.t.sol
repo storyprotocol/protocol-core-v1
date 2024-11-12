@@ -16,28 +16,16 @@ contract IpRoyaltyVaultHarness is Test {
         royaltyModule = RoyaltyModule(_royaltyModule);
     }
 
-    function snapshot() public {
-        vault.snapshot();
-    }
-
     function payRoyaltyOnBehalf(address receiverIpId, address payerIpId, address token, uint256 amount) external {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, token, amount);
     }
 
-    function claimRevenueByTokenBatch(uint256 snapshotId, address[] calldata tokenList) public {
-        vault.claimRevenueOnBehalfByTokenBatch(snapshotId, tokenList, address(this));
+    function claimRevenueByTokenBatch(address[] calldata tokenList) public {
+        vault.claimRevenueOnBehalfByTokenBatch(address(this), tokenList);
     }
 
-    function claimRevenueBySnapshotBatch(uint256[] memory snapshotIds, address token) public {
-        vault.claimRevenueOnBehalfBySnapshotBatch(snapshotIds, token, address(this));
-    }
-
-    function claimByTokenBatchAsSelf(uint256 snapshotId, address[] calldata tokenList, address targetIpId) public {
-        vault.claimByTokenBatchAsSelf(snapshotId, tokenList, targetIpId);
-    }
-
-    function claimBySnapshotBatchAsSelf(uint256[] memory snapshotIds, address token, address targetIpId) public {
-        vault.claimBySnapshotBatchAsSelf(snapshotIds, token, targetIpId);
+    function claimByTokenBatchAsSelf(address[] calldata tokenList, address targetIpId) public {
+        vault.claimByTokenBatchAsSelf(tokenList, targetIpId);
     }
 
     function updateVaultBalance(address token, uint256 amount) public {
@@ -62,7 +50,6 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         // whitelist royalty policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyToken(address(LINK), true);
-        royaltyModule.setSnapshotInterval(7 days);
         vm.stopPrank();
 
         vm.startPrank(address(licensingModule));
@@ -78,15 +65,12 @@ contract IpRoyaltyVaultInvariant is BaseTest {
 
         targetContract(address(harness));
 
-        bytes4[] memory selectors = new bytes4[](8);
-        selectors[0] = harness.snapshot.selector;
-        selectors[1] = harness.claimRevenueByTokenBatch.selector;
-        selectors[2] = harness.claimRevenueBySnapshotBatch.selector;
-        selectors[3] = harness.payRoyaltyOnBehalf.selector;
-        selectors[4] = harness.claimByTokenBatchAsSelf.selector;
-        selectors[5] = harness.claimBySnapshotBatchAsSelf.selector;
-        selectors[6] = harness.updateVaultBalance.selector;
-        selectors[7] = harness.warp.selector;
+        bytes4[] memory selectors = new bytes4[](5);
+        selectors[0] = harness.claimRevenueByTokenBatch.selector;
+        selectors[1] = harness.payRoyaltyOnBehalf.selector;
+        selectors[2] = harness.claimByTokenBatchAsSelf.selector;
+        selectors[3] = harness.updateVaultBalance.selector;
+        selectors[4] = harness.warp.selector;
 
         targetSelector(FuzzSelector(address(harness), selectors));
 

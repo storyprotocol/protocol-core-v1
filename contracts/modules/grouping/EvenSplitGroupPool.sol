@@ -125,17 +125,17 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         address token,
         address[] calldata ipIds
     ) external whenNotPaused onlyGroupingModule returns (uint256[] memory rewards) {
-        rewards = _getAvailableReward(groupId, token, ipIds);
-        uint256 totalRewards = 0;
-        for (uint256 i = 0; i < ipIds.length; i++) {
-            totalRewards += rewards[i];
-        }
+        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
+        rewards = new uint256[](ipIds.length);
+        uint256 rewardsPerIp = _getRewardPerIp(groupId, token);
+        uint256 totalRewards = rewardsPerIp * ipIds.length;
         if (totalRewards == 0) return rewards;
         IERC20(token).approve(address(ROYALTY_MODULE), totalRewards);
-        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
         for (uint256 i = 0; i < ipIds.length; i++) {
-            if (rewards[i] == 0) continue;
+            if (!_isIpAdded(groupId, ipIds[i])) continue;
             // calculate pending reward for each IP
+            rewards[i] = rewardsPerIp - $.ipRewardDebt[groupId][token][ipIds[i]];
+            if (rewards[i] == 0) continue;
             $.ipRewardDebt[groupId][token][ipIds[i]] += rewards[i];
             // call royalty module to transfer reward to IP's vault as royalty
             ROYALTY_MODULE.payRoyaltyOnBehalf(ipIds[i], groupId, token, rewards[i]);
@@ -158,6 +158,13 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         return _isIpAdded(groupId, ipId);
     }
 
+    function _getRewardPerIp(address groupId, address token) internal view returns (uint256) {
+        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
+        uint256 totalIps = $.totalMemberIps[groupId];
+        if (totalIps == 0) return 0;
+        return $.poolBalance[groupId][token] / totalIps;
+    }
+
     /// @dev Returns the available reward for each IP in the group of given token
     /// @param groupId The group ID
     /// @param token The reward token
@@ -168,10 +175,9 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         address[] memory ipIds
     ) internal view returns (uint256[] memory) {
         EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
-        uint256 totalIps = $.totalMemberIps[groupId];
-        if (totalIps == 0) return new uint256[](ipIds.length);
+        uint256 rewardPerIp = _getRewardPerIp(groupId, token);
+        if (rewardPerIp == 0) return new uint256[](ipIds.length);
 
-        uint256 totalAccumulatedPoolBalance = $.poolBalance[groupId][token];
         uint256[] memory rewards = new uint256[](ipIds.length);
         for (uint256 i = 0; i < ipIds.length; i++) {
             // ignore if IP is not added to pool
@@ -179,8 +185,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
                 rewards[i] = 0;
                 continue;
             }
-            uint256 rewardPerIP = totalAccumulatedPoolBalance / totalIps;
-            rewards[i] = rewardPerIP - $.ipRewardDebt[groupId][token][ipIds[i]];
+            rewards[i] = rewardPerIp - $.ipRewardDebt[groupId][token][ipIds[i]];
         }
         return rewards;
     }

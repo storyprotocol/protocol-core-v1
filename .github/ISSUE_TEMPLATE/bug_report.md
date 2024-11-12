@@ -28,5 +28,5 @@ assignees: ''
 
 
 ## Solution recommendation
-<!--- Not mandatory, but feel free to recommend a way fix the issue. -->
+<!--- Not mandatory, but feel free to recommend a way to fix the issue. -->
 

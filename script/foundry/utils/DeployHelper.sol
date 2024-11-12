@@ -67,6 +67,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     // PROXY 1967 IMPLEMENTATION STORAGE SLOTS
     bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    address internal constant WIP = address(0x1516000000000000000000000000000000000000);
 
     error RoleConfigError(string message);
 
@@ -744,12 +745,15 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLRP), true);
         royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-        royaltyModule.setSnapshotInterval(7 days);
+        royaltyModule.whitelistRoyaltyToken(WIP, true);
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
         // Dispute Module and Dispute Policy
-        disputeModule.whitelistDisputeTag("PLAGIARISM", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_USAGE", true);
+        disputeModule.whitelistDisputeTag("IMPROPER_PAYMENT", true);
+        disputeModule.whitelistDisputeTag("CONTENT_STANDARDS_VIOLATION", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));

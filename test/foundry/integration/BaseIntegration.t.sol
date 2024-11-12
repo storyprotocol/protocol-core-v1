@@ -20,9 +20,6 @@ contract BaseIntegration is BaseTest {
         super.setUp();
 
         dealMockAssets();
-
-        vm.prank(u.admin);
-        royaltyModule.setSnapshotInterval(7 days);
     }
 
     /*//////////////////////////////////////////////////////////////////////////

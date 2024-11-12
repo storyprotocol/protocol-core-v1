@@ -143,9 +143,6 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error IPAssetRegistry__ZeroAccessManager();
 
-    /// @notice The IP asset has already been registered.
-    error IPAssetRegistry__AlreadyRegistered();
-
     /// @notice The NFT token contract is not valid ERC721 contract.
     error IPAssetRegistry__UnsupportedIERC721(address contractAddress);
 
@@ -669,12 +666,6 @@ library Errors {
     /// @notice Caller is not Royalty Module.
     error IpRoyaltyVault__NotAllowedToAddTokenToVault();
 
-    /// @notice Wait for the interval to pass for the next snapshot.
-    error IpRoyaltyVault__InsufficientTimeElapsedSinceLastSnapshot();
-
-    /// @notice No new revenue since the last snapshot.
-    error IpRoyaltyVault__NoNewRevenueSinceLastSnapshot();
-
     /// @notice There is no ip royalty vault for the provided IP.
     error IpRoyaltyVault__InvalidTargetIpId();
 
@@ -699,6 +690,14 @@ library Errors {
     /// @notice Group reward pool must claim via GroupingModule.
     error IpRoyaltyVault__GroupPoolMustClaimViaGroupingModule();
 
+    /// @notice Zero balance.
+    error IpRoyaltyVault__ZeroBalance(address vault, address account);
+
+    /// @notice Insufficient balance.
+    error IpRoyaltyVault__InsufficientBalance(address vault, address account, uint256 amount);
+
+    /// @notice Same from and to address.
+    error IpRoyaltyVault__SameFromToAddress(address vault, address from);
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

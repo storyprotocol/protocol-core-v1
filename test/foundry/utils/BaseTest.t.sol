@@ -134,7 +134,12 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         vm.startPrank(disputeInitiator);
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         bytes32 disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
-        disputeId = disputeModule.raiseDispute(ipAddrToDispute, disputeEvidenceHashExample, "PLAGIARISM", "");
+        disputeId = disputeModule.raiseDispute(
+            ipAddrToDispute,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            ""
+        );
         vm.stopPrank();
 
         vm.prank(u.relayer); // admin is a judge

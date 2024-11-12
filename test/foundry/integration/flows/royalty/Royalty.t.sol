@@ -201,14 +201,10 @@ contract Flows_Integration_Disputes is BaseIntegration {
             );
 
             vm.warp(block.timestamp + 7 days + 1);
-            IpRoyaltyVault(vault).snapshot();
-
-            uint256[] memory snapshotIds = new uint256[](1);
-            snapshotIds[0] = 1;
 
             uint256 aliceBalanceBefore = mockToken.balanceOf(ipAcct[1]);
 
-            IpRoyaltyVault(vault).claimRevenueOnBehalfBySnapshotBatch(snapshotIds, address(mockToken), ipAcct[1]);
+            IpRoyaltyVault(vault).claimRevenueOnBehalf(ipAcct[1], address(mockToken));
 
             uint256 aliceBalanceAfter = mockToken.balanceOf(ipAcct[1]);
 

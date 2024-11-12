@@ -5,7 +5,6 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contracts
 import { RoyaltyPolicyLRP } from "../../../../../contracts/modules/royalty/policies/LRP/RoyaltyPolicyLRP.sol";
-import { IIpRoyaltyVault } from "../../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Errors } from "../../../../../contracts/lib/Errors.sol";
 
 // tests
@@ -286,23 +285,16 @@ contract TestRoyaltyPolicyLRP is BaseTest {
         );
         uint256 usdcAncestorVaultBalanceBefore = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLRPContractBalanceBefore = USDC.balanceOf(address(royaltyPolicyLRP));
-        uint256 ancestorPendingVaultAmountBefore = IIpRoyaltyVault(ancestorIpRoyaltyVault).pendingVaultAmount(
-            address(USDC)
-        );
 
         royaltyPolicyLRP.transferToVault(address(80), address(10), address(USDC), 10 * 10 ** 6);
 
         uint256 transferredAmountAfter = royaltyPolicyLRP.getTransferredTokens(address(80), address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceAfter = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLRPContractBalanceAfter = USDC.balanceOf(address(royaltyPolicyLRP));
-        uint256 ancestorPendingVaultAmountAfter = IIpRoyaltyVault(ancestorIpRoyaltyVault).pendingVaultAmount(
-            address(USDC)
-        );
 
         assertEq(transferredAmountAfter - transferredAmountBefore, 10 * 10 ** 6);
         assertEq(usdcAncestorVaultBalanceAfter - usdcAncestorVaultBalanceBefore, 10 * 10 ** 6);
         assertEq(usdcLRPContractBalanceBefore - usdcLRPContractBalanceAfter, 10 * 10 ** 6);
-        assertEq(ancestorPendingVaultAmountAfter - ancestorPendingVaultAmountBefore, 10 * 10 ** 6);
     }
 
     function test_RoyaltyPolicyLRP_getPolicyRtsRequiredToLink() public {

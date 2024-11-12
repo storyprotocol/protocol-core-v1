@@ -8,11 +8,6 @@ interface IIpRoyaltyVault {
     /// @param amount The amount of revenue token added
     event RevenueTokenAddedToVault(address token, uint256 amount);
 
-    /// @notice Event emitted when a snapshot is taken
-    /// @param snapshotId The snapshot id
-    /// @param snapshotTimestamp The timestamp of the snapshot
-    event SnapshotCompleted(uint256 snapshotId, uint256 snapshotTimestamp);
-
     /// @notice Event emitted when a revenue token is claimed
     /// @param claimer The address of the claimer
     /// @param token The revenue token claimed
@@ -39,79 +34,47 @@ interface IIpRoyaltyVault {
     /// @dev Only callable by the royalty module or whitelisted royalty policy
     function updateVaultBalance(address token, uint256 amount) external;
 
-    /// @notice A function to snapshot the claimable revenue and royalty token amounts
-    /// @return The snapshot id
-    function snapshot() external returns (uint256);
-
-    /// @notice A function to calculate the amount of revenue token claimable by a token holder at certain snapshot
-    /// @param account The address of the token holder
-    /// @param snapshotId The snapshot id
-    /// @param token The revenue token to claim
-    /// @return The amount of revenue token claimable
-    function claimableRevenue(address account, uint256 snapshotId, address token) external view returns (uint256);
-
-    /// @notice Allows token holders to claim revenue token based on the token balance at certain snapshot
-    /// @param snapshotId The snapshot id
-    /// @param tokenList The list of revenue tokens to claim
+    /// @notice Allows token holders to claim revenue token
     /// @param claimer The address of the claimer
-    /// @return The amount of revenue tokens claimed for each token
+    /// @param token The revenue tokens to claim
+    /// @return The amount of revenue tokens claimed
+    function claimRevenueOnBehalf(address claimer, address token) external returns (uint256);
+
+    /// @notice Allows token holders to claim a batch of revenue tokens
+    /// @param claimer The address of the claimer
+    /// @param tokenList The list of revenue tokens to claim
+    /// @return The amount of revenue tokens claimed of each token
     function claimRevenueOnBehalfByTokenBatch(
-        uint256 snapshotId,
-        address[] calldata tokenList,
-        address claimer
+        address claimer,
+        address[] calldata tokenList
     ) external returns (uint256[] memory);
 
-    /// @notice Allows token holders to claim by a list of snapshot ids based on the token balance at certain snapshot
-    /// @param snapshotIds The list of snapshot ids
-    /// @param token The revenue token to claim
-    /// @param claimer The address of the claimer
-    /// @return The amount of revenue tokens claimed
-    function claimRevenueOnBehalfBySnapshotBatch(
-        uint256[] memory snapshotIds,
-        address token,
-        address claimer
-    ) external returns (uint256);
-
     /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault
-    /// @param snapshotId The snapshot id
     /// @param tokenList The list of revenue tokens to claim
     /// @param targetIpId The target ip id to claim revenue tokens from
-    function claimByTokenBatchAsSelf(uint256 snapshotId, address[] calldata tokenList, address targetIpId) external;
+    function claimByTokenBatchAsSelf(address[] calldata tokenList, address targetIpId) external;
 
-    /// @notice Allows to claim revenue tokens on behalf of the ip royalty vault by snapshot batch
-    /// @param snapshotIds The list of snapshot ids
+    /// @notice Get total amount of revenue token claimable by a token holder
+    /// @param claimer The address of the token holder
     /// @param token The revenue token to claim
-    /// @param targetIpId The target ip id to claim revenue tokens from
-    function claimBySnapshotBatchAsSelf(uint256[] memory snapshotIds, address token, address targetIpId) external;
-
-    /// @notice Returns the current snapshot id
-    function getCurrentSnapshotId() external view returns (uint256);
+    /// @return The amount of revenue token claimable
+    function claimableRevenue(address claimer, address token) external view returns (uint256);
 
     /// @notice The ip id to whom this royalty vault belongs to
     function ipId() external view returns (address);
 
-    /// @notice The last snapshotted timestamp
-    function lastSnapshotTimestamp() external view returns (uint256);
-
-    /// @notice Amount of revenue token pending to be snapshotted
-    /// @param token The address of the revenue token
-    function pendingVaultAmount(address token) external view returns (uint256);
-
-    /// @notice Amount of revenue token in the claim vault
-    /// @param token The address of the revenue token
-    function claimVaultAmount(address token) external view returns (uint256);
-
-    /// @notice Amount of revenue token claimable at a given snapshot
-    /// @param snapshotId The snapshot id
-    /// @param token The address of the revenue token
-    function claimableAtSnapshot(uint256 snapshotId, address token) external view returns (uint256);
-
-    /// @notice Indicates whether the claimer has claimed the revenue tokens at a given snapshot
-    /// @param snapshotId The snapshot id
-    /// @param claimer The address of the claimer
-    /// @param token The address of the revenue token
-    function isClaimedAtSnapshot(uint256 snapshotId, address claimer, address token) external view returns (bool);
-
     /// @notice The list of revenue tokens in the vault
     function tokens() external view returns (address[] memory);
+
+    /// @notice The accumulated balance of revenue tokens in the vault
+    /// @param token The revenue token to check
+    /// @return The accumulated balance of revenue tokens in the vault
+    function vaultAccBalances(address token) external view returns (uint256);
+
+    /// @notice The revenue debt of the claimer, used to calculate the claimable revenue
+    /// positive value means claimed need to deducted, negative value means claimable from vault
+    /// @param claimer The address of the claimer
+    /// @param token The revenue token to check
+    /// @return The revenue debt of the claimer for the token
+    function claimerRevenueDebt(address claimer, address token) external view returns (int256);
 }

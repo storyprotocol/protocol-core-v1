@@ -56,13 +56,13 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         address rewardPool
     ) external onlyGroupingModule whenNotPaused returns (address groupId) {
         groupId = _register({ chainid: block.chainid, tokenContract: groupNft, tokenId: groupNftId });
-
+        
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);
         GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
         if (!$.whitelistedGroupRewardPools[rewardPool]) {
             revert Errors.GroupIPAssetRegistry__GroupRewardPoolNotRegistered(rewardPool);
         }
-        _getGroupIPAssetRegistryStorage().rewardPools[groupId] = rewardPool;
+        $.rewardPools[groupId] = rewardPool;
     }
 
     /// @notice Whitelists a group reward pool

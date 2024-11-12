@@ -10,7 +10,6 @@ import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import { Errors } from "contracts/lib/Errors.sol";
 import { Test } from "forge-std/Test.sol";
 import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";

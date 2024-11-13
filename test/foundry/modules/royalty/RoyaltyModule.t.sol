@@ -8,6 +8,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
+import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
@@ -849,6 +850,60 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payRoyaltyOnBehalf(ipAddr, ipAccount1, address(USDC), 100);
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_IpExpired() public {
+        // mint nft
+        mockNft.mintId(address(1), 100);
+        mockNft.mintId(address(2), 200);
+        // register ip account
+        address ipAcct1 = ipAssetRegistry.register(block.chainid, address(mockNft), 100);
+        address ipAcct2 = ipAssetRegistry.register(block.chainid, address(mockNft), 200);
+        // register license terms
+        uint256 commDerivTermsIdLap10 = pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                defaultMintingFee: 0,
+                expiration: 1000,
+                commercialUse: true,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 10e6,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: address(USDC),
+                uri: ""
+            })
+        );
+        // attach license terms to root
+        vm.startPrank(address(1));
+        licensingModule.attachLicenseTerms(ipAcct1, address(pilTemplate), commDerivTermsIdLap10);
+        vm.stopPrank();
+        // mint license
+        uint256[] memory licenseIds = new uint256[](1);
+        licenseIds[0] = licensingModule.mintLicenseTokens({
+            licensorIpId: ipAcct1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commDerivTermsIdLap10,
+            amount: 1,
+            receiver: ipAcct2,
+            royaltyContext: "",
+            maxMintingFee: 1e30
+        });
+        // register derivative
+        vm.startPrank(address(2));
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct2, licenseIds, "");
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 10000);
+        vm.expectRevert(Errors.RoyaltyModule__IpExpired.selector);
+        royaltyModule.payRoyaltyOnBehalf(ipAcct2, ipAcct1, address(USDC), 100);
     }
 
     function test_RoyaltyModule_payRoyaltyOnBehalf_revert_ZeroAmount() public {

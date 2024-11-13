@@ -24,13 +24,13 @@ contract PrecompileTest is Script {
     address internal USER = 0xf398C12A45Bc409b6C652E25bb0a3e702492A4ab;
 
     // protocol addresses
-    address internal ROYALTY_POLICY_LAP = 0xe9009284f22b1701A0dfD8160ED351fa6914F7D5;
-    address internal ROYALTY_POLICY_LRP = 0x196c6b5B3B1Fb5e209eb880FF63a6d365A630b4D;
-    address internal SUSD = 0x4b2400be7E48fCF7b0724aB8c1A7612f63b1d6eb;
-    address internal PIL_TEMPLATE = 0x1dF6c8854f7804Be5A6671d06fB6887fAA1A638C;
-    address internal IP_ASSET_REGISTRY = 0xcB6aCe386bD02351aFfA857D9425666c3fc38579;
-    address internal LICENSING_MODULE = 0xdB3F59a924C3F5c6566Fefd5674BeFBa8B4F64B5;
-    address internal ROYALTY_MODULE = 0x0A5978E0a9814B096E3625234bc3e91C041A51bB;
+    address internal ROYALTY_POLICY_LAP = 0x59935Eb63F6737Af555C7697058EB91DBc164A9c;
+    address internal ROYALTY_POLICY_LRP = 0xDF966a70548422b6E520E52dd06FC8E7Ddf215dF;
+    address internal SUSD = 0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5;
+    address internal PIL_TEMPLATE = 0x31B4191bb153E11FA4fBDd36238178792C08e5E1;
+    address internal IP_ASSET_REGISTRY = 0x980BCaf1681EF1A6d34A0a115825c5a90A0e15fD;
+    address internal LICENSING_MODULE = 0x14804927aEfC07E5a58De4E798Bea95b51b59fCa;
+    address internal ROYALTY_MODULE = 0x37BA665e41b580658cAD28D54800E95ced584e11;
 
     // terms
     uint256 internal mintingFee = 1000e18;
@@ -48,7 +48,7 @@ contract PrecompileTest is Script {
 
     function run() public {
         vm.etch(address(0x0101), address(new MockIPGraph()).code);
-        uint256 privateKey = vm.envUint("STORY_MULTISIG_PRIVATEKEY");
+        uint256 privateKey = vm.envUint("STORY_PRIVATEKEY");
         vm.startBroadcast(privateKey);
 
         ISUSD(SUSD).mint(USER, 1000000e18);
@@ -115,8 +115,6 @@ contract PrecompileTest is Script {
         // register terms
         registerTerms();
 
-        IVaultController(ROYALTY_MODULE).setSnapshotInterval(0);
-
         // setup tree 1-2-3-4-5
         // _setupTree1();
 
@@ -125,8 +123,6 @@ contract PrecompileTest is Script {
 
         // setup tree 11-12-13-14
         // _setupTree3();
-
-        IVaultController(ROYALTY_MODULE).setSnapshotInterval(1 days);
 
         vm.stopBroadcast();
 
@@ -400,7 +396,7 @@ contract PrecompileTest is Script {
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[10], license_9_10, "");
 
-        // A tip is made
+        /* // A tip is made
         IRoyaltyModule royaltyModule = IRoyaltyModule(ROYALTY_MODULE);
         royaltyModule.payRoyaltyOnBehalf(ipAcct[10], address(0), SUSD, 1e18);
 
@@ -418,7 +414,7 @@ contract PrecompileTest is Script {
 
         FakeEvent fakeEvent = new FakeEvent();
         fakeEvent.emitEvent(ipAcct[8], SUSD, 1e16);
-        console2.log("fakeEvent", address(fakeEvent));
+        console2.log("fakeEvent", address(fakeEvent)); */
     }
 
     /* function _setupTree3() internal {

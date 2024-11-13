@@ -12,7 +12,6 @@ contract MockIPAccountRegistry is IPAccountRegistry {
 }
 
 contract IPAccountRegistryTest is BaseTest {
-
     uint256 internal chainId = 100;
     address internal tokenAddress = address(200);
     uint256 internal tokenId = 300;

@@ -9,7 +9,6 @@ import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../../modules/BaseModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
-import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";

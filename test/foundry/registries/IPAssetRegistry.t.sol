@@ -350,7 +350,6 @@ contract IPAssetRegistryTest is BaseTest {
         vm.prank(owner, owner);
         address account = mockIpAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
         assertTrue(!IPAccountChecker.isIpAccount(ipAssetRegistry, account));
-
     }
 
     /// @notice Helper function for generating an account address.

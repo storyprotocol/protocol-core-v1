@@ -31,10 +31,7 @@ library IPAccountChecker {
     /// @param ipAssetRegistry_ The IP Account registry contract.
     /// @param ipAccountAddress_ The address to check.
     /// @return True if the address is a valid IP Account, false otherwise.
-    function isIpAccount(
-        IIPAssetRegistry ipAssetRegistry_,
-        address ipAccountAddress_
-    ) internal view returns (bool) {
+    function isIpAccount(IIPAssetRegistry ipAssetRegistry_, address ipAccountAddress_) internal view returns (bool) {
         if (ipAccountAddress_ == address(0)) return false;
         if (ipAccountAddress_.code.length == 0) return false;
         if (!ERC165Checker.supportsERC165(ipAccountAddress_)) return false;

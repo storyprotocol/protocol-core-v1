@@ -292,8 +292,6 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardPool.getIpAddedTime(groupId1, ipId2), 0);
     }
 
-
-
     function test_GroupingModule_addIp_revert_after_registerDerivative() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

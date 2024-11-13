@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
 import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
-import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { Errors } from "../lib/Errors.sol";
 
 /// @title AccessControlled
@@ -14,14 +14,14 @@ import { Errors } from "../lib/Errors.sol";
 /// It provides modifiers and functions to verify if the caller has the necessary permission
 /// and is a registered IP account.
 abstract contract AccessControlled {
-    using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountChecker for IIPAssetRegistry;
 
     /// @notice The IAccessController instance for permission checks.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IAccessController public immutable ACCESS_CONTROLLER;
-    /// @notice The IIPAccountRegistry instance for IP account verification.
+    /// @notice The IIPAssetRegistry instance for IP account verification.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IIPAccountRegistry public immutable IP_ACCOUNT_REGISTRY;
+    IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
 
     /// @notice Verifies that the caller has the necessary permission for the given IPAccount.
     /// @dev Modifier that calls _verifyPermission to check if the provided IP account has the required permission.
@@ -37,7 +37,7 @@ abstract contract AccessControlled {
     /// modules can use this modifier to check if the caller is a registered IP account.
     /// so that enforce only registered IP Account can call the functions.
     modifier onlyIpAccount() {
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(msg.sender)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(msg.sender)) {
             revert Errors.AccessControlled__CallerIsNotIpAccount(msg.sender);
         }
         _;
@@ -51,14 +51,14 @@ abstract contract AccessControlled {
         if (accessController == address(0)) revert Errors.AccessControlled__ZeroAddress();
         if (ipAccountRegistry == address(0)) revert Errors.AccessControlled__ZeroAddress();
         ACCESS_CONTROLLER = IAccessController(accessController);
-        IP_ACCOUNT_REGISTRY = IIPAccountRegistry(ipAccountRegistry);
+        IP_ASSET_REGISTRY = IIPAssetRegistry(ipAccountRegistry);
     }
 
     /// @dev Internal function to verify if the caller (msg.sender) has the required permission to execute
     /// the function on provided ipAccount.
     /// @param ipAccount The address of the IP account to verify.
     function _verifyPermission(address ipAccount) internal view {
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
             revert Errors.AccessControlled__NotIpAccount(ipAccount);
         }
 
@@ -73,7 +73,7 @@ abstract contract AccessControlled {
     /// @param ipAccount The address of the IP account to check.
     /// @return bool Returns true if the caller has permission, false otherwise.
     function _hasPermission(address ipAccount) internal view returns (bool) {
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
             return false;
         }
 

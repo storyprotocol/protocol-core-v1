@@ -6,19 +6,19 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { IModule } from "../../../../contracts/interfaces/modules/base/IModule.sol";
 import { IModuleRegistry } from "../../../../contracts/interfaces/registries/IModuleRegistry.sol";
-import { IIPAccountRegistry } from "../../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IPAccountChecker } from "../../../../contracts/lib/registries/IPAccountChecker.sol";
 import { BaseModule } from "../../../../contracts/modules/BaseModule.sol";
 
 contract MockOrchestratorModule is BaseModule {
     using ERC165Checker for address;
-    using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountChecker for IIPAssetRegistry;
 
-    IIPAccountRegistry public ipAccountRegistry;
+    IIPAssetRegistry public ipAccountRegistry;
     IModuleRegistry public moduleRegistry;
 
     constructor(address _ipAccountRegistry, address _moduleRegistry) {
-        ipAccountRegistry = IIPAccountRegistry(_ipAccountRegistry);
+        ipAccountRegistry = IIPAssetRegistry(_ipAccountRegistry);
         moduleRegistry = IModuleRegistry(_moduleRegistry);
     }
 

@@ -136,6 +136,9 @@ library Errors {
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
 
+    /// @notice Cannot add IP which has expiration to group.
+    error GroupingModule__CannotAddIpWithExpirationToGroup(address ipId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

@@ -8,6 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { IGroupingModule } from "../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
+import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 // test
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
@@ -252,6 +253,46 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardPool.getTotalIps(groupId1), 0);
         assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
     }
+
+    function test_GroupingModule_addIp_revert_ipWithExpiration() public {
+        PILTerms memory expiredTerms = PILFlavors.commercialRemix({
+            mintingFee: 0,
+            commercialRevShare: 10,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        expiredTerms.expiration = 10 days;
+        uint256 termsId = pilTemplate.registerLicenseTerms(expiredTerms);
+
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        vm.stopPrank();
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = termsId;
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId2;
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.GroupingModule__CannotAddIpWithExpirationToGroup.selector, ipId2)
+        );
+        vm.prank(alice);
+        groupingModule.addIp(groupId1, ipIds);
+
+        assertEq(ipAssetRegistry.totalMembers(groupId1), 0);
+        assertEq(rewardPool.getTotalIps(groupId1), 0);
+        assertEq(rewardPool.getIpAddedTime(groupId1, ipId2), 0);
+    }
+
+
 
     function test_GroupingModule_addIp_revert_after_registerDerivative() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(

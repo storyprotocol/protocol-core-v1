@@ -167,6 +167,10 @@ contract GroupingModule is
                     groupLicenseTermsId
                 );
             }
+            // IP must not have expiration time to be added to group
+            if (LICENSE_REGISTRY.getExpireTime(ipIds[i]) != 0) {
+                revert Errors.GroupingModule__CannotAddIpWithExpirationToGroup(ipIds[i]);
+            }
             pool.addIp(groupIpId, ipIds[i]);
         }
 

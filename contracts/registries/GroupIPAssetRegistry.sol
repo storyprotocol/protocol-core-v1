@@ -62,7 +62,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         if (!$.whitelistedGroupRewardPools[rewardPool]) {
             revert Errors.GroupIPAssetRegistry__GroupRewardPoolNotRegistered(rewardPool);
         }
-        _getGroupIPAssetRegistryStorage().rewardPools[groupId] = rewardPool;
+        $.rewardPools[groupId] = rewardPool;
     }
 
     /// @notice Whitelists a group reward pool

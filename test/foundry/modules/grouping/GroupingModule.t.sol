@@ -78,6 +78,12 @@ contract GroupingModuleTest is BaseTest {
         assertEq(ipAssetRegistry.totalMembers(groupId), 0);
     }
 
+    function test_GroupingModule_registerGroup_revert_nonexitsTokenId() public {
+        address expectedGroupId = ipAssetRegistry.ipId(block.chainid, address(groupNft), 0);
+        vm.expectRevert(abi.encodeWithSelector(ERC721NonexistentToken.selector, 0));
+        ipAssetRegistry.register(block.chainid, address(groupNft), 0);
+    }
+
     function test_GroupingModule_whitelistRewardPool() public {
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool), true);

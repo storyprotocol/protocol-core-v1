@@ -53,9 +53,15 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     function registerGroup(
         address groupNft,
         uint256 groupNftId,
-        address rewardPool
+        address rewardPool,
+        address registerFeePayer
     ) external onlyGroupingModule whenNotPaused returns (address groupId) {
-        groupId = _register({ chainid: block.chainid, tokenContract: groupNft, tokenId: groupNftId });
+        groupId = _register({
+            chainid: block.chainid,
+            tokenContract: groupNft,
+            tokenId: groupNftId,
+            registerFeePayer: registerFeePayer
+        });
 
         IIPAccount(payable(groupId)).setBool("GROUP_IPA", true);
         GroupIPAssetRegistryStorage storage $ = _getGroupIPAssetRegistryStorage();
@@ -169,7 +175,12 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     }
 
     /// @dev Registers IP Account
-    function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal virtual returns (address id);
+    function _register(
+        uint256 chainid,
+        address tokenContract,
+        uint256 tokenId,
+        address registerFeePayer
+    ) internal virtual returns (address id);
 
     /// @dev Checks whether an IP is registered
     function _isRegistered(address id) internal view virtual returns (bool);

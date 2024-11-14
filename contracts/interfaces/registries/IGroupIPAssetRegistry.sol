@@ -8,8 +8,14 @@ interface IGroupIPAssetRegistry {
     /// @param groupNft The address of the group IPA
     /// @param groupNftId The id of the group IPA
     /// @param rewardPool The address of the group reward pool
+    /// @param registerFeePayer The address of the account that pays the registration fee
     /// @return groupId The address of the newly registered Group IPA.
-    function registerGroup(address groupNft, uint256 groupNftId, address rewardPool) external returns (address groupId);
+    function registerGroup(
+        address groupNft,
+        uint256 groupNftId,
+        address rewardPool,
+        address registerFeePayer
+    ) external returns (address groupId);
 
     /// @notice Whitelists a group reward pool
     /// @param rewardPool The address of the group reward pool

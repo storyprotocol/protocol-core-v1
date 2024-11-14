@@ -49,6 +49,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @param groupNft The address of the group IPA
     /// @param groupNftId The id of the group IPA
     /// @param rewardPool The address of the group reward pool
+    /// @param registerFeePayer The address of the account that pays the registration fee
     /// @return groupId The address of the newly registered Group IPA.
     function registerGroup(
         address groupNft,

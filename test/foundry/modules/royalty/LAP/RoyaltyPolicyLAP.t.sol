@@ -281,11 +281,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         assertEq(royaltyModule.totalRevenueTokensReceived(ipAccount1, address(USDC)), 100 * 10 ** 6);
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(address(10));
 
-        uint256 transferredAmountBefore = royaltyPolicyLAP.getTransferredTokens(
-            ipAccount1,
-            address(10),
-            address(USDC)
-        );
+        uint256 transferredAmountBefore = royaltyPolicyLAP.getTransferredTokens(ipAccount1, address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceBefore = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLAPContractBalanceBefore = USDC.balanceOf(address(royaltyPolicyLAP));
 

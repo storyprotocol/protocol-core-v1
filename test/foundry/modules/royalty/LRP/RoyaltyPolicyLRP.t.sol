@@ -284,21 +284,13 @@ contract TestRoyaltyPolicyLRP is BaseTest {
         vm.expectEmit(true, true, true, true, address(royaltyPolicyLRP));
         emit RevenueTransferredToVault(ipAccount1, address(10), address(USDC), 10 * 10 ** 6);
 
-        uint256 transferredAmountBefore = royaltyPolicyLRP.getTransferredTokens(
-            ipAccount1,
-            address(10),
-            address(USDC)
-        );
+        uint256 transferredAmountBefore = royaltyPolicyLRP.getTransferredTokens(ipAccount1, address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceBefore = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLRPContractBalanceBefore = USDC.balanceOf(address(royaltyPolicyLRP));
 
         royaltyPolicyLRP.transferToVault(ipAccount1, address(10), address(USDC), 10 * 10 ** 6);
 
-        uint256 transferredAmountAfter = royaltyPolicyLRP.getTransferredTokens(
-            ipAccount1,
-            address(10),
-            address(USDC)
-        );
+        uint256 transferredAmountAfter = royaltyPolicyLRP.getTransferredTokens(ipAccount1, address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceAfter = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLRPContractBalanceAfter = USDC.balanceOf(address(royaltyPolicyLRP));
 

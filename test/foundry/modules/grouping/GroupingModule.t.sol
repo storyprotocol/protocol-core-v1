@@ -7,6 +7,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { IGroupingModule } from "../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
+import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 // test
@@ -73,6 +74,29 @@ contract GroupingModuleTest is BaseTest {
         emit IGroupingModule.IPGroupRegistered(expectedGroupId, address(rewardPool));
         vm.prank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
+        assertEq(groupId, expectedGroupId);
+        assertEq(ipAssetRegistry.getGroupRewardPool(groupId), address(rewardPool));
+        assertEq(ipAssetRegistry.isRegisteredGroup(groupId), true);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 0);
+    }
+
+    function test_GroupingModule_registerGroup_withRegisterFee() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        ipAssetRegistry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        erc20.mint(alice, 1000);
+        vm.prank(alice);
+        erc20.approve(address(ipAssetRegistry), 1000);
+
+        address expectedGroupId = ipAssetRegistry.ipId(block.chainid, address(groupNft), 0);
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegistrationFeePaid(alice, treasury, address(erc20), 1000);
+        vm.expectEmit();
+        emit IGroupingModule.IPGroupRegistered(expectedGroupId, address(rewardPool));
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+
         assertEq(groupId, expectedGroupId);
         assertEq(ipAssetRegistry.getGroupRewardPool(groupId), address(rewardPool));
         assertEq(ipAssetRegistry.isRegisteredGroup(groupId), true);

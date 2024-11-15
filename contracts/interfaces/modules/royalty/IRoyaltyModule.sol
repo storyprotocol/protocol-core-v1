@@ -145,12 +145,14 @@ interface IRoyaltyModule is IModule {
     /// @param parentIpIds The parent ipIds that the children ipId is being linked to
     /// @param licensesPercent The license percentage of the licenses being minted
     /// @param externalData The external data custom to each the royalty policy
+    /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
     function onLinkToParents(
         address ipId,
         address[] calldata parentIpIds,
         address[] calldata licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
-        bytes calldata externalData
+        bytes calldata externalData,
+        uint32 maxRts
     ) external;
 
     /// @notice Allows the function caller to pay royalties to the receiver IP asset on behalf of the payer IP asset.

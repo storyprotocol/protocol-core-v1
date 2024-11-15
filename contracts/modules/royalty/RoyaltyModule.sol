@@ -278,12 +278,14 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licenseRoyaltyPolicies The royalty policies of the each parent license being used to link
     /// @param licensesPercent The license percentage of the licenses of each parent being used to link
     /// @param externalData The external data custom to each the royalty policy being used to link
+    /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
     function onLinkToParents(
         address ipId,
         address[] calldata parentIpIds,
         address[] calldata licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
-        bytes calldata externalData
+        bytes calldata externalData,
+        uint32 maxRts
     ) external nonReentrant onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
@@ -300,29 +302,26 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // send royalty tokens to the royalty policies
         // and saves the ancestors accumulated royalty policies for the child
-        _distributeRoyaltyTokensToPolicies(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, ipRoyaltyVault);
+        _distributeRoyaltyTokensToPolicies(
+            ipId,
+            parentIpIds,
+            licenseRoyaltyPolicies,
+            licensesPercent,
+            ipRoyaltyVault,
+            maxRts
+        );
 
-        // for whitelisted policies calls onLinkToParents
-        // loop is limited to accumulatedRoyaltyPoliciesLimit
-        uint32 sumRoyaltyStack;
-        address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[ipId].values();
-        for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
-            if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
-                sumRoyaltyStack += IRoyaltyPolicy(accRoyaltyPolicies[i]).onLinkToParents(
-                    ipId,
-                    parentIpIds,
-                    licenseRoyaltyPolicies,
-                    licensesPercent,
-                    externalData
-                );
-            } else {
-                if (!$.isRegisteredExternalRoyaltyPolicy[accRoyaltyPolicies[i]])
-                    revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
-            }
-        }
+        // for whitelisted policies calls onLinkToParents and calculates the global royalty stack
+        uint32 globalRoyaltyStack = _calculateGlobalRoyaltyStack(
+            ipId,
+            parentIpIds,
+            licenseRoyaltyPolicies,
+            licensesPercent,
+            externalData
+        );
 
-        if (sumRoyaltyStack > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
-        $.globalRoyaltyStack[ipId] = sumRoyaltyStack;
+        if (globalRoyaltyStack > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
+        $.globalRoyaltyStack[ipId] = globalRoyaltyStack;
 
         emit LinkedToParents(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, externalData);
     }
@@ -477,18 +476,53 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         return ipRoyaltyVault;
     }
 
+    /// @notice Calculates the global royalty stack for whitelisted royalty policies and a given IP asset
+    /// @param ipId The children ipId that is being linked to parents
+    /// @param parentIpIds The parent ipIds that the children ipId is being linked to
+    /// @param licenseRoyaltyPolicies The royalty policies of the each parent license being used to link
+    /// @param licensesPercent The license percentage of the licenses of each parent being used to link
+    /// @param externalData The external data custom to each the royalty policy being used to link
+    function _calculateGlobalRoyaltyStack(
+        address ipId,
+        address[] calldata parentIpIds,
+        address[] calldata licenseRoyaltyPolicies,
+        uint32[] calldata licensesPercent,
+        bytes calldata externalData
+    ) internal returns (uint32 globalRoyaltyStack) {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+
+        // loop is limited to accumulatedRoyaltyPoliciesLimit
+        address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[ipId].values();
+        for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
+            if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
+                globalRoyaltyStack += IRoyaltyPolicy(accRoyaltyPolicies[i]).onLinkToParents(
+                    ipId,
+                    parentIpIds,
+                    licenseRoyaltyPolicies,
+                    licensesPercent,
+                    externalData
+                );
+            } else {
+                if (!$.isRegisteredExternalRoyaltyPolicy[accRoyaltyPolicies[i]])
+                    revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
+            }
+        }
+    }
+
     /// @notice Distributes royalty tokens to the royalty policies of the ancestors IP assets
     /// @param ipId The ID of the IP asset
     /// @param parentIpIds The parent IP assets
     /// @param licenseRoyaltyPolicies The royalty policies of the each parent license
     /// @param licensesPercent The license percentage of the licenses being minted
     /// @param ipRoyaltyVault The address of the ipRoyaltyVault
+    /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
     function _distributeRoyaltyTokensToPolicies(
         address ipId,
         address[] calldata parentIpIds,
         address[] calldata licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
-        address ipRoyaltyVault
+        address ipRoyaltyVault,
+        uint32 maxRts
     ) internal {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
@@ -531,6 +565,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         if ($.accumulatedRoyaltyPolicies[ipId].length() > $.maxAccumulatedRoyaltyPolicies)
             revert Errors.RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
+
+        if (totalRtsRequiredToLink > maxRts) revert Errors.RoyaltyModule__AboveMaxRts();
 
         // sends remaining royalty tokens to the ipId address or
         // in the case the ipId is a group then send to the group reward pool

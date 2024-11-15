@@ -534,6 +534,9 @@ library Errors {
     /// @notice Above maximum percentage.
     error RoyaltyModule__AboveMaxPercent();
 
+    /// @notice Above maximum royalty tokens defined by the user.
+    error RoyaltyModule__AboveMaxRts();
+
     /// @notice Caller is unauthorized.
     error RoyaltyModule__NotAllowedCaller();
 

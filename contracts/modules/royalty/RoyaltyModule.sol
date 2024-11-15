@@ -554,7 +554,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licensePercent The license percentage
     /// @param ipRoyaltyVault The address of the ipRoyaltyVault
     /// @return rtsRequiredToLink The required royalty tokens to link
-    function _transferRoyaltyTokensToPolicy(    
+    function _transferRoyaltyTokensToPolicy(
         address parentIpId,
         address royaltyPolicy,
         uint32 licensePercent,

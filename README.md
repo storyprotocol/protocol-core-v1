@@ -173,7 +173,7 @@ We use [solidity-docgen](https://github.com/OpenZeppelin/solidity-docgen) to gen
 npx hardhat docgen
 ```
 
-By default, the documents are generated in Markdown format in the `doc` folder of the project. Each Solidity file (`*.sol`) has its own Markdown (`*.md`) file. To update the configuration for document generation, you can update the following section in `harhat.config.js`:
+By default, the documents are generated in Markdown format in the `doc` folder of the project. Each Solidity file (`*.sol`) has its own Markdown (`*.md`) file. To update the configuration for document generation, you can update the following section in `hardhat.config.js`:
 
 ```
 docgen: {

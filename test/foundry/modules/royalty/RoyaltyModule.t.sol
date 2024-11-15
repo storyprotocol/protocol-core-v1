@@ -629,41 +629,6 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
     }
 
-    function test_RoyaltyModule_onLinkToParents_revert_AboveMaxPercent() public {
-        address[] memory parents = new address[](3);
-        address[] memory licenseRoyaltyPolicies = new address[](3);
-        uint32[] memory parentRoyalties = new uint32[](3);
-
-        // link 80 to 10 + 60 + 70
-        parents = new address[](3);
-        licenseRoyaltyPolicies = new address[](3);
-        parentRoyalties = new uint32[](3);
-        parents[0] = address(10);
-        parents[1] = address(60);
-        parents[2] = address(70);
-        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
-        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
-        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy1);
-        parentRoyalties[0] = uint32(500 * 10 ** 6);
-        parentRoyalties[1] = uint32(17 * 10 ** 6);
-        parentRoyalties[2] = uint32(24 * 10 ** 6);
-
-        vm.startPrank(address(licensingModule));
-        ipGraph.addParentIp(address(80), parents);
-
-        // tests royalty stack above 100%
-        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
-
-        parentRoyalties[0] = uint32(50 * 10 ** 6);
-        parentRoyalties[1] = uint32(17 * 10 ** 6);
-        parentRoyalties[2] = uint32(240 * 10 ** 6);
-
-        // tests royalty token supply above 100%
-        vm.expectRevert(Errors.RoyaltyModule__AboveMaxPercent.selector);
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
-    }
-
     function test_RoyaltyModule_onLinkToParents_revert_RoyaltyModule_NotWhitelistedOrRegisteredRoyaltyPolicy() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);
@@ -773,22 +738,22 @@ contract TestRoyaltyModule is BaseTest {
         address[] memory accRoyaltyPolicies80After = royaltyModule.accumulatedRoyaltyPolicies(address(80));
         assertEq(accRoyaltyPolicies80After[0], address(royaltyPolicyLAP));
         assertEq(accRoyaltyPolicies80After[1], address(royaltyPolicyLRP));
-        assertEq(accRoyaltyPolicies80After[2], address(mockExternalRoyaltyPolicy1));
-        assertEq(accRoyaltyPolicies80After[3], address(mockExternalRoyaltyPolicy2));
+        assertEq(accRoyaltyPolicies80After[2], address(mockExternalRoyaltyPolicy2));
+        assertEq(accRoyaltyPolicies80After[3], address(mockExternalRoyaltyPolicy1));
 
         address[] memory accRoyaltyPolicies10After = royaltyModule.accumulatedRoyaltyPolicies(address(10));
-        assertEq(accRoyaltyPolicies10After[0], address(royaltyPolicyLAP));
+        assertEq(accRoyaltyPolicies10After.length, 0);
 
         address[] memory accRoyaltyPolicies60After = royaltyModule.accumulatedRoyaltyPolicies(address(60));
         assertEq(accRoyaltyPolicies60After[0], address(royaltyPolicyLAP));
         assertEq(accRoyaltyPolicies60After[1], address(royaltyPolicyLRP));
-        assertEq(accRoyaltyPolicies60After[2], address(mockExternalRoyaltyPolicy1));
+        assertEq(accRoyaltyPolicies60After.length, 2);
 
         address[] memory accRoyaltyPolicies70After = royaltyModule.accumulatedRoyaltyPolicies(address(70));
-        assertEq(accRoyaltyPolicies70After[0], address(royaltyPolicyLAP));
-        assertEq(accRoyaltyPolicies70After[1], address(royaltyPolicyLRP));
-        assertEq(accRoyaltyPolicies70After[2], address(mockExternalRoyaltyPolicy1));
-        assertEq(accRoyaltyPolicies70After[3], address(mockExternalRoyaltyPolicy2));
+        assertEq(accRoyaltyPolicies70After[0], address(mockExternalRoyaltyPolicy1));
+        assertEq(accRoyaltyPolicies70After[1], address(royaltyPolicyLAP));
+        assertEq(accRoyaltyPolicies70After[2], address(royaltyPolicyLRP));
+        assertEq(accRoyaltyPolicies70After.length, 3);
     }
 
     function test_RoyaltyModule_onLinkToParents_group() public {

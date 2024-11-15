@@ -97,7 +97,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             parentIpIds[0] = groupId;
             uint256[] memory licenseIds = new uint256[](1);
             licenseIds[0] = commRemixTermsId;
-            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "", 0);
+            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "", 0, 100e6);
             vm.stopPrank();
         }
 

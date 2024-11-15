@@ -103,7 +103,7 @@ contract DisputeModuleTest is BaseTest {
 
         ipAddr2 = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);
 
-        licensingModule.registerDerivativeWithLicenseTokens(ipAddr2, licenseIds, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAddr2, licenseIds, "", 100e6);
 
         vm.stopPrank();
 

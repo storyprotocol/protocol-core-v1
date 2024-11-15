@@ -141,7 +141,7 @@ contract Licensing_Scenarios is BaseIntegration {
             royaltyContext: "",
             maxMintingFee: 0
         });
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);
 
         // Mint license for commercial use, then link to new IPA to make it a derivative
         IERC20(USDC).approve(address(royaltyModule), mintingFee);
@@ -161,7 +161,7 @@ contract Licensing_Scenarios is BaseIntegration {
                 licenseIds
             )
         );
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "", 100e6);
 
         // Mint license for commercial remixing, then link to new IPA to make it a derivative
         IERC20(USDC).approve(address(royaltyModule), mintingFee);
@@ -174,7 +174,7 @@ contract Licensing_Scenarios is BaseIntegration {
             royaltyContext: "",
             maxMintingFee: 0
         });
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "", 100e6);
 
         vm.stopPrank();
     }

@@ -103,7 +103,15 @@ contract LicensingModuleHarness is Test {
             require(parentIpIdsNth[i] < availableIpIds.length, "LicensingModuleHarness: invalid parentIpIdsNth");
             parentIpIds[i] = availableIpIds[parentIpIdsNth[i]];
         }
-        licensingModule.registerDerivative(childIpId, parentIpIds, licenseTermsIds, licenseTemplate, royaltyContext, 0);
+        licensingModule.registerDerivative(
+            childIpId,
+            parentIpIds,
+            licenseTermsIds,
+            licenseTemplate,
+            royaltyContext,
+            0,
+            100e6
+        );
 
         mintedOrRegisterDerivative = true;
     }
@@ -117,7 +125,7 @@ contract LicensingModuleHarness is Test {
     ) external {
         require(childIpIdNth < availableIpIds.length, "LicensingModuleHarness: invalid childIpIdNth");
         address childIpId = availableIpIds[childIpIdNth];
-        licensingModule.registerDerivativeWithLicenseTokens(childIpId, licenseTokenIds, royaltyContext);
+        licensingModule.registerDerivativeWithLicenseTokens(childIpId, licenseTokenIds, royaltyContext, 100e6);
 
         mintedOrRegisterDerivative = true;
     }

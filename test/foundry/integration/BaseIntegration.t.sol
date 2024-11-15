@@ -84,7 +84,7 @@ contract BaseIntegration is BaseTest {
     ) internal {
         vm.startPrank(caller);
         // TODO: events check
-        licensingModule.registerDerivativeWithLicenseTokens(ipId, licenseTokenIds, royaltyContext);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId, licenseTokenIds, royaltyContext, 100e6);
         vm.stopPrank();
     }
 }

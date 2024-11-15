@@ -270,7 +270,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                     carl_licenses
                 )
             );
-            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[tokenId], carl_licenses, "");
+            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[tokenId], carl_licenses, "", 100e6);
 
             uint256 license1_mintAmount = 500;
             mockToken.mint(u.carl, mintingFee * license1_mintAmount);

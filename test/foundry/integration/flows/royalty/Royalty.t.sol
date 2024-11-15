@@ -96,7 +96,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
                     commRemixTermsId
                 )
             );
-            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "");
+            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);
 
             // can link max two
             uint256[] memory licenseIdsMax = new uint256[](1);
@@ -254,7 +254,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ipAcct[5] = registerIpAccount(mockNFT, 5, u.alice);
             vm.label(ipAcct[5], "IPAccount5");
 
-            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[5], licenseId, "");
+            licensingModule.registerDerivativeWithLicenseTokens(ipAcct[5], licenseId, "", 100e6);
 
             vm.stopPrank();
         }

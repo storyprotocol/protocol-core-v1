@@ -97,7 +97,7 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         parentRoyalties[1] = uint32(10 * 10 ** 6);
         parentRoyalties[2] = uint32(7 * 10 ** 6);
         ipGraph.addParentIp(address(40), parents);
-        royaltyModule.onLinkToParents(address(40), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(address(40), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
 
         // mint license for 40
         royaltyModule.onLicenseMinting(address(40), address(royaltyPolicyLRP), uint32(5 * 10 ** 6), "");
@@ -110,7 +110,7 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         licenseRoyaltyPolicies[0] = address(royaltyPolicyLRP);
         parentRoyalties[0] = uint32(5 * 10 ** 6);
         ipGraph.addParentIp(address(50), parents);
-        royaltyModule.onLinkToParents(address(50), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(address(50), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
 
         // mint license for 50
         royaltyModule.onLicenseMinting(address(50), address(royaltyPolicyLRP), uint32(15 * 10 ** 6), "");
@@ -123,7 +123,7 @@ contract IpRoyaltyVaultInvariant is BaseTest {
         licenseRoyaltyPolicies[0] = address(royaltyPolicyLRP);
         parentRoyalties[0] = uint32(15 * 10 ** 6);
         ipGraph.addParentIp(address(60), parents);
-        royaltyModule.onLinkToParents(address(60), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(address(60), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
     }
 
     /// @notice Invariant to check anyone's balance should be <= init (1000 * 10 ** 6)

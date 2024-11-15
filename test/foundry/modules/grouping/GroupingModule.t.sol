@@ -221,7 +221,7 @@ contract GroupingModuleTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = termsId;
         vm.prank(ipOwner3);
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
 
         erc20.mint(ipOwner3, 1000);
         vm.startPrank(ipOwner3);
@@ -301,7 +301,7 @@ contract GroupingModuleTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = termsId;
         vm.prank(ipOwner2);
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
 
         address[] memory ipIds = new address[](1);
         ipIds[0] = ipId2;
@@ -342,7 +342,7 @@ contract GroupingModuleTest is BaseTest {
         parentIpIds[0] = groupId;
         licenseTermsIds[0] = termsId;
 
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
         vm.stopPrank();
 
         address[] memory ipIds = new address[](2);
@@ -395,7 +395,7 @@ contract GroupingModuleTest is BaseTest {
         parentIpIds[0] = groupId;
         licenseTermsIds[0] = termsId;
 
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
         vm.stopPrank();
 
         address[] memory removeIpIds = new address[](1);

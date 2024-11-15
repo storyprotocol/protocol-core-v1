@@ -181,7 +181,8 @@ contract DisputeInvariants is BaseTest {
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(pilTemplate),
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRts: 100e6
         });
 
         /*         targetContract(address(harness));

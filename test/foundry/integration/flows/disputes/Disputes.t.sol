@@ -97,7 +97,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
         vm.prank(u.carl);
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseToken__RevokedLicense.selector, licenseId));
-        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "");
+        licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseIds, "", 100e6);
     }
 
     function test_Integration_Disputes_revert_cannotRegisterDerivativeFromDisputedIpParent() public {
@@ -117,7 +117,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTermsIds: licenseTermsIds,
             licenseTemplate: address(pilTemplate),
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRts: 100e6
         });
     }
 

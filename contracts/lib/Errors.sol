@@ -255,9 +255,6 @@ library Errors {
     /// @notice Zero address provided for IP Graph ACL.
     error LicenseRegistry__ZeroIPGraphACL();
 
-    /// @notice license terms disabled.
-    error LicenseRegistry__LicenseTermsDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
 

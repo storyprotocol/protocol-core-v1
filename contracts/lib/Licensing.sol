@@ -16,11 +16,13 @@ library Licensing {
     /// @param licensingHook  The hook contract address for the licensing module, or address(0) if none
     /// @param hookData The data to be used by the licensing hook.
     /// @param commercialRevShare The commercial revenue share percentage.
+    /// @param disabled Whether the license is disabled or not.
     struct LicensingConfig {
         bool isSet;
         uint256 mintingFee;
         address licensingHook;
         bytes hookData;
         uint32 commercialRevShare;
+        bool disabled;
     }
 }

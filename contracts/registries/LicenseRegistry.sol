@@ -148,7 +148,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData,
-            commercialRevShare: licensingConfig.commercialRevShare
+            commercialRevShare: licensingConfig.commercialRevShare,
+            disabled: licensingConfig.disabled
         });
 
         emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
@@ -169,7 +170,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             mintingFee: licensingConfig.mintingFee,
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData,
-            commercialRevShare: licensingConfig.commercialRevShare
+            commercialRevShare: licensingConfig.commercialRevShare,
+            disabled: licensingConfig.disabled
         });
         emit LicensingConfigSetForIP(ipId, licensingConfig);
     }

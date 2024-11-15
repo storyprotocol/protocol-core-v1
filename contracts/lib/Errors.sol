@@ -255,6 +255,9 @@ library Errors {
     /// @notice Zero address provided for IP Graph ACL.
     error LicenseRegistry__ZeroIPGraphACL();
 
+    /// @notice license terms disabled.
+    error LicenseRegistry__LicenseTermsDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
+
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
 
@@ -367,6 +370,9 @@ library Errors {
 
     /// @notice licensing minting fee is above the maximum minting fee.
     error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
+
+    /// @notice license terms disabled.
+    error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

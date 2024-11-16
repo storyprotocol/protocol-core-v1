@@ -298,7 +298,14 @@ contract LicensingModule is
             maxRts
         );
 
-        emit DerivativeRegistered(msg.sender, childIpId, new uint256[](0), parentIpIds, licenseTermsIds, licenseTemplate);
+        emit DerivativeRegistered(
+            msg.sender,
+            childIpId,
+            new uint256[](0),
+            parentIpIds,
+            licenseTermsIds,
+            licenseTemplate
+        );
     }
 
     /// @notice Registers a derivative with license tokens.

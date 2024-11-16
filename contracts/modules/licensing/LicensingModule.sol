@@ -287,35 +287,18 @@ contract LicensingModule is
         // Set the expiration timestamp for the derivative IP by invoking the license template to calculate
         // the earliest expiration time among all license terms.
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, false);
-        // Process the payment for the minting fee.
-        (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) = _payMintingFeeForAllParentIps(
+        _processPaymentAndSetupRoyalty(
             childIpId,
             parentIpIds,
             licenseTermsIds,
             licenseTemplate,
             childIpOwner,
             royaltyContext,
-            maxMintingFee
-        );
-        // emit event
-        emit DerivativeRegistered(
-            msg.sender,
-            childIpId,
-            new uint256[](0),
-            parentIpIds,
-            licenseTermsIds,
-            licenseTemplate
-        );
-
-        if (royaltyPolicies.length == 0 || royaltyPolicies[0] == address(0)) return;
-        ROYALTY_MODULE.onLinkToParents(
-            childIpId,
-            parentIpIds,
-            royaltyPolicies,
-            royaltyPercents,
-            royaltyContext,
+            maxMintingFee,
             maxRts
         );
+
+        emit DerivativeRegistered(msg.sender, childIpId, new uint256[](0), parentIpIds, licenseTermsIds, licenseTemplate);
     }
 
     /// @notice Registers a derivative with license tokens.
@@ -364,27 +347,8 @@ contract LicensingModule is
         // all license terms.
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
-        // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
-        address[] memory rPolicies = new address[](parentIpIds.length);
-        uint32[] memory rPercents = new uint32[](parentIpIds.length);
-        for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
-            Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
-                parentIpIds[i],
-                licenseTemplate,
-                licenseTermsIds[i]
-            );
-            if (lsc.isSet && lsc.commercialRevShare != 0) {
-                royaltyPercent = lsc.commercialRevShare;
-            }
-            rPercents[i] = royaltyPercent;
-            rPolicies[i] = royaltyPolicy;
-        }
+        _setupRoyalty(childIpId, parentIpIds, licenseTermsIds, licenseTemplate, royaltyContext, maxRts);
 
-        if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
-            // Notify the royalty module
-            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, rPercents, royaltyContext, maxRts);
-        }
         // burn license tokens
         LICENSE_NFT.burnLicenseTokens(childIpOwner, licenseTokenIds);
         emit DerivativeRegistered(
@@ -500,6 +464,72 @@ contract LicensingModule is
 
         if (royaltyPolicy != address(0)) {
             tokenAmount = _getTotalMintingFee(lsc, mintingFeeByHook, mintingFeeByLicense, amount);
+        }
+    }
+
+    /// @dev process the minting fee and setup royalty between derivative IP and parent IPs
+    function _processPaymentAndSetupRoyalty(
+        address childIpId,
+        address[] calldata parentIpIds,
+        uint256[] calldata licenseTermsIds,
+        address licenseTemplate,
+        address childIpOwner,
+        bytes calldata royaltyContext,
+        uint256 maxMintingFee,
+        uint32 maxRts
+    ) private {
+        // Process the payment for the minting fee.
+        (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) = _payMintingFeeForAllParentIps(
+            childIpId,
+            parentIpIds,
+            licenseTermsIds,
+            licenseTemplate,
+            childIpOwner,
+            royaltyContext,
+            maxMintingFee
+        );
+
+        if (royaltyPolicies.length == 0 || royaltyPolicies[0] == address(0)) return;
+        ROYALTY_MODULE.onLinkToParents(
+            childIpId,
+            parentIpIds,
+            royaltyPolicies,
+            royaltyPercents,
+            royaltyContext,
+            maxRts
+        );
+    }
+
+    /// @dev set up royalty between child IP and parent IPs
+    function _setupRoyalty(
+        address childIpId,
+        address[] memory parentIpIds,
+        uint256[] memory licenseTermsIds,
+        address licenseTemplate,
+        bytes memory royaltyContext,
+        uint32 maxRts
+    ) private {
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
+        address[] memory rPolicies = new address[](parentIpIds.length);
+        uint32[] memory rPercents = new uint32[](parentIpIds.length);
+        for (uint256 i = 0; i < parentIpIds.length; i++) {
+            (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
+            Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
+                parentIpIds[i],
+                licenseTemplate,
+                licenseTermsIds[i]
+            );
+            if (lsc.isSet && lsc.commercialRevShare != 0) {
+                royaltyPercent = lsc.commercialRevShare;
+            }
+            rPercents[i] = royaltyPercent;
+            rPolicies[i] = royaltyPolicy;
+        }
+
+        if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
+            // Notify the royalty module
+            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, rPercents, royaltyContext, maxRts);
         }
     }
 

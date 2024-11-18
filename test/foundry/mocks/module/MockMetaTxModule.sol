@@ -6,7 +6,7 @@ import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC16
 import { IAccessController } from "../../../../contracts/interfaces/access/IAccessController.sol";
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { IModule } from "../../../../contracts/interfaces/modules/base/IModule.sol";
-import { IIPAccountRegistry } from "../../../../contracts/interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IModuleRegistry } from "../../../../contracts/interfaces/registries/IModuleRegistry.sol";
 import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
 import { IPAccountChecker } from "../../../../contracts/lib/registries/IPAccountChecker.sol";
@@ -15,14 +15,14 @@ import { MockAccessControlledModule } from "./MockAccessControlledModule.sol";
 
 contract MockMetaTxModule is BaseModule {
     using ERC165Checker for address;
-    using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountChecker for IIPAssetRegistry;
 
-    IIPAccountRegistry public ipAccountRegistry;
+    IIPAssetRegistry public ipAccountRegistry;
     IModuleRegistry public moduleRegistry;
     IAccessController public accessController;
 
     constructor(address _ipAccountRegistry, address _moduleRegistry, address _accessController) {
-        ipAccountRegistry = IIPAccountRegistry(_ipAccountRegistry);
+        ipAccountRegistry = IIPAssetRegistry(_ipAccountRegistry);
         moduleRegistry = IModuleRegistry(_moduleRegistry);
         accessController = IAccessController(_accessController);
     }

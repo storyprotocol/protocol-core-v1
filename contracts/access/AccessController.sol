@@ -6,7 +6,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
-import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { ProtocolPausableUpgradeable } from "../pause/ProtocolPausableUpgradeable.sol";
@@ -18,7 +18,7 @@ import { Errors } from "../lib/Errors.sol";
 /// @dev This contract is used to control access permissions for different function calls in the protocol.
 /// It allows setting permissions for specific function calls, checking permissions, and initializing the contract.
 /// The contract uses a mapping to store policies, which are represented as a nested mapping structure.
-/// The contract also interacts with other contracts such as IIPAccountRegistry, IModuleRegistry, and IIPAccount.
+/// The contract also interacts with other contracts such as IIPAssetRegistry, IModuleRegistry, and IIPAccount.
 ///
 /// Each policy is represented as a mapping from an IP account address to a signer address to a recipient
 /// address to a function selector to a permission level.
@@ -30,10 +30,10 @@ import { Errors } from "../lib/Errors.sol";
 /// - getPermission: Returns the permission level for a specific function call.
 /// - checkPermission: Checks if a specific function call is allowed.
 contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
-    using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountChecker for IIPAssetRegistry;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IIPAccountRegistry public immutable IP_ACCOUNT_REGISTRY;
+    IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
@@ -56,7 +56,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     constructor(address ipAccountRegistry, address moduleRegistry) {
         if (ipAccountRegistry == address(0)) revert Errors.AccessController__ZeroIPAccountRegistry();
         if (moduleRegistry == address(0)) revert Errors.AccessController__ZeroModuleRegistry();
-        IP_ACCOUNT_REGISTRY = IIPAccountRegistry(ipAccountRegistry);
+        IP_ASSET_REGISTRY = IIPAssetRegistry(ipAccountRegistry);
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         _disableInitializers();
     }
@@ -137,7 +137,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     function checkPermission(address ipAccount, address signer, address to, bytes4 func) external view {
         AccessControllerStorage storage $ = _getAccessControllerStorage();
         // Must be a valid IPAccount
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
         // Owner can call any contracts either registered module or unregistered/external contracts
@@ -201,7 +201,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
             revert Errors.AccessController__SignerIsZeroAddress();
         }
         AccessControllerStorage storage $ = _getAccessControllerStorage();
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(ipAccount)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
             revert Errors.AccessController__IPAccountIsNotValid(ipAccount);
         }
         // permission must be one of ABSTAIN, ALLOW, DENY

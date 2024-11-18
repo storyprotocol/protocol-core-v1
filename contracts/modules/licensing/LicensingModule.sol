@@ -11,7 +11,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { IModule } from "../../interfaces/modules/base/IModule.sol";
 import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
-import { IIPAccountRegistry } from "../../interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
@@ -42,7 +42,7 @@ contract LicensingModule is
     UUPSUpgradeable
 {
     using ERC165Checker for address;
-    using IPAccountChecker for IIPAccountRegistry;
+    using IPAccountChecker for IIPAssetRegistry;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableSet for EnumerableSet.AddressSet;
     using Strings for *;
@@ -172,7 +172,7 @@ contract LicensingModule is
         if (receiver == address(0)) {
             revert Errors.LicensingModule__ReceiverZeroAddress();
         }
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(licensorIpId)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(licensorIpId)) {
             revert Errors.LicensingModule__LicensorIpNotRegistered();
         }
         _verifyIpNotDisputed(licensorIpId);
@@ -182,8 +182,13 @@ contract LicensingModule is
             licenseTermsId,
             _hasPermission(licensorIpId)
         );
+
+        if (lsc.isSet && lsc.disabled) {
+            revert Errors.LicensingModule__LicenseDisabled(licensorIpId, licenseTemplate, licenseTermsId);
+        }
+
         uint256 mintingFeeByHook = 0;
-        if (lsc.licensingHook != address(0)) {
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
             mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeMintLicenseTokens(
                 msg.sender,
                 licensorIpId,
@@ -460,7 +465,7 @@ contract LicensingModule is
         if (receiver == address(0)) {
             revert Errors.LicensingModule__ReceiverZeroAddress();
         }
-        if (!IP_ACCOUNT_REGISTRY.isIpAccount(licensorIpId)) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(licensorIpId)) {
             revert Errors.LicensingModule__LicensorIpNotRegistered();
         }
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
@@ -537,9 +542,12 @@ contract LicensingModule is
             licenseTemplate,
             licenseTermsId
         );
+        if (lsc.isSet && lsc.disabled) {
+            revert Errors.LicensingModule__LicenseDisabled(parentIpId, licenseTemplate, licenseTermsId);
+        }
         // check childIpOwner is qualified with check receiver module
         uint256 mintingFeeByHook = 0;
-        if (lsc.licensingHook != address(0)) {
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
             mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeRegisterDerivative(
                 msg.sender,
                 childIpId,

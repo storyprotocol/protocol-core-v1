@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IPAccountChecker } from "contracts/lib/registries/IPAccountChecker.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
+import { IPAccountRegistry } from "contracts/registries/IPAccountRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
 import { IPAccountStorageOps } from "contracts/lib/IPAccountStorageOps.sol";
@@ -13,6 +14,14 @@ import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721Wi
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
+
+contract MockIPAccountRegistry is IPAccountRegistry {
+    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+
+    function registerIpAccount(uint256 chainId, address tokenContract, uint256 tokenId) public returns (address) {
+        return _registerIpAccount(chainId, tokenContract, tokenId);
+    }
+}
 
 /// @title IP Asset Registry Testing Contract
 /// @notice Contract for testing core IP registration.
@@ -57,7 +66,7 @@ contract IPAssetRegistryTest is BaseTest {
         uint256 totalSupply = registry.totalSupply();
 
         assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
         string memory name = string.concat(block.chainid.toString(), ": Ape #99");
         vm.expectEmit(true, true, true, true);
         emit IIPAssetRegistry.IPRegistered(
@@ -73,7 +82,7 @@ contract IPAssetRegistryTest is BaseTest {
         registry.register(block.chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
-        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
@@ -154,7 +163,7 @@ contract IPAssetRegistryTest is BaseTest {
         registry.register(block.chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
-        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
@@ -202,7 +211,7 @@ contract IPAssetRegistryTest is BaseTest {
         registry.register(block.chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
-        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
@@ -211,7 +220,7 @@ contract IPAssetRegistryTest is BaseTest {
     /// @notice Tests registration of the same IP twice.
     function test_IPAssetRegistry_revert_RegisterPermissionlessTwice() public {
         assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
 
         vm.prank(alice);
         string memory name = string.concat(block.chainid.toString(), ": Ape #99");
@@ -294,7 +303,7 @@ contract IPAssetRegistryTest is BaseTest {
         ipId = _getIPAccount(chainid, tokenId);
 
         assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, chainid, tokenAddress, tokenId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAssetRegistry, chainid, tokenAddress, tokenId));
         string memory name = string.concat(
             chainid.toString(),
             ": ",
@@ -307,7 +316,7 @@ contract IPAssetRegistryTest is BaseTest {
         address registeredIpId = registry.register(chainid, tokenAddress, tokenId);
 
         assertEq(totalSupply + 1, registry.totalSupply());
-        assertTrue(IPAccountChecker.isRegistered(ipAccountRegistry, chainid, tokenAddress, tokenId));
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, chainid, tokenAddress, tokenId));
         assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
     }
@@ -320,12 +329,27 @@ contract IPAssetRegistryTest is BaseTest {
 
         ipId = _getIPAccount(chainid, tokenId);
         assertTrue(!registry.isRegistered(ipId));
-        assertTrue(!IPAccountChecker.isRegistered(ipAccountRegistry, block.chainid, tokenAddress, tokenId));
+        assertTrue(!IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
 
         address ipId = registry.register(chainid, tokenAddress, tokenId);
 
         address ipIdAgain = registry.register(chainid, tokenAddress, tokenId);
         assertEq(ipId, ipIdAgain);
+    }
+
+    function test_IPAssetRegistry_revert_registerWithDummyIPAccountRegister() public {
+        MockIPAccountRegistry mockIpAccountRegistry = new MockIPAccountRegistry(
+            ipAccountRegistry.ERC6551_PUBLIC_REGISTRY(),
+            ipAccountRegistry.IP_ACCOUNT_IMPL()
+        );
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        vm.prank(owner, owner);
+        address account = mockIpAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
+        assertTrue(!IPAccountChecker.isIpAccount(ipAssetRegistry, account));
     }
 
     /// @notice Helper function for generating an account address.

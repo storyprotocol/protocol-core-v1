@@ -87,10 +87,20 @@ contract IPAssetRegistry is
         address tokenContract,
         uint256 tokenId
     ) external whenNotPaused returns (address id) {
-        id = _register({ chainid: chainid, tokenContract: tokenContract, tokenId: tokenId });
+        id = _register({
+            chainid: chainid,
+            tokenContract: tokenContract,
+            tokenId: tokenId,
+            registerFeePayer: msg.sender
+        });
     }
 
-    function _register(uint256 chainid, address tokenContract, uint256 tokenId) internal override returns (address id) {
+    function _register(
+        uint256 chainid,
+        address tokenContract,
+        uint256 tokenId,
+        address registerFeePayer
+    ) internal override returns (address id) {
         IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
 
         // Pay registration fee
@@ -98,8 +108,8 @@ contract IPAssetRegistry is
         if (feeAmount > 0) {
             address feeToken = $.feeToken;
             address treasury = $.treasury;
-            IERC20(feeToken).safeTransferFrom(msg.sender, treasury, uint256(feeAmount));
-            emit IPRegistrationFeePaid(msg.sender, treasury, feeToken, feeAmount);
+            IERC20(feeToken).safeTransferFrom(registerFeePayer, treasury, uint256(feeAmount));
+            emit IPRegistrationFeePaid(registerFeePayer, treasury, feeToken, feeAmount);
         }
 
         id = _registerIpAccount(chainid, tokenContract, tokenId);

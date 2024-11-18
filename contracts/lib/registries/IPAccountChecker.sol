@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 
-import { IIPAccountRegistry } from "../../interfaces/registries/IIPAccountRegistry.sol";
+import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { IIPAccountStorage } from "../../interfaces/IIPAccountStorage.sol";
 
@@ -19,29 +19,25 @@ library IPAccountChecker {
     /// @param tokenId_ The ID of the token associated with the IP Account.
     /// @return True if the IP Account is registered, false otherwise.
     function isRegistered(
-        IIPAccountRegistry ipAccountRegistry_,
+        IIPAssetRegistry ipAssetRegistry_,
         uint256 chainId_,
         address tokenContract_,
         uint256 tokenId_
     ) internal view returns (bool) {
-        return ipAccountRegistry_.ipAccount(chainId_, tokenContract_, tokenId_).code.length != 0;
+        return ipAssetRegistry_.isRegistered(ipAssetRegistry_.ipId(chainId_, tokenContract_, tokenId_));
     }
 
     /// @notice Checks if the given address is a valid IP Account.
-    /// @param ipAccountRegistry_ The IP Account registry contract.
+    /// @param ipAssetRegistry_ The IP Account registry contract.
     /// @param ipAccountAddress_ The address to check.
     /// @return True if the address is a valid IP Account, false otherwise.
-    function isIpAccount(
-        IIPAccountRegistry ipAccountRegistry_,
-        address ipAccountAddress_
-    ) internal view returns (bool) {
+    function isIpAccount(IIPAssetRegistry ipAssetRegistry_, address ipAccountAddress_) internal view returns (bool) {
         if (ipAccountAddress_ == address(0)) return false;
         if (ipAccountAddress_.code.length == 0) return false;
         if (!ERC165Checker.supportsERC165(ipAccountAddress_)) return false;
         if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IERC6551Account).interfaceId)) return false;
         if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IIPAccount).interfaceId)) return false;
         if (!ERC165Checker.supportsInterface(ipAccountAddress_, type(IIPAccountStorage).interfaceId)) return false;
-        (uint chainId, address tokenContract, uint tokenId) = IIPAccount(payable(ipAccountAddress_)).token();
-        return ipAccountAddress_ == ipAccountRegistry_.ipAccount(chainId, tokenContract, tokenId);
+        return ipAssetRegistry_.isRegistered(ipAccountAddress_);
     }
 }

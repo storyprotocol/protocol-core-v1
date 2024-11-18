@@ -117,7 +117,7 @@ contract GroupingModule is
         // mint Group NFT
         uint256 groupNftId = GROUP_NFT.mintGroupNft(msg.sender, msg.sender);
         // register Group NFT
-        groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(address(GROUP_NFT), groupNftId, groupPool);
+        groupId = GROUP_IP_ASSET_REGISTRY.registerGroup(address(GROUP_NFT), groupNftId, groupPool, msg.sender);
         emit IPGroupRegistered(groupId, groupPool);
     }
 
@@ -166,6 +166,10 @@ contract GroupingModule is
                     groupLicenseTemplate,
                     groupLicenseTermsId
                 );
+            }
+            // IP must not have expiration time to be added to group
+            if (LICENSE_REGISTRY.getExpireTime(ipIds[i]) != 0) {
+                revert Errors.GroupingModule__CannotAddIpWithExpirationToGroup(ipIds[i]);
             }
             pool.addIp(groupIpId, ipIds[i]);
         }

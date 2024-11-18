@@ -136,6 +136,9 @@ library Errors {
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
 
+    /// @notice Cannot add IP which has expiration to group.
+    error GroupingModule__CannotAddIpWithExpirationToGroup(address ipId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -364,6 +367,9 @@ library Errors {
 
     /// @notice licensing minting fee is above the maximum minting fee.
     error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
+
+    /// @notice license terms disabled.
+    error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

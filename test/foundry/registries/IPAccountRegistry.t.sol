@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import { IPAccountImpl } from "../../../contracts/IPAccountImpl.sol";
-import { IPAccountChecker } from "../../../contracts/lib/registries/IPAccountChecker.sol";
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 
@@ -13,8 +12,6 @@ contract MockIPAccountRegistry is IPAccountRegistry {
 }
 
 contract IPAccountRegistryTest is BaseTest {
-    using IPAccountChecker for IPAccountRegistry;
-
     uint256 internal chainId = 100;
     address internal tokenAddress = address(200);
     uint256 internal tokenId = 300;

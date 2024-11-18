@@ -9,7 +9,6 @@ import { MulticallUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/
 import { DISPUTE_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { BaseModule } from "../../modules/BaseModule.sol";
 import { AccessControlled } from "../../access/AccessControlled.sol";
-import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
@@ -67,10 +66,6 @@ contract DisputeModule is
     /// @notice Tag to represent the dispute is in dispute state waiting for judgement
     bytes32 public constant IN_DISPUTE = bytes32("IN_DISPUTE");
 
-    /// @notice Protocol-wide IP asset registry
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
-
     /// @notice Protocol-wide license registry
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
@@ -89,7 +84,6 @@ contract DisputeModule is
         if (ipAssetRegistry == address(0)) revert Errors.DisputeModule__ZeroIPAssetRegistry();
         if (accessController == address(0)) revert Errors.DisputeModule__ZeroAccessController();
 
-        IP_ASSET_REGISTRY = IIPAssetRegistry(ipAssetRegistry);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }

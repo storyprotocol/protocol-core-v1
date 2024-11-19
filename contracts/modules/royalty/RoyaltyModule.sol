@@ -561,7 +561,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address ipRoyaltyVault
     ) internal returns (uint32) {
         uint32 rtsRequiredToLink = IRoyaltyPolicy(royaltyPolicy).getPolicyRtsRequiredToLink(parentIpId, licensePercent);
-        IERC20(ipRoyaltyVault).safeTransfer(royaltyPolicy, rtsRequiredToLink);
+        if (rtsRequiredToLink > 0) IERC20(ipRoyaltyVault).safeTransfer(royaltyPolicy, rtsRequiredToLink);
         return rtsRequiredToLink;
     }
 

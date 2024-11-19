@@ -694,6 +694,33 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
     }
 
+    function test_RoyaltyModule_onLinkToParents_revert_AboveMaxRts() public {address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+
+        // link 80 to 10 + 60 + 70
+        parents = new address[](3);
+        licenseRoyaltyPolicies = new address[](3);
+        parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(60);
+        parents[2] = address(70);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
+        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy2);
+        parentRoyalties[0] = uint32(5 * 10 ** 6);
+        parentRoyalties[1] = uint32(17 * 10 ** 6);
+        parentRoyalties[2] = uint32(24 * 10 ** 6);
+
+        vm.startPrank(address(licensingModule));
+        ipGraph.addParentIp(address(80), parents);
+
+        assertEq(royaltyModule.ipRoyaltyVaults(address(80)), address(0));
+
+        vm.expectRevert(Errors.RoyaltyModule__AboveMaxRts.selector);
+        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 1e5);
+    }
+
     function test_RoyaltyModule_onLinkToParents() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);

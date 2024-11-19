@@ -694,7 +694,8 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
     }
 
-    function test_RoyaltyModule_onLinkToParents_revert_AboveMaxRts() public {address[] memory parents = new address[](3);
+    function test_RoyaltyModule_onLinkToParents_revert_AboveMaxRts() public {
+        address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);
         uint32[] memory parentRoyalties = new uint32[](3);
 

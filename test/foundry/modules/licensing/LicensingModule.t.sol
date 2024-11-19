@@ -1689,7 +1689,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
@@ -1739,7 +1740,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 10_000_000
+            commercialRevShare: 10_000_000,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commercialRemixTermsId, licensingConfig);
@@ -1788,7 +1790,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 0,
             licensingHook: address(0),
             hookData: "",
-            commercialRevShare: 10_000_000
+            commercialRevShare: 10_000_000,
+            disabled: false
         });
         vm.prank(ipOwner2);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
@@ -1827,7 +1830,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
@@ -1877,7 +1881,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicenseTermsId.selector, address(pilTemplate), 0)
@@ -1906,7 +1911,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 1000
+            commercialRevShare: 1000,
+            disabled: false
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicenseRegistry__UnregisteredLicenseTemplate.selector, address(0x123))
@@ -1939,7 +1945,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(licensingHook))
@@ -1957,7 +1964,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(tokenGatedHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(tokenGatedHook))
@@ -1979,7 +1987,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         vm.prank(ipOwner1);
@@ -1996,7 +2005,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2005,6 +2015,41 @@ contract LicensingModuleTest is BaseTest {
 
         address receiver = address(0x123);
         vm.expectRevert("MockLicensingHook: receiver is invalid");
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: receiver,
+            royaltyContext: "",
+            maxMintingFee: 0
+        });
+    }
+
+    function test_LicensingModule_mintLicenseTokens_revert_licenseDisabled() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: true
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address receiver = address(0x123);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicenseDisabled.selector,
+                ipId1,
+                address(pilTemplate),
+                termsId
+            )
+        );
         licensingModule.mintLicenseTokens({
             licensorIpId: ipId1,
             licenseTemplate: address(pilTemplate),
@@ -2034,7 +2079,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 999999,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2093,7 +2139,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 1000,
             licensingHook: address(0),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2204,7 +2251,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 999999,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2256,7 +2304,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 999999,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2309,7 +2358,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 999999,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2349,7 +2399,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 0,
             licensingHook: address(0),
             hookData: abi.encode(address(0)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig2);
@@ -2380,7 +2431,8 @@ contract LicensingModuleTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(ipOwner2)),
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2401,6 +2453,35 @@ contract LicensingModuleTest is BaseTest {
         licenseTermsIds[0] = termsId;
         vm.prank(ipOwner2);
         vm.expectRevert("MockLicensingHook: caller is invalid");
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
+    }
+
+    function test_LicensingModule_registerDerivative_revert_licenseDisabled() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: true
+        });
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = ipId1;
+        licenseTermsIds[0] = termsId;
+        vm.prank(ipOwner2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicenseDisabled.selector,
+                ipId1,
+                address(pilTemplate),
+                termsId
+            )
+        );
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0);
     }
 

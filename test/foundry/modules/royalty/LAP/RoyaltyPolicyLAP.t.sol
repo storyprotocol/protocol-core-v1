@@ -21,6 +21,8 @@ contract TestRoyaltyPolicyLAP is BaseTest {
     address internal mockExternalRoyaltyPolicy1;
     address internal mockExternalRoyaltyPolicy2;
 
+    address internal ipAccount1;
+
     function setUp() public override {
         super.setUp();
 
@@ -33,6 +35,10 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         vm.startPrank(address(licensingModule));
         _setupTree();
         vm.stopPrank();
+
+        // register IPAccount1
+        mockNFT.mintId(u.alice, 0);
+        ipAccount1 = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
     }
 
     function _setupTree() internal {
@@ -191,14 +197,14 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         parentRoyalties[0] = uint32(10 * 10 ** 6);
         parentRoyalties[1] = uint32(15 * 10 ** 6);
         parentRoyalties[2] = uint32(20 * 10 ** 6);
-        ipGraph.addParentIp(address(80), parents);
+        ipGraph.addParentIp(ipAccount1, parents);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(ipAccount1, parents, licenseRoyaltyPolicies, parentRoyalties, "");
 
         // make payment to ip 80
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(80);
+        address receiverIpId = ipAccount1;
         address payerIpId = address(3);
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
@@ -208,7 +214,7 @@ contract TestRoyaltyPolicyLAP is BaseTest {
 
         // first transfer to vault
         vm.expectRevert(Errors.RoyaltyPolicyLAP__ZeroClaimableRoyalty.selector);
-        royaltyPolicyLAP.transferToVault(address(80), address(2000), address(USDC), 100 * 10 ** 6);
+        royaltyPolicyLAP.transferToVault(ipAccount1, address(2000), address(USDC), 100 * 10 ** 6);
     }
 
     function test_RoyaltyPolicyLAP_transferToVault_revert_ExceedsClaimableRoyalty() public {
@@ -224,14 +230,14 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         parentRoyalties[0] = uint32(10 * 10 ** 6);
         parentRoyalties[1] = uint32(15 * 10 ** 6);
         parentRoyalties[2] = uint32(20 * 10 ** 6);
-        ipGraph.addParentIp(address(80), parents);
+        ipGraph.addParentIp(ipAccount1, parents);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(ipAccount1, parents, licenseRoyaltyPolicies, parentRoyalties, "");
 
         // make payment to ip 80
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(80);
+        address receiverIpId = ipAccount1;
         address payerIpId = address(3);
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
@@ -239,10 +245,10 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
         vm.stopPrank();
 
-        royaltyPolicyLAP.transferToVault(address(80), address(10), address(USDC), 5 * 10 ** 6);
+        royaltyPolicyLAP.transferToVault(ipAccount1, address(10), address(USDC), 5 * 10 ** 6);
 
         vm.expectRevert(Errors.RoyaltyPolicyLAP__ExceedsClaimableRoyalty.selector);
-        royaltyPolicyLAP.transferToVault(address(80), address(10), address(USDC), 6 * 10 ** 6);
+        royaltyPolicyLAP.transferToVault(ipAccount1, address(10), address(USDC), 6 * 10 ** 6);
     }
     function test_RoyaltyPolicyLAP_transferToVault() public {
         address[] memory parents = new address[](3);
@@ -257,14 +263,14 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         parentRoyalties[0] = uint32(10 * 10 ** 6);
         parentRoyalties[1] = uint32(15 * 10 ** 6);
         parentRoyalties[2] = uint32(20 * 10 ** 6);
-        ipGraph.addParentIp(address(80), parents);
+        ipGraph.addParentIp(ipAccount1, parents);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+        royaltyModule.onLinkToParents(ipAccount1, parents, licenseRoyaltyPolicies, parentRoyalties, "");
 
         // make payment to ip 80
         uint256 royaltyAmount = 100 * 10 ** 6;
-        address receiverIpId = address(80);
+        address receiverIpId = ipAccount1;
         address payerIpId = address(3);
         vm.startPrank(payerIpId);
         USDC.mint(payerIpId, royaltyAmount);
@@ -272,23 +278,19 @@ contract TestRoyaltyPolicyLAP is BaseTest {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
         vm.stopPrank();
 
-        assertEq(royaltyModule.totalRevenueTokensReceived(address(80), address(USDC)), 100 * 10 ** 6);
+        assertEq(royaltyModule.totalRevenueTokensReceived(ipAccount1, address(USDC)), 100 * 10 ** 6);
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(address(10));
 
-        uint256 transferredAmountBefore = royaltyPolicyLAP.getTransferredTokens(
-            address(80),
-            address(10),
-            address(USDC)
-        );
+        uint256 transferredAmountBefore = royaltyPolicyLAP.getTransferredTokens(ipAccount1, address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceBefore = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLAPContractBalanceBefore = USDC.balanceOf(address(royaltyPolicyLAP));
 
         vm.expectEmit(true, true, true, true, address(royaltyPolicyLAP));
-        emit RevenueTransferredToVault(address(80), address(10), address(USDC), 10 * 10 ** 6);
+        emit RevenueTransferredToVault(ipAccount1, address(10), address(USDC), 10 * 10 ** 6);
 
-        royaltyPolicyLAP.transferToVault(address(80), address(10), address(USDC), 10 * 10 ** 6);
+        royaltyPolicyLAP.transferToVault(ipAccount1, address(10), address(USDC), 10 * 10 ** 6);
 
-        uint256 transferredAmountAfter = royaltyPolicyLAP.getTransferredTokens(address(80), address(10), address(USDC));
+        uint256 transferredAmountAfter = royaltyPolicyLAP.getTransferredTokens(ipAccount1, address(10), address(USDC));
         uint256 usdcAncestorVaultBalanceAfter = USDC.balanceOf(ancestorIpRoyaltyVault);
         uint256 usdcLAPContractBalanceAfter = USDC.balanceOf(address(royaltyPolicyLAP));
 

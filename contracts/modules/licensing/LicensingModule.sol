@@ -182,8 +182,13 @@ contract LicensingModule is
             licenseTermsId,
             _hasPermission(licensorIpId)
         );
+
+        if (lsc.isSet && lsc.disabled) {
+            revert Errors.LicensingModule__LicenseDisabled(licensorIpId, licenseTemplate, licenseTermsId);
+        }
+
         uint256 mintingFeeByHook = 0;
-        if (lsc.licensingHook != address(0)) {
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
             mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeMintLicenseTokens(
                 msg.sender,
                 licensorIpId,
@@ -537,9 +542,12 @@ contract LicensingModule is
             licenseTemplate,
             licenseTermsId
         );
+        if (lsc.isSet && lsc.disabled) {
+            revert Errors.LicensingModule__LicenseDisabled(parentIpId, licenseTemplate, licenseTermsId);
+        }
         // check childIpOwner is qualified with check receiver module
         uint256 mintingFeeByHook = 0;
-        if (lsc.licensingHook != address(0)) {
+        if (lsc.isSet && lsc.licensingHook != address(0)) {
             mintingFeeByHook = ILicensingHook(lsc.licensingHook).beforeRegisterDerivative(
                 msg.sender,
                 childIpId,

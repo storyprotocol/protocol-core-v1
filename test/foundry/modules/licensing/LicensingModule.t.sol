@@ -1937,14 +1937,14 @@ contract LicensingModuleTest is BaseTest {
     }
 
     function test_LicensingModule_setLicensingConfig_revert_newRoyaltyPercentLessThanLicenseTerms() public {
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.commercialRemix(
-            {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
                 mintingFee: 0,
                 commercialRevShare: 20_000_000,
                 royaltyPolicy: address(royaltyPolicyLRP),
                 currencyToken: address(erc20)
-            }
-        ));
+            })
+        );
         MockLicensingHook licensingHook = new MockLicensingHook();
         vm.prank(admin);
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));

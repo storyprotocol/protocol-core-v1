@@ -1936,6 +1936,39 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
     }
 
+    function test_LicensingModule_setLicensingConfig_revert_newRoyaltyPercentLessThanLicenseTerms() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 20_000_000,
+                royaltyPolicy: address(royaltyPolicyLRP),
+                currencyToken: address(erc20)
+            })
+        );
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0x123)),
+            commercialRevShare: 10_000_000,
+            disabled: false
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent.selector,
+                address(pilTemplate),
+                commRemixTermsId,
+                10_000_000
+            )
+        );
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commRemixTermsId, licensingConfig);
+    }
+
     function test_LicensingModule_setLicensingConfig_revert_invalidLicensingHook() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         // unregistered the licensing hook

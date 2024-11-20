@@ -665,7 +665,7 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
     }
 
-    function test_RoyaltyModule_onLinkToParents_revert_AboveAcumulatedRoyaltyPoliciesLimit() public {
+    function test_RoyaltyModule_onLinkToParents_revert_AboveAccumulatedRoyaltyPoliciesLimit() public {
         vm.startPrank(u.admin);
         royaltyModule.setIpGraphLimits(8, 1024, 3);
         vm.stopPrank();

@@ -597,7 +597,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address ipRoyaltyVault
     ) internal returns (uint32) {
         uint32 rtsRequiredToLink = IRoyaltyPolicy(royaltyPolicy).getPolicyRtsRequiredToLink(parentIpId, licensePercent);
-        IERC20(ipRoyaltyVault).safeTransfer(royaltyPolicy, rtsRequiredToLink);
+        if (rtsRequiredToLink > 0) IERC20(ipRoyaltyVault).safeTransfer(royaltyPolicy, rtsRequiredToLink);
         return rtsRequiredToLink;
     }
 
@@ -618,6 +618,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if (amount == 0) revert Errors.RoyaltyModule__ZeroAmount();
         if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
         if (DISPUTE_MODULE.isIpTagged(receiverIpId)) revert Errors.RoyaltyModule__IpIsTagged();
+        if (LICENSE_REGISTRY.isExpiredNow(receiverIpId)) revert Errors.RoyaltyModule__IpExpired();
 
         // pay fee to the treasury
         uint256 feeAmount = (amount * $.royaltyFeePercent) / MAX_PERCENT;

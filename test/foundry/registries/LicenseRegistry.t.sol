@@ -103,7 +103,8 @@ contract LicenseRegistryTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(0),
             hookData: "",
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
 
         vm.prank(address(licensingModule));
@@ -131,7 +132,8 @@ contract LicenseRegistryTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(0),
             hookData: "",
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
 
         vm.expectRevert(
@@ -148,7 +150,8 @@ contract LicenseRegistryTest is BaseTest {
             mintingFee: 100,
             licensingHook: address(0),
             hookData: "",
-            commercialRevShare: 0
+            commercialRevShare: 0,
+            disabled: false
         });
 
         vm.prank(address(licensingModule));

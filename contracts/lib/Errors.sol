@@ -368,6 +368,9 @@ library Errors {
     /// @notice licensing minting fee is above the maximum minting fee.
     error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
 
+    /// @notice license terms disabled.
+    error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -581,6 +584,9 @@ library Errors {
 
     /// @notice Not a whitelisted royalty token.
     error RoyaltyModule__NotWhitelistedRoyaltyToken();
+
+    /// @notice IP is expired.
+    error RoyaltyModule__IpExpired();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //

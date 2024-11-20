@@ -139,6 +139,9 @@ library Errors {
     /// @notice Cannot add IP which has expiration to group.
     error GroupingModule__CannotAddIpWithExpirationToGroup(address ipId);
 
+    /// @notice Group IP should attach non default license terms.
+    error GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

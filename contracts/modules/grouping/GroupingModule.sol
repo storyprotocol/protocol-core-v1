@@ -146,6 +146,13 @@ contract GroupingModule is
             groupIpId,
             0
         );
+        // Group must attache a non-default license terms to add IP
+        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
+
+        if (groupLicenseTemplate == defaultLicenseTemplate && groupLicenseTermsId == defaultLicenseTermsId) {
+            revert Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(groupIpId);
+        }
+
         PILTerms memory groupLicenseTerms = IPILicenseTemplate(groupLicenseTemplate).getLicenseTerms(
             groupLicenseTermsId
         );

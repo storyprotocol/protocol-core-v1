@@ -278,6 +278,35 @@ contract GroupingModuleTest is BaseTest {
         assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
     }
 
+    function test_GroupingModule_addIp_revert_GroupOnlyAttachedDefaultLicense() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        vm.stopPrank();
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms.selector, groupId1)
+        );
+        vm.prank(alice);
+        groupingModule.addIp(groupId1, ipIds);
+
+        assertEq(ipAssetRegistry.totalMembers(groupId1), 0);
+        assertEq(rewardPool.getTotalIps(groupId1), 0);
+        assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
+    }
+
     function test_GroupingModule_addIp_revert_ipWithExpiration() public {
         PILTerms memory expiredTerms = PILFlavors.commercialRemix({
             mintingFee: 0,

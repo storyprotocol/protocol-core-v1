@@ -6,6 +6,10 @@ import { IOOV3Callbacks } from "./IOOV3Callbacks.sol";
 
 /// @title Arbitration Policy UMA Interface
 interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
+    /// @notice Emitted when the OOV3 address is set
+    /// @param oov3 The address of the OOV3
+    event OOV3Set(address oov3);
+
     /// @notice Emitted when liveness is set
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
@@ -40,6 +44,10 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
     /// @param counterEvidenceHash The counter evidence hash
     event AssertionDisputed(bytes32 assertionId, bytes32 counterEvidenceHash);
 
+    /// @notice Sets the OOV3 address
+    /// @param oov3 The address of the OOV3
+    function setOOV3(address oov3) external;
+
     /// @notice Sets the liveness for UMA disputes
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
@@ -67,6 +75,9 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
 
     /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
     function ipOwnerTimePercent() external view returns (uint32);
+
+    /// @notice Returns the OOV3 address
+    function oov3() external view returns (address);
 
     /// @notice Returns the maximum bond for a given token for UMA disputes
     /// @param token The token address

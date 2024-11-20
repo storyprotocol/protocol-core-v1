@@ -30,14 +30,11 @@ contract ArbitrationPolicyUMA is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable DISPUTE_MODULE;
 
-    /// @notice OOV3 address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IOOV3 public immutable OOV3;
-
     /// @dev Storage structure for the ArbitrationPolicyUMA
     /// @param minLiveness The minimum liveness value
     /// @param maxLiveness The maximum liveness value
     /// @param ipOwnerTimePercent The percentage of liveness time the IP owner has priority to respond to a dispute
+    /// @param oov3 The address of the OOV3
     /// @param maxBonds The maximum bond size for each token
     /// @param disputeIdToAssertionId The mapping of dispute id to assertion id
     /// @param assertionIdToDisputeId The mapping of assertion id to dispute id
@@ -47,6 +44,7 @@ contract ArbitrationPolicyUMA is
         uint64 minLiveness;
         uint64 maxLiveness;
         uint32 ipOwnerTimePercent;
+        IOOV3 oov3;
         mapping(address token => uint256 maxBondSize) maxBonds;
         mapping(uint256 disputeId => bytes32 assertionId) disputeIdToAssertionId;
         mapping(bytes32 assertionId => uint256 disputeId) assertionIdToDisputeId;
@@ -65,14 +63,11 @@ contract ArbitrationPolicyUMA is
 
     /// Constructor
     /// @param disputeModule The address of the dispute module
-    /// @param oov3 The address of the OOV3
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule, address oov3) {
+    constructor(address disputeModule) {
         if (disputeModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroDisputeModule();
-        if (oov3 == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroOOV3();
 
         DISPUTE_MODULE = disputeModule;
-        OOV3 = IOOV3(oov3);
         _disableInitializers();
     }
 
@@ -84,6 +79,17 @@ contract ArbitrationPolicyUMA is
         __ProtocolPausable_init(accessManager);
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+    }
+
+    /// @notice Sets the OOV3 address
+    /// @param oov3 The address of the OOV3
+    function setOOV3(address oov3) external restricted {
+        if (oov3 == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroOOV3();
+
+        ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        $.oov3 = IOOV3(oov3);
+
+        emit OOV3Set(oov3);
     }
 
     /// @notice Sets the liveness for UMA disputes
@@ -130,10 +136,11 @@ contract ArbitrationPolicyUMA is
         if (bond > $.maxBonds[currency]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
 
         IERC20 currencyToken = IERC20(currency);
+        IOOV3 oov3 = $.oov3;
         currencyToken.safeTransferFrom(caller, address(this), bond);
-        currencyToken.safeIncreaseAllowance(address(OOV3), bond);
+        currencyToken.safeIncreaseAllowance(address(oov3), bond);
 
-        bytes32 assertionId = OOV3.assertTruth(
+        bytes32 assertionId = oov3.assertTruth(
             claim,
             caller, // asserter
             address(this), // callbackRecipient
@@ -193,7 +200,7 @@ contract ArbitrationPolicyUMA is
         if (parentDisputeId > 0) revert Errors.ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
 
         // Check if the address can dispute the assertion depending on the liveness and the elapsed time
-        IOOV3.Assertion memory assertion = OOV3.getAssertion(assertionId);
+        IOOV3.Assertion memory assertion = $.oov3.getAssertion(assertionId);
         uint64 liveness = assertion.expirationTime - assertion.assertionTime;
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
         bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / MAX_PERCENT;
@@ -207,10 +214,11 @@ contract ArbitrationPolicyUMA is
         $.counterEvidenceHashes[assertionId] = counterEvidenceHash;
 
         IERC20 currencyToken = IERC20(assertion.currency);
+        IOOV3 oov3 = $.oov3;
         currencyToken.safeTransferFrom(msg.sender, address(this), assertion.bond);
-        currencyToken.safeIncreaseAllowance(address(OOV3), assertion.bond);
+        currencyToken.safeIncreaseAllowance(address(oov3), assertion.bond);
 
-        OOV3.disputeAssertion(assertionId, msg.sender);
+        oov3.disputeAssertion(assertionId, msg.sender);
 
         emit AssertionDisputed(assertionId, counterEvidenceHash);
     }
@@ -219,9 +227,9 @@ contract ArbitrationPolicyUMA is
     /// @param assertionId The resolved assertion identifier
     /// @param assertedTruthfully Indicates if the assertion was resolved as truthful or not
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant {
-        if (msg.sender != address(OOV3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
-
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
+
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
 
         IDisputeModule(DISPUTE_MODULE).setDisputeJudgement(disputeId, assertedTruthfully, "");
@@ -230,9 +238,8 @@ contract ArbitrationPolicyUMA is
     /// @notice OOV3 callback function for when an assertion is disputed
     /// @param assertionId The disputed assertion identifier
     function assertionDisputedCallback(bytes32 assertionId) external {
-        if (msg.sender != address(OOV3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
-
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
         if ($.counterEvidenceHashes[assertionId] == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
     }
 
@@ -254,6 +261,11 @@ contract ArbitrationPolicyUMA is
     /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
     function ipOwnerTimePercent() external view returns (uint32) {
         return _getArbitrationPolicyUMAStorage().ipOwnerTimePercent;
+    }
+
+    /// @notice Returns the OOV3 address
+    function oov3() external view returns (address) {
+        return address(_getArbitrationPolicyUMAStorage().oov3);
     }
 
     /// @notice Returns the maximum bond for a given token for UMA disputes

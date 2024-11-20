@@ -16,6 +16,7 @@ import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 contract ArbitrationPolicyUMATest is BaseTest {
+    event OOV3Set(address oov3);
     event LivenessSet(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent);
     event MaxBondSet(address token, uint256 maxBond);
     event DisputeRaisedUMA(
@@ -70,7 +71,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         );
 
         // deploy arbitration policy UMA
-        address newArbitrationPolicyUMAImpl = address(new ArbitrationPolicyUMA(address(newDisputeModule), newOOV3));
+        address newArbitrationPolicyUMAImpl = address(new ArbitrationPolicyUMA(address(newDisputeModule)));
         newArbitrationPolicyUMA = ArbitrationPolicyUMA(
             TestProxyHelper.deployUUPSProxy(
                 newArbitrationPolicyUMAImpl,
@@ -79,6 +80,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         );
 
         // setup UMA parameters
+        newArbitrationPolicyUMA.setOOV3(newOOV3);
         newArbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
         newArbitrationPolicyUMA.setMaxBond(susd, 25000e18); // 25k USD max bond
 
@@ -101,12 +103,22 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_constructor_revert_ZeroDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroDisputeModule.selector);
-        new ArbitrationPolicyUMA(address(0), address(1));
+        new ArbitrationPolicyUMA(address(0));
     }
 
-    function test_ArbitrationPolicyUMA_constructor_revert_ZeroOOV3() public {
+    function test_ArbitrationPolicyUMA_setOOV3_revert_ZeroOOV3() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroOOV3.selector);
-        new ArbitrationPolicyUMA(address(1), address(0));
+        newArbitrationPolicyUMA.setOOV3(address(0));
+    }
+
+    function test_ArbitrationPolicyUMA_setOOV3() public {
+        address testOOV3 = address(1000);
+        vm.expectEmit(true, true, true, true);
+        emit OOV3Set(testOOV3);
+
+        newArbitrationPolicyUMA.setOOV3(testOOV3);
+
+        assertEq(newArbitrationPolicyUMA.oov3(), testOOV3);
     }
 
     function test_ArbitrationPolicyUMA_setLiveness_revert_ZeroMinLiveness() public {

@@ -145,7 +145,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        oov3 = address(1); // mock address replaced below depending on chainid
+        oov3 = address(1000); // mock address replaced below depending on chainid
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
@@ -523,7 +523,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         //
 
         _predeploy("ArbitrationPolicyUMA");
-        impl = address(new ArbitrationPolicyUMA(address(disputeModule), oov3));
+        impl = address(new ArbitrationPolicyUMA(address(disputeModule)));
         arbitrationPolicyUMA = ArbitrationPolicyUMA(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -759,6 +759,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
+        arbitrationPolicyUMA.setOOV3(address(oov3));
         arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
         arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
         disputeModule.setArbitrationPolicyCooldown(7 days);

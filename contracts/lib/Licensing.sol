@@ -17,6 +17,13 @@ library Licensing {
     /// @param hookData The data to be used by the licensing hook.
     /// @param commercialRevShare The commercial revenue share percentage.
     /// @param disabled Whether the license is disabled or not.
+    /// @param expectMinimumGroupRewardShare The minimum percentage of the group’s reward share
+    /// (from 0 to 100%, represented as 100 * 10 ** 6) that can be allocated to the IP when it is added to the group.
+    /// If the remaining reward share in the group is less than the minimumGroupRewardShare,
+    /// the IP cannot be added to the group.
+    /// @param expectGroupRewardPool The address of the expected group reward pool.
+    /// The IP can only be added to a group with this specified reward pool address,
+    /// or address(0) if the IP does not want to be added to any group.
     struct LicensingConfig {
         bool isSet;
         uint256 mintingFee;
@@ -24,5 +31,7 @@ library Licensing {
         bytes hookData;
         uint32 commercialRevShare;
         bool disabled;
+        uint32 expectMinimumGroupRewardShare;
+        address expectGroupRewardPool;
     }
 }

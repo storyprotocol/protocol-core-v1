@@ -23,7 +23,13 @@ interface IGroupRewardPool {
     /// @notice Adds an IP to the group pool
     /// @param groupId The group ID
     /// @param ipId The IP ID
-    function addIp(address groupId, address ipId) external;
+    /// @param minimumGroupRewardShare The minimum group reward share the IP expects to be added to the group
+    /// @return totalGroupRewardShare The total group reward share after adding the IP
+    function addIp(
+        address groupId,
+        address ipId,
+        uint256 minimumGroupRewardShare
+    ) external returns (uint256 totalGroupRewardShare);
 
     /// @notice Removes an IP from the group pool
     /// @param groupId The group ID

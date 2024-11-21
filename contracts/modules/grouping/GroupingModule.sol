@@ -23,6 +23,7 @@ import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { Licensing } from "../../lib/Licensing.sol";
 
 /// @title Grouping Module
 /// @notice Grouping module is the main entry point for the IPA grouping. It is responsible for:
@@ -174,11 +175,38 @@ contract GroupingModule is
                     groupLicenseTermsId
                 );
             }
+            Licensing.LicensingConfig memory lct = LICENSE_REGISTRY.getLicensingConfig(
+                ipIds[i],
+                groupLicenseTemplate,
+                groupLicenseTermsId
+            );
+            if (lct.disabled) {
+                revert Errors.GroupingModule__IpLicenseDisabled(ipIds[i], groupLicenseTemplate, groupLicenseTermsId);
+            }
+            if (lct.expectGroupRewardPool == address(0)) {
+                revert Errors.GroupingModule__IpExpectGroupRewardPoolNotSet(ipIds[i]);
+            }
+            if (lct.expectGroupRewardPool != address(pool)) {
+                revert Errors.GroupingModule__IpExpectGroupRewardPoolNotMatch(
+                    ipIds[i],
+                    lct.expectGroupRewardPool,
+                    groupIpId,
+                    address(pool)
+                );
+            }
             // IP must not have expiration time to be added to group
             if (LICENSE_REGISTRY.getExpireTime(ipIds[i]) != 0) {
                 revert Errors.GroupingModule__CannotAddIpWithExpirationToGroup(ipIds[i]);
             }
-            pool.addIp(groupIpId, ipIds[i]);
+            uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lct.expectMinimumGroupRewardShare);
+            if (totalGroupRewardShare > 100 * 10 ** 6) {
+                revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
+                    groupIpId,
+                    totalGroupRewardShare,
+                    ipIds[i],
+                    lct.expectMinimumGroupRewardShare
+                );
+            }
         }
 
         emit AddedIpToGroup(groupIpId, ipIds);

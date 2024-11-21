@@ -1690,7 +1690,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
@@ -1741,7 +1743,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 10_000_000,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commercialRemixTermsId, licensingConfig);
@@ -1791,7 +1795,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 10_000_000,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner2);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
@@ -1831,7 +1837,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
@@ -1882,7 +1890,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicenseTermsId.selector, address(pilTemplate), 0)
@@ -1912,7 +1922,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 1000,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicenseRegistry__UnregisteredLicenseTemplate.selector, address(0x123))
@@ -1954,7 +1966,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 10_000_000,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
 
         vm.expectRevert(
@@ -1979,7 +1993,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(licensingHook))
@@ -1998,7 +2014,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(tokenGatedHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(tokenGatedHook))
@@ -2021,7 +2039,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         vm.prank(ipOwner1);
@@ -2039,7 +2059,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2067,7 +2089,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
-            disabled: true
+            disabled: true,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2113,7 +2137,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2173,7 +2199,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(0),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2285,7 +2313,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2338,7 +2368,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2392,7 +2424,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2433,7 +2467,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(0),
             hookData: abi.encode(address(0)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig2);
@@ -2465,7 +2501,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(ipOwner2)),
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
@@ -2497,7 +2535,9 @@ contract LicensingModuleTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
-            disabled: true
+            disabled: true,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);

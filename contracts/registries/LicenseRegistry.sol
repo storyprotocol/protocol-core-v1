@@ -149,7 +149,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData,
             commercialRevShare: licensingConfig.commercialRevShare,
-            disabled: licensingConfig.disabled
+            disabled: licensingConfig.disabled,
+            expectMinimumGroupRewardShare: licensingConfig.expectMinimumGroupRewardShare,
+            expectGroupRewardPool: licensingConfig.expectGroupRewardPool
         });
 
         emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
@@ -171,7 +173,9 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             licensingHook: licensingConfig.licensingHook,
             hookData: licensingConfig.hookData,
             commercialRevShare: licensingConfig.commercialRevShare,
-            disabled: licensingConfig.disabled
+            disabled: licensingConfig.disabled,
+            expectMinimumGroupRewardShare: licensingConfig.expectMinimumGroupRewardShare,
+            expectGroupRewardPool: licensingConfig.expectGroupRewardPool
         });
         emit LicensingConfigSetForIP(ipId, licensingConfig);
     }

@@ -31,15 +31,21 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
     mapping(address groupId => mapping(address token => PoolInfo)) public poolInfo;
     // Info of each user that stakes LP tokens. groupId => { token => { ipId => IpInfo}}
     mapping(address groupId => mapping(address tokenId => mapping(address ipId => IpRewardInfo))) public ipRewardInfo;
+    mapping(address groupId => uint256 totalMinimumRewardShare) public totalMinimumRewardShare;
+    mapping(address groupId => mapping(address ipId => uint256 minimumRewardShare)) public minimumRewardShare;
 
     constructor(address _royaltyModule) {
         require(_royaltyModule != address(0), "RoyaltyModule address cannot be 0");
         ROYALTY_MODULE = IRoyaltyModule(_royaltyModule);
     }
 
-    function addIp(address groupId, address ipId) external {
+    function addIp(
+        address groupId,
+        address ipId,
+        uint256 minimumGroupRewardShare
+    ) external returns (uint256 totalGroupRewardShare) {
         // ignore if IP is already added to pool
-        if (ipAddedTime[groupId][ipId] != 0) return;
+        if (ipAddedTime[groupId][ipId] != 0) return totalMinimumRewardShare[groupId];
         ipAddedTime[groupId][ipId] = block.timestamp;
         // set rewardDebt of IP to current availableReward of the IP
         totalMemberIPs[groupId] += 1;
@@ -52,7 +58,12 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
             uint256 totalReward = poolInfo[groupId][token].accBalance;
             ipRewardInfo[groupId][token][ipId].startPoolBalance = totalReward;
             ipRewardInfo[groupId][token][ipId].rewardDebt = 0;
+            if (minimumGroupRewardShare > 0) {
+                minimumRewardShare[groupId][ipId] = minimumGroupRewardShare;
+                totalMinimumRewardShare[groupId] += minimumGroupRewardShare;
+            }
         }
+        return totalMinimumRewardShare[groupId];
     }
 
     function removeIp(address groupId, address ipId) external {
@@ -67,6 +78,10 @@ contract MockEvenSplitGroupPool is IGroupRewardPool {
             ipAddedTime[groupId][ipId] = 0;
         }
         totalMemberIPs[groupId] -= 1;
+        if (minimumRewardShare[groupId][ipId] > 0) {
+            totalMinimumRewardShare[groupId] -= minimumRewardShare[groupId][ipId];
+            minimumRewardShare[groupId][ipId] = 0;
+        }
     }
 
     /// @notice Returns the reward for each IP in the group

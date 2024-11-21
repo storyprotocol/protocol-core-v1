@@ -62,9 +62,9 @@ contract EvenSplitGroupPoolTest is BaseTest {
     function test_EvenSplitGroupPool_AddIp() public {
         vm.startPrank(address(groupingModule));
 
-        rewardPool.addIp(group1, ipId1);
-        rewardPool.addIp(group1, ipId2);
-        rewardPool.addIp(group1, ipId3);
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group1, ipId2, 0);
+        rewardPool.addIp(group1, ipId3, 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId2), 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId3), 0);
@@ -78,7 +78,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
 
         // add ip again
-        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertTrue(rewardPool.isIPAdded(group1, ipId1));
 
@@ -88,7 +88,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
     function test_EvenSplitGroupPool_RemoveIp() public {
         vm.startPrank(address(groupingModule));
 
-        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
         rewardPool.removeIp(group1, ipId1);
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
@@ -96,6 +96,41 @@ contract EvenSplitGroupPoolTest is BaseTest {
         rewardPool.removeIp(group1, ipId1);
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
+    }
+
+    function test_EvenSplitGroupPool_RemoveIp_withMinimumGroupRewardShare() public {
+        vm.startPrank(address(groupingModule));
+
+        rewardPool.addIp(group1, ipId1, 10 * 10 ** 6);
+        rewardPool.addIp(group1, ipId2, 20 * 10 ** 6);
+        rewardPool.addIp(group1, ipId3, 60 * 10 ** 6);
+        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 90 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 10 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
+
+        // add ip again
+        rewardPool.addIp(group1, ipId1, 10 * 10 ** 6);
+        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 90 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 10 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
+
+        rewardPool.removeIp(group1, ipId1);
+        assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
+        assertFalse(rewardPool.isIPAdded(group1, ipId1));
+        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 0);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
+        // remove again
+        rewardPool.removeIp(group1, ipId1);
+        assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
+        assertFalse(rewardPool.isIPAdded(group1, ipId1));
+        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 0);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
     }
 
     // test add and remove ip from pool
@@ -111,8 +146,8 @@ contract EvenSplitGroupPoolTest is BaseTest {
     function test_EvenSplitGroupPool_AddIpTwice() public {
         vm.startPrank(address(groupingModule));
 
-        rewardPool.addIp(group1, ipId1);
-        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group1, ipId1, 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertTrue(rewardPool.isIPAdded(group1, ipId1));
 
@@ -122,8 +157,8 @@ contract EvenSplitGroupPoolTest is BaseTest {
     function test_EvenSplitGroupPool_AddIpToMultiplePools() public {
         vm.startPrank(address(groupingModule));
 
-        rewardPool.addIp(group1, ipId1);
-        rewardPool.addIp(group2, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group2, ipId1, 0);
         assertNotEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertNotEq(rewardPool.getIpAddedTime(group2, ipId1), 0);
         assertTrue(rewardPool.isIPAdded(group1, ipId1));
@@ -135,8 +170,8 @@ contract EvenSplitGroupPoolTest is BaseTest {
     function test_EvenSplitGroupPool_RemoveIpFromMultiplePools() public {
         vm.startPrank(address(groupingModule));
 
-        rewardPool.addIp(group1, ipId1);
-        rewardPool.addIp(group2, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group2, ipId1, 0);
         rewardPool.removeIp(group1, ipId1);
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertNotEq(rewardPool.getIpAddedTime(group2, ipId1), 0);
@@ -172,7 +207,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
 
         vm.prank(address(groupingModule));
-        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
 
         vm.startPrank(address(groupingModule));
         erc20.mint(address(rewardPool), 100);
@@ -211,7 +246,7 @@ contract EvenSplitGroupPoolTest is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
         );
-        rewardPool.addIp(group1, ipId1);
+        rewardPool.addIp(group1, ipId1, 0);
 
         vm.expectRevert(
             abi.encodeWithSelector(Errors.EvenSplitGroupPool__CallerIsNotGroupingModule.selector, address(0x123))
@@ -241,8 +276,8 @@ contract EvenSplitGroupPoolTest is BaseTest {
         licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
 
         vm.startPrank(address(groupingModule));
-        rewardPool.addIp(group1, ipId1);
-        rewardPool.addIp(group1, ipId2);
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group1, ipId2, 0);
         vm.stopPrank();
 
         vm.startPrank(address(groupingModule));

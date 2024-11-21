@@ -9,6 +9,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 // contracts
 // solhint-disable-next-line max-line-length
 import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
+import { Licensing } from "../../../../../contracts/lib/Licensing.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
 
@@ -56,6 +57,17 @@ contract Flows_Integration_Grouping is BaseIntegration {
 
     function test_Integration_Grouping() public {
         // create a group
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
         {
             vm.startPrank(groupOwner);
             groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
@@ -68,6 +80,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             ipAcct[1] = registerIpAccount(mockNFT, 1, u.alice);
             vm.label(ipAcct[1], "IPAccount1");
             licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
+            licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), commRemixTermsId, licensingConfig);
             vm.stopPrank();
         }
 
@@ -76,6 +89,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.bob);
             vm.label(ipAcct[2], "IPAccount2");
             licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), commRemixTermsId);
+            licensingModule.setLicensingConfig(ipAcct[2], address(pilTemplate), commRemixTermsId, licensingConfig);
             vm.stopPrank();
         }
 

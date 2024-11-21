@@ -31,6 +31,8 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         mapping(address groupId => uint256 totalIps) totalMemberIps;
         mapping(address groupId => mapping(address token => uint256 balance)) poolBalance;
         mapping(address groupId => mapping(address tokenId => mapping(address ipId => uint256))) ipRewardDebt;
+        mapping(address groupId => uint256 totalMinimumRewardShare) totalMinimumRewardShare;
+        mapping(address groupId => mapping(address ipId => uint256 minimumRewardShare)) minimumRewardShare;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.EvenSplitGroupPool")) - 1)) & ~bytes32(uint256(0xff));
@@ -74,12 +76,23 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
     /// @dev Only the GroupingModule can call this function
     /// @param groupId The group ID
     /// @param ipId The IP ID
-    function addIp(address groupId, address ipId) external onlyGroupingModule {
-        // ignore if IP is already added to pool
-        if (_isIpAdded(groupId, ipId)) return;
+    /// @param minimumGroupRewardShare The minimum group reward share the IP expects to be added to the group
+    /// @return totalGroupRewardShare The total group reward share after adding the IP
+    function addIp(
+        address groupId,
+        address ipId,
+        uint256 minimumGroupRewardShare
+    ) external onlyGroupingModule returns (uint256 totalGroupRewardShare) {
         EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
+        // ignore if IP is already added to pool
+        if (_isIpAdded(groupId, ipId)) return $.totalMinimumRewardShare[groupId];
         $.ipAddedTime[groupId][ipId] = block.timestamp;
         $.totalMemberIps[groupId] += 1;
+        if (minimumGroupRewardShare > 0) {
+            $.minimumRewardShare[groupId][ipId] = minimumGroupRewardShare;
+            $.totalMinimumRewardShare[groupId] += minimumGroupRewardShare;
+        }
+        totalGroupRewardShare = $.totalMinimumRewardShare[groupId];
     }
 
     /// @notice Removes an IP from the group pool
@@ -92,6 +105,10 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
         $.ipAddedTime[groupId][ipId] = 0;
         $.totalMemberIps[groupId] -= 1;
+        if ($.minimumRewardShare[groupId][ipId] > 0) {
+            $.totalMinimumRewardShare[groupId] -= $.minimumRewardShare[groupId][ipId];
+            $.minimumRewardShare[groupId][ipId] = 0;
+        }
     }
 
     /// @notice Deposits reward to the group pool directly
@@ -156,6 +173,14 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
 
     function isIPAdded(address groupId, address ipId) external view returns (bool) {
         return _isIpAdded(groupId, ipId);
+    }
+
+    function getMinimumRewardShare(address groupId, address ipId) external view returns (uint256) {
+        return _getEvenSplitGroupPoolStorage().minimumRewardShare[groupId][ipId];
+    }
+
+    function getTotalMinimumRewardShare(address groupId) external view returns (uint256) {
+        return _getEvenSplitGroupPoolStorage().totalMinimumRewardShare[groupId];
     }
 
     function _getRewardPerIp(address groupId, address token) internal view returns (uint256) {

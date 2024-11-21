@@ -142,6 +142,31 @@ library Errors {
     /// @notice Group IP should attach non default license terms.
     error GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(address groupId);
 
+    /// @notice The license of IP to be added to a group is disabled
+    error GroupingModule__IpLicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice The IP does not set expected group reward pool to be added,
+    /// means the IP is not allowed to be added to any group.
+    error GroupingModule__IpExpectGroupRewardPoolNotSet(address ipId);
+
+    /// @notice The expected group reward pool of IP does not match the group reward pool of the group.
+    /// Means the IP is not allowed to be added to the group.
+    error GroupingModule__IpExpectGroupRewardPoolNotMatch(
+        address ipId,
+        address expectGroupRewardPool,
+        address groupId,
+        address groupRewardPool
+    );
+
+    /// @notice The total group reward share exceeds 100% when adding IP to the group.
+    /// means the IP is not allowed to be added to the group.
+    error GroupingModule__TotalGroupRewardShareExceeds100Percent(
+        address groupId,
+        uint256 totalGroupRewardShare,
+        address ipId,
+        uint256 expectGroupRewardShare
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

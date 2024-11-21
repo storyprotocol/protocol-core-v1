@@ -104,7 +104,9 @@ contract LicenseRegistryTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
 
         vm.prank(address(licensingModule));
@@ -133,7 +135,9 @@ contract LicenseRegistryTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
 
         vm.expectRevert(
@@ -151,7 +155,9 @@ contract LicenseRegistryTest is BaseTest {
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
-            disabled: false
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
         });
 
         vm.prank(address(licensingModule));

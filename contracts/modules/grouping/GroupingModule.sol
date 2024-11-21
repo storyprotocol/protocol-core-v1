@@ -167,44 +167,21 @@ contract GroupingModule is
             if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipIds[i])) {
                 revert Errors.GroupingModule__CannotAddGroupToGroup(groupIpId, ipIds[i]);
             }
-            // check if the IP has the same license terms as the group
-            if (!LICENSE_REGISTRY.hasIpAttachedLicenseTerms(ipIds[i], groupLicenseTemplate, groupLicenseTermsId)) {
-                revert Errors.GroupingModule__IpHasNoGroupLicenseTerms(
-                    ipIds[i],
-                    groupLicenseTemplate,
-                    groupLicenseTermsId
-                );
-            }
-            Licensing.LicensingConfig memory lct = LICENSE_REGISTRY.getLicensingConfig(
+
+            Licensing.LicensingConfig memory lc = LICENSE_REGISTRY.verifyGroupAddIp(
+                groupIpId,
+                address(pool),
                 ipIds[i],
                 groupLicenseTemplate,
                 groupLicenseTermsId
             );
-            if (lct.disabled) {
-                revert Errors.GroupingModule__IpLicenseDisabled(ipIds[i], groupLicenseTemplate, groupLicenseTermsId);
-            }
-            if (lct.expectGroupRewardPool == address(0)) {
-                revert Errors.GroupingModule__IpExpectGroupRewardPoolNotSet(ipIds[i]);
-            }
-            if (lct.expectGroupRewardPool != address(pool)) {
-                revert Errors.GroupingModule__IpExpectGroupRewardPoolNotMatch(
-                    ipIds[i],
-                    lct.expectGroupRewardPool,
-                    groupIpId,
-                    address(pool)
-                );
-            }
-            // IP must not have expiration time to be added to group
-            if (LICENSE_REGISTRY.getExpireTime(ipIds[i]) != 0) {
-                revert Errors.GroupingModule__CannotAddIpWithExpirationToGroup(ipIds[i]);
-            }
-            uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lct.expectMinimumGroupRewardShare);
+            uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lc.expectMinimumGroupRewardShare);
             if (totalGroupRewardShare > 100 * 10 ** 6) {
                 revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
                     groupIpId,
                     totalGroupRewardShare,
                     ipIds[i],
-                    lct.expectMinimumGroupRewardShare
+                    lc.expectMinimumGroupRewardShare
                 );
             }
         }

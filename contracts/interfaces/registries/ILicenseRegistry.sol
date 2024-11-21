@@ -83,6 +83,23 @@ interface ILicenseRegistry {
         bool isMintedByIpOwner
     ) external view returns (Licensing.LicensingConfig memory);
 
+    /// @notice Verifies the group can add given IP.
+    /// @param groupId The address of the group.
+    /// @param groupRewardPool The address of the reward pool of the group.
+    /// @param ipId The address of the IP to be added to the group.
+    /// @param groupLicenseTemplate the address of the license template attached to the group.
+    /// the IP must have this license template.
+    /// @param groupLicenseTermsId The ID of the license terms attached to the group.
+    /// the IP must have this license terms.
+    /// @return ipLicensingConfig The configuration for license attached to the IP.
+    function verifyGroupAddIp(
+        address groupId,
+        address groupRewardPool,
+        address ipId,
+        address groupLicenseTemplate,
+        uint256 groupLicenseTermsId
+    ) external view returns (Licensing.LicensingConfig memory ipLicensingConfig);
+
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
     /// @param licenseTemplate The address of the license template.

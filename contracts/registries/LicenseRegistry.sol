@@ -319,17 +319,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     ) external view returns (Licensing.LicensingConfig memory ipLicensingConfig) {
         // check if the IP has the same license terms as the group
         if (!_hasIpAttachedLicenseTerms(ipId, groupLicenseTemplate, groupLicenseTermsId)) {
-            revert Errors.GroupingModule__IpHasNoGroupLicenseTerms(ipId, groupLicenseTemplate, groupLicenseTermsId);
+            revert Errors.LicenseRegistry__IpHasNoGroupLicenseTerms(ipId, groupLicenseTemplate, groupLicenseTermsId);
         }
         Licensing.LicensingConfig memory lct = _getLicensingConfig(ipId, groupLicenseTemplate, groupLicenseTermsId);
         if (lct.disabled) {
-            revert Errors.GroupingModule__IpLicenseDisabled(ipId, groupLicenseTemplate, groupLicenseTermsId);
+            revert Errors.LicenseRegistry__IpLicenseDisabled(ipId, groupLicenseTemplate, groupLicenseTermsId);
         }
         if (lct.expectGroupRewardPool == address(0)) {
-            revert Errors.GroupingModule__IpExpectGroupRewardPoolNotSet(ipId);
+            revert Errors.LicenseRegistry__IpExpectGroupRewardPoolNotSet(ipId);
         }
         if (lct.expectGroupRewardPool != address(groupRewardPool)) {
-            revert Errors.GroupingModule__IpExpectGroupRewardPoolNotMatch(
+            revert Errors.LicenseRegistry__IpExpectGroupRewardPoolNotMatch(
                 ipId,
                 lct.expectGroupRewardPool,
                 groupId,
@@ -338,7 +338,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
         // IP must not have expiration time to be added to group
         if (_getExpireTime(ipId) != 0) {
-            revert Errors.GroupingModule__CannotAddIpWithExpirationToGroup(ipId);
+            revert Errors.LicenseRegistry__CannotAddIpWithExpirationToGroup(ipId);
         }
         ipLicensingConfig = lct;
     }

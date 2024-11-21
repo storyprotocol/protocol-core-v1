@@ -112,9 +112,6 @@ library Errors {
     /// @notice The group ip has no attached any license terms.
     error GroupingModule__GroupIPHasNoLicenseTerms(address groupId);
 
-    /// @notice The IP has no attached the same license terms of Group IPA.
-    error GroupingModule__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice The Royalty Vault has not been created.
     error GroupingModule__GroupRoyaltyVaultNotCreated(address groupId);
 
@@ -136,27 +133,8 @@ library Errors {
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
 
-    /// @notice Cannot add IP which has expiration to group.
-    error GroupingModule__CannotAddIpWithExpirationToGroup(address ipId);
-
     /// @notice Group IP should attach non default license terms.
     error GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(address groupId);
-
-    /// @notice The license of IP to be added to a group is disabled
-    error GroupingModule__IpLicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
-
-    /// @notice The IP does not set expected group reward pool to be added,
-    /// means the IP is not allowed to be added to any group.
-    error GroupingModule__IpExpectGroupRewardPoolNotSet(address ipId);
-
-    /// @notice The expected group reward pool of IP does not match the group reward pool of the group.
-    /// Means the IP is not allowed to be added to the group.
-    error GroupingModule__IpExpectGroupRewardPoolNotMatch(
-        address ipId,
-        address expectGroupRewardPool,
-        address groupId,
-        address groupRewardPool
-    );
 
     /// @notice The total group reward share exceeds 100% when adding IP to the group.
     /// means the IP is not allowed to be added to the group.
@@ -282,6 +260,28 @@ library Errors {
 
     /// @notice Zero address provided for IP Graph ACL.
     error LicenseRegistry__ZeroIPGraphACL();
+
+    /// @notice The license of IP to be added to a group is disabled
+    error LicenseRegistry__IpLicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice The IP does not set expected group reward pool to be added,
+    /// means the IP is not allowed to be added to any group.
+    error LicenseRegistry__IpExpectGroupRewardPoolNotSet(address ipId);
+
+    /// @notice The expected group reward pool of IP does not match the group reward pool of the group.
+    /// Means the IP is not allowed to be added to the group.
+    error LicenseRegistry__IpExpectGroupRewardPoolNotMatch(
+        address ipId,
+        address expectGroupRewardPool,
+        address groupId,
+        address groupRewardPool
+    );
+
+    /// @notice Cannot add IP which has expiration to group.
+    error LicenseRegistry__CannotAddIpWithExpirationToGroup(address ipId);
+
+    /// @notice The IP has no attached the same license terms of Group IPA.
+    error LicenseRegistry__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();

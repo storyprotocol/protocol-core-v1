@@ -387,7 +387,7 @@ contract GroupingModuleTest is BaseTest {
         ipIds[0] = ipId1;
         vm.expectRevert(
             abi.encodeWithSelector(
-                Errors.GroupingModule__IpLicenseDisabled.selector,
+                Errors.LicenseRegistry__IpLicenseDisabled.selector,
                 ipId1,
                 address(pilTemplate),
                 termsId
@@ -435,7 +435,7 @@ contract GroupingModuleTest is BaseTest {
         ipIds[0] = ipId1;
         vm.expectRevert(
             abi.encodeWithSelector(
-                Errors.GroupingModule__IpExpectGroupRewardPoolNotMatch.selector,
+                Errors.LicenseRegistry__IpExpectGroupRewardPoolNotMatch.selector,
                 ipId1,
                 address(0x123),
                 groupId1,
@@ -482,7 +482,7 @@ contract GroupingModuleTest is BaseTest {
 
         address[] memory ipIds = new address[](1);
         ipIds[0] = ipId1;
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__IpExpectGroupRewardPoolNotSet.selector, ipId1));
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__IpExpectGroupRewardPoolNotSet.selector, ipId1));
         vm.prank(alice);
         groupingModule.addIp(groupId1, ipIds);
 
@@ -590,7 +590,7 @@ contract GroupingModuleTest is BaseTest {
         address[] memory ipIds = new address[](1);
         ipIds[0] = ipId2;
         vm.expectRevert(
-            abi.encodeWithSelector(Errors.GroupingModule__CannotAddIpWithExpirationToGroup.selector, ipId2)
+            abi.encodeWithSelector(Errors.LicenseRegistry__CannotAddIpWithExpirationToGroup.selector, ipId2)
         );
         vm.prank(alice);
         groupingModule.addIp(groupId1, ipIds);

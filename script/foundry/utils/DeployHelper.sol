@@ -567,6 +567,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy("RoyaltyPolicyLRP");
         impl = address(new RoyaltyPolicyLRP(
             address(royaltyModule),
+            address(royaltyPolicyLAP),
             newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
         ));
         royaltyPolicyLRP = RoyaltyPolicyLRP(

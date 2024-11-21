@@ -66,6 +66,10 @@ contract RoyaltyPolicyLRP is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IRoyaltyModule public immutable ROYALTY_MODULE;
 
+    /// @notice Returns the RoyaltyPolicyLAP address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IGraphAwareRoyaltyPolicy public immutable ROYALTY_POLICY_LAP;
+
     /// @notice IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPGraphACL public immutable IP_GRAPH_ACL;
@@ -78,13 +82,16 @@ contract RoyaltyPolicyLRP is
 
     /// @notice Constructor
     /// @param royaltyModule The RoyaltyModule address
+    /// @param royaltyPolicyLAP The RoyaltyPolicyLAP address
     /// @param ipGraphAcl The IPGraphACL address
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address royaltyModule, address ipGraphAcl) {
+    constructor(address royaltyModule, address royaltyPolicyLAP, address ipGraphAcl) {
         if (royaltyModule == address(0)) revert Errors.RoyaltyPolicyLRP__ZeroRoyaltyModule();
+        if (royaltyPolicyLAP == address(0)) revert Errors.RoyaltyPolicyLRP__ZeroRoyaltyPolicyLAP();
         if (ipGraphAcl == address(0)) revert Errors.RoyaltyPolicyLRP__ZeroIPGraphACL();
 
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+        ROYALTY_POLICY_LAP = IGraphAwareRoyaltyPolicy(royaltyPolicyLAP);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
 
         _disableInitializers();
@@ -108,8 +115,7 @@ contract RoyaltyPolicyLRP is
         uint32 licensePercent,
         bytes calldata
     ) external onlyRoyaltyModule nonReentrant {
-        IRoyaltyModule royaltyModule = ROYALTY_MODULE;
-        if (royaltyModule.globalRoyaltyStack(ipId) + licensePercent > royaltyModule.maxPercent())
+        if (ROYALTY_POLICY_LAP.getPolicyRoyaltyStack(ipId) + licensePercent > ROYALTY_MODULE.maxPercent())
             revert Errors.RoyaltyPolicyLRP__AboveMaxPercent();
     }
 

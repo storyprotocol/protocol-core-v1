@@ -105,21 +105,26 @@ contract TestRoyaltyPolicyLRP is BaseTest {
 
     function test_RoyaltyPolicyLRP_constructor_revert_ZeroRoyaltyModule() public {
         vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroRoyaltyModule.selector);
-        new RoyaltyPolicyLRP(address(0), address(ipGraphACL));
+        new RoyaltyPolicyLRP(address(0), address(royaltyPolicyLAP), address(ipGraphACL));
+    }
+
+    function test_RoyaltyPolicyLRP_constructor_revert_ZeroRoyaltyPolicyLAP() public {
+        vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroRoyaltyPolicyLAP.selector);
+        new RoyaltyPolicyLRP(address(royaltyModule), address(0), address(ipGraphACL));
     }
 
     function test_RoyaltyPolicyLRP_constructor_revert_ZeroIPGraphACL() public {
         vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroIPGraphACL.selector);
-        new RoyaltyPolicyLRP(address(royaltyModule), address(0));
+        new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(0));
     }
 
     function test_RoyaltyPolicyLRP_constructor() public {
-        testRoyaltyPolicyLRP = new RoyaltyPolicyLRP(address(royaltyModule), address(ipGraphACL));
+        testRoyaltyPolicyLRP = new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL));
         assertEq(address(testRoyaltyPolicyLRP.ROYALTY_MODULE()), address(royaltyModule));
     }
 
     function test_RoyaltyPolicyLRP_initialize_revert_ZeroAccessManager() public {
-        address impl = address(new RoyaltyPolicyLRP(address(royaltyModule), address(ipGraphACL)));
+        address impl = address(new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL)));
         vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroAccessManager.selector);
         RoyaltyPolicyLRP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLRP.initialize, (address(0))))

@@ -672,6 +672,9 @@ library Errors {
     /// @notice Zero address provided for Royalty Module.
     error RoyaltyPolicyLRP__ZeroRoyaltyModule();
 
+    /// @notice Zero address provided for Royalty Policy LAP.
+    error RoyaltyPolicyLRP__ZeroRoyaltyPolicyLAP();
+
     /// @notice Zero address provided for Access Manager in initializer.
     error RoyaltyPolicyLRP__ZeroAccessManager();
 

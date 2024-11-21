@@ -119,12 +119,18 @@ contract TestRoyaltyPolicyLRP is BaseTest {
     }
 
     function test_RoyaltyPolicyLRP_constructor() public {
-        testRoyaltyPolicyLRP = new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL));
+        testRoyaltyPolicyLRP = new RoyaltyPolicyLRP(
+            address(royaltyModule),
+            address(royaltyPolicyLAP),
+            address(ipGraphACL)
+        );
         assertEq(address(testRoyaltyPolicyLRP.ROYALTY_MODULE()), address(royaltyModule));
     }
 
     function test_RoyaltyPolicyLRP_initialize_revert_ZeroAccessManager() public {
-        address impl = address(new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL)));
+        address impl = address(
+            new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL))
+        );
         vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroAccessManager.selector);
         RoyaltyPolicyLRP(
             TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyPolicyLRP.initialize, (address(0))))

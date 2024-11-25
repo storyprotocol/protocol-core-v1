@@ -290,16 +290,13 @@ contract DisputeModule is
         Dispute memory parentDispute = $.disputes[parentDisputeId];
         if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
 
-        // a dispute current tag prior to being resolved can be in 3 states:
+        // a dispute current tag can be in 3 states:
         // IN_DISPUTE, 0, or a tag (ie. "IMPROPER_REGISTRATION")
-        // by restricting IN_DISPUTE and 0 - it is ensured the parent has been tagged before resolving dispute
+        // by restricting IN_DISPUTE and 0 - it is ensured the parent has been tagged before tagging the derivative
         if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
             revert Errors.DisputeModule__ParentNotTagged();
 
         if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
-
-        address arbitrationPolicy = $.arbitrationPolicies[derivativeIpId];
-        if (!$.isWhitelistedArbitrationPolicy[arbitrationPolicy]) arbitrationPolicy = $.baseArbitrationPolicy;
 
         uint256 disputeId = ++$.disputeCounter;
         uint256 disputeTimestamp = block.timestamp;
@@ -308,7 +305,7 @@ contract DisputeModule is
             targetIpId: derivativeIpId,
             disputeInitiator: msg.sender,
             disputeTimestamp: disputeTimestamp,
-            arbitrationPolicy: arbitrationPolicy,
+            arbitrationPolicy: parentDispute.arbitrationPolicy,
             disputeEvidenceHash: "",
             targetTag: parentDispute.currentTag,
             currentTag: parentDispute.currentTag,

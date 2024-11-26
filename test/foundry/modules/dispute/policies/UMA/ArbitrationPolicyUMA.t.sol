@@ -456,7 +456,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_paused() public {
         bytes memory claim = "test claim";
-        uint64 liveness = 3600 * 24 * 30;   
+        uint64 liveness = 3600 * 24 * 30;
         IERC20 currency = IERC20(susd);
         uint256 bond = 0;
         bytes32 identifier = bytes32("ASSERT_TRUTH");

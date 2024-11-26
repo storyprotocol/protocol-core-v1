@@ -226,7 +226,10 @@ contract ArbitrationPolicyUMA is
     /// @notice OOV3 callback function forwhen an assertion is resolved
     /// @param assertionId The resolved assertion identifier
     /// @param assertedTruthfully Indicates if the assertion was resolved as truthful or not
-    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant whenNotPaused {
+    function assertionResolvedCallback(
+        bytes32 assertionId,
+        bool assertedTruthfully
+    ) external nonReentrant whenNotPaused {
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
 

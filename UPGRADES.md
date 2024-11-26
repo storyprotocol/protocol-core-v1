@@ -200,7 +200,7 @@ contract ExecuteV1_2 is UpgradeExecutor {
 
 ## 5. Execute the scripts
 
-Script name will deppend on your file names. For example:
+Script name will depend on your file names. For example:
 
 Deployment (remember to verify)
 ```

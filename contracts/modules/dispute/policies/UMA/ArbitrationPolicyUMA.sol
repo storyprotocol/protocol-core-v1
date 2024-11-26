@@ -124,7 +124,7 @@ contract ArbitrationPolicyUMA is
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule nonReentrant {
+    function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule nonReentrant whenNotPaused {
         (bytes memory claim, uint64 liveness, address currency, uint256 bond, bytes32 identifier) = abi.decode(
             data,
             (bytes, uint64, address, uint256, bytes32)
@@ -185,7 +185,7 @@ contract ArbitrationPolicyUMA is
     /// @notice Allows the IP that was targeted to dispute the assertion while providing counter evidence
     /// @param assertionId The identifier of the assertion that was disputed
     /// @param counterEvidenceHash The hash of the counter evidence
-    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external nonReentrant {
+    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external nonReentrant whenNotPaused {
         if (counterEvidenceHash == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
@@ -226,7 +226,7 @@ contract ArbitrationPolicyUMA is
     /// @notice OOV3 callback function forwhen an assertion is resolved
     /// @param assertionId The resolved assertion identifier
     /// @param assertedTruthfully Indicates if the assertion was resolved as truthful or not
-    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant {
+    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant whenNotPaused {
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
 

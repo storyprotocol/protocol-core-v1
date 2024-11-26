@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
@@ -150,6 +151,21 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(newArbitrationPolicyUMA.minLiveness(), 10);
         assertEq(newArbitrationPolicyUMA.maxLiveness(), 100);
         assertEq(newArbitrationPolicyUMA.ipOwnerTimePercent(), 10);
+    }
+
+    function test_ArbitrationPolicyUMA_onRaiseDispute_revert_paused() public {
+        newArbitrationPolicyUMA.pause();
+
+        bytes memory claim = "test claim";
+        uint64 liveness = 1;
+        IERC20 currency = IERC20(susd);
+        uint256 bond = 0;
+        bytes32 identifier = bytes32("ASSERT_TRUTH");
+
+        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessBelowMin() public {
@@ -436,6 +452,33 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
+    }
+
+    function test_ArbitrationPolicyUMA_disputeAssertion_revert_paused() public {
+        bytes memory claim = "test claim";
+        uint64 liveness = 3600 * 24 * 30;   
+        IERC20 currency = IERC20(susd);
+        uint256 bond = 0;
+        bytes32 identifier = bytes32("ASSERT_TRUTH");
+        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+
+        address targetIpId = address(1);
+        uint256 disputeId = newDisputeModule.raiseDispute(
+            targetIpId,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            data
+        );
+
+        newArbitrationPolicyUMA.pause();
+
+        // dispute the assertion
+        vm.startPrank(targetIpId);
+        bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+        bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_CannotDisputeAssertionTwice() public {
@@ -754,8 +797,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(defenderIpIdOwnerBalAfter - defenderIpIdOwnerBalBefore, bondRecipientAmount);
     }
 
-    function test_ArbitrationPolicyUMA_assertionResolvedCallback_revert_NotOOV3() public {
-        vm.expectRevert(Errors.ArbitrationPolicyUMA__NotOOV3.selector);
+    function test_ArbitrationPolicyUMA_assertionResolvedCallback_revert_paused() public {
+        newArbitrationPolicyUMA.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         newArbitrationPolicyUMA.assertionResolvedCallback(bytes32(0), false);
     }
 

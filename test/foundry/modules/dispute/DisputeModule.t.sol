@@ -249,6 +249,27 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), block.timestamp + 7 days);
     }
 
+    function test_DisputeModule_setArbitrationPolicy_WithQueuedPolicy() public {
+        vm.startPrank(u.admin);
+        disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy2), true);
+        vm.stopPrank();
+
+        vm.startPrank(ipAddr);
+
+        vm.expectEmit(true, true, true, true, address(disputeModule));
+        emit IDisputeModule.ArbitrationPolicySet(ipAddr, address(mockArbitrationPolicy2), block.timestamp + 7 days);
+
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
+
+        vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
+
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy));
+
+        assertEq(disputeModule.arbitrationPolicies(ipAddr), address(mockArbitrationPolicy2));
+        assertEq(disputeModule.nextArbitrationPolicies(ipAddr), address(mockArbitrationPolicy));
+        assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), block.timestamp + 7 days);
+    }
+
     function test_DisputeModule_raiseDispute_revert_NotRegisteredIpId() public {
         vm.expectRevert(Errors.DisputeModule__NotRegisteredIpId.selector);
         disputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");

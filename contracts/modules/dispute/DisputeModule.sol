@@ -173,6 +173,10 @@ contract DisputeModule is
         if (!$.isWhitelistedArbitrationPolicy[nextArbitrationPolicy])
             revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
 
+        // if applicable updates the active arbitration policy to the queued arbitration policy
+        // before setting the new next arbitration policy
+        _updateActiveArbitrationPolicy(ipId);
+
         $.nextArbitrationPolicies[ipId] = nextArbitrationPolicy;
 
         uint256 nextArbitrationUpdateTimestamp = block.timestamp + $.arbitrationPolicyCooldown;

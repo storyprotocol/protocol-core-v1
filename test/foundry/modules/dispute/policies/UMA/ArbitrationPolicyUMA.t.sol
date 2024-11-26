@@ -42,13 +42,13 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function setUp() public virtual override {
         // Fork the desired network where UMA contracts are deployed
-        uint256 forkId = vm.createFork("https://testnet.storyrpc.io");
+        uint256 forkId = vm.createFork("https://odyssey.storyrpc.io/");
         vm.selectFork(forkId);
 
-        // Illiad chain 1513
+        // Odyssey testnet
         newOOV3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
         mockAncillary = 0x3baD7AD0728f9917d1Bf08af5782dCbD516cDd96;
-        susd = 0x91f6F05B08c16769d3c85867548615d270C42fC7;
+        susd = 0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5;
 
         // deploy mock ip asset registry
         mockIpAssetRegistry = new MockIpAssetRegistry();

@@ -564,6 +564,14 @@ contract DisputeModuleTest is BaseTest {
 
         assertEq(licenseRegistry.isParentIp(ipAddr, ipAddr2), true);
 
+        // child ip changes arbitration policy
+        vm.startPrank(address(1));
+        disputeModule.setArbitrationPolicy(ipAddr2, address(mockArbitrationPolicy2));
+        vm.warp(block.timestamp + disputeModule.arbitrationPolicyCooldown() + 1);
+        disputeModule.updateActiveArbitrationPolicy(ipAddr2);
+        assertEq(disputeModule.arbitrationPolicies(ipAddr2), address(mockArbitrationPolicy2));
+        vm.stopPrank();
+
         // tag child ip
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));

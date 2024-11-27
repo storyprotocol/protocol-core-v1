@@ -12,7 +12,7 @@ contract MockExternalRoyaltyPolicy2 is ERC165, IExternalRoyaltyPolicy {
     }
 
     /// @notice IERC165 interface support
-    function supportsInterface(bytes4 interfaceId) public override(ERC165, IERC165) view returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(ERC165, IERC165) returns (bool) {
         return interfaceId == this.getPolicyRtsRequiredToLink.selector || super.supportsInterface(interfaceId);
     }
 }

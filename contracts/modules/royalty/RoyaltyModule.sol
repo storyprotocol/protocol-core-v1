@@ -14,7 +14,7 @@ import { BaseModule } from "../BaseModule.sol";
 import { VaultController } from "./policies/VaultController.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
-import { IExternalRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IExternalRoyaltyPolicy.sol";
+import { IExternalRoyaltyPolicyBase } from "../../interfaces/modules/royalty/policies/IExternalRoyaltyPolicyBase.sol";
 import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
@@ -223,12 +223,17 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
             $.isRegisteredExternalRoyaltyPolicy[externalRoyaltyPolicy]
         ) revert Errors.RoyaltyModule__PolicyAlreadyWhitelistedOrRegistered();
 
-        // checks if the IExternalRoyaltyPolicy call does not revert
         // external royalty policies contracts should inherit IExternalRoyaltyPolicy interface
-        if (IExternalRoyaltyPolicy(externalRoyaltyPolicy).getPolicyRtsRequiredToLink(address(0), 0) >= uint32(0)) {
-            $.isRegisteredExternalRoyaltyPolicy[externalRoyaltyPolicy] = true;
-            emit ExternalRoyaltyPolicyRegistered(externalRoyaltyPolicy);
-        }
+        // and implement the getPolicyRtsRequiredToLink() and ERC165 supportsInterface() functions
+        if (
+            !ERC165Checker.supportsInterface(
+                externalRoyaltyPolicy,
+                IExternalRoyaltyPolicyBase.getPolicyRtsRequiredToLink.selector
+            )
+        ) revert Errors.RoyaltyModule__InvalidExternalRoyaltyPolicy();
+
+        $.isRegisteredExternalRoyaltyPolicy[externalRoyaltyPolicy] = true;
+        emit ExternalRoyaltyPolicyRegistered(externalRoyaltyPolicy);
     }
 
     /// @notice Executes royalty related logic on license minting

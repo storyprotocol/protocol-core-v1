@@ -616,6 +616,9 @@ library Errors {
     /// @notice IP is expired.
     error RoyaltyModule__IpExpired();
 
+    /// @notice Invalid external royalty policy.
+    error RoyaltyModule__InvalidExternalRoyaltyPolicy();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////

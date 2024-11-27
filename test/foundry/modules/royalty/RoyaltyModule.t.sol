@@ -380,6 +380,11 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.registerExternalRoyaltyPolicy(address(royaltyPolicyLAP));
     }
 
+    function test_RoyaltyModule_registerExternalRoyaltyPolicy_revert_InvalidExternalRoyaltyPolicy() public {
+        vm.expectRevert(Errors.RoyaltyModule__InvalidExternalRoyaltyPolicy.selector);
+        royaltyModule.registerExternalRoyaltyPolicy(address(1));
+    }
+
     function test_RoyaltyModule_registerExternalRoyaltyPolicy() public {
         address externalRoyaltyPolicy = address(new MockExternalRoyaltyPolicy1());
         assertEq(royaltyModule.isRegisteredExternalRoyaltyPolicy(externalRoyaltyPolicy), false);

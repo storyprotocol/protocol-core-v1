@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import { IExternalRoyaltyPolicy } from "./IExternalRoyaltyPolicy.sol";
+import { IExternalRoyaltyPolicyBase } from "./IExternalRoyaltyPolicyBase.sol";
 
 /// @title RoyaltyPolicy interface
-interface IRoyaltyPolicy is IExternalRoyaltyPolicy {
+interface IRoyaltyPolicy is IExternalRoyaltyPolicyBase {
     /// @notice Executes royalty related logic on minting a license
     /// @dev Enforced to be only callable by RoyaltyModule
     /// @param ipId The ipId whose license is being minted (licensor)

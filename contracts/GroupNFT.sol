@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.26;
+pragma solidity ^0.8.26;
+
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import { ERC721Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-// solhint-disable-next-line max-line-length
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { IGroupingModule } from "./interfaces/modules/grouping/IGroupingModule.sol";
@@ -21,7 +21,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     IGroupingModule public immutable GROUPING_MODULE;
 
     /// @notice Emitted for metadata updates, per EIP-4906
-    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
+    event BatchMetadataUpdate(uint256 indexed _fromTokenId, uint256 indexed _toTokenId);
 
     /// @dev Storage structure for the GroupNFT
     /// @custom:storage-location erc7201:story-protocol.GroupNFT
@@ -62,9 +62,9 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     /// @dev Enforced to be only callable by the protocol admin
     /// @param url The URL of the Licensing Image
     function setLicensingImageUrl(string calldata url) external restricted {
-        GroupNFTStorage storage $ = _getGroupNFTStorage();
-        $.imageUrl = url;
-        emit BatchMetadataUpdate(0, $.totalSupply);
+        GroupNFTStorage storage s = _getGroupNFTStorage();
+        s.imageUrl = url;
+        emit BatchMetadataUpdate(0, s.totalSupply);
     }
 
     /// @notice Mints a Group NFT.
@@ -72,8 +72,8 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     /// @param receiver The address of the receiver of the minted Group NFT.
     /// @return groupNftId The ID of the minted Group NFT.
     function mintGroupNft(address minter, address receiver) external onlyGroupingModule returns (uint256 groupNftId) {
-        GroupNFTStorage storage $ = _getGroupNFTStorage();
-        groupNftId = $.totalSupply++;
+        GroupNFTStorage storage s = _getGroupNFTStorage();
+        groupNftId = s.totalSupply++;
         _mint(receiver, groupNftId);
         emit GroupNFTMinted(minter, receiver, groupNftId);
     }
@@ -88,51 +88,39 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
-        GroupNFTStorage storage $ = _getGroupNFTStorage();
+        if (!_exists(id)) {
+            revert Errors.GroupNFT__NonExistentToken(id);
+        }
 
-        /* solhint-disable */
-        // Follows the OpenSea standard for JSON metadata
-
-        // base json, open the attributes array
-        string memory json = string(
-            abi.encodePacked(
-                "{",
-                '"name": "Story Protocol IP Assets Group #',
-                id.toString(),
-                '",',
-                '"description": IPAsset Group",',
-                '"external_url": "https://protocol.storyprotocol.xyz/ipa/',
-                id.toString(),
-                '",',
-                '"image": "',
-                $.imageUrl,
-                '"'
-            )
-        );
-
-        // close the attributes array and the json metadata object
-        json = string(abi.encodePacked(json, "}"));
-
-        /* solhint-enable */
-
-        return string(abi.encodePacked("data:application/json;base64,", Base64.encode(bytes(json))));
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, id.toString())) : "";
     }
 
-    /// @notice IERC165 interface support.
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC721Upgradeable, IERC165) returns (bool) {
-        return interfaceId == type(IGroupNFT).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    /// @dev Returns the storage struct of GroupNFT.
-    function _getGroupNFTStorage() private pure returns (GroupNFTStorage storage $) {
+    /// @dev Internal helper function to retrieve the GroupNFTStorage struct
+    function _getGroupNFTStorage() internal pure returns (GroupNFTStorage storage s) {
         assembly {
-            $.slot := GroupNFTStorageLocation
+            s.slot := GroupNFTStorageLocation
         }
     }
 
-    /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
-    /// @param newImplementation The address of the new implementation
-    function _authorizeUpgrade(address newImplementation) internal override restricted {}
+    /// @dev Implementation of the `_beforeTokenTransfer` hook used by ERC721Upgradeable.
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal override {
+        super._beforeTokenTransfer(from, to, tokenId);
+        // Additional logic can be placed here if necessary
+    }
+
+    /// @dev Implementation of the `_burn` hook used by ERC721Upgradeable.
+    function _burn(uint256 tokenId) internal override {
+        super._burn(tokenId);
+        // Additional logic can be placed here if necessary
+    }
+
+    /// @dev Returns the base URI for all tokens.
+    function _baseURI() internal view virtual returns (string memory) {
+        return _getGroupNFTStorage().imageUrl;
+    }
 }

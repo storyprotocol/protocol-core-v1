@@ -109,7 +109,7 @@ library Errors {
     /// @notice The group ip has derivative IPs.
     error GroupingModule__GroupFrozenDueToHasDerivativeIps(address groupId);
 
-    /// @notice The group ip has no attached any license terms.
+    /// @notice The group ip has not attached any license terms.
     error GroupingModule__GroupIPHasNoLicenseTerms(address groupId);
 
     /// @notice The Royalty Vault has not been created.
@@ -384,7 +384,7 @@ library Errors {
         address licensorIpId
     );
 
-    /// @notice Licensing hook is invalid either not support ILicensingHook interface or not registered as module
+    /// @notice Licensing hook is invalid either does not support ILicensingHook interface or not registered as module
     error LicensingModule__InvalidLicensingHook(address hook);
 
     /// @notice The license terms ID is invalid or license template doesn't exist.
@@ -574,7 +574,7 @@ library Errors {
     /// @notice Parent IP list for linking is empty.
     error RoyaltyModule__NoParentsOnLinking();
 
-    /// @notice IP is dipute tagged.
+    /// @notice IP is dispute tagged.
     error RoyaltyModule__IpIsTagged();
 
     /// @notice Last position IP is not able to mint more licenses.
@@ -767,7 +767,7 @@ library Errors {
     /// @notice Provided module name is empty string.
     error ModuleRegistry__NameEmptyString();
 
-    /// @notice Provided module name is already regsitered.
+    /// @notice Provided module name is already registered.
     error ModuleRegistry__NameAlreadyRegistered();
 
     /// @notice Module name does not match the given name.

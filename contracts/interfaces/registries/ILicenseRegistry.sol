@@ -163,7 +163,7 @@ interface ILicenseRegistry {
 
     /// @notice Gets the count of parent IPs.
     /// @param childIpId The address of the childIP.
-    /// @return The count o parent IPs.
+    /// @return The count of parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256);
 
     /// @notice Retrieves the minting license configuration for a given license terms of the IP.

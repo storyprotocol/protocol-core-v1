@@ -10,7 +10,7 @@ import { IModule } from "./IModule.sol";
 /// they can display simple/base/core metadata, book specific metadata, license details metadata,
 /// or even IP graph data for the same IPAccount using different View Modules.
 /// This module offers flexibility in selecting which data to display and how to present it.
-/// @dev View Module can read data from IPAccount and from multiple namesapces to combine data for display.
+/// @dev View Module can read data from IPAccount and from multiple namespaces to combine data for display.
 interface IViewModule is IModule {
     /// @notice check whether the view module is supported for the given IP account
     function isSupported(address ipAccount) external returns (bool);

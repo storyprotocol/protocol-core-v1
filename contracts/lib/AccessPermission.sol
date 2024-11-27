@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 /// @notice Library for IPAccount access control permissions.
 ///         These permissions are used by the AccessController.
 library AccessPermission {
-    /// @notice ABSTAIN means having not enough information to make decision at current level, deferred decision to up
+    /// @notice ABSTAIN means not having enough information to make a decision at the current level, the deferred decision to up
     /// level permission.
     uint8 public constant ABSTAIN = 0;
 

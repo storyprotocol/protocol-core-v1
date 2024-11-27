@@ -22,7 +22,6 @@ contract Main is DeployHelper {
     constructor()
         DeployHelper(
             ERC6551_REGISTRY,
-            CREATE3_DEPLOYER,
             address(0), // replaced with USDC in DeployHelper.sol
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL,
@@ -35,16 +34,21 @@ contract Main is DeployHelper {
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
     function run() public virtual {
-        _run(CREATE3_DEFAULT_SEED);
+        _run(CREATE3_DEPLOYER, CREATE3_DEFAULT_SEED);
     }
 
     function run(uint256 seed) public {
-        _run(seed);
+        _run(CREATE3_DEPLOYER, seed);
     }
 
-    function _run(uint256 seed) internal {
+    function run(address create3Deployer, uint256 seed) public {
+        _run(create3Deployer, seed);
+    }
+
+    function _run(address create3Deployer, uint256 seed) internal {
         // deploy all contracts via DeployHelper
         super.run(
+            create3Deployer,
             seed, // create3 seed
             false, // runStorageLayoutCheck
             true, // writeDeployments,

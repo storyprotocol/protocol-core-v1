@@ -60,7 +60,6 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     constructor()
         DeployHelper(
             address(ERC6551_REGISTRY),
-            address(CREATE3_DEPLOYER),
             address(erc20),
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL,
@@ -83,6 +82,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
         // deploy all contracts via DeployHelper
         super.run(
+            address(CREATE3_DEPLOYER),
             CREATE3_DEFAULT_SEED,
             false, // runStorageLayoutCheck
             false, // writeDeploys

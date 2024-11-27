@@ -72,7 +72,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     error RoleConfigError(string message);
 
     ERC6551Registry internal immutable erc6551Registry;
-    ICreate3Deployer internal immutable create3Deployer;
+    ICreate3Deployer internal create3Deployer;
     // seed for CREATE3 salt
     uint256 internal create3SaltSeed;
     IPAccountImpl internal ipAccountImpl;
@@ -132,7 +132,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     constructor(
         address erc6551Registry_,
-        address create3Deployer_,
         address erc20_,
         uint256 arbitrationPrice_,
         uint256 maxRoyaltyApproval_,
@@ -140,7 +139,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         address ipGraphACL_
     ) JsonDeploymentHandler("main") {
         erc6551Registry = ERC6551Registry(erc6551Registry_);
-        create3Deployer = ICreate3Deployer(create3Deployer_);
         erc20 = ERC20(erc20_);
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
@@ -162,7 +160,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     /// @dev To use, run the following command (e.g. for Sepolia):
     /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
 
-    function run(uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version_) public virtual {
+    function run(address create3Deployer_, uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version_) public virtual {
+        create3Deployer = ICreate3Deployer(create3Deployer_);
         create3SaltSeed = create3SaltSeed_;
         writeDeploys = writeDeploys_;
         version = version_;

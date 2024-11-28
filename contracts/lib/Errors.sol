@@ -653,14 +653,8 @@ library Errors {
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLAP__ZeroClaimableRoyalty();
 
-    /// @notice Amount exceeds the claimable royalty.
-    error RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
-
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLAP__AboveMaxPercent();
-
-    /// @notice Zero amount provided.
-    error RoyaltyPolicyLAP__ZeroAmount();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
@@ -684,14 +678,8 @@ library Errors {
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLRP__ZeroClaimableRoyalty();
 
-    /// @notice Claimer is not an ancestor of the IP.
-    error RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
-
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLRP__AboveMaxPercent();
-
-    /// @notice Zero amount provided.
-    error RoyaltyPolicyLRP__ZeroAmount();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

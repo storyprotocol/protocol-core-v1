@@ -33,3 +33,6 @@ typechain
 # converage
 lcov.info
 
+# test
+mochawesome-report
+

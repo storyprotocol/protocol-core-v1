@@ -1,21 +1,19 @@
+import "../setup"
 import { expect } from "chai"
-import { getIpAssetRegistry } from "../fixtures"
 import { mintNFT } from "../utils/nftHelper"
 
-describe.only("IPA", function () {
+describe("IP Asset", function () {
   it("Create ipa", async function () {
 
     const tokenId = await mintNFT();
-    const ipaContract = await getIpAssetRegistry();
-  
     const ipId = await expect(
-      ipaContract.register(1315, "0x7411143ef90b7744fc8233f01cce0b2c379651b3", tokenId)
-    ).not.to.be.rejectedWith(Error);
+      this.ipAssetRegistry.register(1315, "0x7411143ef90b7744fc8233f01cce0b2c379651b3", tokenId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
 
-    console.log("ipa", ipId)
+    console.log("ipId", ipId)
 
     const isRegistered = await expect(
-      ipaContract.isRegistered(ipId)
+      this.ipAssetRegistry.isRegistered(ipId)
     ).not.to.be.rejectedWith(Error)
 
     expect(isRegistered).to.equal(true)
@@ -25,6 +23,11 @@ describe.only("IPA", function () {
     // console.log("authority", authority);
     // assert that the value is correct
     // expect(paused).to.equal(false);
+  })
+
+  it("get ipa", async function () {
+    const paused =  await this.ipAssetRegistry.paused();
+    expect(paused).to.equal(false);
   })
 })
 

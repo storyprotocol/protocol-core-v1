@@ -21,4 +21,4 @@ export const ProtocolPauseAdmin = "0x65C6Ec6Cc074eaf7ba3970C540b4379C9BcA8A67";
 export const RoyaltyModule = "0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B";
 export const RoyaltyPolicyLAP = "0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6";
 export const RoyaltyPolicyLRP = "0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd";
-export const MockERC721 = "0x12A8b0DcC6e3bB0915638361D9D49942Da07F455";
+export const MockERC721 = "0x7411143ef90b7744fc8233f01cce0b2c379651b3";

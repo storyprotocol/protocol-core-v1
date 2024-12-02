@@ -52,7 +52,6 @@ describe("Register license terms", function () {
     testTerms.defaultMintingFee = 30;
     testTerms.commercialUse = true;
     testTerms.currency = MockERC20;
-    console.log(testTerms);
 
     const connectedLicense = this.licenseTemplate.connect(signers[0]);
     const tx = await expect(

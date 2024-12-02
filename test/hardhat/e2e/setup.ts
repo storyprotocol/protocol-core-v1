@@ -28,7 +28,7 @@ before(async function () {
     console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
   });
   
-  it("Register non-commercial PIL license terms", async function () {
+  it("Register commercial use PIL license terms", async function () {
     console.log(`================= Register commercial-use PIL license terms =================`);
     const testTerms = terms;
     testTerms.royaltyPolicy = RoyaltyPolicyLAP;
@@ -47,7 +47,7 @@ before(async function () {
     console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
   });
   
-  it("Register non-commercial PIL license terms", async function () {
+  it("Register commercial remix PIL license terms", async function () {
     console.log(`================= Register commercial-remix PIL license terms =================`);
     const testTerms = terms;
     testTerms.royaltyPolicy = RoyaltyPolicyLRP;

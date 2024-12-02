@@ -1,9 +1,8 @@
-import { ethers } from "ethers"
 import hre from "hardhat"
+import { MockERC721 } from "../constants";
 
 
 export async function mintNFT(walletAddress?: string): Promise<number> {
-  const erc721ContractAddress: string = "0x7411143ef90b7744fc8233f01cce0b2c379651b3";
   let tokenId: any
   const contractAbi = [
     {
@@ -15,7 +14,7 @@ export async function mintNFT(walletAddress?: string): Promise<number> {
     },
   ]
 
-  const nftContract = await hre.ethers.getContractAt(contractAbi, erc721ContractAddress);
+  const nftContract = await hre.ethers.getContractAt(contractAbi, MockERC721);
 
   const [owner] = await hre.ethers.getSigners();
   const address = walletAddress || owner.address

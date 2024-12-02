@@ -1,4 +1,5 @@
 import hre from "hardhat";
+import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP } from "./constants";
 import { expect } from "chai";
 import { terms } from "./licenseTermsTemplate";
@@ -14,6 +15,11 @@ before(async function () {
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1] = await hre.ethers.getSigners();
+  
+  console.log(`================= Chain ID =================`);
+  const networkConfig = network.config;
+  this.chainId = networkConfig.chainId;
+  console.log("chainId: ", this.chainId);
 
   it("Register non-commercial PIL license terms", async function () {
     console.log(`================= Register non-commercial PIL license terms =================`);

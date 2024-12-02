@@ -1,5 +1,7 @@
 import hre from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP } from "./constants";
+import { expect } from "chai";
+import { terms } from "./licenseTermsTemplate";
 
 before(async function () {
   console.log(`================= Load Contract =================`);
@@ -8,7 +10,68 @@ before(async function () {
   this.licenseToken = await hre.ethers.getContractAt("LicenseToken", LicenseToken);
   this.licensingModule = await hre.ethers.getContractAt("LicensingModule", LicensingModule);
   this.groupingModule = await hre.ethers.getContractAt("GroupingModule", GroupingModule);
+  this.licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1] = await hre.ethers.getSigners();
+
+  it("Register non-commercial PIL license terms", async function () {
+    console.log(`================= Register non-commercial PIL license terms =================`);
+    const signers = await hre.ethers.getSigners();
+    const connectedLicense = this.licenseTemplate.connect(signers[0]);
+    const tx = await expect(
+        connectedLicense.registerLicenseTerms(terms)
+    ).to.not.be.rejectedWith(Error);
+    
+    console.log("Transaction hash: ", tx.hash);
+    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
+
+    const licenseTermsId = await connectedLicense.getLicenseTermsId(terms);
+    console.log("Non-commercial licenseTermsId: ", licenseTermsId);
+  });
+  
+  it("Register non-commercial PIL license terms", async function () {
+    console.log(`================= Register commercial-use PIL license terms =================`);
+    const signers = await hre.ethers.getSigners();
+    const connectedLicense = this.licenseTemplate.connect(signers[0]);
+
+    const testTerms = terms;
+    testTerms.royaltyPolicy = RoyaltyPolicyLAP;
+    testTerms.defaultMintingFee = 30;
+    testTerms.commercialUse = true;
+    testTerms.currency = MockERC20;
+
+    const tx = await expect(
+        connectedLicense.registerLicenseTerms(testTerms)
+    ).to.not.be.rejectedWith(Error);
+    
+    console.log("Transaction hash: ", tx.hash);
+    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
+
+    const licenseTermsId = await connectedLicense.getLicenseTermsId(testTerms);
+    console.log("Commercial-use licenseTermsId: ", licenseTermsId);
+  });
+  
+  it("Register non-commercial PIL license terms", async function () {
+    console.log(`================= Register commercial-remix PIL license terms =================`);
+    const signers = await hre.ethers.getSigners();
+    const connectedLicense = this.licenseTemplate.connect(signers[0]);
+
+    const testTerms = terms;
+    testTerms.royaltyPolicy = RoyaltyPolicyLRP;
+    testTerms.defaultMintingFee = 80;
+    testTerms.commercialUse = true;
+    testTerms.commercialRevShare = 100;
+    testTerms.currency = MockERC20;
+
+    const tx = await expect(
+        connectedLicense.registerLicenseTerms(testTerms)
+    ).to.not.be.rejectedWith(Error);
+    
+    console.log("Transaction hash: ", tx.hash);
+    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
+
+    const licenseTermsId = await connectedLicense.getLicenseTermsId(testTerms);
+    console.log("Commercial-remix licenseTermsId: ", licenseTermsId);
+  });
 });

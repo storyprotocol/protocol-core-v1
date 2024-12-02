@@ -48,5 +48,18 @@ describe("IP Asset", function () {
 
     expect(isRegistered).to.equal(true);
   });
+
+  it("Register IP asset, the caller doesn’t have enough IP token", async function () {
+    const tokenId = await mintNFT(signers[0].address);
+
+    // generate random wallet
+    const randomWallet = hre.ethers.Wallet.createRandom();
+    const randomSigner = randomWallet.connect(hre.ethers.provider);
+    const connectedRegistry = this.ipAssetRegistry.connect(randomSigner);
+
+    await expect(
+      connectedRegistry.register(chainId, erc721ContractAddress, tokenId)
+    ).to.be.rejectedWith(`insufficient funds`, `"code": -32000, "message": "insufficient funds for gas * price + value: balance 0`);
+  });
 });
 

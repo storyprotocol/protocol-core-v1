@@ -86,7 +86,7 @@ contract RoyaltyPolicyLAP is
         address ipId,
         uint32 licensePercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant {
+    ) external nonReentrant onlyRoyaltyModule {
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
         if (royaltyModule.globalRoyaltyStack(ipId) + licensePercent > royaltyModule.maxPercent())
             revert Errors.RoyaltyPolicyLAP__AboveMaxPercent();
@@ -104,7 +104,7 @@ contract RoyaltyPolicyLAP is
         address[] memory licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
         bytes calldata
-    ) external onlyRoyaltyModule nonReentrant returns (uint32 newRoyaltyStackLAP) {
+    ) external nonReentrant onlyRoyaltyModule returns (uint32 newRoyaltyStackLAP) {
         IP_GRAPH_ACL.allow();
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             // when a parent is linking through a different royalty policy, the royalty amount is zero

@@ -165,7 +165,7 @@ contract LicensingModule is
         address receiver,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
-    ) external whenNotPaused nonReentrant returns (uint256 startLicenseTokenId) {
+    ) external nonReentrant whenNotPaused returns (uint256 startLicenseTokenId) {
         if (amount == 0) {
             revert Errors.LicensingModule__MintAmountZero();
         }
@@ -256,7 +256,7 @@ contract LicensingModule is
         bytes calldata royaltyContext,
         uint256 maxMintingFee,
         uint32 maxRts
-    ) external whenNotPaused nonReentrant verifyPermission(childIpId) {
+    ) external nonReentrant whenNotPaused verifyPermission(childIpId) {
         if (parentIpIds.length != licenseTermsIds.length) {
             revert Errors.LicensingModule__LicenseTermsLengthMismatch(parentIpIds.length, licenseTermsIds.length);
         }

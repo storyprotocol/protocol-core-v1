@@ -124,7 +124,7 @@ contract ArbitrationPolicyUMA is
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(address caller, bytes calldata data) external onlyDisputeModule nonReentrant whenNotPaused {
+    function onRaiseDispute(address caller, bytes calldata data) external nonReentrant onlyDisputeModule whenNotPaused {
         (bytes memory claim, uint64 liveness, address currency, uint256 bond, bytes32 identifier) = abi.decode(
             data,
             (bytes, uint64, address, uint256, bytes32)

@@ -23,7 +23,7 @@ const terms = {
   uri: "",
 };
 
-describe.only("License", function () {
+describe("Register license terms", function () {
   let signers:any;
 
   this.beforeAll("Get Signers", async function () {
@@ -91,7 +91,7 @@ describe.only("License", function () {
     expect(licenseTermsId).and.to.be.a("bigint");
   });
 
-  it.only("Register commercial remix license terms with commercialRevShare larger than max value", async function () {
+  it("Register commercial remix license terms with commercialRevShare larger than max value", async function () {
     const testTerms = terms;
     testTerms.royaltyPolicy = RoyaltyPolicyLAP;
     testTerms.defaultMintingFee = 160;

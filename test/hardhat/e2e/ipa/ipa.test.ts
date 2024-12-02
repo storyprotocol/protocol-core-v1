@@ -1,33 +1,52 @@
 import "../setup"
 import { expect } from "chai"
 import { mintNFT } from "../utils/nftHelper"
+import hre from "hardhat";
 
 describe("IP Asset", function () {
-  it("Create ipa", async function () {
+  let signers:any;
+  const chainId: number = 1315;
+  const erc721ContractAddress: string = "0x7411143ef90b7744fc8233f01cce0b2c379651b3";
 
-    const tokenId = await mintNFT();
+  this.beforeAll("Get Signers", async function () {
+    // Get the signers
+    signers = await hre.ethers.getSigners();   
+  })
+
+  it("NFT owner register IP Asset with an NFT token", async function () {
+    const tokenId = await mintNFT(signers[0].address);
+    const connectedRegistry = this.ipAssetRegistry.connect(signers[0]);
+
     const ipId = await expect(
-      this.ipAssetRegistry.register(1315, "0x7411143ef90b7744fc8233f01cce0b2c379651b3", tokenId)
+      connectedRegistry.register(chainId, erc721ContractAddress, tokenId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
+    console.log("ipId:", ipId);
 
-    console.log("ipId", ipId)
+    expect(ipId).to.not.be.empty.and.to.be.a("HexString");
 
     const isRegistered = await expect(
-      this.ipAssetRegistry.isRegistered(ipId)
-    ).not.to.be.rejectedWith(Error)
+      connectedRegistry.isRegistered(ipId)
+    ).not.to.be.rejectedWith(Error);
 
-    expect(isRegistered).to.equal(true)
-    
-    // const paused =  await ipaContract.paused();
-    // const authority = await ipaContract.authority();
-    // console.log("authority", authority);
-    // assert that the value is correct
-    // expect(paused).to.equal(false);
-  })
+    expect(isRegistered).to.equal(true);
+  });
 
-  it("get ipa", async function () {
-    const paused =  await this.ipAssetRegistry.paused();
-    expect(paused).to.equal(false);
-  })
-})
+  it("Non-NFT owner register IP asset with an NFT token", async function () {
+    const tokenId = await mintNFT(signers[0].address);
+    const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
+
+    const ipId = await expect(
+      connectedRegistry.register(chainId, erc721ContractAddress, tokenId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
+    console.log("ipId:", ipId);
+
+    expect(ipId).to.not.be.empty.and.to.be.a("HexString");
+
+    const isRegistered = await expect(
+      connectedRegistry.isRegistered(ipId)
+    ).not.to.be.rejectedWith(Error);
+
+    expect(isRegistered).to.equal(true);
+  });
+});
 

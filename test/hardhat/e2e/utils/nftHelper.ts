@@ -1,7 +1,9 @@
 import { ethers } from "ethers"
 import hre from "hardhat"
 
-export async function mintNFT(walletAddress?: string, wallet?: ethers.Wallet): Promise<number> {
+
+export async function mintNFT(walletAddress?: string): Promise<number> {
+  const erc721ContractAddress: string = "0x7411143ef90b7744fc8233f01cce0b2c379651b3";
   let tokenId: any
   const contractAbi = [
     {
@@ -13,7 +15,7 @@ export async function mintNFT(walletAddress?: string, wallet?: ethers.Wallet): P
     },
   ]
 
-  const nftContract = await hre.ethers.getContractAt(contractAbi, "0x7411143ef90b7744fc8233f01cce0b2c379651b3");
+  const nftContract = await hre.ethers.getContractAt(contractAbi, erc721ContractAddress);
 
   const [owner] = await hre.ethers.getSigners();
   const address = walletAddress || owner.address

@@ -27,6 +27,7 @@ before(async function () {
     const tx = await expect(
       this.licenseTemplate.registerLicenseTerms(terms)
     ).to.not.be.rejectedWith(Error);
+    await tx.wait();
     
     console.log("Transaction hash: ", tx.hash);
     expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
@@ -39,13 +40,14 @@ before(async function () {
     console.log(`================= Register commercial-use PIL license terms =================`);
     const testTerms = terms;
     testTerms.royaltyPolicy = RoyaltyPolicyLAP;
-    testTerms.defaultMintingFee = 30;
+    testTerms.defaultMintingFee = 10;
     testTerms.commercialUse = true;
     testTerms.currency = MockERC20;
 
     const tx = await expect(
       this.licenseTemplate.registerLicenseTerms(testTerms)
     ).to.not.be.rejectedWith(Error);
+    await tx.wait();
     
     console.log("Transaction hash: ", tx.hash);
     expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
@@ -66,6 +68,7 @@ before(async function () {
     const tx = await expect(
       this.licenseTemplate.registerLicenseTerms(testTerms)
     ).to.not.be.rejectedWith(Error);
+    await tx.wait();
     
     console.log("Transaction hash: ", tx.hash);
     expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");

@@ -1,6 +1,6 @@
 import hre from "hardhat";
 import { network } from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController } from "./constants";
 import { expect } from "chai";
 import { terms } from "./licenseTermsTemplate";
 
@@ -12,6 +12,7 @@ before(async function () {
   this.licensingModule = await hre.ethers.getContractAt("LicensingModule", LicensingModule);
   this.groupingModule = await hre.ethers.getContractAt("GroupingModule", GroupingModule);
   this.licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
+  this.accessController = await hre.ethers.getContractAt("AccessController", AccessController);
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1] = await hre.ethers.getSigners();

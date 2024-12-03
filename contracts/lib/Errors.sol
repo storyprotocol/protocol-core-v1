@@ -323,7 +323,7 @@ library Errors {
     /// @notice Mint amount is zero.
     error LicensingModule__MintAmountZero();
 
-        /// @notice Zero address provided for IP Asset Registry.
+    /// @notice Zero address provided for IP Asset Registry.
     error LicensingModule__ZeroRoyaltyModule();
 
     /// @notice Zero address provided for Licensing Module.
@@ -393,7 +393,7 @@ library Errors {
     /// @notice license terms disabled.
     error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
-        /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
+    /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
 
     /// @notice Current License does not allow to override royalty percentage.

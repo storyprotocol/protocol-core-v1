@@ -90,10 +90,9 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             vm.expectRevert(
                 abi.encodeWithSelector(
-                    Errors.LicenseRegistry__DuplicateLicense.selector,
-                    ipAcct[1],
-                    address(pilTemplate),
-                    commRemixTermsId
+                    Errors.LicenseRegistry__DuplicateParentIp.selector,
+                    ipAcct[2],
+                    ipAcct[1]
                 )
             );
             licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);

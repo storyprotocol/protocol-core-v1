@@ -283,6 +283,9 @@ library Errors {
     /// @notice The IP has no attached the same license terms of Group IPA.
     error LicenseRegistry__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice The IP has already linked to the same parent IP.
+    error LicenseRegistry__DuplicateParentIp(address ipId, address parentIpId);
+
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
 

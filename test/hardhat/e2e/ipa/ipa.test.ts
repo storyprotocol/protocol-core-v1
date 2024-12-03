@@ -1,3 +1,5 @@
+// Test: IP Asset
+
 import "../setup"
 import { expect } from "chai"
 import { mintNFT } from "../utils/nftHelper"

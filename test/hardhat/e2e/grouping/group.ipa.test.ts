@@ -1,3 +1,5 @@
+// Test: Group IP Asset
+
 import "../setup"
 import { expect } from "chai"
 import { EvenSplitGroupPool } from "../constants"

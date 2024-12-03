@@ -1,3 +1,5 @@
+// This is the deployed protocol address constants file.
+
 export const AccessController = "0xf709c8001E94e2ca6F98b7fFBCd5BD3943E46D81";
 export const CoreMetadataModule = "0x89630Ccf23277417FBdfd3076C702F5248267e78";
 export const CoreMetadataViewModule = "0x6839De4A647eE2311bd765f615E09f7bd930ed25";
@@ -21,4 +23,6 @@ export const ProtocolPauseAdmin = "0x65C6Ec6Cc074eaf7ba3970C540b4379C9BcA8A67";
 export const RoyaltyModule = "0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B";
 export const RoyaltyPolicyLAP = "0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6";
 export const RoyaltyPolicyLRP = "0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd";
-export const MockERC721 = "0x7a23aad16b2ac6ad74f76990a814b0f82bec83b8";
+
+// Mock ERC721 contract address
+export const MockERC721 = process.env.DEVNET_ERC721 as string;

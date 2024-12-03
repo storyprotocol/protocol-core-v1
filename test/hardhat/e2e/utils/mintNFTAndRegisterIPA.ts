@@ -1,3 +1,5 @@
+// Purpose: Helper function to mint an NFT and register it as an IP Asset.
+
 import "../setup";
 import { mintNFT } from "./nftHelper";
 import { MockERC721, IPAssetRegistry } from "../constants";

@@ -1,3 +1,5 @@
+// Purpose: Helper function to mint a new NFT and return the tokenId
+
 import hre from "hardhat"
 import { MockERC721 } from "../constants";
 import { ethers } from "ethers";

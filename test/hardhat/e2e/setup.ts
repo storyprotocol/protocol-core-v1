@@ -1,3 +1,5 @@
+// This file is a root hook used to setup preconditions before running the tests.
+
 import hre from "hardhat";
 import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController } from "./constants";

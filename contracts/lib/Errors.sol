@@ -249,9 +249,6 @@ library Errors {
     /// @notice Provided license template does not match the IP's current license template.
     error LicenseRegistry__UnmatchedLicenseTemplate(address ipId, address licenseTemplate, address newLicenseTemplate);
 
-    /// @notice Provided license template and terms ID is a duplicate.
-    error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice Zero address provided for License Template.
     error LicenseRegistry__ZeroLicenseTemplate();
 

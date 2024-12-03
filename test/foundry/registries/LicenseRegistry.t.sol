@@ -409,8 +409,15 @@ contract LicenseRegistryTest is BaseTest {
         });
     }
 
-    function test_LicenseRegistry_registerDerivativeIp_revert_DuplicateLicense() public {
+    function test_LicenseRegistry_registerDerivativeIp_revert_DuplicateParents() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 10, address(royaltyPolicyLAP), address(erc20))
+        );
+
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
+
         vm.prank(ipOwner[1]);
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -427,14 +434,9 @@ contract LicenseRegistryTest is BaseTest {
         parentIpIds[1] = ipAcct[1];
         uint256[] memory licenseTermsIds = new uint256[](2);
         licenseTermsIds[0] = socialRemixTermsId;
-        licenseTermsIds[1] = socialRemixTermsId;
+        licenseTermsIds[1] = commRemixTermsId;
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__DuplicateLicense.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                socialRemixTermsId
-            )
+            abi.encodeWithSelector(Errors.LicenseRegistry__DuplicateParentIp.selector, ipAcct[2], ipAcct[1])
         );
         vm.prank(address(licensingModule));
         licenseRegistry.registerDerivativeIp({

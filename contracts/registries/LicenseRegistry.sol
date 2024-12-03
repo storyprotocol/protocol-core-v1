@@ -249,12 +249,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
                 isUsingLicenseToken
             );
             $.childIps[parentIpIds[i]].add(childIpId);
-            // determine if duplicate license terms
+            // determine if duplicate parent IP
             bool isNewParent = $.parentIps[childIpId].add(parentIpIds[i]);
-            bool isNewTerms = $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
-            if (!isNewParent && !isNewTerms) {
-                revert Errors.LicenseRegistry__DuplicateLicense(parentIpIds[i], licenseTemplate, licenseTermsIds[i]);
+            if (!isNewParent) {
+                revert Errors.LicenseRegistry__DuplicateParentIp(childIpId, parentIpIds[i]);
             }
+            $.attachedLicenseTerms[childIpId].add(licenseTermsIds[i]);
             // link child IP to parent IP with license terms
             $.parentLicenseTerms[childIpId][parentIpIds[i]] = licenseTermsIds[i];
         }

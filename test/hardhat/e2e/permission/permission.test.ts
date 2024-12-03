@@ -2,11 +2,10 @@ import "../setup"
 import { expect } from "chai"
 import { mintNFT } from "../utils/nftHelper"
 import hre from "hardhat";
+import { LicensingModule, MockERC721 } from "../constants";
 
 describe("Permission", function () {
   let signers:any;
-  const chainId: number = 1315;
-  const erc721ContractAddress: string = "0x7411143ef90b7744fc8233f01cce0b2c379651b3";
 
   this.beforeAll("Get Signers", async function () {
     // Get the signers
@@ -23,34 +22,34 @@ describe("Permission", function () {
     const DENY_permission = 2;
 
     const ipId = await expect(
-      connectedRegistry.register(chainId, erc721ContractAddress, tokenId)
+      connectedRegistry.register(this.chainId, MockERC721, tokenId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
     console.log("ipId:", ipId);
     expect(ipId).to.not.be.empty.and.to.be.a("HexString");
 
     const connecedAccessController = this.accessController.connect(signers[0]);
 
-    const permissionBefore = await connecedAccessController.getPermission(ipId, signers[0].address, this.licensingModule.target, func);
+    const permissionBefore = await connecedAccessController.getPermission(ipId, signers[0].address, LicensingModule, func);
     console.log("permissionBefore:", permissionBefore);
     expect(permissionBefore).to.equal(0);
 
     // add ALLOW permission
-    const result1 = await connecedAccessController.setPermission(ipId, signers[0].address, this.licensingModule.target, func, ALLOW_permission);
+    const result1 = await connecedAccessController.setPermission(ipId, signers[0].address, LicensingModule, func, ALLOW_permission);
     expect(result1.hash).to.not.be.empty.and.to.be.a("HexString");
     await result1.wait();
 
     // get the permission
-    const permissionAfter1 = await connecedAccessController.getPermission(ipId, signers[0].address, this.licensingModule.target, func);
+    const permissionAfter1 = await connecedAccessController.getPermission(ipId, signers[0].address, LicensingModule, func);
     console.log("permissionAfter:", permissionAfter1);
     expect(permissionAfter1).to.equal(ALLOW_permission);
 
     // Change to DENY permission
-    const result2 = await connecedAccessController.setPermission(ipId, signers[0].address, this.licensingModule.target, func, DENY_permission);
+    const result2 = await connecedAccessController.setPermission(ipId, signers[0].address, LicensingModule, func, DENY_permission);
     expect(result2.hash).to.not.be.empty.and.to.be.a("HexString");
     await result2.wait();
 
     // get the permission
-    const permissionAfter2 = await connecedAccessController.getPermission(ipId, signers[0].address, this.licensingModule.target, func);
+    const permissionAfter2 = await connecedAccessController.getPermission(ipId, signers[0].address, LicensingModule, func);
     console.log("permissionAfter:", permissionAfter2);
     expect(permissionAfter2).to.equal(DENY_permission);
   });

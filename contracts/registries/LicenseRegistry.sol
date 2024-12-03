@@ -445,7 +445,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIps(address)", childIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.LicenseRegistry__CallFailed();
         address[] memory parentIps = abi.decode(returnData, (address[]));
         if (index >= parentIps.length) {
             revert Errors.LicenseRegistry__IndexOutOfBounds(childIpId, index, parentIps.length);
@@ -457,7 +457,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.LicenseRegistry__CallFailed();
         return (abi.decode(returnData, (bool)));
     }
 
@@ -468,7 +468,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256));
     }
 
@@ -606,7 +606,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256)) > 0;
     }
 

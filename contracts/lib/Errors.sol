@@ -171,21 +171,6 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error LicenseRegistry__ZeroAccessManager();
 
-    /// @notice Zero address provided for IP Asset Registry.
-    error LicensingModule__ZeroRoyaltyModule();
-
-    /// @notice Zero address provided for Licensing Module.
-    error LicensingModule__ZeroLicenseRegistry();
-
-    /// @notice Zero address provided for Dispute Module.
-    error LicensingModule__ZeroDisputeModule();
-
-    /// @notice Zero address provided for License Token.
-    error LicensingModule__ZeroLicenseToken();
-
-    /// @notice Zero address provided for Module Registry.
-    error LicensingModule__ZeroModuleRegistry();
-
     /// @notice Zero address provided for Licensing Module.
     error LicenseRegistry__ZeroLicensingModule();
 
@@ -283,15 +268,9 @@ library Errors {
     /// @notice The IP has already linked to the same parent IP.
     error LicenseRegistry__DuplicateParentIp(address ipId, address parentIpId);
 
-    /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
-    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
+    /// @notice Call failed.
+    error LicenseRegistry__CallFailed();
 
-    /// @notice Current License does not allow to override royalty percentage.
-    error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
-        address licenseTemplate,
-        uint256 licenseTermsId,
-        uint32 newRoyaltyPercent
-    );
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -343,6 +322,21 @@ library Errors {
 
     /// @notice Mint amount is zero.
     error LicensingModule__MintAmountZero();
+
+        /// @notice Zero address provided for IP Asset Registry.
+    error LicensingModule__ZeroRoyaltyModule();
+
+    /// @notice Zero address provided for Licensing Module.
+    error LicensingModule__ZeroLicenseRegistry();
+
+    /// @notice Zero address provided for Dispute Module.
+    error LicensingModule__ZeroDisputeModule();
+
+    /// @notice Zero address provided for License Token.
+    error LicensingModule__ZeroLicenseToken();
+
+    /// @notice Zero address provided for Module Registry.
+    error LicensingModule__ZeroModuleRegistry();
 
     /// @notice minting a license for non-registered IP.
     error LicensingModule__LicensorIpNotRegistered();
@@ -398,6 +392,16 @@ library Errors {
 
     /// @notice license terms disabled.
     error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
+
+        /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
+    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
+
+    /// @notice Current License does not allow to override royalty percentage.
+    error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 newRoyaltyPercent
+    );
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
@@ -619,6 +623,9 @@ library Errors {
     /// @notice Invalid external royalty policy.
     error RoyaltyModule__InvalidExternalRoyaltyPolicy();
 
+    /// @notice Call failed.
+    error RoyaltyModule__CallFailed();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -656,6 +663,9 @@ library Errors {
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLAP__AboveMaxPercent();
 
+    /// @notice Call failed.
+    error RoyaltyPolicyLAP__CallFailed();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -680,6 +690,9 @@ library Errors {
 
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLRP__AboveMaxPercent();
+
+    /// @notice Call failed.
+    error RoyaltyPolicyLRP__CallFailed();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

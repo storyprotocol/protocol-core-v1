@@ -79,9 +79,6 @@ library Errors {
     /// @notice Zero address provided for Group Reward Pool.
     error GroupingModule__ZeroGroupRewardPool();
 
-    /// @notice The reward pool is invalid not support the required interfaces.
-    error GroupingModule__InvalidGroupRewardPool(address rewardPool);
-
     /// @notice Zero address provided for Royalty Module.
     error GroupingModule__ZeroRoyaltyModule();
 
@@ -118,17 +115,8 @@ library Errors {
     /// @notice The Group IP's license terms should not have minting fee.
     error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
 
-    /// @notice The caller to GroupingModule is not the Licensing Module.
-    error GroupingModule__CallerIsNotLicensingModule(address caller);
-
     /// @notice Cannot add group to group.
     error GroupingModule__CannotAddGroupToGroup(address groupId, address childGroupId);
-
-    /// @notice The Group IP has been frozen.
-    error GroupIPAssetRegistry__GroupFrozen(address groupId);
-
-    /// @notice The Group IP has not been frozen.
-    error GroupIPAssetRegistry__GroupNotFrozen(address groupId);
 
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
@@ -195,9 +183,6 @@ library Errors {
     /// @notice Caller is not the Licensing Module.
     error LicenseRegistry__CallerNotLicensingModule();
 
-    /// @notice Emitted when trying to transfer a license that is not transferable (by policy)
-    error LicenseRegistry__NotTransferable();
-
     /// @notice License Template is not registered in the License Registry.
     error LicenseRegistry__UnregisteredLicenseTemplate(address licenseTemplate);
 
@@ -221,9 +206,6 @@ library Errors {
 
     /// @notice Parent IP does not have the provided license terms attached.
     error LicenseRegistry__ParentIpHasNoLicenseTerms(address ipId, uint256 licenseTermsId);
-
-    /// @notice Empty Parent IP list provided.
-    error LicenseRegistry__NoParentIp();
 
     /// @notice Provided derivative IP already has license terms attached.
     error LicenseRegistry__DerivativeIpAlreadyHasLicense(address childIpId);
@@ -299,12 +281,6 @@ library Errors {
     /// @notice Zero address provided for Access Manager in initializer.
     error LicenseToken__ZeroAccessManager();
 
-    /// @notice Zero address provided for Licensing Module.
-    error LicenseToken__ZeroLicensingModule();
-
-    /// @notice Zero address provided for Dispute Module.
-    error LicenseToken__ZeroDisputeModule();
-
     /// @notice Caller is not the Licensing Module.
     error LicenseToken__CallerNotLicensingModule();
 
@@ -356,9 +332,6 @@ library Errors {
     /// @notice Derivative IP cannot add license terms.
     error LicensingModule__DerivativesCannotAddLicenseTerms();
 
-    /// @notice Receiver check failed.
-    error LicensingModule__ReceiverCheckFailed(address receiver);
-
     /// @notice IP list and license terms list length mismatch.
     error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);
 
@@ -389,9 +362,6 @@ library Errors {
 
     /// @notice The license terms ID is invalid or license template doesn't exist.
     error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
-
-    /// @notice Grouping Module is zero address.
-    error LicensingModule__ZeroGroupingModule();
 
     /// @notice licensing minting fee is above the maximum minting fee.
     error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
@@ -635,21 +605,6 @@ library Errors {
     /// @notice Caller is not the Royalty Module.
     error RoyaltyPolicyLAP__NotRoyaltyModule();
 
-    /// @notice IP is dispute tagged.
-    error RoyaltyPolicyLAP__IpTagged();
-
-    /// @notice IP is not allowed to claim revenue tokens.
-    error RoyaltyPolicyLAP__AlreadyClaimed();
-
-    /// @notice Claimer is not an ancestor of the IP.
-    error RoyaltyPolicyLAP__ClaimerNotAnAncestor();
-
-    /// @notice Not all revenue tokens have been claimed yet.
-    error RoyaltyPolicyLAP__NotAllRevenueTokensHaveBeenClaimed();
-
-    /// @notice There is no vault associated with the IP.
-    error RoyaltyPolicyLAP__InvalidTargetIpId();
-
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLAP__ZeroClaimableRoyalty();
 
@@ -887,10 +842,4 @@ library Errors {
 
     /// @notice Caller is not the GroupingModule.
     error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
-
-    /// @notice Unregistered currency token.
-    error EvenSplitGroupPool__UnregisteredCurrencyToken(address currencyToken);
-
-    /// @notice Unregistered group IP.
-    error EvenSplitGroupPool__UnregisteredGroupIP(address groupId);
 }

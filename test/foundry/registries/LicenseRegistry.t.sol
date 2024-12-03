@@ -411,12 +411,9 @@ contract LicenseRegistryTest is BaseTest {
 
     function test_LicenseRegistry_registerDerivativeIp_revert_DuplicateParents() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.commercialRemix(
-            0,
-            10,
-            address(royaltyPolicyLAP),
-            address(erc20)
-        ));
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 10, address(royaltyPolicyLAP), address(erc20))
+        );
 
         vm.prank(ipOwner[1]);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
@@ -439,11 +436,7 @@ contract LicenseRegistryTest is BaseTest {
         licenseTermsIds[0] = socialRemixTermsId;
         licenseTermsIds[1] = commRemixTermsId;
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__DuplicateParentIp.selector,
-                ipAcct[2],
-                ipAcct[1]
-            )
+            abi.encodeWithSelector(Errors.LicenseRegistry__DuplicateParentIp.selector, ipAcct[2], ipAcct[1])
         );
         vm.prank(address(licensingModule));
         licenseRegistry.registerDerivativeIp({

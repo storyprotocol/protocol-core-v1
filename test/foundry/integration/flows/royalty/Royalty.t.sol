@@ -89,11 +89,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ipAcct[2] = registerIpAccount(address(mockNFT), 2, u.bob);
 
             vm.expectRevert(
-                abi.encodeWithSelector(
-                    Errors.LicenseRegistry__DuplicateParentIp.selector,
-                    ipAcct[2],
-                    ipAcct[1]
-                )
+                abi.encodeWithSelector(Errors.LicenseRegistry__DuplicateParentIp.selector, ipAcct[2], ipAcct[1])
             );
             licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);
 

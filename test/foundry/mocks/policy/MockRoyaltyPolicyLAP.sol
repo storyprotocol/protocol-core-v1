@@ -44,7 +44,7 @@ contract MockRoyaltyPolicyLAP is IGraphAwareRoyaltyPolicy {
     function revenueTokenBalances(address ipId, address token) external view returns (uint256) {}
     function snapshotsClaimed(address ipId, address token, uint256 snapshot) external view returns (bool) {}
     function snapshotsClaimedCounter(address ipId, address token) external view returns (uint256) {}
-    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external {}
+    function transferToVault(address ipId, address ancestorIpId, address token) external returns (uint256) {}
     function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {}
     function getAncestorPercent(address ipId, address ancestorIpId) external view returns (uint32) {}
     function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {}

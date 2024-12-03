@@ -47,14 +47,14 @@ contract DisputeModule is
         uint256 disputeCounter;
         uint256 arbitrationPolicyCooldown;
         address baseArbitrationPolicy;
-        mapping(uint256 => Dispute) disputes;
-        mapping(bytes32 => bool) isWhitelistedDisputeTag;
-        mapping(address => bool) isWhitelistedArbitrationPolicy;
-        mapping(address => mapping(address => bool)) isWhitelistedArbitrationRelayer;
-        mapping(address => address) arbitrationPolicies;
-        mapping(address => address) nextArbitrationPolicies;
-        mapping(address => uint256) nextArbitrationUpdateTimestamps;
-        mapping(address => uint256) successfulDisputesPerIp;
+        mapping(uint256 disputeId => Dispute) disputes;
+        mapping(bytes32 tag => bool) isWhitelistedDisputeTag;
+        mapping(address arbitrationPolicy => bool) isWhitelistedArbitrationPolicy;
+        mapping(address arbitrationPolicy => mapping(address relayer => bool)) isWhitelistedArbitrationRelayer;
+        mapping(address ipId => address) arbitrationPolicies;
+        mapping(address ipId => address) nextArbitrationPolicies;
+        mapping(address ipId => uint256) nextArbitrationUpdateTimestamps;
+        mapping(address ipId => uint256) successfulDisputesPerIp;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.DisputeModule")) - 1)) & ~bytes32(uint256(0xff));

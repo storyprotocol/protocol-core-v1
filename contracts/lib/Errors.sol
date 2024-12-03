@@ -249,9 +249,6 @@ library Errors {
     /// @notice Provided license template does not match the IP's current license template.
     error LicenseRegistry__UnmatchedLicenseTemplate(address ipId, address licenseTemplate, address newLicenseTemplate);
 
-    /// @notice Provided license template and terms ID is a duplicate.
-    error LicenseRegistry__DuplicateLicense(address ipId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice Zero address provided for License Template.
     error LicenseRegistry__ZeroLicenseTemplate();
 
@@ -282,6 +279,9 @@ library Errors {
 
     /// @notice The IP has no attached the same license terms of Group IPA.
     error LicenseRegistry__IpHasNoGroupLicenseTerms(address groupId, address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice The IP has already linked to the same parent IP.
+    error LicenseRegistry__DuplicateParentIp(address ipId, address parentIpId);
 
     /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
     error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
@@ -653,14 +653,8 @@ library Errors {
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLAP__ZeroClaimableRoyalty();
 
-    /// @notice Amount exceeds the claimable royalty.
-    error RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
-
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLAP__AboveMaxPercent();
-
-    /// @notice Zero amount provided.
-    error RoyaltyPolicyLAP__ZeroAmount();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
@@ -684,14 +678,8 @@ library Errors {
     /// @notice Zero claimable royalty.
     error RoyaltyPolicyLRP__ZeroClaimableRoyalty();
 
-    /// @notice Claimer is not an ancestor of the IP.
-    error RoyaltyPolicyLRP__ExceedsClaimableRoyalty();
-
     /// @notice Above maximum percentage.
     error RoyaltyPolicyLRP__AboveMaxPercent();
-
-    /// @notice Zero amount provided.
-    error RoyaltyPolicyLRP__ZeroAmount();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

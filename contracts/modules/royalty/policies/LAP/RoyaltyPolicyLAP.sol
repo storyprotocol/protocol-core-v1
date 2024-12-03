@@ -5,6 +5,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IGraphAwareRoyaltyPolicy } from "../../../../interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
@@ -124,11 +125,13 @@ contract RoyaltyPolicyLAP is
     /// @param ipId The ipId of the IP asset
     /// @param ancestorIpId The ancestor ipId of the IP asset
     /// @param token The token address to transfer
-    /// @param amount The amount of tokens to transfer
-    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external whenNotPaused {
+    /// @return The amount of revenue tokens transferred
+    function transferToVault(
+        address ipId,
+        address ancestorIpId,
+        address token
+    ) external whenNotPaused returns (uint256) {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
-
-        if (amount == 0) revert Errors.RoyaltyPolicyLAP__ZeroAmount();
 
         uint32 ancestorPercent = $.ancestorPercentLAP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {
@@ -138,21 +141,21 @@ contract RoyaltyPolicyLAP is
             $.ancestorPercentLAP[ipId][ancestorIpId] = ancestorPercent;
         }
 
-        // check if the amount being claimed is within the claimable royalty amount
+        // calculate the amount to transfer
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
         uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
         uint256 transferredAmount = $.transferredTokenLAP[ipId][ancestorIpId][token];
-        if (transferredAmount + amount > maxAmount) revert Errors.RoyaltyPolicyLAP__ExceedsClaimableRoyalty();
+        uint256 amountToTransfer = Math.min(maxAmount - transferredAmount, IERC20(token).balanceOf(address(this)));
 
+        // make the revenue token transfer
+        $.transferredTokenLAP[ipId][ancestorIpId][token] += amountToTransfer;
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
+        IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amountToTransfer);
+        IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amountToTransfer);
 
-        $.transferredTokenLAP[ipId][ancestorIpId][token] += amount;
-
-        IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amount);
-        IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amount);
-
-        emit RevenueTransferredToVault(ipId, ancestorIpId, token, amount);
+        emit RevenueTransferredToVault(ipId, ancestorIpId, token, amountToTransfer);
+        return amountToTransfer;
     }
 
     /// @notice Returns the amount of royalty tokens required to link a child to a given IP asset

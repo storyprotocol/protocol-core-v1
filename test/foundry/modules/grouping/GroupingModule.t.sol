@@ -274,7 +274,7 @@ contract GroupingModuleTest is BaseTest {
         erc20.approve(address(royaltyModule), 1000);
         royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
         vm.stopPrank();
-        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20), 100);
+        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20));
         vm.warp(vm.getBlockTimestamp() + 7 days);
 
         vm.expectEmit();

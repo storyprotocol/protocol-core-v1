@@ -89,12 +89,7 @@ contract Flows_Integration_Disputes is BaseIntegration {
             ipAcct[2] = registerIpAccount(address(mockNFT), 2, u.bob);
 
             vm.expectRevert(
-                abi.encodeWithSelector(
-                    Errors.LicenseRegistry__DuplicateLicense.selector,
-                    ipAcct[1],
-                    address(pilTemplate),
-                    commRemixTermsId
-                )
+                abi.encodeWithSelector(Errors.LicenseRegistry__DuplicateParentIp.selector, ipAcct[2], ipAcct[1])
             );
             licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);
 
@@ -187,18 +182,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             uint256 earningsFromMintingFees = 4 * mintingFee;
             assertEq(mockToken.balanceOf(vault), earningsFromMintingFees);
 
-            royaltyPolicyLAP.transferToVault(
-                ipAcct[2],
-                ipAcct[1],
-                address(mockToken),
-                (1 ether * 10_000_000) / royaltyModule.maxPercent()
-            );
-            royaltyPolicyLAP.transferToVault(
-                ipAcct[3],
-                ipAcct[1],
-                address(mockToken),
-                (1 ether * 20_000_000) / royaltyModule.maxPercent()
-            );
+            royaltyPolicyLAP.transferToVault(ipAcct[2], ipAcct[1], address(mockToken));
+            royaltyPolicyLAP.transferToVault(ipAcct[3], ipAcct[1], address(mockToken));
 
             vm.warp(block.timestamp + 7 days + 1);
 
@@ -210,7 +195,11 @@ contract Flows_Integration_Disputes is BaseIntegration {
 
             assertEq(
                 aliceBalanceAfter - aliceBalanceBefore,
-                earningsFromMintingFees + (1 ether * (10_000_000 + 20_000_000)) / royaltyModule.maxPercent()
+                earningsFromMintingFees +
+                    (1 ether * 20_000_000) /
+                    royaltyModule.maxPercent() + // 20% of the 1 ether payment made to IPAccount3
+                    (mintingFee * 10_000_000) /
+                    royaltyModule.maxPercent() // 10% of the 7 ether mintingFee IPAaccount2 received
             );
         }
 

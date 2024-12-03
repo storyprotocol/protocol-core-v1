@@ -16,8 +16,8 @@ interface IGraphAwareRoyaltyPolicy is IRoyaltyPolicy {
     /// @param ipId The ipId of the IP asset
     /// @param ancestorIpId The ancestor ipId of the IP asset
     /// @param token The token address to transfer
-    /// @param amount The amount of tokens to transfer
-    function transferToVault(address ipId, address ancestorIpId, address token, uint256 amount) external;
+    /// @return The amount of revenue tokens transferred
+    function transferToVault(address ipId, address ancestorIpId, address token) external returns (uint256);
 
     /// @notice Returns the royalty percentage between an IP asset and a given ancestor
     /// @param ipId The ipId to get the royalty for

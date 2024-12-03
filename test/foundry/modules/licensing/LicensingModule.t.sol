@@ -1819,8 +1819,8 @@ contract LicensingModuleTest is BaseTest {
         vm.startPrank(ipOwner3);
         erc20.approve(address(royaltyModule), 1000);
         royaltyModule.payRoyaltyOnBehalf(ipId3, address(0), address(erc20), 1000);
-        royaltyPolicyLAP.transferToVault(ipId3, ipId2, address(erc20), 100);
-        royaltyPolicyLAP.transferToVault(ipId3, ipId1, address(erc20), 10);
+        royaltyPolicyLAP.transferToVault(ipId3, ipId2, address(erc20));
+        royaltyPolicyLAP.transferToVault(ipId3, ipId1, address(erc20));
         vm.stopPrank();
         assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId2)), 100);
         assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 10);

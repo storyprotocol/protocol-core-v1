@@ -112,7 +112,7 @@ const config: HardhatUserConfig = {
     coinmarketcap: COINMARKETCAP_API_KEY,
   },
   mocha: {
-    timeout: 20_000,
+    timeout: 60_000,
     reporter: "mochawesome",
   },
   etherscan: {

@@ -4,7 +4,7 @@ import { mintNFT } from "../utils/nftHelper"
 import hre from "hardhat";
 import { MockERC721 } from "../constants";
 
-describe.only("IP Asset", function () {
+describe("IP Asset", function () {
   let signers:any;
 
   this.beforeAll("Get Signers", async function () {
@@ -13,7 +13,7 @@ describe.only("IP Asset", function () {
   })
 
   it("NFT owner register IP Asset with an NFT token", async function () {
-    const tokenId = await mintNFT(signers[0].address);
+    const tokenId = await mintNFT(signers[0]);
     const connectedRegistry = this.ipAssetRegistry.connect(signers[0]);
 
     const ipId = await expect(
@@ -31,7 +31,7 @@ describe.only("IP Asset", function () {
   });
 
   it("Non-NFT owner register IP asset with an NFT token", async function () {
-    const tokenId = await mintNFT(signers[0].address);
+    const tokenId = await mintNFT(signers[0]);
     const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
 
     const ipId = await expect(
@@ -49,7 +49,7 @@ describe.only("IP Asset", function () {
   });
 
   it("Register IP asset, the caller doesn’t have enough IP token", async function () {
-    const tokenId = await mintNFT(signers[0].address);
+    const tokenId = await mintNFT(signers[0]);
 
     // generate random wallet
     const randomWallet = hre.ethers.Wallet.createRandom();

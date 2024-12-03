@@ -1,7 +1,6 @@
 import hre from "hardhat";
 import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController } from "./constants";
-import { expect } from "chai";
 import { terms } from "./licenseTermsTemplate";
 
 before(async function () {
@@ -22,58 +21,29 @@ before(async function () {
   this.chainId = networkConfig.chainId;
   console.log("chainId: ", this.chainId);
 
-  it("Register non-commercial PIL license terms", async function () {
-    console.log(`================= Register non-commercial PIL license terms =================`);
-    const tx = await expect(
-      this.licenseTemplate.registerLicenseTerms(terms)
-    ).to.not.be.rejectedWith(Error);
-    await tx.wait();
-    
-    console.log("Transaction hash: ", tx.hash);
-    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
-
-    this.nonCommericialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
-    console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
-  });
+  console.log(`================= Register non-commercial PIL license terms =================`);
+  await this.licenseTemplate.registerLicenseTerms(terms);
+  this.nonCommericialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
+  console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
   
-  it("Register commercial use PIL license terms", async function () {
-    console.log(`================= Register commercial-use PIL license terms =================`);
-    const testTerms = terms;
-    testTerms.royaltyPolicy = RoyaltyPolicyLAP;
-    testTerms.defaultMintingFee = 10;
-    testTerms.commercialUse = true;
-    testTerms.currency = MockERC20;
+  console.log(`================= Register commercial-use PIL license terms =================`);
+  let testTerms = terms;
+  testTerms.royaltyPolicy = RoyaltyPolicyLAP;
+  testTerms.defaultMintingFee = 30;
+  testTerms.commercialUse = true;
+  testTerms.currency = MockERC20;
+  await this.licenseTemplate.registerLicenseTerms(testTerms);
+  this.commericialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
 
-    const tx = await expect(
-      this.licenseTemplate.registerLicenseTerms(testTerms)
-    ).to.not.be.rejectedWith(Error);
-    await tx.wait();
-    
-    console.log("Transaction hash: ", tx.hash);
-    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
-
-    this.commericialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-    console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
-  });
-  
-  it("Register commercial remix PIL license terms", async function () {
-    console.log(`================= Register commercial-remix PIL license terms =================`);
-    const testTerms = terms;
-    testTerms.royaltyPolicy = RoyaltyPolicyLRP;
-    testTerms.defaultMintingFee = 80;
-    testTerms.commercialUse = true;
-    testTerms.commercialRevShare = 100;
-    testTerms.currency = MockERC20;
-
-    const tx = await expect(
-      this.licenseTemplate.registerLicenseTerms(testTerms)
-    ).to.not.be.rejectedWith(Error);
-    await tx.wait();
-    
-    console.log("Transaction hash: ", tx.hash);
-    expect(tx.hash).not.to.be.empty.and.to.be.a("HexString");
-
-    this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-    console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
-  });
+  console.log(`================= Register commercial-remix PIL license terms =================`);
+  testTerms = terms;
+  testTerms.royaltyPolicy = RoyaltyPolicyLRP;
+  testTerms.defaultMintingFee = 80;
+  testTerms.commercialUse = true;
+  testTerms.commercialRevShare = 100;
+  testTerms.currency = MockERC20;
+  await this.licenseTemplate.registerLicenseTerms(testTerms);
+  this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
 });

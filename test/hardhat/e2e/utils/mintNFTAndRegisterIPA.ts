@@ -6,17 +6,18 @@ import hre from "hardhat";
 import { network } from "hardhat";
 import { HexString } from "ethers/lib.commonjs/utils/data";
 
-export async function mintNFTAndRegisterIPA(mintNFTSigner: any, registerIPASigner: any): Promise<{ tokenId: number; ipId: HexString }> {
-    const ipAssetRegistry = await hre.ethers.getContractAt("IPAssetRegistry", IPAssetRegistry);
+export async function mintNFTAndRegisterIPA(mintNFTSigner?: any, registerIPASigner?: any): Promise<{ tokenId: number; ipId: HexString }> {
     const networkConfig = network.config;
     const chainId = networkConfig.chainId;
 
-    const tokenId = await mintNFT(mintNFTSigner.address);
-    const connectedRegistry = ipAssetRegistry.connect(registerIPASigner);
+    const tokenId = await mintNFT(mintNFTSigner);
+
+    const signer = registerIPASigner || (await hre.ethers.getSigners())[0];
+    const ipAssetRegistry = await hre.ethers.getContractAt("IPAssetRegistry", IPAssetRegistry, signer);
 
     // Register the IP Asset
     const ipId = await expect(
-        connectedRegistry.register(chainId, MockERC721, tokenId)
+        ipAssetRegistry.register(chainId, MockERC721, tokenId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
 
     console.log("ipId:", ipId);
@@ -25,7 +26,7 @@ export async function mintNFTAndRegisterIPA(mintNFTSigner: any, registerIPASigne
 
     // Check if the IP Asset is registered
     const isRegistered = await expect(
-        connectedRegistry.isRegistered(ipId)
+        ipAssetRegistry.isRegistered(ipId)
     ).not.to.be.rejectedWith(Error);
 
     expect(isRegistered).to.equal(true);

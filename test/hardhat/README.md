@@ -24,3 +24,9 @@ Then, at project root run the tests with command:
 ```sh
 npx hardhat test --network odyssey
 ```
+
+You can specify the file path if you want to run test on a specific file:
+
+```sh
+npx hardhat test [file-path] --network odyssey
+```

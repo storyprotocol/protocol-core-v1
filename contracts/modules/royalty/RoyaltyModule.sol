@@ -691,7 +691,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (uint256));
     }
 
@@ -703,7 +703,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (bool));
     }
 

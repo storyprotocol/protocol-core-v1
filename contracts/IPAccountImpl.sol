@@ -210,7 +210,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         uint256 value,
         bytes calldata data
     ) internal returns (bytes memory result) {
-        require(isValidSigner(signer, to, data), "Invalid signer");
+        if (!isValidSigner(signer, to, data)) revert Errors.IPAccount__InvalidSigner();
 
         bool success;
         (success, result) = to.call{ value: value }(data);

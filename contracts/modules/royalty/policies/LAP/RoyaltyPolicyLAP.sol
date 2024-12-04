@@ -197,7 +197,7 @@ contract RoyaltyPolicyLAP is
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyaltyStack(address,uint256)", ipId, uint256(0))
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.RoyaltyPolicyLAP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }
 
@@ -215,7 +215,7 @@ contract RoyaltyPolicyLAP is
                 uint256(royalty)
             )
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.RoyaltyPolicyLAP__CallFailed();
     }
 
     /// @notice Returns the royalty percentage between an IP asset and its ancestor via royalty policy LAP
@@ -226,7 +226,7 @@ contract RoyaltyPolicyLAP is
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyalty(address,address,uint256)", ipId, ancestorIpId, uint256(0))
         );
-        require(success, "Call failed");
+        if (!success) revert Errors.RoyaltyPolicyLAP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }
 

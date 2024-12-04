@@ -12,6 +12,7 @@ import { HardhatConfig, HardhatUserConfig } from "hardhat/types"
 import "hardhat-contract-sizer" // npx hardhat size-contracts
 import "solidity-coverage"
 import "solidity-docgen"
+import "@nomicfoundation/hardhat-chai-matchers"
 
 require("dotenv").config()
 
@@ -30,6 +31,11 @@ const USE_TENDERLY = process.env.USE_TENDERLY === "true"
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
 
+const DEVNET_URL = process.env.DEVNET_URL || "http://"
+const DEVNET_CHAINID = Number(process.env.DEVNET_CHAINID) || 1513
+const DEVNET_PRIVATEKEY = process.env.DEVNET_PRIVATEKEY || "0xkey"
+const DEVNET_USER1 = process.env.DEVNET_USER1 || "0xkey"
+
 if (USE_TENDERLY) {
   tdly.setup({
     automaticVerifications: true,
@@ -41,7 +47,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.23",
+        version: "0.8.26",
       },
     ],
     settings: {
@@ -61,6 +67,11 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 31337,
+    },
+    odyssey: {
+      chainId: DEVNET_CHAINID,
+      url: DEVNET_URL,
+      accounts: [DEVNET_PRIVATEKEY, DEVNET_USER1],
     },
     localhost: {
       chainId: 31337,
@@ -101,7 +112,8 @@ const config: HardhatUserConfig = {
     coinmarketcap: COINMARKETCAP_API_KEY,
   },
   mocha: {
-    timeout: 20_000,
+    timeout: 60_000,
+    reporter: "mochawesome",
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,

@@ -11,15 +11,15 @@ Please install the following:
 
 ## Quickstart
 
-Install the dependencies:
+Install the dependencies: run yarn command at project root. If you encounter any issues, try to remove node-modules and yarn.lock then run yarn again.
 
 ```sh
 yarn # this installs packages
 ```
 
-You'll need to add the variables refer to the .env.example to a .env file
+You'll need to add the variables refer to the .env.example to a .env file at project root.
 
-Then, run the tests with:
+Then, at project root run the tests with command:
 
 ```sh
 npx hardhat test --network odyssey

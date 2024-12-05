@@ -16,7 +16,7 @@ The test suite should run automatically for every change in the repository, and 
 
 The test suite coverage must be kept as close to 100% as possible, enforced in pull requests.
 
-Test should use Foundry, unless for some reason js or hardhat are needed (for example, upgrades).
+Tests should use Foundry, unless for some reason js or hardhat are needed (for example, upgrades).
 
 The test function names will follow
 
@@ -29,9 +29,18 @@ In some cases unit tests may be insufficient and complementary techniques should
 
 1. Property-based tests (aka. fuzzing) for math-heavy code.
 2. hardhat test using `hardhat-upgrades` OZ plugin to verify storage and upgradeability (until they support Foundry).
-3. Fork tests for upgreadeability to new implementations for upgradeable contracts, testing against the deployed contracts.
+3. Fork tests for upgradeability to new implementations for upgradeable contracts, testing against the deployed contracts.
 4. E2E tests for critical (happy) paths.
 5. Formal verification for state machines.
+
+## Security Testing
+
+Critical security aspects that must be tested:
+- Access control and permission systems
+- Token economics and balance accounting
+- Upgrade mechanisms and storage layouts
+- External contract interactions and reentrancy guards
+- Event emission for state changes
 
 ## Documentation
 
@@ -57,7 +66,7 @@ External contributions must be reviewed separately by multiple maintainers.
 
 Automation should be used as much as possible to reduce the possibility of human error and forgetfulness.
 
-Automations that make use of sensitive credentials must use secure secret management, and must be strengthened against attacks such as [those on GitHub Actions worklows](https://github.com/nikitastupin/pwnhub).
+Automations that make use of sensitive credentials must use secure secret management, and must be strengthened against attacks such as [those on GitHub Actions workflows](https://github.com/nikitastupin/pwnhub).
 
 Some other examples of automation are:
 
@@ -149,7 +158,7 @@ In addition to the official Solidity Style Guide we have a number of other conve
 
 * Unchecked arithmetic blocks should contain comments explaining why overflow is guaranteed not to happen. If the reason is immediately apparent from the line above the unchecked block, the comment may be omitted.
 
-* Interfaces should contain methods an events. Structs showing in an interface should be grouped in a library
+* Interfaces should contain methods and events. Structs showing in an interface should be grouped in a library
 
 * Function parameter names will have the **suffix** `_`
   

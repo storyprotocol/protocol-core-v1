@@ -33,11 +33,10 @@ interface IDisputeModule {
     /// @param allowed Indicates if the arbitration policy is whitelisted
     event ArbitrationPolicyWhitelistUpdated(address arbitrationPolicy, bool allowed);
 
-    /// @notice Event emitted when an arbitration relayer whitelist status is updated
+    /// @notice Event emitted when an arbitration relayer address is updated
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param arbitrationRelayer The address of the arbitration relayer
-    /// @param allowed Indicates if the arbitration relayer is whitelisted
-    event ArbitrationRelayerWhitelistUpdated(address arbitrationPolicy, address arbitrationRelayer, bool allowed);
+    event ArbitrationRelayerUpdated(address arbitrationPolicy, address arbitrationRelayer);
 
     /// @notice Event emitted when the base arbitration policy is set
     /// @param arbitrationPolicy The address of the arbitration policy
@@ -145,14 +144,10 @@ interface IDisputeModule {
     /// @return allowed Indicates if the arbitration policy is whitelisted
     function isWhitelistedArbitrationPolicy(address arbitrationPolicy) external view returns (bool allowed);
 
-    /// @notice Indicates if an arbitration relayer is whitelisted for a given arbitration policy
+    /// @notice Returns the arbitration relayer for a given arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
-    /// @param arbitrationRelayer The address of the arbitration relayer
-    /// @return allowed Indicates if the arbitration relayer is whitelisted
-    function isWhitelistedArbitrationRelayer(
-        address arbitrationPolicy,
-        address arbitrationRelayer
-    ) external view returns (bool allowed);
+    /// @return arbitrationRelayer The address of the arbitration relayer
+    function arbitrationRelayer(address arbitrationPolicy) external view returns (address arbitrationRelayer);
 
     /// @notice Arbitration policy for a given ipId
     /// @param ipId The ipId
@@ -169,11 +164,10 @@ interface IDisputeModule {
     /// @param allowed Indicates if the arbitration policy is whitelisted or not
     function whitelistArbitrationPolicy(address arbitrationPolicy, bool allowed) external;
 
-    /// @notice Whitelists an arbitration relayer for a given arbitration policy
+    /// @notice Sets the arbitration relayer for a given arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param arbPolicyRelayer The address of the arbitration relayer
-    /// @param allowed Indicates if the arbitration relayer is whitelisted or not
-    function whitelistArbitrationRelayer(address arbitrationPolicy, address arbPolicyRelayer, bool allowed) external;
+    function setArbitrationRelayer(address arbitrationPolicy, address arbPolicyRelayer) external;
 
     /// @notice Sets the base arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy

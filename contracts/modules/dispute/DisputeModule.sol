@@ -36,8 +36,7 @@ contract DisputeModule is
     /// @param disputes Returns the dispute information for a given dispute id
     /// @param isWhitelistedDisputeTag Indicates if a dispute tag is whitelisted
     /// @param isWhitelistedArbitrationPolicy Indicates if an arbitration policy is whitelisted
-    /// @param isWhitelistedArbitrationRelayer Indicates if an arbitration relayer
-    /// is whitelisted for a given arbitration policy
+    /// @param arbitrationRelayer The arbitration relayer address for a given arbitration policy
     /// @param arbitrationPolicies Arbitration policy for a given ipId
     /// @param nextArbitrationPolicies Next arbitration policy for a given ipId
     /// @param arbitrationUpdateTimestamps Timestamp of when the arbitration policy will be updated for a given ipId
@@ -50,7 +49,7 @@ contract DisputeModule is
         mapping(uint256 disputeId => Dispute) disputes;
         mapping(bytes32 tag => bool) isWhitelistedDisputeTag;
         mapping(address arbitrationPolicy => bool) isWhitelistedArbitrationPolicy;
-        mapping(address arbitrationPolicy => mapping(address relayer => bool)) isWhitelistedArbitrationRelayer;
+        mapping(address arbitrationPolicy => address relayer) arbitrationRelayer;
         mapping(address ipId => address) arbitrationPolicies;
         mapping(address ipId => address) nextArbitrationPolicies;
         mapping(address ipId => uint256) nextArbitrationUpdateTimestamps;
@@ -125,22 +124,16 @@ contract DisputeModule is
         emit ArbitrationPolicyWhitelistUpdated(arbitrationPolicy, allowed);
     }
 
-    /// @notice Whitelists an arbitration relayer for a given arbitration policy
+    /// @notice Sets the arbitration relayer for a given arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
     /// @param arbPolicyRelayer The address of the arbitration relayer
-    /// @param allowed Indicates if the arbitration relayer is whitelisted or not
-    function whitelistArbitrationRelayer(
-        address arbitrationPolicy,
-        address arbPolicyRelayer,
-        bool allowed
-    ) external restricted {
+    function setArbitrationRelayer(address arbitrationPolicy, address arbPolicyRelayer) external restricted {
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
-        if (arbPolicyRelayer == address(0)) revert Errors.DisputeModule__ZeroArbitrationRelayer();
 
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        $.isWhitelistedArbitrationRelayer[arbitrationPolicy][arbPolicyRelayer] = allowed;
+        $.arbitrationRelayer[arbitrationPolicy] = arbPolicyRelayer;
 
-        emit ArbitrationRelayerWhitelistUpdated(arbitrationPolicy, arbPolicyRelayer, allowed);
+        emit ArbitrationRelayerUpdated(arbitrationPolicy, arbPolicyRelayer);
     }
 
     /// @notice Sets the base arbitration policy
@@ -247,9 +240,8 @@ contract DisputeModule is
         Dispute memory dispute = $.disputes[disputeId];
 
         if (dispute.currentTag != IN_DISPUTE) revert Errors.DisputeModule__NotInDisputeState();
-        if (!$.isWhitelistedArbitrationRelayer[dispute.arbitrationPolicy][msg.sender]) {
-            revert Errors.DisputeModule__NotWhitelistedArbitrationRelayer();
-        }
+        if ($.arbitrationRelayer[dispute.arbitrationPolicy] != msg.sender)
+            revert Errors.DisputeModule__NotArbitrationRelayer();
 
         if (decision) {
             $.disputes[disputeId].currentTag = dispute.targetTag;
@@ -434,14 +426,10 @@ contract DisputeModule is
         return _getDisputeModuleStorage().isWhitelistedArbitrationPolicy[arbitrationPolicy];
     }
 
-    /// @notice Indicates if an arbitration relayer is whitelisted for a given arbitration policy
+    /// @notice Returns the arbitration relayer for a given arbitration policy
     /// @param arbitrationPolicy The address of the arbitration policy
-    /// @param arbitrationRelayer The address of the arbitration relayer
-    function isWhitelistedArbitrationRelayer(
-        address arbitrationPolicy,
-        address arbitrationRelayer
-    ) external view returns (bool allowed) {
-        return _getDisputeModuleStorage().isWhitelistedArbitrationRelayer[arbitrationPolicy][arbitrationRelayer];
+    function arbitrationRelayer(address arbitrationPolicy) external view returns (address) {
+        return _getDisputeModuleStorage().arbitrationRelayer[arbitrationPolicy];
     }
 
     /// @notice Returns the arbitration policy for a given ipId

@@ -757,7 +757,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistDisputeTag("IMPROPER_PAYMENT", true);
         disputeModule.whitelistDisputeTag("CONTENT_STANDARDS_VIOLATION", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
+        disputeModule.setArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA));
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
         arbitrationPolicyUMA.setOOV3(address(oov3));
         arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);

@@ -16,7 +16,7 @@ import { MockArbitrationPolicy } from "test/foundry/mocks/dispute/MockArbitratio
 contract DisputeModuleTest is BaseTest {
     event TagWhitelistUpdated(bytes32 tag, bool allowed);
     event ArbitrationPolicyWhitelistUpdated(address arbitrationPolicy, bool allowed);
-    event ArbitrationRelayerWhitelistUpdated(address arbitrationPolicy, address arbitrationRelayer, bool allowed);
+    event ArbitrationRelayerUpdated(address arbitrationPolicy, address arbitrationRelayer);
     event DisputeRaised(
         uint256 disputeId,
         address targetIpId,
@@ -156,26 +156,20 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.isWhitelistedArbitrationPolicy(address(1)), true);
     }
 
-    function test_DisputeModule_whitelistArbitrationRelayer_revert_ZeroArbitrationPolicy() public {
+    function test_DisputeModule_setArbitrationRelayer_revert_ZeroArbitrationPolicy() public {
         vm.startPrank(u.admin);
         vm.expectRevert(Errors.DisputeModule__ZeroArbitrationPolicy.selector);
-        disputeModule.whitelistArbitrationRelayer(address(0), arbitrationRelayer, true);
+        disputeModule.setArbitrationRelayer(address(0), arbitrationRelayer);
     }
 
-    function test_DisputeModule_whitelistArbitrationRelayer_revert_ZeroArbitrationRelayer() public {
-        vm.startPrank(u.admin);
-        vm.expectRevert(Errors.DisputeModule__ZeroArbitrationRelayer.selector);
-        disputeModule.whitelistArbitrationRelayer(address(mockArbitrationPolicy), address(0), true);
-    }
-
-    function test_DisputeModule_whitelistArbitrationRelayer() public {
+    function test_DisputeModule_setArbitrationRelayer() public {
         vm.startPrank(u.admin);
         vm.expectEmit(true, true, true, true, address(disputeModule));
-        emit ArbitrationRelayerWhitelistUpdated(address(mockArbitrationPolicy), address(1), true);
+        emit ArbitrationRelayerUpdated(address(mockArbitrationPolicy), address(1));
 
-        disputeModule.whitelistArbitrationRelayer(address(mockArbitrationPolicy), address(1), true);
+        disputeModule.setArbitrationRelayer(address(mockArbitrationPolicy), address(1));
 
-        assertEq(disputeModule.isWhitelistedArbitrationRelayer(address(mockArbitrationPolicy), address(1)), true);
+        assertEq(disputeModule.arbitrationRelayer(address(mockArbitrationPolicy)), address(1));
     }
 
     function test_DisputeModule_setBaseArbitrationPolicy_revert_NotWhitelistedArbitrationPolicy() public {
@@ -414,7 +408,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
-        vm.expectRevert(Errors.DisputeModule__NotWhitelistedArbitrationRelayer.selector);
+        vm.expectRevert(Errors.DisputeModule__NotArbitrationRelayer.selector);
         disputeModule.setDisputeJudgement(1, true, "");
     }
 

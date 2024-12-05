@@ -107,7 +107,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
         mockArbitrationPolicy = new MockArbitrationPolicy(address(disputeModule), address(USDC), ARBITRATION_PRICE);
         vm.startPrank(u.admin);
         disputeModule.whitelistArbitrationPolicy(address(mockArbitrationPolicy), true);
-        disputeModule.whitelistArbitrationRelayer(address(mockArbitrationPolicy), address(u.relayer), true);
+        disputeModule.setArbitrationRelayer(address(mockArbitrationPolicy), address(u.relayer));
         disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy));
         mockArbitrationPolicy.setTreasury(TREASURY_ADDRESS);
         vm.stopPrank();

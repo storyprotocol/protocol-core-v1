@@ -88,11 +88,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         // whitelist dispute tag, arbitration policy and arbitration relayer
         newDisputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
         newDisputeModule.whitelistArbitrationPolicy(address(newArbitrationPolicyUMA), true);
-        newDisputeModule.whitelistArbitrationRelayer(
-            address(newArbitrationPolicyUMA),
-            address(newArbitrationPolicyUMA),
-            true
-        );
+        newDisputeModule.setArbitrationRelayer(address(newArbitrationPolicyUMA), address(newArbitrationPolicyUMA));
         newDisputeModule.setBaseArbitrationPolicy(address(newArbitrationPolicyUMA));
 
         vm.label(newOOV3, "newOOV3");

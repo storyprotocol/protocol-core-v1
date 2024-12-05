@@ -392,9 +392,6 @@ library Errors {
     /// @notice Zero address provided for Arbitration Policy.
     error DisputeModule__ZeroArbitrationPolicy();
 
-    /// @notice Zero address provided for Arbitration Relayer.
-    error DisputeModule__ZeroArbitrationRelayer();
-
     /// @notice Zero bytes provided for Dispute Tag.
     error DisputeModule__ZeroDisputeTag();
 
@@ -407,8 +404,8 @@ library Errors {
     /// @notice Not a whitelisted arbitration policy.
     error DisputeModule__NotWhitelistedArbitrationPolicy();
 
-    /// @notice Not a whitelisted arbitration relayer.
-    error DisputeModule__NotWhitelistedArbitrationRelayer();
+    /// @notice Not the arbitration relayer.
+    error DisputeModule__NotArbitrationRelayer();
 
     /// @notice Not a whitelisted dispute tag.
     error DisputeModule__NotWhitelistedDisputeTag();

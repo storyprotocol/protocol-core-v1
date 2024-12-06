@@ -1,3 +1,5 @@
+// Test: LicensingModule - attachLicenseTerms
+
 import "../setup";
 import { expect } from "chai";
 import hre from "hardhat";

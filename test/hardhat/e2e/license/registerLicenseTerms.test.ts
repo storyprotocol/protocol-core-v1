@@ -1,3 +1,5 @@
+// Test: PILicenseTemplate - registerLicenseTerms
+
 import "../setup";
 import { expect } from "chai";
 import hre from "hardhat";

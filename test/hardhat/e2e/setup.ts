@@ -14,6 +14,7 @@ before(async function () {
   this.groupingModule = await hre.ethers.getContractAt("GroupingModule", GroupingModule);
   this.licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
   this.accessController = await hre.ethers.getContractAt("AccessController", AccessController);
+  this.errors = await hre.ethers.getContractFactory("Errors");
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1] = await hre.ethers.getSigners();

@@ -176,7 +176,7 @@ contract RoyaltyPolicyLRP is
         uint256 amountToTransfer = Math.min(maxAmount - transferredAmount, IERC20(token).balanceOf(address(this)));
 
         // make the revenue token transfer
-        $.transferredTokenLRP[ipId][ancestorIpId][token] += amountToTransfer;
+        $.transferredTokenLRP[ipId][ancestorIpId][token] += maxAmount;
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(ancestorIpId);
         IIpRoyaltyVault(ancestorIpRoyaltyVault).updateVaultBalance(token, amountToTransfer);
         IERC20(token).safeTransfer(ancestorIpRoyaltyVault, amountToTransfer);

@@ -52,7 +52,7 @@ before(async function () {
   console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
 
   console.log(`================= ERC20 approve spender =================`);
-  const amountToCheck = BigInt(2057 * 10 ** 18);
+  const amountToCheck = BigInt(200 * 10 ** 18);
   await checkAndApproveSpender(this.owner, RoyaltyPolicyLAP, amountToCheck);
   await checkAndApproveSpender(this.owner, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.owner, RoyaltyModule, amountToCheck);

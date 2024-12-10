@@ -16,7 +16,7 @@ describe("Permission", function () {
   })
 
   it("Add a new ALLOW permission of IP asset for an signer and change the permission to DENY", async function () {
-    const tokenId = await mintNFT(signers[0].address);
+    const tokenId = await mintNFT(signers[0]);
     const connectedRegistry = this.ipAssetRegistry.connect(signers[0]);
     const func = hre.ethers.encodeBytes32String("attachLicenseTerms").slice(0, 10);
     const ALLOW_permission = 1;

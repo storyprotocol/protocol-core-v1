@@ -145,9 +145,10 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     ) external view returns (address[] memory results) {
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
         uint256 totalSize = allMemberIpIds.length();
-        if (startIndex >= totalSize) return results;
+        if (startIndex >= totalSize) return new address[](0);
 
         uint256 resultsSize = (startIndex + size) > totalSize ? size - ((startIndex + size) - totalSize) : size;
+        results = new address[](resultsSize);
         for (uint256 i = 0; i < resultsSize; i++) {
             results[i] = allMemberIpIds.at(startIndex + i);
         }

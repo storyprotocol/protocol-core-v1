@@ -2,7 +2,7 @@
 
 import "../setup";
 import { mintNFT } from "./nftHelper";
-import { MockERC721, IPAssetRegistry } from "../constants";
+import { MockERC721, IPAssetRegistry, LicensingModule, PILicenseTemplate } from "../constants";
 import { expect } from "chai";
 import hre from "hardhat";
 import { network } from "hardhat";
@@ -37,3 +37,13 @@ export async function mintNFTAndRegisterIPA(mintNFTSigner?: any, registerIPASign
     return { tokenId, ipId };
 };
 
+export async function mintNFTAndRegisterIPAWithLicenseTerms(licenseTermsId: any, mintNFTSigner?: any, registerIPASigner?: any): Promise<{ tokenId: number; ipId: HexString }> {
+    const { tokenId, ipId } = await mintNFTAndRegisterIPA(mintNFTSigner, registerIPASigner);
+
+    const licensingModule = await hre.ethers.getContractAt("LicensingModule", LicensingModule, registerIPASigner);
+    await expect(
+        licensingModule.attachLicenseTerms(ipId, PILicenseTemplate, licenseTermsId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    return { tokenId, ipId };
+};

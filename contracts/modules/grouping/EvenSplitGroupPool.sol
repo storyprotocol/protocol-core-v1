@@ -147,7 +147,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         uint256 rewardsPerIp = _getRewardPerIp(groupId, token);
         uint256 totalRewards = rewardsPerIp * ipIds.length;
         if (totalRewards == 0) return rewards;
-        IERC20(token).approve(address(ROYALTY_MODULE), totalRewards);
+        IERC20(token).forceApprove(address(ROYALTY_MODULE), totalRewards);
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (!_isIpAdded(groupId, ipIds[i])) continue;
             // calculate pending reward for each IP

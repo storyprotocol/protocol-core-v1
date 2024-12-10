@@ -21,12 +21,20 @@ describe("LicensingModule - registerDerivative", function () {
     ipId1 = mintAndRegisterResp1.ipId;
     const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
     ipId2 = mintAndRegisterResp2.ipId;
-    
-    const connectedLicensingModule = this.licensingModule.connect(signers[1]);    
+
+    const connectedLicensingModule = this.licensingModule.connect(signers[0]);
+    // IP1 attach a non-commercial license
+    const attachLicenseTx = await expect(
+      connectedLicensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, this.nonCommericialLicenseId)
+    ).not.to.be.rejectedWith(Error);
+    await attachLicenseTx.wait();
+    console.log("Attach license transaction hash: ", attachLicenseTx.hash);
+    expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
+       
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [1n], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
     ).not.to.be.rejectedWith(Error);
     await registerDerivativeTx.wait();
     console.log("Register derivative transaction hash: ", registerDerivativeTx.hash);
@@ -51,24 +59,21 @@ describe("LicensingModule - registerDerivative", function () {
     ipId1 = mintAndRegisterResp1.ipId;
     const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
     ipId2 = mintAndRegisterResp2.ipId;
+    
+    const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
 
-    const connectedLicensingModule = this.licensingModule.connect(signers[0]);
-    // IP1 attach a non-commercial license
+    // IP2 attach a non-commercial license
     const attachLicenseTx = await expect(
-      connectedLicensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, this.nonCommericialLicenseId)
+      user1ConnectedLicensingModule.attachLicenseTerms(ipId2, PILicenseTemplate, this.nonCommericialLicenseId)
     ).not.to.be.rejectedWith(Error);
     await attachLicenseTx.wait();
     console.log("Attach license transaction hash: ", attachLicenseTx.hash);
     expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
-    
+
     // IP2 is registered as IP1's derivative
-    const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
-    ).not.to.be.rejectedWith(Error);
-    await registerDerivativeTx.wait();
-    console.log("Register derivative transaction hash: ", registerDerivativeTx.hash);
-    expect(registerDerivativeTx.hash).to.not.be.empty.and.to.be.a("HexString");
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [1n], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+    ).to.be.rejectedWith(`execution reverted`);
   });
 
   it("License token holder register derivative with the license token", async function () {

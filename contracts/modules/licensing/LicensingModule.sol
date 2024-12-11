@@ -335,8 +335,12 @@ contract LicensingModule is
         // Confirm that the license token has not been revoked.
         // Validate that the owner of the derivative IP is also the owner of the license tokens.
         address childIpOwner = IIPAccount(payable(childIpId)).owner();
-        (address licenseTemplate, address[] memory parentIpIds, uint256[] memory licenseTermsIds, uint32[] memory royaltyPercents) = LICENSE_NFT
-            .validateLicenseTokensForDerivative(msg.sender, childIpId, licenseTokenIds);
+        (
+            address licenseTemplate,
+            address[] memory parentIpIds,
+            uint256[] memory licenseTermsIds,
+            uint32[] memory royaltyPercents
+        ) = LICENSE_NFT.validateLicenseTokensForDerivative(msg.sender, childIpId, licenseTokenIds);
 
         _verifyIpNotDisputed(childIpId);
 
@@ -359,7 +363,15 @@ contract LicensingModule is
         // all license terms.
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
-        _setupRoyalty(childIpId, parentIpIds, royaltyPercents, licenseTermsIds, licenseTemplate, royaltyContext, maxRts);
+        _setupRoyalty(
+            childIpId,
+            parentIpIds,
+            royaltyPercents,
+            licenseTermsIds,
+            licenseTemplate,
+            royaltyContext,
+            maxRts
+        );
 
         // burn license tokens
         LICENSE_NFT.burnLicenseTokens(childIpOwner, licenseTokenIds);

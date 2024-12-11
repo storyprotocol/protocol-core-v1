@@ -141,7 +141,12 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     )
         external
         view
-        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds, uint32[] memory commercialRevShares)
+        returns (
+            address licenseTemplate,
+            address[] memory licensorIpIds,
+            uint256[] memory licenseTermsIds,
+            uint32[] memory commercialRevShares
+        )
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;

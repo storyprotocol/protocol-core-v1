@@ -137,7 +137,10 @@ contract GroupingModule is
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
-    function addIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
+    function addIp(
+        address groupIpId,
+        address[] calldata ipIds
+    ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
         _checkIfGroupMembersLocked(groupIpId);
         // the group IP must has license terms and minting fee is 0 to be able to add IP to group
         if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
@@ -193,7 +196,10 @@ contract GroupingModule is
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
-    function removeIp(address groupIpId, address[] calldata ipIds) external whenNotPaused verifyPermission(groupIpId) {
+    function removeIp(
+        address groupIpId,
+        address[] calldata ipIds
+    ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
         _checkIfGroupMembersLocked(groupIpId);
         // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
@@ -207,7 +213,7 @@ contract GroupingModule is
     /// @param groupId The address of the group.
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
-    function claimReward(address groupId, address token, address[] calldata ipIds) external whenNotPaused {
+    function claimReward(address groupId, address token, address[] calldata ipIds) external nonReentrant whenNotPaused {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         // trigger group pool to distribute rewards to group members vault
         uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
@@ -217,7 +223,10 @@ contract GroupingModule is
     /// @notice Collects royalties into the pool, making them claimable by group member IPs.
     /// @param groupId The address of the group.
     /// @param token The address of the token.
-    function collectRoyalties(address groupId, address token) external whenNotPaused returns (uint256 royalties) {
+    function collectRoyalties(
+        address groupId,
+        address token
+    ) external nonReentrant whenNotPaused returns (uint256 royalties) {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
 

@@ -133,6 +133,9 @@ library Errors {
         uint256 expectGroupRewardShare
     );
 
+    /// @notice The disputed IP is not allowed to be added to the group.
+    error GroupingModule__CannotAddDisputedIpToGroup(address ipId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

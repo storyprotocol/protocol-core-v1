@@ -444,7 +444,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(licenseRegistry),
                 _getDeployedAddress(type(LicenseToken).name),
                 address(groupNft),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(disputeModule)
             )
         );
         groupingModule = GroupingModule(

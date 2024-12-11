@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -345,6 +346,48 @@ contract GroupingModuleTest is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms.selector, groupId1)
         );
+        vm.prank(alice);
+        groupingModule.addIp(groupId1, ipIds);
+
+        assertEq(ipAssetRegistry.totalMembers(groupId1), 0);
+        assertEq(rewardPool.getTotalIps(groupId1), 0);
+        assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
+    }
+
+    function test_GroupingModule_addIp_revert_DisputedIp() public {
+        bytes32 disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        vm.stopPrank();
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        // raise dispute
+        vm.startPrank(ipId2);
+        USDC.mint(ipId2, 1000 * 10 ** 6);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipId1, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(1);
+
+        vm.prank(u.relayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__CannotAddDisputedIpToGroup.selector, ipId1));
         vm.prank(alice);
         groupingModule.addIp(groupId1, ipIds);
 

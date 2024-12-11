@@ -22,6 +22,7 @@ import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 import { Licensing } from "../../lib/Licensing.sol";
 
@@ -63,6 +64,10 @@ contract GroupingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
 
+    /// @notice Returns the protocol-wide dispute module
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IDisputeModule public immutable DISPUTE_MODULE;
+
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant GroupingModuleStorageLocation =
         0x4f35861babcda7cb8a75afddcc0971d8dc0cbbd9d19afddbe94e0dcd72824100;
@@ -80,18 +85,21 @@ contract GroupingModule is
         address licenseRegistry,
         address licenseToken,
         address groupNFT,
-        address royaltyModule
+        address royaltyModule,
+        address disputeModule
     ) AccessControlled(accessController, ipAssetRegistry) {
         if (licenseToken == address(0)) revert Errors.GroupingModule__ZeroLicenseToken();
         if (licenseRegistry == address(0)) revert Errors.GroupingModule__ZeroLicenseRegistry();
         if (groupNFT == address(0)) revert Errors.GroupingModule__ZeroGroupNFT();
         if (ipAssetRegistry == address(0)) revert Errors.GroupingModule__ZeroIpAssetRegistry();
         if (royaltyModule == address(0)) revert Errors.GroupingModule__ZeroRoyaltyModule();
+        if (disputeModule == address(0)) revert Errors.GroupingModule__ZeroRoyaltyModule();
 
         LICENSE_TOKEN = ILicenseToken(licenseToken);
         GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
 
         if (!groupNFT.supportsInterface(type(IGroupNFT).interfaceId)) {
             revert Errors.GroupingModule__InvalidGroupNFT(groupNFT);
@@ -169,6 +177,9 @@ contract GroupingModule is
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipIds[i])) {
                 revert Errors.GroupingModule__CannotAddGroupToGroup(groupIpId, ipIds[i]);
+            }
+            if (DISPUTE_MODULE.isIpTagged(ipIds[i])) {
+                revert Errors.GroupingModule__CannotAddDisputedIpToGroup(ipIds[i]);
             }
 
             Licensing.LicensingConfig memory lc = LICENSE_REGISTRY.verifyGroupAddIp(

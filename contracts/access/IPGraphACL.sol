@@ -3,13 +3,14 @@ pragma solidity 0.8.26;
 
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { Errors } from "../lib/Errors.sol";
+import { IIPGraphACL } from "../interfaces/access/IIPGraphACL.sol";
 
 /// @title IPGraphACL
 /// @notice This contract is used to manage access to the IPGraph contract.
 /// It allows the access manager to whitelist addresses that can allow or disallow access to the IPGraph contract.
 /// It allows whitelisted addresses to allow or disallow access to the IPGraph contract.
 /// IPGraph precompiled check if the IPGraphACL contract allows access to the IPGraph.
-contract IPGraphACL is AccessManaged {
+contract IPGraphACL is AccessManaged, IIPGraphACL {
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPGraphACL")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant IP_GRAPH_ACL_SLOT = 0xaf99b37fdaacca72ee7240cb1435cc9e498aee6ef4edc19c8cc0cd787f4e6800;
 
@@ -61,12 +62,14 @@ contract IPGraphACL is AccessManaged {
     /// @param addr The address to whitelist.
     function whitelistAddress(address addr) external restricted {
         whitelist[addr] = true;
+        emit WhitelistedAddress(addr);
     }
 
     /// @notice Revoke whitelisted address.
     /// @param addr The address to revoke.
     function revokeWhitelistedAddress(address addr) external restricted {
         whitelist[addr] = false;
+        emit RevokedWhitelistedAddress(addr);
     }
 
     /// @notice Check if an address is whitelisted.

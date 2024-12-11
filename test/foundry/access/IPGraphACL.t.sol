@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { Errors } from "../../../contracts/lib/Errors.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
+import { IIPGraphACL } from "../../../contracts/interfaces/access/IIPGraphACL.sol";
 
 contract IPGraphACLTest is BaseTest {
     function setUp() public override {
@@ -31,6 +32,8 @@ contract IPGraphACLTest is BaseTest {
 
     function test_IPGraphACL_addToWhitelist() public {
         vm.prank(admin);
+        vm.expectEmit();
+        emit IIPGraphACL.WhitelistedAddress(address(0x123));
         ipGraphACL.whitelistAddress(address(0x123));
         vm.prank(address(0x123));
         ipGraphACL.allow();
@@ -44,6 +47,8 @@ contract IPGraphACLTest is BaseTest {
         ipGraphACL.allow();
         assertTrue(ipGraphACL.isAllowed());
         vm.prank(admin);
+        vm.expectEmit();
+        emit IIPGraphACL.RevokedWhitelistedAddress(address(0x123));
         ipGraphACL.revokeWhitelistedAddress(address(0x123));
         vm.prank(address(0x123));
         vm.expectRevert(abi.encodeWithSelector(Errors.IPGraphACL__NotWhitelisted.selector, address(0x123)));

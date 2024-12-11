@@ -136,6 +136,9 @@ library Errors {
     /// @notice The disputed IP is not allowed to be added to the group.
     error GroupingModule__CannotAddDisputedIpToGroup(address ipId);
 
+    /// @notice The group reward pool is not whitelisted.
+    error GroupingModule__GroupRewardPoolNotWhitelisted(address groupId, address groupRewardPool);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -606,6 +609,9 @@ library Errors {
 
     /// @notice Call failed.
     error RoyaltyModule__CallFailed();
+
+    /// @notice The group pool is not whitelisted.
+    error RoyaltyModule__GroupRewardPoolNotWhitelisted(address groupId, address rewardPool);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //

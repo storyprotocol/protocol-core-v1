@@ -35,6 +35,7 @@ const DEVNET_URL = process.env.DEVNET_URL || "http://"
 const DEVNET_CHAINID = Number(process.env.DEVNET_CHAINID) || 1513
 const DEVNET_PRIVATEKEY = process.env.DEVNET_PRIVATEKEY || "0xkey"
 const DEVNET_USER1 = process.env.DEVNET_USER1 || "0xkey"
+const DEVNET_USER2 = process.env.DEVNET_USER2 || "0xkey"
 
 if (USE_TENDERLY) {
   tdly.setup({
@@ -71,7 +72,7 @@ const config: HardhatUserConfig = {
     odyssey: {
       chainId: DEVNET_CHAINID,
       url: DEVNET_URL,
-      accounts: [DEVNET_PRIVATEKEY, DEVNET_USER1],
+      accounts: [DEVNET_PRIVATEKEY, DEVNET_USER1, DEVNET_USER2],
     },
     localhost: {
       chainId: 31337,

@@ -10,6 +10,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { ILicenseToken } from "./interfaces/ILicenseToken.sol";
+import { ILicenseRegistry } from "./interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "./interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "./interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "./lib/Errors.sol";
@@ -19,6 +20,8 @@ import { ILicenseTemplate } from "./interfaces/modules/licensing/ILicenseTemplat
 contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManagedUpgradeable, UUPSUpgradeable {
     using Strings for *;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -48,9 +51,10 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule) {
+    constructor(address licensingModule, address disputeModule, address licenseRegistry) {
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }
 
@@ -94,7 +98,8 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
             licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
             licenseTermsId: licenseTermsId,
-            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId)
+            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
+            commercialRevShare: LICENSE_REGISTRY.getRoyaltyPercent(licensorIpId, licenseTemplate, licenseTermsId)
         });
 
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
@@ -128,6 +133,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
     /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
+    /// @return commercialRevShares An array of commercial revenue share percentages associated with each License Token.
     function validateLicenseTokensForDerivative(
         address caller,
         address childIpId,
@@ -135,12 +141,13 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     )
         external
         view
-        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds)
+        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds, uint32[] memory commercialRevShares)
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);
+        commercialRevShares = new uint32[](tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
@@ -160,6 +167,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
             licensorIpIds[i] = ltm.licensorIpId;
             licenseTermsIds[i] = ltm.licenseTermsId;
+            commercialRevShares[i] = ltm.commercialRevShare;
         }
     }
 

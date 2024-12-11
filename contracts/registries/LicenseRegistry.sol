@@ -519,6 +519,26 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return (_getLicenseTemplate(parentIpId), $.parentLicenseTerms[childIpId][parentIpId]);
     }
 
+    /// @notice Return the Royalty percentage of the license terms of the IP.
+    /// There are 2 places to get the royalty percentage: license terms, LicenseConfig
+    /// The order of priority is LicenseConfig  > license terms
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return royaltyPercent The Royalty percentage 100% is 100_000_000.
+    function getRoyaltyPercent(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) external view returns (uint32 royaltyPercent) {
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        (, royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsId);
+        Licensing.LicensingConfig memory lsc = _getLicensingConfig(ipId, licenseTemplate, licenseTermsId);
+        if (lsc.isSet && lsc.commercialRevShare > 0) {
+            royaltyPercent = lsc.commercialRevShare;
+        }
+    }
+
     /// @dev verify the child IP can be registered as a derivative of the parent IP
     /// @param parentIpId The address of the parent IP
     /// @param childIpId The address of the child IP

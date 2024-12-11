@@ -24,6 +24,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         address licenseTemplate;
         uint256 licenseTermsId;
         bool transferable;
+        uint32 commercialRevShare;
     }
 
     /// @notice Emitted when a License Token is minted.
@@ -98,9 +99,18 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
     /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
+    /// @return commercialRevShares An array of commercial revenue share percentages associated with each License Token.
     function validateLicenseTokensForDerivative(
         address caller,
         address childIpId,
         uint256[] calldata tokenIds
-    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds);
+    )
+        external
+        view
+        returns (
+            address licenseTemplate,
+            address[] memory licensorIpIds,
+            uint256[] memory licenseTermsIds,
+            uint32[] memory commercialRevShares
+        );
 }

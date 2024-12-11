@@ -217,4 +217,17 @@ interface ILicenseRegistry {
         address childIpId,
         address parentIpId
     ) external view returns (address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice Return the Royalty percentage of the license terms of the IP.
+    /// There are 2 places to get the royalty percentage: license terms, LicenseConfig
+    /// The order of priority is LicenseConfig  > license terms
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return royaltyPercent The Royalty percentage 100% is 100_000_000.
+    function getRoyaltyPercent(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) external view returns (uint32 royaltyPercent);
 }

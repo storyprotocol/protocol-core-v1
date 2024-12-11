@@ -494,7 +494,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "LicenseToken";
         _predeploy(contractKey);
-        impl = address(new LicenseToken(address(licensingModule), address(disputeModule)));
+        impl = address(new LicenseToken(address(licensingModule), address(disputeModule), address(licenseRegistry)));
         licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,

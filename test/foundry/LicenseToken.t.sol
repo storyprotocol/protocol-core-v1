@@ -9,6 +9,7 @@ import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { LicenseToken } from "../../contracts/LicenseToken.sol";
 import { ILicenseToken } from "../../contracts/interfaces/ILicenseToken.sol";
+import { Licensing } from "../../contracts/lib/Licensing.sol";
 
 // test
 import { BaseTest } from "./utils/BaseTest.t.sol";
@@ -148,7 +149,7 @@ contract LicenseTokenTest is BaseTest {
 
     function test_LicenseToken_TokenURI() public {
         uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-
+        uint256 commercialRevShare = 10_000_000;
         vm.prank(address(licensingModule));
         uint256 licenseTokenId = licenseToken.mintLicenseTokens({
             licensorIpId: ipAcct[1],
@@ -202,6 +203,44 @@ contract LicenseTokenTest is BaseTest {
         assertEq(lmt.licensorIpId, ipAcct[1]);
         assertEq(lmt.licenseTemplate, address(pilTemplate));
         assertEq(lmt.licenseTermsId, licenseTermsId);
+        assertEq(lmt.transferable, true);
+    }
+
+    function test_LicenseToken_getLicenseTokenMetadata_commercialRevShare() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 10_000_000, address(royaltyPolicyLAP), address(USDC))
+        );
+
+        // attach license terms to the ipAcct
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 20_000_000,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+        vm.startPrank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), licenseTermsId);
+        licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), licenseTermsId, licensingConfig);
+        vm.stopPrank();
+        vm.prank(address(licensingModule));
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1]
+        });
+
+        ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
+        assertEq(lmt.licensorIpId, ipAcct[1]);
+        assertEq(lmt.licenseTemplate, address(pilTemplate));
+        assertEq(lmt.licenseTermsId, licenseTermsId);
+        assertEq(lmt.commercialRevShare, 20_000_000);
         assertEq(lmt.transferable, true);
     }
 }

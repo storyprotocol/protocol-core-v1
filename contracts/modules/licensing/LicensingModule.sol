@@ -335,7 +335,7 @@ contract LicensingModule is
         // Confirm that the license token has not been revoked.
         // Validate that the owner of the derivative IP is also the owner of the license tokens.
         address childIpOwner = IIPAccount(payable(childIpId)).owner();
-        (address licenseTemplate, address[] memory parentIpIds, uint256[] memory licenseTermsIds) = LICENSE_NFT
+        (address licenseTemplate, address[] memory parentIpIds, uint256[] memory licenseTermsIds, uint32[] memory royaltyPercents) = LICENSE_NFT
             .validateLicenseTokensForDerivative(msg.sender, childIpId, licenseTokenIds);
 
         _verifyIpNotDisputed(childIpId);
@@ -359,7 +359,7 @@ contract LicensingModule is
         // all license terms.
         LICENSE_REGISTRY.registerDerivativeIp(childIpId, parentIpIds, licenseTemplate, licenseTermsIds, true);
 
-        _setupRoyalty(childIpId, parentIpIds, licenseTermsIds, licenseTemplate, royaltyContext, maxRts);
+        _setupRoyalty(childIpId, parentIpIds, royaltyPercents, licenseTermsIds, licenseTemplate, royaltyContext, maxRts);
 
         // burn license tokens
         LICENSE_NFT.burnLicenseTokens(childIpOwner, licenseTokenIds);
@@ -516,6 +516,7 @@ contract LicensingModule is
     function _setupRoyalty(
         address childIpId,
         address[] memory parentIpIds,
+        uint32[] memory royaltyPercents,
         uint256[] memory licenseTermsIds,
         address licenseTemplate,
         bytes memory royaltyContext,
@@ -524,24 +525,14 @@ contract LicensingModule is
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
         address[] memory rPolicies = new address[](parentIpIds.length);
-        uint32[] memory rPercents = new uint32[](parentIpIds.length);
         for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, uint32 royaltyPercent, , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
-            Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
-                parentIpIds[i],
-                licenseTemplate,
-                licenseTermsIds[i]
-            );
-            if (lsc.isSet && lsc.commercialRevShare != 0) {
-                royaltyPercent = lsc.commercialRevShare;
-            }
-            rPercents[i] = royaltyPercent;
+            (address royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
             rPolicies[i] = royaltyPolicy;
         }
 
         if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
             // Notify the royalty module
-            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, rPercents, royaltyContext, maxRts);
+            ROYALTY_MODULE.onLinkToParents(childIpId, parentIpIds, rPolicies, royaltyPercents, royaltyContext, maxRts);
         }
     }
 

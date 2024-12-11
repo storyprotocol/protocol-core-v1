@@ -297,7 +297,6 @@ contract LicensingModule is
             parentIpIds,
             licenseTermsIds,
             licenseTemplate,
-            childIpOwner,
             royaltyContext,
             maxMintingFee,
             maxRts
@@ -497,7 +496,6 @@ contract LicensingModule is
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
-        address childIpOwner,
         bytes calldata royaltyContext,
         uint256 maxMintingFee,
         uint32 maxRts
@@ -508,7 +506,6 @@ contract LicensingModule is
             parentIpIds,
             licenseTermsIds,
             licenseTemplate,
-            childIpOwner,
             royaltyContext,
             maxMintingFee
         );
@@ -557,7 +554,6 @@ contract LicensingModule is
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
         address licenseTemplate,
-        address childIpOwner,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
     ) private returns (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) {
@@ -570,7 +566,6 @@ contract LicensingModule is
                 parentIpIds[i],
                 licenseTemplate,
                 licenseTermsIds[i],
-                childIpOwner,
                 royaltyContext,
                 maxMintingFee
             );
@@ -584,7 +579,6 @@ contract LicensingModule is
         address parentIpId,
         address licenseTemplate,
         uint256 licenseTermsId,
-        address childIpOwner,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
     ) private returns (address royaltyPolicy, uint32 royaltyPercent) {

@@ -2,7 +2,7 @@
 
 import hre from "hardhat";
 import { network } from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { approveSpender, checkAndApproveSpender, getAllowance, mintAmount } from "./utils/erc20Helper";
 import { check } from "prettier";
@@ -16,10 +16,13 @@ before(async function () {
   this.groupingModule = await hre.ethers.getContractAt("GroupingModule", GroupingModule);
   this.licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
   this.accessController = await hre.ethers.getContractAt("AccessController", AccessController);
+  this.royaltyModule = await hre.ethers.getContractAt("RoyaltyModule", RoyaltyModule);
+  this.evenSplitGroupPool = await hre.ethers.getContractAt("EvenSplitGroupPool", EvenSplitGroupPool);
+  this.royaltyPolicyLAP = await hre.ethers.getContractAt("RoyaltyPolicyLAP", RoyaltyPolicyLAP);
   this.errors = await hre.ethers.getContractFactory("Errors");
   
   console.log(`================= Load Users =================`);
-  [this.owner, this.user1] = await hre.ethers.getSigners();
+  [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
   
   console.log(`================= Chain ID =================`);
   const networkConfig = network.config;

@@ -226,7 +226,7 @@ contract GroupingModule is
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external nonReentrant whenNotPaused {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
-        if (GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
+        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
             revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
         }
         // trigger group pool to distribute rewards to group members vault
@@ -242,7 +242,7 @@ contract GroupingModule is
         address token
     ) external nonReentrant whenNotPaused returns (uint256 royalties) {
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
-        if (GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
+        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
             revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
         }
         IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));

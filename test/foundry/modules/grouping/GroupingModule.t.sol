@@ -15,6 +15,7 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 // test
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
+import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
@@ -288,6 +289,100 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         uint256[] memory claimAmounts = new uint256[](1);
         claimAmounts[0] = 50;
+
+        vm.expectEmit();
+        emit IGroupingModule.ClaimedReward(groupId, address(erc20), claimIpIds, claimAmounts);
+        groupingModule.claimReward(groupId, address(erc20), claimIpIds);
+        assertEq(erc20.balanceOf(address(rewardPool)), 50);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 50);
+    }
+
+    function test_GroupingModule_claimReward_revert_notWhitelistedPool() public {
+        vm.warp(100);
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 10 * 10 ** 6,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        groupingModule.addIp(groupId, ipIds);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
+        vm.stopPrank();
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = groupId;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = termsId;
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+
+        erc20.mint(ipOwner3, 1000);
+        vm.startPrank(ipOwner3);
+        erc20.approve(address(royaltyModule), 1000);
+        royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
+        vm.stopPrank();
+        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20));
+        vm.warp(vm.getBlockTimestamp() + 7 days);
+
+        vm.prank(address(groupingModule));
+        ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), false);
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector, groupId, address(rewardPool)));
+        groupingModule.collectRoyalties(groupId, address(erc20));
+
+        vm.prank(address(groupingModule));
+        ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), true);
+
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(groupId, address(erc20), address(rewardPool), 100);
+        groupingModule.collectRoyalties(groupId, address(erc20));
+
+        address[] memory claimIpIds = new address[](1);
+        claimIpIds[0] = ipId1;
+
+        uint256[] memory claimAmounts = new uint256[](1);
+        claimAmounts[0] = 50;
+
+        vm.prank(address(groupingModule));
+        ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), false);
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector, groupId, address(rewardPool)));
+        groupingModule.claimReward(groupId, address(erc20), claimIpIds);
+
+        vm.prank(address(groupingModule));
+        ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), true);
 
         vm.expectEmit();
         emit IGroupingModule.ClaimedReward(groupId, address(erc20), claimIpIds, claimAmounts);

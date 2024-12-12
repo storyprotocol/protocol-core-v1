@@ -729,6 +729,10 @@ library Errors {
 
     /// @notice Same from and to address.
     error IpRoyaltyVault__SameFromToAddress(address vault, address from);
+
+    /// @notice Negative value for casting to uint256.
+    error IpRoyaltyVault__NegativeValueUnsafeCastingToUint256();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

@@ -313,7 +313,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         uint256 accBalance = $.vaultAccBalances[token];
         uint256 userAmount = balanceOf(claimer);
         int256 rewardDebt = $.claimerRevenueDebt[token][claimer];
-        return uint256(int256((accBalance * userAmount) / totalSupply()) - rewardDebt);
+        int256 pending = int256((accBalance * userAmount) / totalSupply()) - rewardDebt;
+        if (pending < 0) revert Errors.IpRoyaltyVault__NegativeValueUnsafeCastingToUint256();
+        return uint256(pending);
     }
 
     /// @dev Returns the storage struct of IpRoyaltyVault

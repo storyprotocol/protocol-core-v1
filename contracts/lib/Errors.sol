@@ -288,11 +288,7 @@ library Errors {
     );
 
     /// @notice licensing hook data configured in IP must be identical to the group licensing hook data.
-    error LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(
-        address ipId,
-        bytes hookData,
-        bytes groupHookData
-    );
+    error LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(address ipId, bytes hookData, bytes groupHookData);
 
     /// @notice commercial revenue share configured in group must be NOT less than the IP commercial revenue share.
     error LicenseRegistry__GroupIpCommercialRevShareConfigMustNotLessThanIp(

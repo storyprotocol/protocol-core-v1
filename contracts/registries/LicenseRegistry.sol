@@ -333,6 +333,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param groupLicenseTermsId The ID of the license terms attached to the group.
     /// the IP must have this license terms.
     /// @return ipLicensingConfig The configuration for license attached to the IP.
+    // solhint-disable code-complexity
     function verifyGroupAddIp(
         address groupId,
         address groupRewardPool,

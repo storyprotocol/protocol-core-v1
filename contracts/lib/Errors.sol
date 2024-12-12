@@ -289,6 +289,14 @@ library Errors {
         address anotherLicenseTemplate
     );
 
+    /// @notice Royalty percentage is invalid that over 100%.
+    error LicenseToken__InvalidRoyaltyPercent(
+        uint32 invalidRoyaltyPercent,
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                           Licensing Module                             //
     ////////////////////////////////////////////////////////////////////////////

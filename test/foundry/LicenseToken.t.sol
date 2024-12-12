@@ -243,4 +243,44 @@ contract LicenseTokenTest is BaseTest {
         assertEq(lmt.commercialRevShare, 20_000_000);
         assertEq(lmt.transferable, true);
     }
+
+    function test_LicenseToken_mintLicenseToken_revert_InvalidRoyaltyPercentage() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 100_000_000, address(royaltyPolicyLAP), address(USDC))
+        );
+
+        // attach license terms to the ipAcct
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 200_000_000,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+        vm.startPrank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), licenseTermsId);
+        licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), licenseTermsId, licensingConfig);
+        vm.stopPrank();
+        vm.prank(address(licensingModule));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseToken__InvalidRoyaltyPercent.selector,
+                200_000_000,
+                ipAcct[1],
+                address(pilTemplate),
+                licenseTermsId
+            )
+        );
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1]
+        });
+    }
 }

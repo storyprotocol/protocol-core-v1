@@ -260,6 +260,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
 
         IP_GRAPH_ACL.allow();
+        // Note: The IPGraph does not validate the parent-child relationship.
+        // It only adds the parent IP to the child IP.
+        // All the validation is done in the LicensingModule:
+        // 1. Should be no duplicate parent IP.
+        // 2. Should not addParentIp again to the same child IP.
         (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );

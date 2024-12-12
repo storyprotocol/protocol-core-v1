@@ -158,6 +158,9 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
+
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
         licensingConfig.expectGroupRewardPool = address(0);
@@ -200,10 +203,12 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);
@@ -538,6 +543,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
@@ -587,6 +593,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         address[] memory ipIds = new address[](1);
@@ -636,6 +643,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         address[] memory ipIds = new address[](1);
@@ -673,11 +681,13 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);
@@ -788,6 +798,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
 
         licensingConfig.expectGroupRewardPool = address(0);
         vm.startPrank(alice);
@@ -929,10 +940,12 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);

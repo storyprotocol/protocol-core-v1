@@ -271,6 +271,36 @@ library Errors {
     /// @notice The empty group cannot mint license token.
     error LicenseRegistry__EmptyGroupCannotMintLicenseToken(address groupId);
 
+    /// @notice The group can only attach one license terms which is common for all members.
+    error LicenseRegistry__GroupIpAlreadyHasLicenseTerms(address groupId);
+
+    /// @notice The license template cannot be Zero address.
+    error LicenseRegistry__LicenseTemplateCannotBeZeroAddress();
+
+    /// @notice license minting fee configured in IP must be identical to the group minting fee.
+    error LicenseRegistry__IpMintingFeeNotMatchWithGroup(address ipId, uint256 mintingFee, uint256 groupMintingFee);
+
+    /// @notice licensing hook configured in IP must be identical to the group licensing hook.
+    error LicenseRegistry__IpLicensingHookNotMatchWithGroup(
+        address ipId,
+        address licensingHook,
+        address groupLicensingHook
+    );
+
+    /// @notice licensing hook data configured in IP must be identical to the group licensing hook data.
+    error LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(
+        address ipId,
+        bytes hookData,
+        bytes groupHookData
+    );
+
+    /// @notice commercial revenue share configured in group must be NOT less than the IP commercial revenue share.
+    error LicenseRegistry__GroupIpCommercialRevShareConfigMustNotLessThanIp(
+        address groupId,
+        uint32 ipCommercialRevShare,
+        uint32 groupCommercialRevShare
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -401,6 +431,28 @@ library Errors {
 
     /// @notice register derivative require all parent IP to have the same royalty policy.
     error LicensingModule__RoyaltyPolicyMismatch(address royaltyPolicy, address anotherRoyaltyPolicy);
+
+    /// @notice The group IP cannot enable/disable the licensing configuration once it has members.
+    error LicensingModule__GroupIpCannotChangeIsSet(address groupId);
+
+    /// @notice The group IP cannot change minting fee once it has members.
+    error LicensingModule__GroupIpCannotChangeMintingFee(address groupId);
+
+    /// @notice The group IP cannot change licensing hook once it has members.
+    error LicensingModule__GroupIpCannotChangeLicensingHook(address groupId);
+
+    /// @notice The group IP cannot change hook data once it has members.
+    error LicensingModule__GroupIpCannotChangeHookData(address groupId);
+
+    /// @notice The group Ip cannot specify expect group reward pool, as a group cannot be added to another group.
+    error LicensingModule__GroupIpCannotSetExpectGroupRewardPool(address groupId);
+
+    /// @notice GroupIP cannot decrease the royalty percentage.
+    error LicensingModule__GroupIpCannotDecreaseRoyalty(
+        address groupId,
+        uint32 newRoyaltyPercent,
+        uint32 oldRoyaltyPercent
+    );
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

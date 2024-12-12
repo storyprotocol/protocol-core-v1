@@ -197,6 +197,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!_exists(licenseTemplate, licenseTermsId)) {
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
+        // The group can only attach one license terms which is common for all members.
+        if (
+            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId) &&
+            _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0
+        ) {
+            revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+        }
 
         if (_isExpiredNow(ipId)) {
             revert Errors.LicenseRegistry__IpExpired(ipId);
@@ -356,6 +363,39 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (_getExpireTime(ipId) != 0) {
             revert Errors.LicenseRegistry__CannotAddIpWithExpirationToGroup(ipId);
         }
+        // ipId must have the same license config items with group IP
+        Licensing.LicensingConfig memory groupLct = _getLicensingConfig(
+            groupId,
+            groupLicenseTemplate,
+            groupLicenseTermsId
+        );
+        // minting fee must be the same
+        if (lct.mintingFee != groupLct.mintingFee) {
+            revert Errors.LicenseRegistry__IpMintingFeeNotMatchWithGroup(ipId, lct.mintingFee, groupLct.mintingFee);
+        }
+        // hook must be the same
+        if (lct.licensingHook != groupLct.licensingHook) {
+            revert Errors.LicenseRegistry__IpLicensingHookNotMatchWithGroup(
+                ipId,
+                lct.licensingHook,
+                groupLct.licensingHook
+            );
+        }
+        // hook data must be the same
+        if (
+            lct.hookData.length != groupLct.hookData.length || keccak256(lct.hookData) != keccak256(groupLct.hookData)
+        ) {
+            revert Errors.LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(ipId, lct.hookData, groupLct.hookData);
+        }
+        // group commercial revenue share must be greater than or equal to IP commercial revenue share
+        if (groupLct.commercialRevShare < lct.commercialRevShare) {
+            revert Errors.LicenseRegistry__GroupIpCommercialRevShareConfigMustNotLessThanIp(
+                ipId,
+                lct.commercialRevShare,
+                groupLct.commercialRevShare
+            );
+        }
+
         ipLicensingConfig = lct;
     }
 

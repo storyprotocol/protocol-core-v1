@@ -12,6 +12,7 @@ import { IIPAccount } from "../../interfaces/IIPAccount.sol";
 import { IModule } from "../../interfaces/modules/base/IModule.sol";
 import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
 import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
+import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
@@ -403,6 +404,10 @@ contract LicensingModule is
             revert Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
         }
 
+        if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
+            _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
+        }
+
         if (licensingConfig.commercialRevShare != 0) {
             ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
             if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
@@ -723,6 +728,53 @@ contract LicensingModule is
     function _verifyIpNotDisputed(address ipId) private view {
         if (DISPUTE_MODULE.isIpTagged(ipId)) {
             revert Errors.LicensingModule__DisputedIpId();
+        }
+    }
+
+    /// @dev Verifies the group IP licensing configuration
+    function _verifyGroupIpConfig(
+        address groupId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        Licensing.LicensingConfig memory licensingConfig
+    ) private {
+        if (licenseTemplate == address(0)) {
+            revert Errors.LicenseRegistry__LicenseTemplateCannotBeZeroAddress();
+        }
+        if (licensingConfig.expectGroupRewardPool != address(0)) {
+            revert Errors.LicensingModule__GroupIpCannotSetExpectGroupRewardPool(groupId);
+        }
+        // Some configuration cannot be changed once the group has members
+        if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).totalMembers(groupId) == 0) {
+            return;
+        }
+        Licensing.LicensingConfig memory oldLicensingConfig = LICENSE_REGISTRY.getLicensingConfig(
+            groupId,
+            licenseTemplate,
+            licenseTermsId
+        );
+        if (oldLicensingConfig.isSet != licensingConfig.isSet) {
+            revert Errors.LicensingModule__GroupIpCannotChangeIsSet(groupId);
+        }
+        if (oldLicensingConfig.mintingFee != licensingConfig.mintingFee) {
+            revert Errors.LicensingModule__GroupIpCannotChangeMintingFee(groupId);
+        }
+        if (oldLicensingConfig.licensingHook != licensingConfig.licensingHook) {
+            revert Errors.LicensingModule__GroupIpCannotChangeLicensingHook(groupId);
+        }
+        // check hood data are the same
+        if (
+            oldLicensingConfig.hookData.length != licensingConfig.hookData.length ||
+            keccak256(oldLicensingConfig.hookData) != keccak256(licensingConfig.hookData)
+        ) {
+            revert Errors.LicensingModule__GroupIpCannotChangeHookData(groupId);
+        }
+        if (licensingConfig.commercialRevShare < oldLicensingConfig.commercialRevShare) {
+            revert Errors.LicensingModule__GroupIpCannotDecreaseRoyalty(
+                groupId,
+                licensingConfig.commercialRevShare,
+                oldLicensingConfig.commercialRevShare
+            );
         }
     }
 

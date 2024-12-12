@@ -160,6 +160,8 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(0);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -204,8 +206,10 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
+        licensingConfig.expectGroupRewardPool = address(0);
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -254,8 +258,10 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
+        licensingConfig.expectGroupRewardPool = address(0);
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -332,8 +338,10 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
         vm.stopPrank();
 
+        licensingConfig.expectGroupRewardPool = address(0);
         vm.startPrank(alice);
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
@@ -650,10 +658,6 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        vm.startPrank(alice);
-        address groupId1 = groupingModule.registerGroup(address(rewardPool));
-        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
-        vm.stopPrank();
 
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
@@ -674,6 +678,13 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId1, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
         address[] memory ipIds = new address[](1);
@@ -760,11 +771,6 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
             })
         );
 
-        vm.startPrank(alice);
-        address groupId = groupingModule.registerGroup(address(rewardPool));
-        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
-        vm.stopPrank();
-
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         vm.prank(ipOwner2);
@@ -782,6 +788,13 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         });
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
 
         address[] memory ipIds = new address[](1);
         ipIds[0] = ipId1;
@@ -922,9 +935,11 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
+        licensingConfig.expectGroupRewardPool = address(0);
         vm.startPrank(alice);
         address groupId = groupingModule.registerGroup(address(rewardPool));
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;

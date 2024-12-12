@@ -69,13 +69,18 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             expectGroupRewardPool: address(evenSplitGroupPool)
         });
 
+        licensingConfig.expectGroupRewardPool = address(0);
+
         {
             vm.startPrank(groupOwner);
             groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
             vm.label(groupId, "Group1");
             licensingModule.attachLicenseTerms(groupId, address(pilTemplate), commRemixTermsId);
+            licensingModule.setLicensingConfig(groupId, address(pilTemplate), commRemixTermsId, licensingConfig);
             vm.stopPrank();
         }
+
+        licensingConfig.expectGroupRewardPool = address(evenSplitGroupPool);
         {
             vm.startPrank(u.alice);
             ipAcct[1] = registerIpAccount(mockNFT, 1, u.alice);

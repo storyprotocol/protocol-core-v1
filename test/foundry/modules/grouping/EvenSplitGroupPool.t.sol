@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
@@ -12,7 +13,7 @@ import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
-contract EvenSplitGroupPoolTest is BaseTest {
+contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
     using Strings for *;
 
     MockERC721 internal mockNft = new MockERC721("MockERC721");

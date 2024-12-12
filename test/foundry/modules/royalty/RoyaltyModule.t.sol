@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -18,7 +19,7 @@ import { MockExternalRoyaltyPolicy2 } from "../../mocks/policy/MockExternalRoyal
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
-contract TestRoyaltyModule is BaseTest {
+contract TestRoyaltyModule is BaseTest, ERC721Holder {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
     event RoyaltyTokenWhitelistUpdated(address token, bool allowed);
     event RoyaltyPolicySet(address ipId, address royaltyPolicy, bytes data);
@@ -816,12 +817,12 @@ contract TestRoyaltyModule is BaseTest {
         parentRoyalties[1] = uint32(17 * 10 ** 6);
         parentRoyalties[2] = uint32(24 * 10 ** 6);
 
-        vm.startPrank(address(licensingModule));
         address groupId = groupingModule.registerGroup(address(rewardPool));
         ipGraph.addParentIp(groupId, parents);
 
         assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
 
+        vm.startPrank(address(licensingModule));
         royaltyModule.onLinkToParents(groupId, parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
 
         address ipRoyaltyVault80 = royaltyModule.ipRoyaltyVaults(groupId);

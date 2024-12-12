@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
@@ -13,7 +14,7 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-contract TestIpRoyaltyVault is BaseTest {
+contract TestIpRoyaltyVault is BaseTest, ERC721Holder {
     function setUp() public override {
         super.setUp();
 

@@ -1246,14 +1246,12 @@ contract LicensingModuleTest is BaseTest {
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_royaltyPolicyMismatch() public {
-        PILTerms memory terms = PILFlavors.commercialRemix(
-            {
-                mintingFee: 0,
-                commercialRevShare: 10,
-                royaltyPolicy: address(royaltyPolicyLAP),
-                currencyToken: address(erc20)
-            }
-        );
+        PILTerms memory terms = PILFlavors.commercialRemix({
+            mintingFee: 0,
+            commercialRevShare: 10,
+            royaltyPolicy: address(royaltyPolicyLAP),
+            currencyToken: address(erc20)
+        });
         terms.derivativesReciprocal = false;
 
         uint256 termsIdLAP = pilTemplate.registerLicenseTerms(terms);
@@ -1289,19 +1287,23 @@ contract LicensingModuleTest is BaseTest {
         licenseTokens[0] = lcTokenId1;
         licenseTokens[1] = lcTokenId2;
         vm.prank(ipOwner3);
-        vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__RoyaltyPolicyMismatch.selector, address(royaltyPolicyLAP), address(royaltyPolicyLRP)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__RoyaltyPolicyMismatch.selector,
+                address(royaltyPolicyLAP),
+                address(royaltyPolicyLRP)
+            )
+        );
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "", 100e6);
     }
 
     function test_LicensingModule_registerDerivative_revert_royaltyPolicyMismatch() public {
-        PILTerms memory terms = PILFlavors.commercialRemix(
-            {
-                mintingFee: 0,
-                commercialRevShare: 10,
-                royaltyPolicy: address(royaltyPolicyLAP),
-                currencyToken: address(erc20)
-            }
-        );
+        PILTerms memory terms = PILFlavors.commercialRemix({
+            mintingFee: 0,
+            commercialRevShare: 10,
+            royaltyPolicy: address(royaltyPolicyLAP),
+            currencyToken: address(erc20)
+        });
         terms.derivativesReciprocal = false;
 
         uint256 termsIdLAP = pilTemplate.registerLicenseTerms(terms);
@@ -1321,7 +1323,13 @@ contract LicensingModuleTest is BaseTest {
         licenseTermsIds[0] = termsIdLAP;
         licenseTermsIds[1] = termsIdLRP;
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.LicensingModule__RoyaltyPolicyMismatch.selector, address(royaltyPolicyLAP), address(royaltyPolicyLRP)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__RoyaltyPolicyMismatch.selector,
+                address(royaltyPolicyLAP),
+                address(royaltyPolicyLRP)
+            )
+        );
         vm.prank(ipOwner3);
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
     }

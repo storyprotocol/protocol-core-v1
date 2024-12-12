@@ -525,6 +525,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licensesPercent The license percentage of the licenses being minted
     /// @param ipRoyaltyVault The address of the ipRoyaltyVault
     /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
+    // solhint-disable code-complexity
     function _distributeRoyaltyTokensToPolicies(
         address ipId,
         address[] calldata parentIpIds,

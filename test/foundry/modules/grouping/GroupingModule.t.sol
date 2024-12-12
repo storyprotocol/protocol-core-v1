@@ -15,7 +15,6 @@ import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 // test
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
-import { MockEvenSplitGroupPool } from "test/foundry/mocks/grouping/MockEvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
@@ -360,7 +359,13 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         vm.prank(address(groupingModule));
         ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), false);
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector, groupId, address(rewardPool)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector,
+                groupId,
+                address(rewardPool)
+            )
+        );
         groupingModule.collectRoyalties(groupId, address(erc20));
 
         vm.prank(address(groupingModule));
@@ -378,7 +383,13 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         vm.prank(address(groupingModule));
         ipAssetRegistry.whitelistGroupRewardPool(address(rewardPool), false);
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector, groupId, address(rewardPool)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__GroupRewardPoolNotWhitelisted.selector,
+                groupId,
+                address(rewardPool)
+            )
+        );
         groupingModule.claimReward(groupId, address(erc20), claimIpIds);
 
         vm.prank(address(groupingModule));

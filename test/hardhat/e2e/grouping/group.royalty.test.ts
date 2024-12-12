@@ -54,7 +54,7 @@ describe("Group IP Asset Royalty Distribution", function () {
     ).to.be.equal(2);
   });
 
-  it("Group royalties even split by menber IPs", async function () {
+  it("Group royalties even split by member IPs", async function () {
     // Register drivative IP
     console.log("============ Register Derivative IP3 ============");
     const {ipId: ipId3} = await mintNFTAndRegisterIPA();
@@ -133,7 +133,7 @@ describe("Group IP Asset Royalty Distribution", function () {
   });
 });
 
-describe("Non-Owner/Menber Claim Group Royalty", function () {
+describe("Non-Owner/Member Claim Group Royalty", function () {
   let groupId: any;
   let commRemixTermsId: any;
   let ipId1: any;
@@ -188,7 +188,7 @@ describe("Non-Owner/Menber Claim Group Royalty", function () {
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
   });
 
-  it("Non-Owner/Menber collect group royalties", async function () {
+  it("Non-Owner/Member collects group royalties", async function () {
     // Pay royalty
     console.log("============ Pay royalty to group ============");
     await expect(

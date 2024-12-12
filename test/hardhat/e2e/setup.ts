@@ -17,6 +17,7 @@ before(async function () {
   this.accessController = await hre.ethers.getContractAt("AccessController", AccessController);
   this.royaltyModule = await hre.ethers.getContractAt("RoyaltyModule", RoyaltyModule);
   this.royaltyPolicyLAP = await hre.ethers.getContractAt("RoyaltyPolicyLAP", RoyaltyPolicyLAP);
+  this.royaltyPolicyLRP = await hre.ethers.getContractAt("RoyaltyPolicyLRP", RoyaltyPolicyLRP);
   this.ipRoyaltyVaultImpl = await hre.ethers.getContractAt("IpRoyaltyVault", IpRoyaltyVaultImpl);
   this.errors = await hre.ethers.getContractFactory("Errors");
   

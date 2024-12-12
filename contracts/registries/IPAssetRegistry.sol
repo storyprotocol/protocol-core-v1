@@ -119,7 +119,6 @@ contract IPAssetRegistry is
             emit IPRegistrationFeePaid(registerFeePayer, treasury, feeToken, feeAmount);
         }
 
-
         (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);
         uint256 registrationDate = block.timestamp;
         ipAccount.setString("NAME", name);

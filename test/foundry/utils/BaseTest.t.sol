@@ -101,7 +101,12 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
 
         ipAccountRegistry = IPAccountRegistry(ipAssetRegistry);
         lrHarnessImpl = address(
-            new LicenseRegistryHarness(address(licensingModule), address(disputeModule), address(ipGraphACL))
+            new LicenseRegistryHarness(
+                address(ipAssetRegistry),
+                address(licensingModule),
+                address(disputeModule),
+                address(ipGraphACL)
+            )
         );
 
         mockArbitrationPolicy = new MockArbitrationPolicy(address(disputeModule), address(USDC), ARBITRATION_PRICE);

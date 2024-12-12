@@ -325,6 +325,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         impl = address(
             new LicenseRegistry(
+                address(ipAssetRegistry),
                 _getDeployedAddress(type(LicensingModule).name),
                 _getDeployedAddress(type(DisputeModule).name),
                 newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)

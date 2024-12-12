@@ -256,6 +256,18 @@ library Errors {
     /// @notice Call failed.
     error LicenseRegistry__CallFailed();
 
+    /// @notice Zero address provide for Group IP Asset Registry.
+    error LicenseRegistry__ZeroGroupIpRegistry();
+
+    /// @notice The empty group cannot be registered as parent IP.
+    error LicenseRegistry__ParentIpIsEmptyGroup(address groupId);
+
+    /// @notice The group cannot be registered as derivative/child IP.
+    error LicenseRegistry__GroupCannotHasParentIp(address groupId);
+
+    /// @notice The empty group cannot mint license token.
+    error LicenseRegistry__EmptyGroupCannotMintLicenseToken(address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

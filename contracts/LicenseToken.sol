@@ -120,7 +120,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
-            _mint(receiver, tokenId);
+            _safeMint(receiver, tokenId);
             emit LicenseTokenMinted(minter, receiver, tokenId);
         }
     }

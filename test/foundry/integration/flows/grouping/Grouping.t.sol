@@ -12,11 +12,12 @@ import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { Licensing } from "../../../../../contracts/lib/Licensing.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
 
-contract Flows_Integration_Grouping is BaseIntegration {
+contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
     using EnumerableSet for EnumerableSet.UintSet;
     using Strings for *;
 

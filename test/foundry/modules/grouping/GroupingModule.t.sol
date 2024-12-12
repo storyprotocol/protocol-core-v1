@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -17,7 +18,7 @@ import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenS
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-contract GroupingModuleTest is BaseTest {
+contract GroupingModuleTest is BaseTest, ERC721Holder {
     // test register group
     // test add ip to group
     // test remove ip from group

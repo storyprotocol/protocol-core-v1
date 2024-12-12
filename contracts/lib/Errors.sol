@@ -384,6 +384,9 @@ library Errors {
         uint32 newRoyaltyPercent
     );
 
+    /// @notice register derivative require all parent IP to have the same royalty policy.
+    error LicensingModule__RoyaltyPolicyMismatch(address royaltyPolicy, address anotherRoyaltyPolicy);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////

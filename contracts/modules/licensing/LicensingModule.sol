@@ -534,9 +534,14 @@ contract LicensingModule is
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         // Confirm that the royalty policies defined in all license terms of the parent IPs are identical.
         address[] memory rPolicies = new address[](parentIpIds.length);
-        for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
+        (address royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsIds[0]);
+        rPolicies[0] = royaltyPolicy;
+        for (uint256 i = 1; i < parentIpIds.length; i++) {
+            (royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsIds[i]);
             rPolicies[i] = royaltyPolicy;
+            if (rPolicies[i] != rPolicies[0]) {
+                revert Errors.LicensingModule__RoyaltyPolicyMismatch(rPolicies[0], rPolicies[1]);
+            }
         }
 
         if (rPolicies.length != 0 && rPolicies[0] != address(0)) {
@@ -559,9 +564,22 @@ contract LicensingModule is
     ) private returns (address[] memory royaltyPolicies, uint32[] memory royaltyPercents) {
         royaltyPolicies = new address[](licenseTermsIds.length);
         royaltyPercents = new uint32[](licenseTermsIds.length);
+        if (licenseTermsIds.length == 0) return (royaltyPolicies, royaltyPercents);
+
+        (address royaltyPolicy, uint32 royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+            childIpId,
+            parentIpIds[0],
+            licenseTemplate,
+            licenseTermsIds[0],
+            royaltyContext,
+            maxMintingFee
+        );
+        royaltyPolicies[0] = royaltyPolicy;
+        royaltyPercents[0] = royaltyPercent;
+
         // pay minting fee for all parent IPs
-        for (uint256 i = 0; i < parentIpIds.length; i++) {
-            (address royaltyPolicy, uint32 royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+        for (uint256 i = 1; i < parentIpIds.length; i++) {
+            (royaltyPolicy, royaltyPercent) = _executeLicensingHookAndPayMintingFee(
                 childIpId,
                 parentIpIds[i],
                 licenseTemplate,
@@ -571,6 +589,9 @@ contract LicensingModule is
             );
             royaltyPolicies[i] = royaltyPolicy;
             royaltyPercents[i] = royaltyPercent;
+            if (royaltyPolicies[i] != royaltyPolicies[0]) {
+                revert Errors.LicensingModule__RoyaltyPolicyMismatch(royaltyPolicies[0], royaltyPolicies[i]);
+            }
         }
     }
 

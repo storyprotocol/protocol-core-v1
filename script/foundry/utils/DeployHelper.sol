@@ -59,7 +59,7 @@ import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "./ICreate3Deployer.sol";
 
 contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
@@ -902,7 +902,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     /// @dev Get the deterministic deployed address of a contract with CREATE3
     function _getDeployedAddress(string memory name) private view returns (address) {
-        return create3Deployer.getDeployed(_getSalt(name));
+        return create3Deployer.getDeployed(msg.sender, _getSalt(name));
     }
 
     /// @dev Load the implementation address from the proxy contract

@@ -139,7 +139,8 @@ contract Licensing_Scenarios is BaseIntegration {
             amount: 1,
             receiver: u.bob,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[2], licenseIds, "", 100e6);
 
@@ -152,7 +153,8 @@ contract Licensing_Scenarios is BaseIntegration {
             amount: 1,
             receiver: u.bob,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -172,7 +174,8 @@ contract Licensing_Scenarios is BaseIntegration {
             amount: 1,
             receiver: u.bob,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[4], licenseIds, "", 100e6);
 

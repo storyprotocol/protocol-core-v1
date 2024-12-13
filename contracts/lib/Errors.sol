@@ -337,7 +337,14 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId
     );
-
+    /// @notice Commercial revenue share exceeds the maximum revenue share set by the minter of license token.
+    error LicenseToken__CommercialRevenueShareExceedMaxRevenueShare(
+        uint32 commercialRevenueShare,
+        uint32 maxRevenueShare,
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
     ////////////////////////////////////////////////////////////////////////////
     //                           Licensing Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -448,6 +455,15 @@ library Errors {
         address groupId,
         uint32 newRoyaltyPercent,
         uint32 oldRoyaltyPercent
+    );
+
+    /// @notice Parent IP Royalty percentage is above the maximum royalty percentage.
+    error LicensingModule__ExceedMaxRevenueShare(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 revenueShare,
+        uint32 maxRevenueShare
     );
 
     ////////////////////////////////////////////////////////////////////////////

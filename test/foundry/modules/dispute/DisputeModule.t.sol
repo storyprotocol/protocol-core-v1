@@ -98,7 +98,8 @@ contract DisputeModuleTest is BaseTest {
             amount: mintAmount,
             receiver: u.bob,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         }); // first license minted
 
         ipAddr2 = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);

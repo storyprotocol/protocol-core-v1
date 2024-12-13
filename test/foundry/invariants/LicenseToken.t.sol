@@ -20,7 +20,7 @@ contract LicenseTokenHarness {
         address minter,
         address receiver
     ) external {
-        licenseToken.mintLicenseTokens(licensorIpId, licenseTemplate, licenseTermsId, amount, minter, receiver);
+        licenseToken.mintLicenseTokens(licensorIpId, licenseTemplate, licenseTermsId, amount, minter, receiver, 0);
     }
 
     function burnLicenseTokens(address holder, uint256[] calldata tokenIds) external {
@@ -77,7 +77,8 @@ contract LicenseTokenBaseInvariants is BaseTest {
             licenseTermsId: _commTermsId,
             amount: 1,
             minter: address(harness),
-            receiver: address(harness)
+            receiver: address(harness),
+            maxRevenueShare: 0
         });
     }
 

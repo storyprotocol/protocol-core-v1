@@ -154,7 +154,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[6] = registerIpAccount(mockNFT, 6, u.carl);
@@ -180,7 +181,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -210,7 +212,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 2,
                 receiver: u.alice,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             }); // ID 0 (first license)
 
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.alice);
@@ -247,7 +250,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: license0_mintAmount,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             // NC Social Remix license
@@ -258,7 +262,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -284,7 +289,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: license1_mintAmount,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
             carl_licenses[1] = carl_licenses[1] + license1_mintAmount - 1; // use last license ID minted from above
 

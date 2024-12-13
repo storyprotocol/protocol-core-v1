@@ -10,9 +10,6 @@ deployments
 broadcast
 !/broadcast/*/1/
 
-# Docs
-docs/
-
 # Dotenv file
 .env
 

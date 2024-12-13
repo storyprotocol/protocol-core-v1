@@ -190,7 +190,6 @@ contract IPAccountMetaTxTest is BaseTest {
         assertEq(ipAccount.state(), expectedState);
     }
 
-
     function test_IPAccount_isValidSignature() public {
         uint256 tokenId = 100;
 
@@ -255,7 +254,10 @@ contract IPAccountMetaTxTest is BaseTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
 
         bytes memory signature = abi.encodePacked(r, s, v);
-        assertEq(ERC6551(payable(address(ipAccount))).isValidSignature(digest, signature), ERC1271.isValidSignature.selector);
+        assertEq(
+            ERC6551(payable(address(ipAccount))).isValidSignature(digest, signature),
+            ERC1271.isValidSignature.selector
+        );
     }
 
     function test_IPAccount_setPermissionWithSignatureThenCallAccessControlledModule() public {

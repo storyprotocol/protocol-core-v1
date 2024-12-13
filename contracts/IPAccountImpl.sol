@@ -250,10 +250,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
     }
 
     /// @dev Returns whether the `signature` is valid for the `hash.
-    function _erc1271IsValidSignature(
-        bytes32 hash,
-        bytes calldata signature
-    ) internal view override returns (bool) {
+    function _erc1271IsValidSignature(bytes32 hash, bytes calldata signature) internal view override returns (bool) {
         uint8 v = uint8(signature[64]);
         address signer;
 

@@ -19,6 +19,10 @@ library TestProxyHelper {
         address impl,
         bytes memory data
     ) internal returns (address) {
-        return create3Deployer.deploy(salt, abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(impl, data)));
+        return
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(impl, data)),
+                salt
+            );
     }
 }

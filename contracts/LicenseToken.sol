@@ -126,7 +126,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
         $.totalMintedTokens += amount;
-        $.licensorIpTotalTokens[licensorIpId] += amount;
+        if (!LICENSE_REGISTRY.isDefaultLicense(licenseTemplate, licenseTermsId)) {
+            $.licensorIpTotalTokens[licensorIpId] += amount;
+        }
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
@@ -170,6 +172,11 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         )
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
+
+        if ($.licensorIpTotalTokens[childIpId] != 0) {
+            revert Errors.LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(childIpId);
+        }
+
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);

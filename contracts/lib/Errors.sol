@@ -345,6 +345,9 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId
     );
+
+    /// @notice There are non-default license tokens have already been minted from the child Ip.
+    error LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(address childIpId);
     ////////////////////////////////////////////////////////////////////////////
     //                           Licensing Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -384,6 +387,9 @@ library Errors {
 
     /// @notice Derivative IP cannot add license terms.
     error LicensingModule__DerivativesCannotAddLicenseTerms();
+
+    /// @notice there are non-default license tokens have already been minted from the child Ip.
+    error LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens(address childIpId);
 
     /// @notice IP list and license terms list length mismatch.
     error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);

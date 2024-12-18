@@ -257,7 +257,9 @@ contract LicensingModule is
         ) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(childIpId);
         }
-
+        if (LICENSE_NFT.getTotalTokensByLicensor(childIpId) != 0) {
+            revert Errors.LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens(childIpId);
+        }
         // Ensure none of the parent IPs have expired.
         // Confirm that each parent IP has the license terms attached as specified by 'licenseTermsIds'
         // or default license terms.

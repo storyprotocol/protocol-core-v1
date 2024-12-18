@@ -1330,6 +1330,59 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "", 100e6);
     }
 
+    function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_mintPrivateLicense() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                royaltyPolicy: address(royaltyPolicyLRP),
+                currencyToken: address(erc20)
+            })
+        );
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        uint256 lcTokenId = licensingModule.mintLicenseTokens(
+            ipId1,
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            ipOwner2,
+            "",
+            0,
+            0
+        );
+
+        vm.prank(ipOwner2);
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipId2,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commUseTermsId,
+            amount: 1,
+            receiver: ipOwner3,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+        uint256[] memory licenseTokens = new uint256[](1);
+        licenseTokens[0] = lcTokenId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens.selector, ipId2)
+        );
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivativeWithLicenseTokens(ipId2, licenseTokens, "", 100e6);
+    }
+
     function test_LicensingModule_registerDerivative_revert_royaltyPolicyMismatch() public {
         PILTerms memory terms = PILFlavors.commercialRemix({
             mintingFee: 0,
@@ -1747,6 +1800,50 @@ contract LicensingModuleTest is BaseTest {
         );
         vm.prank(ipOwner3);
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+    }
+
+    function test_LicensingModule_registerDerivative_revert_mintPrivateLicense() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                royaltyPolicy: address(royaltyPolicyLRP),
+                currencyToken: address(erc20)
+            })
+        );
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+        vm.prank(ipOwner2);
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipId2,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commUseTermsId,
+            amount: 1,
+            receiver: ipOwner3,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = commRemixTermsId;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens.selector, ipId2)
+        );
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
     }
 
     function test_LicensingModule_registerDerivative_revert_CommercialUseOnlyLicense() public {

@@ -5,10 +5,11 @@ import { LicenseRegistry } from "../../../../contracts/registries/LicenseRegistr
 
 contract LicenseRegistryHarness is LicenseRegistry {
     constructor(
+        address _groupIpAssetRegistry,
         address _erc721Registry,
         address _erc1155Registry,
         address _ipGraphAcl
-    ) LicenseRegistry(_erc721Registry, _erc1155Registry, _ipGraphAcl) {}
+    ) LicenseRegistry(_groupIpAssetRegistry, _erc721Registry, _erc1155Registry, _ipGraphAcl) {}
 
     function setExpirationTime(address ipId, uint256 expireTime) external {
         _setExpirationTime(ipId, expireTime);

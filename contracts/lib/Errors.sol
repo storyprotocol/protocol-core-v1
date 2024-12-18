@@ -133,6 +133,12 @@ library Errors {
         uint256 expectGroupRewardShare
     );
 
+    /// @notice The disputed IP is not allowed to be added to the group.
+    error GroupingModule__CannotAddDisputedIpToGroup(address ipId);
+
+    /// @notice The group reward pool is not whitelisted.
+    error GroupingModule__GroupRewardPoolNotWhitelisted(address groupId, address groupRewardPool);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -253,6 +259,44 @@ library Errors {
     /// @notice Call failed.
     error LicenseRegistry__CallFailed();
 
+    /// @notice Zero address provide for Group IP Asset Registry.
+    error LicenseRegistry__ZeroGroupIpRegistry();
+
+    /// @notice The empty group cannot be registered as parent IP.
+    error LicenseRegistry__ParentIpIsEmptyGroup(address groupId);
+
+    /// @notice The group cannot be registered as derivative/child IP.
+    error LicenseRegistry__GroupCannotHasParentIp(address groupId);
+
+    /// @notice The empty group cannot mint license token.
+    error LicenseRegistry__EmptyGroupCannotMintLicenseToken(address groupId);
+
+    /// @notice The group can only attach one license terms which is common for all members.
+    error LicenseRegistry__GroupIpAlreadyHasLicenseTerms(address groupId);
+
+    /// @notice The license template cannot be Zero address.
+    error LicenseRegistry__LicenseTemplateCannotBeZeroAddress();
+
+    /// @notice license minting fee configured in IP must be identical to the group minting fee.
+    error LicenseRegistry__IpMintingFeeNotMatchWithGroup(address ipId, uint256 mintingFee, uint256 groupMintingFee);
+
+    /// @notice licensing hook configured in IP must be identical to the group licensing hook.
+    error LicenseRegistry__IpLicensingHookNotMatchWithGroup(
+        address ipId,
+        address licensingHook,
+        address groupLicensingHook
+    );
+
+    /// @notice licensing hook data configured in IP must be identical to the group licensing hook data.
+    error LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(address ipId, bytes hookData, bytes groupHookData);
+
+    /// @notice commercial revenue share configured in group must be NOT less than the IP commercial revenue share.
+    error LicenseRegistry__GroupIpCommercialRevShareConfigMustNotLessThanIp(
+        address groupId,
+        uint32 ipCommercialRevShare,
+        uint32 groupCommercialRevShare
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -286,6 +330,24 @@ library Errors {
         address anotherLicenseTemplate
     );
 
+    /// @notice Royalty percentage is invalid that over 100%.
+    error LicenseToken__InvalidRoyaltyPercent(
+        uint32 invalidRoyaltyPercent,
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
+    /// @notice Commercial revenue share exceeds the maximum revenue share set by the minter of license token.
+    error LicenseToken__CommercialRevenueShareExceedMaxRevenueShare(
+        uint32 commercialRevenueShare,
+        uint32 maxRevenueShare,
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
+
+    /// @notice There are non-default license tokens have already been minted from the child Ip.
+    error LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(address childIpId);
     ////////////////////////////////////////////////////////////////////////////
     //                           Licensing Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -325,6 +387,9 @@ library Errors {
 
     /// @notice Derivative IP cannot add license terms.
     error LicensingModule__DerivativesCannotAddLicenseTerms();
+
+    /// @notice there are non-default license tokens have already been minted from the child Ip.
+    error LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens(address childIpId);
 
     /// @notice IP list and license terms list length mismatch.
     error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);
@@ -371,6 +436,40 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId,
         uint32 newRoyaltyPercent
+    );
+
+    /// @notice register derivative require all parent IP to have the same royalty policy.
+    error LicensingModule__RoyaltyPolicyMismatch(address royaltyPolicy, address anotherRoyaltyPolicy);
+
+    /// @notice The group IP cannot enable/disable the licensing configuration once it has members.
+    error LicensingModule__GroupIpCannotChangeIsSet(address groupId);
+
+    /// @notice The group IP cannot change minting fee once it has members.
+    error LicensingModule__GroupIpCannotChangeMintingFee(address groupId);
+
+    /// @notice The group IP cannot change licensing hook once it has members.
+    error LicensingModule__GroupIpCannotChangeLicensingHook(address groupId);
+
+    /// @notice The group IP cannot change hook data once it has members.
+    error LicensingModule__GroupIpCannotChangeHookData(address groupId);
+
+    /// @notice The group Ip cannot specify expect group reward pool, as a group cannot be added to another group.
+    error LicensingModule__GroupIpCannotSetExpectGroupRewardPool(address groupId);
+
+    /// @notice GroupIP cannot decrease the royalty percentage.
+    error LicensingModule__GroupIpCannotDecreaseRoyalty(
+        address groupId,
+        uint32 newRoyaltyPercent,
+        uint32 oldRoyaltyPercent
+    );
+
+    /// @notice Parent IP Royalty percentage is above the maximum royalty percentage.
+    error LicensingModule__ExceedMaxRevenueShare(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 revenueShare,
+        uint32 maxRevenueShare
     );
 
     ////////////////////////////////////////////////////////////////////////////
@@ -593,6 +692,9 @@ library Errors {
     /// @notice Call failed.
     error RoyaltyModule__CallFailed();
 
+    /// @notice The group pool is not whitelisted.
+    error RoyaltyModule__GroupRewardPoolNotWhitelisted(address groupId, address rewardPool);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -697,6 +799,10 @@ library Errors {
 
     /// @notice Same from and to address.
     error IpRoyaltyVault__SameFromToAddress(address vault, address from);
+
+    /// @notice Negative value for casting to uint256.
+    error IpRoyaltyVault__NegativeValueUnsafeCastingToUint256();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Vault Controller                            //
     ////////////////////////////////////////////////////////////////////////////

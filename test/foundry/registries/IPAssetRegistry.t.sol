@@ -169,6 +169,59 @@ contract IPAssetRegistryTest is BaseTest {
         assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
     }
 
+    function test_IPAssetRegistry_RegisterWithPayRegisterFee_Twice() public {
+        address treasury = address(0x123);
+        vm.prank(u.admin);
+        vm.expectEmit();
+        emit IIPAssetRegistry.RegistrationFeeSet(treasury, address(erc20), 1000);
+        registry.setRegistrationFee(treasury, address(erc20), 1000);
+
+        erc20.mint(alice, 1000);
+        uint256 alicePreviousBalance = erc20.balanceOf(alice);
+        vm.prank(alice);
+        erc20.approve(address(registry), 1000);
+
+        uint256 totalSupply = registry.totalSupply();
+
+        string memory name = string.concat(block.chainid.toString(), ": Ape #99");
+        vm.expectEmit(true, true, true, true);
+        emit IIPAssetRegistry.IPRegistrationFeePaid(alice, treasury, address(erc20), 1000);
+        emit IIPAssetRegistry.IPRegistered(
+            ipId,
+            block.chainid,
+            tokenAddress,
+            tokenId,
+            name,
+            "https://storyprotocol.xyz/erc721/99",
+            block.timestamp
+        );
+        vm.prank(alice);
+        address ipId = registry.register(block.chainid, tokenAddress, tokenId);
+
+        assertEq(totalSupply + 1, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+        assertEq(erc20.balanceOf(treasury), 1000);
+        assertEq(erc20.balanceOf(alice), alicePreviousBalance - 1000);
+
+        totalSupply = registry.totalSupply();
+        alicePreviousBalance = erc20.balanceOf(alice);
+
+        vm.prank(alice);
+        address newIpId = registry.register(block.chainid, tokenAddress, tokenId);
+
+        assertEq(ipId, newIpId);
+        assertEq(erc20.balanceOf(treasury), 1000);
+        assertEq(erc20.balanceOf(alice), alicePreviousBalance);
+        assertEq(totalSupply, registry.totalSupply());
+        assertTrue(IPAccountChecker.isRegistered(ipAssetRegistry, block.chainid, tokenAddress, tokenId));
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "NAME"), name);
+        assertEq(IIPAccount(payable(ipId)).getString(address(registry), "URI"), "https://storyprotocol.xyz/erc721/99");
+        assertEq(IIPAccount(payable(ipId)).getUint256(address(registry), "REGISTRATION_DATE"), block.timestamp);
+    }
+
     /// @notice Tests registration of IP permissionlessly.
     function test_IPAssetRegistry_revert_RegisterNotEnoughRegisterFee() public {
         address treasury = address(0x123);

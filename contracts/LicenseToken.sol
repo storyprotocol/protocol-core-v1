@@ -27,6 +27,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
 
+    /// @notice Max Royalty percentage is 100_000_000 means 100%.
+    uint32 public constant MAX_COMMERCIAL_REVENUE_SHARE = 100_000_000;
+
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
@@ -85,6 +88,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @param amount The amount of License Tokens to mint.
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted License Tokens.
+    /// @param maxRevenueShare The maximum revenue share percentage allowed for minting the License Tokens.
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
     function mintLicenseTokens(
         address licensorIpId,
@@ -92,7 +96,8 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
-        address receiver
+        address receiver,
+        uint32 maxRevenueShare
     ) external onlyLicensingModule returns (uint256 startLicenseTokenId) {
         LicenseTokenMetadata memory ltm = LicenseTokenMetadata({
             licensorIpId: licensorIpId,
@@ -101,15 +106,33 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
             transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
             commercialRevShare: LICENSE_REGISTRY.getRoyaltyPercent(licensorIpId, licenseTemplate, licenseTermsId)
         });
-
+        if (maxRevenueShare != 0 && ltm.commercialRevShare > maxRevenueShare) {
+            revert Errors.LicenseToken__CommercialRevenueShareExceedMaxRevenueShare(
+                ltm.commercialRevShare,
+                maxRevenueShare,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId
+            );
+        }
+        if (ltm.commercialRevShare > MAX_COMMERCIAL_REVENUE_SHARE) {
+            revert Errors.LicenseToken__InvalidRoyaltyPercent(
+                ltm.commercialRevShare,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId
+            );
+        }
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
         $.totalMintedTokens += amount;
-        $.licensorIpTotalTokens[licensorIpId] += amount;
+        if (!LICENSE_REGISTRY.isDefaultLicense(licenseTemplate, licenseTermsId)) {
+            $.licensorIpTotalTokens[licensorIpId] += amount;
+        }
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
-            _mint(receiver, tokenId);
+            _safeMint(receiver, tokenId);
             emit LicenseTokenMinted(minter, receiver, tokenId);
         }
     }
@@ -149,6 +172,11 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         )
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
+
+        if ($.licensorIpTotalTokens[childIpId] != 0) {
+            revert Errors.LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(childIpId);
+        }
+
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);

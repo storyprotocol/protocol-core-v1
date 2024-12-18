@@ -157,6 +157,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
             // call royalty module to transfer reward to IP's vault as royalty
             ROYALTY_MODULE.payRoyaltyOnBehalf(ipIds[i], groupId, token, rewards[i]);
         }
+        IERC20(token).forceApprove(address(ROYALTY_MODULE), 0);
     }
 
     function getTotalIps(address groupId) external view returns (uint256) {

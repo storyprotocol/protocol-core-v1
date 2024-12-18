@@ -2,6 +2,8 @@
 pragma solidity 0.8.26;
 
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import { ERC6551 } from "@solady/src/accounts/ERC6551.sol";
+import { ERC1271 } from "@solady/src/accounts/ERC1271.sol";
 
 import { IIPAccount } from "../../contracts/interfaces/IIPAccount.sol";
 import { MetaTx } from "../../contracts/lib/MetaTx.sol";
@@ -186,6 +188,76 @@ contract IPAccountMetaTxTest is BaseTest {
         assertEq("test", abi.decode(result, (string)));
 
         assertEq(ipAccount.state(), expectedState);
+    }
+
+    function test_IPAccount_isValidSignature() public {
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
+
+        IIPAccount ipAccount = IIPAccount(payable(account));
+
+        uint deadline = block.timestamp + 1000;
+
+        bytes32 setPermissionState = keccak256(
+            abi.encode(
+                ipAccount.state(),
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(accessController),
+                    0,
+                    abi.encodeWithSignature(
+                        "setPermission(address,address,address,bytes4,uint8)",
+                        address(ipAccount),
+                        address(metaTxModule),
+                        address(module),
+                        bytes4(0),
+                        AccessPermission.ALLOW
+                    )
+                )
+            )
+        );
+        bytes32 expectedState = keccak256(
+            abi.encode(
+                setPermissionState,
+                abi.encodeWithSignature(
+                    "execute(address,uint256,bytes)",
+                    address(module),
+                    0,
+                    abi.encodeWithSignature("executeSuccessfully(string)", "test")
+                )
+            )
+        );
+
+        bytes32 digest = MessageHashUtils.toTypedDataHash(
+            MetaTx.calculateDomainSeparator(address(ipAccount)),
+            MetaTx.getExecuteStructHash(
+                MetaTx.Execute({
+                    to: address(accessController),
+                    value: 0,
+                    data: abi.encodeWithSignature(
+                        "setPermission(address,address,address,bytes4,uint8)",
+                        address(ipAccount),
+                        address(metaTxModule),
+                        address(module),
+                        bytes4(0),
+                        AccessPermission.ALLOW
+                    ),
+                    nonce: setPermissionState,
+                    deadline: deadline
+                })
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPrivateKey, digest);
+
+        bytes memory signature = abi.encodePacked(r, s, v);
+        assertEq(
+            ERC6551(payable(address(ipAccount))).isValidSignature(digest, signature),
+            ERC1271.isValidSignature.selector
+        );
     }
 
     function test_IPAccount_setPermissionWithSignatureThenCallAccessControlledModule() public {

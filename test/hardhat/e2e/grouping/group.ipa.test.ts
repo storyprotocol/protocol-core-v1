@@ -106,7 +106,7 @@ describe("Add/Remove IP from Group IPA", function () {
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
       this.groupingModule.connect(this.user1).addIp(groupId, [ipId])
-    ).to.be.revertedWithCustomError(this.errors, "AccessController__PermissionDenied");;
+    ).to.be.revertedWithCustomError(this.errors, "AccessController__PermissionDenied");
 
     const containsIp = await this.ipAssetRegistry.containsIp(groupId, ipId);
     expect(containsIp).to.be.false;
@@ -145,5 +145,121 @@ describe("Add/Remove IP from Group IPA", function () {
     await expect(
       this.groupingModule.addIp(groupId, [ipId])
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");
+  });
+});
+
+describe("Group is locked due to registered derivative", function () {
+  let groupId: any;
+  let commRemixTermsId: any;
+  let ipId1: any;
+  let ipId2: any;
+
+  before(async function () {
+    groupId = await expect(
+      this.groupingModule.registerGroup(EvenSplitGroupPool)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    console.log("groupId", groupId);
+
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
+    await expect(
+      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, commRemixTermsId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Register IP
+    console.log("============ Register IP1 ============");
+    ({ ipId: ipId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user1, this.user1));
+    await expect(
+      this.licensingModule.connect(this.user1).setLicensingConfig(ipId1, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Add IP to the group
+    console.log("============ Add Ips to group ============");
+    await expect(
+      this.groupingModule.addIp(groupId, [ipId1])
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    expect(
+      await this.evenSplitGroupPool.getTotalIps(groupId)
+    ).to.be.equal(1);
+
+    // Register derivative IP
+    console.log("============ Register IP2 ============");
+    ({ ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user2, this.user2));
+    await expect(
+      this.licensingModule.connect(this.user2).registerDerivative(ipId2, [groupId], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+  });
+
+  it("Add Ip to locked group", async function () {
+    const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId);
+    await expect(
+      this.licensingModule.setLicensingConfig(ipId, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    await expect(
+      this.groupingModule.addIp(groupId, [ipId])
+    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToHasDerivativeIps");
+  });
+
+  it("Remove Ip from locked group", async function () {
+    await expect(
+      this.groupingModule.removeIp(groupId, [ipId1])
+    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToHasDerivativeIps");
+  });
+});
+
+describe("Group is locked due to minted license token", function () {
+  let groupId: any;
+  let commRemixTermsId: any;
+  let ipId1: any;
+
+  before(async function () {
+    groupId = await expect(
+      this.groupingModule.registerGroup(EvenSplitGroupPool)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    console.log("groupId", groupId);
+
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
+    await expect(
+      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, commRemixTermsId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Register IP
+    console.log("============ Register IP1 ============");
+    ({ ipId: ipId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user1, this.user1));
+    await expect(
+      this.licensingModule.connect(this.user1).setLicensingConfig(ipId1, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Add IP to the group
+    console.log("============ Add Ips to group ============");
+    await expect(
+      this.groupingModule.addIp(groupId, [ipId1])
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    expect(
+      await this.evenSplitGroupPool.getTotalIps(groupId)
+    ).to.be.equal(1);
+
+    // Mint license token
+    console.log("============ Group mint license token ============");
+    await expect(
+      this.licensingModule.mintLicenseTokens(groupId, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+  });
+
+  it("Add Ip to locked group", async function () {
+    const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId);
+    await expect(
+      this.licensingModule.setLicensingConfig(ipId, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    await expect(
+      this.groupingModule.addIp(groupId, [ipId])
+    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens");
+  });
+
+  it("Remove Ip from locked group", async function () {
+    await expect(
+      this.groupingModule.removeIp(groupId, [ipId1])
+    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens");
   });
 });

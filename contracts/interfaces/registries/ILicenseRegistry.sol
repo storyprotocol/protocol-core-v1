@@ -37,6 +37,9 @@ interface ILicenseRegistry {
     /// @notice Returns the default license terms.
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice Checks if the license terms are the default license terms.
+    function isDefaultLicense(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
+
     /// @notice Registers a new license template in the Story Protocol.
     /// @param licenseTemplate The address of the license template to register.
     function registerLicenseTemplate(address licenseTemplate) external;

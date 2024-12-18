@@ -335,7 +335,16 @@ contract PILicenseTemplateTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = commRemixTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(
+            ipAcct[2],
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate),
+            "",
+            0,
+            100e6,
+            0
+        );
 
         uint256 anotherTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialUse({
@@ -367,7 +376,16 @@ contract PILicenseTemplateTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = commNoReciprocalTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(
+            ipAcct[2],
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate),
+            "",
+            0,
+            100e6,
+            0
+        );
 
         bool result = pilTemplate.verifyMintLicenseToken(commNoReciprocalTermsId, ipOwner[3], ipAcct[2], 1);
         assertFalse(result);
@@ -428,7 +446,16 @@ contract PILicenseTemplateTest is BaseTest {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = socialRemixTermsId;
         vm.prank(ipOwner[2]);
-        licensingModule.registerDerivative(ipAcct[2], parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(
+            ipAcct[2],
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate),
+            "",
+            0,
+            100e6,
+            0
+        );
 
         // checking register derivative of derivative, expect false
         bool result = pilTemplate.verifyRegisterDerivative(ipAcct[3], ipAcct[2], socialRemixTermsId, ipOwner[3]);

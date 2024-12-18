@@ -17,7 +17,7 @@ import { BroadcastManager } from "../BroadcastManager.s.sol";
 import { JsonDeploymentHandler } from "../JsonDeploymentHandler.s.sol";
 import { JsonBatchTxHelper } from "../JsonBatchTxHelper.s.sol";
 import { StringUtil } from "../StringUtil.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "../ICreate3Deployer.sol";
 import { UpgradedImplHelper } from "./UpgradedImplHelper.sol";
 import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
 

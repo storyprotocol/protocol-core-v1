@@ -56,7 +56,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -71,7 +72,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
     }
 
@@ -86,7 +88,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -118,7 +121,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTemplate: address(pilTemplate),
             royaltyContext: "",
             maxMintingFee: 0,
-            maxRts: 100e6
+            maxRts: 100e6,
+            maxRevenueShare: 0
         });
     }
 
@@ -133,7 +137,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -161,7 +166,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
     }

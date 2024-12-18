@@ -261,9 +261,13 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // deploy ipRoyaltyVault for the ipId given in case it does not exist yet
         if ($.ipRoyaltyVaults[ipId] == address(0)) {
-            address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
-                ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
-                : ipId;
+            address receiver = ipId;
+            if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+                receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
+                if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver)) {
+                    revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+                }
+            }
 
             _deployIpRoyaltyVault(ipId, receiver);
         }
@@ -521,6 +525,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licensesPercent The license percentage of the licenses being minted
     /// @param ipRoyaltyVault The address of the ipRoyaltyVault
     /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
+    // solhint-disable code-complexity
     function _distributeRoyaltyTokensToPolicies(
         address ipId,
         address[] calldata parentIpIds,
@@ -575,9 +580,13 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // sends remaining royalty tokens to the ipId address or
         // in the case the ipId is a group then send to the group reward pool
-        address receiver = IP_ASSET_REGISTRY.isRegisteredGroup(ipId)
-            ? IP_ASSET_REGISTRY.getGroupRewardPool(ipId)
-            : ipId;
+        address receiver = ipId;
+        if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+            receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
+            if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver)) {
+                revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+            }
+        }
         IERC20(ipRoyaltyVault).safeTransfer(receiver, MAX_PERCENT - totalRtsRequiredToLink);
     }
 

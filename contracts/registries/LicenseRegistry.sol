@@ -19,6 +19,7 @@ import { ILicenseTemplate } from "../interfaces/modules/licensing/ILicenseTempla
 import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IPGraphACL } from "../access/IPGraphACL.sol";
+import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
@@ -30,6 +31,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using IPAccountStorageOps for IIPAccount;
 
     address public constant IP_GRAPH = address(0x0101);
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -81,10 +84,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule, address ipGraphAcl) {
+    constructor(address groupIpAssetRegistry, address licensingModule, address disputeModule, address ipGraphAcl) {
+        if (groupIpAssetRegistry == address(0)) revert Errors.LicenseRegistry__ZeroGroupIpRegistry();
         if (licensingModule == address(0)) revert Errors.LicenseRegistry__ZeroLicensingModule();
         if (disputeModule == address(0)) revert Errors.LicenseRegistry__ZeroDisputeModule();
         if (ipGraphAcl == address(0)) revert Errors.LicenseRegistry__ZeroIPGraphACL();
+        GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(groupIpAssetRegistry);
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
@@ -192,6 +197,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!_exists(licenseTemplate, licenseTermsId)) {
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
+        // The group can only attach one license terms which is common for all members.
+        if (
+            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId) &&
+            _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0
+        ) {
+            revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+        }
 
         if (_isExpiredNow(ipId)) {
             revert Errors.LicenseRegistry__IpExpired(ipId);
@@ -260,6 +272,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         }
 
         IP_GRAPH_ACL.allow();
+        // Note: The IPGraph does not validate the parent-child relationship.
+        // It only adds the parent IP to the child IP.
+        // All the validation is done in the LicensingModule:
+        // 1. Should be no duplicate parent IP.
+        // 2. Should not addParentIp again to the same child IP.
         (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
@@ -287,6 +304,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 licenseTermsId,
         bool isMintedByIpOwner
     ) external view returns (Licensing.LicensingConfig memory) {
+        if (
+            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(licensorIpId) &&
+            GROUP_IP_ASSET_REGISTRY.totalMembers(licensorIpId) == 0
+        ) {
+            revert Errors.LicenseRegistry__EmptyGroupCannotMintLicenseToken(licensorIpId);
+        }
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (_isExpiredNow(licensorIpId)) {
             revert Errors.LicenseRegistry__ParentIpExpired(licensorIpId);
@@ -310,6 +333,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param groupLicenseTermsId The ID of the license terms attached to the group.
     /// the IP must have this license terms.
     /// @return ipLicensingConfig The configuration for license attached to the IP.
+    // solhint-disable code-complexity
     function verifyGroupAddIp(
         address groupId,
         address groupRewardPool,
@@ -340,6 +364,39 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (_getExpireTime(ipId) != 0) {
             revert Errors.LicenseRegistry__CannotAddIpWithExpirationToGroup(ipId);
         }
+        // ipId must have the same license config items with group IP
+        Licensing.LicensingConfig memory groupLct = _getLicensingConfig(
+            groupId,
+            groupLicenseTemplate,
+            groupLicenseTermsId
+        );
+        // minting fee must be the same
+        if (lct.mintingFee != groupLct.mintingFee) {
+            revert Errors.LicenseRegistry__IpMintingFeeNotMatchWithGroup(ipId, lct.mintingFee, groupLct.mintingFee);
+        }
+        // hook must be the same
+        if (lct.licensingHook != groupLct.licensingHook) {
+            revert Errors.LicenseRegistry__IpLicensingHookNotMatchWithGroup(
+                ipId,
+                lct.licensingHook,
+                groupLct.licensingHook
+            );
+        }
+        // hook data must be the same
+        if (
+            lct.hookData.length != groupLct.hookData.length || keccak256(lct.hookData) != keccak256(groupLct.hookData)
+        ) {
+            revert Errors.LicenseRegistry__IpLicensingHookDataNotMatchWithGroup(ipId, lct.hookData, groupLct.hookData);
+        }
+        // group commercial revenue share must be greater than or equal to IP commercial revenue share
+        if (groupLct.commercialRevShare < lct.commercialRevShare) {
+            revert Errors.LicenseRegistry__GroupIpCommercialRevShareConfigMustNotLessThanIp(
+                ipId,
+                lct.commercialRevShare,
+                groupLct.commercialRevShare
+            );
+        }
+
         ipLicensingConfig = lct;
     }
 
@@ -506,6 +563,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
     }
 
+    /// @notice Checks if the license terms are the default license terms.
+    function isDefaultLicense(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return $.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseTermsId == licenseTermsId;
+    }
     /// @notice Returns the license terms through which a child IP links to a parent IP.
     /// @param childIpId The address of the child IP.
     /// @param parentIpId The address of the parent IP.
@@ -553,6 +615,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         bool isUsingLicenseToken
     ) internal view {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        // group IP should not has parent IP
+        if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(childIpId)) {
+            revert Errors.LicenseRegistry__GroupCannotHasParentIp(childIpId);
+        }
+        // revert if the parent IP is empty group IP
+        if (
+            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(parentIpId) &&
+            GROUP_IP_ASSET_REGISTRY.totalMembers(parentIpId) == 0
+        ) {
+            revert Errors.LicenseRegistry__ParentIpIsEmptyGroup(parentIpId);
+        }
         if (DISPUTE_MODULE.isIpTagged(parentIpId)) {
             revert Errors.LicenseRegistry__ParentIpTagged(parentIpId);
         }

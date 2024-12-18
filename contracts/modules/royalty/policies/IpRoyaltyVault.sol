@@ -32,7 +32,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @param claimableAtSnapshot [DEPRECATED] Amount of revenue token claimable at a given snapshot
     /// @param isClaimedAtSnapshot [DEPRECATED] Indicates whether the claimer has claimed the token at a given snapshot
     /// @param tokens The list of revenue tokens in the vault
-    /// @param revenueAccBalances The accumulated balance of revenue tokens in the vault
+    /// @param vaultAccBalances The accumulated balance of revenue tokens in the vault
     /// @param claimerRevenueDebt The revenue debt of the claimer, used to calculate the claimable revenue,
     /// positive value means claimed need to deducted, negative value means claimable from vault
     /// @custom:storage-location erc7201:story-protocol.IpRoyaltyVault
@@ -313,7 +313,9 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         uint256 accBalance = $.vaultAccBalances[token];
         uint256 userAmount = balanceOf(claimer);
         int256 rewardDebt = $.claimerRevenueDebt[token][claimer];
-        return uint256(int256((accBalance * userAmount) / totalSupply()) - rewardDebt);
+        int256 pending = int256((accBalance * userAmount) / totalSupply()) - rewardDebt;
+        if (pending < 0) revert Errors.IpRoyaltyVault__NegativeValueUnsafeCastingToUint256();
+        return uint256(pending);
     }
 
     /// @dev Returns the storage struct of IpRoyaltyVault

@@ -101,8 +101,15 @@ contract IPAssetRegistry is
         uint256 tokenId,
         address registerFeePayer
     ) internal override returns (address id) {
-        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+        id = _registerIpAccount(chainid, tokenContract, tokenId);
+        IIPAccount ipAccount = IIPAccount(payable(id));
 
+        // return if the IP was already registered
+        if (bytes(ipAccount.getString("NAME")).length != 0) {
+            return id;
+        }
+
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
         // Pay registration fee
         uint96 feeAmount = $.feeAmount;
         if (feeAmount > 0) {
@@ -110,14 +117,6 @@ contract IPAssetRegistry is
             address treasury = $.treasury;
             IERC20(feeToken).safeTransferFrom(registerFeePayer, treasury, uint256(feeAmount));
             emit IPRegistrationFeePaid(registerFeePayer, treasury, feeToken, feeAmount);
-        }
-
-        id = _registerIpAccount(chainid, tokenContract, tokenId);
-        IIPAccount ipAccount = IIPAccount(payable(id));
-
-        // return if the IP was already registered
-        if (bytes(ipAccount.getString("NAME")).length != 0) {
-            return id;
         }
 
         (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);

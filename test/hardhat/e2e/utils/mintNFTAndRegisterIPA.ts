@@ -2,7 +2,7 @@
 
 import "../setup";
 import { mintNFT } from "./nftHelper";
-import { MockERC721, IPAssetRegistry, LicensingModule, PILicenseTemplate } from "../constants";
+import { MockERC721, IPAssetRegistry, LicensingModule, PILicenseTemplate, GroupingModule } from "../constants";
 import { expect } from "chai";
 import hre from "hardhat";
 import { network } from "hardhat";
@@ -46,4 +46,29 @@ export async function mintNFTAndRegisterIPAWithLicenseTerms(licenseTermsId: any,
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     return { tokenId, ipId };
+};
+
+export async function registerGroupIPA(groupPool: any, licenseTermsId: any, licenseConfig?: any, registerIPASigner?: any): Promise<HexString> {
+    const groupingModule = await hre.ethers.getContractAt("GroupingModule", GroupingModule, registerIPASigner);
+    const licensingModule = await hre.ethers.getContractAt("LicensingModule", LicensingModule, registerIPASigner);
+
+    console.log("============ Register Group ============");
+    const groupId = await expect(
+        groupingModule.registerGroup(groupPool)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    console.log("groupId", groupId);
+
+    console.log("============ Attach License Terms ============");
+    await expect(
+        licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, licenseTermsId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    if (licenseConfig) {
+        console.log("============ Set Licensing Config ============");
+        await expect(
+            licensingModule.setLicensingConfig(groupId, PILicenseTemplate, licenseTermsId, licenseConfig)
+        ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    }
+    
+    return groupId;
 };

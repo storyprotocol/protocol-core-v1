@@ -563,6 +563,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return ($.defaultLicenseTemplate, $.defaultLicenseTermsId);
     }
 
+    /// @notice Checks if the license terms are the default license terms.
+    function isDefaultLicense(address licenseTemplate, uint256 licenseTermsId) external view returns (bool) {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        return $.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseTermsId == licenseTermsId;
+    }
     /// @notice Returns the license terms through which a child IP links to a parent IP.
     /// @param childIpId The address of the child IP.
     /// @param parentIpId The address of the parent IP.

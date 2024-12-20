@@ -11,7 +11,7 @@ contract Main is DeployHelper {
     address internal ERC6551_REGISTRY = 0x000000006551c19487814612e58FE06813775758;
     address internal CREATE3_DEPLOYER = 0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf;
     uint256 internal CREATE3_DEFAULT_SEED = 6;
-    address internal IP_GRAPH_ACL = 0x680E66e4c7Df9133a7AFC1ed091089B32b89C4ae;
+    address internal IP_GRAPH_ACL = address(0x1640A22a8A086747cD377b73954545e2Dfcc9Cad);
     // For arbitration policy
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 USDC
     address internal constant TREASURY_ADDRESS = address(200);

@@ -66,7 +66,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: commTermsId,
             amount: mintAmount,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         for (uint256 i = 0; i < mintAmount; i++) {
@@ -89,7 +90,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: commTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         vm.prank(ipOwner[1]);
@@ -137,7 +139,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         vm.expectRevert(Errors.LicenseToken__NotTransferable.selector);
@@ -157,7 +160,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         string memory tokenURI = licenseToken.tokenURI(licenseTokenId);
@@ -196,7 +200,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
@@ -233,7 +238,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
@@ -280,7 +286,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
     }
 }

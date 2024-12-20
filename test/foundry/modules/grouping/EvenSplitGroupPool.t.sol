@@ -205,7 +205,7 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
 
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0, 0);
 
         vm.prank(address(groupingModule));
         rewardPool.addIp(group1, ipId1, 0);
@@ -270,11 +270,11 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
 
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0, 0);
 
         vm.prank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commRemixTermsId);
-        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), commRemixTermsId, 1, address(this), "", 0, 0);
 
         vm.startPrank(address(groupingModule));
         rewardPool.addIp(group1, ipId1, 0);

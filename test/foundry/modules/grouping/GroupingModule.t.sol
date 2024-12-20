@@ -251,11 +251,11 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
-        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);
@@ -275,7 +275,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = termsId;
         vm.prank(ipOwner3);
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
 
         erc20.mint(ipOwner3, 1000);
         vm.startPrank(ipOwner3);
@@ -331,11 +331,11 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
-        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
-        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);
@@ -355,7 +355,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = termsId;
         vm.prank(ipOwner3);
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
 
         erc20.mint(ipOwner3, 1000);
         vm.startPrank(ipOwner3);
@@ -744,7 +744,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         uint256[] memory licenseTermsIds = new uint256[](1);
         licenseTermsIds[0] = termsId;
         vm.startPrank(ipOwner2);
-        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
         licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
@@ -807,7 +807,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         parentIpIds[0] = groupId;
         licenseTermsIds[0] = termsId;
 
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
         vm.stopPrank();
 
         ipIds = new address[](1);
@@ -850,7 +850,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licenseTermsIds[0] = termsId;
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__ParentIpIsEmptyGroup.selector, groupId));
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
         vm.stopPrank();
     }
 
@@ -873,7 +873,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.expectRevert(
             abi.encodeWithSelector(Errors.LicenseRegistry__EmptyGroupCannotMintLicenseToken.selector, groupId)
         );
-        licensingModule.mintLicenseTokens(groupId, address(pilTemplate), termsId, 1, ipOwner3, "", 0);
+        licensingModule.mintLicenseTokens(groupId, address(pilTemplate), termsId, 1, ipOwner3, "", 0, 0);
         vm.stopPrank();
     }
 
@@ -901,7 +901,16 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licenseTermsIds[0] = termsId;
 
         vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__GroupCannotHasParentIp.selector, groupId));
-        licensingModule.registerDerivative(groupId, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(
+            groupId,
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate),
+            "",
+            0,
+            100e6,
+            0
+        );
         vm.stopPrank();
     }
 
@@ -958,7 +967,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         parentIpIds[0] = groupId;
         licenseTermsIds[0] = termsId;
 
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
         vm.stopPrank();
 
         address[] memory removeIpIds = new address[](1);

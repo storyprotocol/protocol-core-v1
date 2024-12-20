@@ -337,7 +337,17 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId
     );
+    /// @notice Commercial revenue share exceeds the maximum revenue share set by the minter of license token.
+    error LicenseToken__CommercialRevenueShareExceedMaxRevenueShare(
+        uint32 commercialRevenueShare,
+        uint32 maxRevenueShare,
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
 
+    /// @notice There are non-default license tokens have already been minted from the child Ip.
+    error LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(address childIpId);
     ////////////////////////////////////////////////////////////////////////////
     //                           Licensing Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -377,6 +387,9 @@ library Errors {
 
     /// @notice Derivative IP cannot add license terms.
     error LicensingModule__DerivativesCannotAddLicenseTerms();
+
+    /// @notice there are non-default license tokens have already been minted from the child Ip.
+    error LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens(address childIpId);
 
     /// @notice IP list and license terms list length mismatch.
     error LicensingModule__LicenseTermsLengthMismatch(uint256 ipLength, uint256 licenseTermsLength);
@@ -448,6 +461,15 @@ library Errors {
         address groupId,
         uint32 newRoyaltyPercent,
         uint32 oldRoyaltyPercent
+    );
+
+    /// @notice Parent IP Royalty percentage is above the maximum royalty percentage.
+    error LicensingModule__ExceedMaxRevenueShare(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint32 revenueShare,
+        uint32 maxRevenueShare
     );
 
     ////////////////////////////////////////////////////////////////////////////

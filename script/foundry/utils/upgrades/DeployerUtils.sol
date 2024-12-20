@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import { console2 } from "forge-std/console2.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "../ICreate3Deployer.sol";
 
 contract DeployerUtils {
 

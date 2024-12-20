@@ -74,6 +74,13 @@ contract BroadcastManager is Script {
             relayer = u.relayer;
             upgraderExecDelay = 10 minutes;
             vm.startPrank(deployer);
+        } else if (block.chainid == 1399) {
+            deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
+            deployer = vm.addr(deployerPrivateKey);
+            multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
+            relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
+            upgraderExecDelay = 10 minutes;
+            vm.startBroadcast(deployerPrivateKey);
         } else {
             console2.log("Unsupported chain", block.chainid);
             revert("Unsupported chain");

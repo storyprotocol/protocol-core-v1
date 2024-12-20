@@ -99,8 +99,26 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             vm.stopPrank();
         }
 
-        licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
-        licensingModule.mintLicenseTokens(ipAcct[2], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(
+            ipAcct[1],
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            address(this),
+            "",
+            0,
+            0
+        );
+        licensingModule.mintLicenseTokens(
+            ipAcct[2],
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            address(this),
+            "",
+            0,
+            0
+        );
         {
             address[] memory ipIds = new address[](2);
             ipIds[0] = ipAcct[1];
@@ -117,7 +135,16 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             parentIpIds[0] = groupId;
             uint256[] memory licenseIds = new uint256[](1);
             licenseIds[0] = commRemixTermsId;
-            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "", 0, 100e6);
+            licensingModule.registerDerivative(
+                ipAcct[3],
+                parentIpIds,
+                licenseIds,
+                address(pilTemplate),
+                "",
+                0,
+                100e6,
+                0
+            );
             vm.stopPrank();
         }
 

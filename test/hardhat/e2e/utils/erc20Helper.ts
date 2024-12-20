@@ -104,3 +104,23 @@ export async function checkAndApproveSpender(owner: any, spender: any, amount: b
       await approveSpender(spender, amount, owner);
   }
 };
+
+export async function getErc20Balance(address: string): Promise<bigint> {
+  console.log("============ Get Erc20 Balance ============");
+  const contractAbi = [
+    // Read-Only Functions
+    "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)",
+
+    // Authenticated Functions
+    "function transfer(address to, uint amount) returns (bool)",
+
+    // Events
+    "event Transfer(address indexed from, address indexed to, uint amount)",
+  ];
+  const contract = await hre.ethers.getContractAt(contractAbi, MockERC20);
+  const balance = await contract.balanceOf(address);
+  console.log(address, balance);
+  return balance;
+};

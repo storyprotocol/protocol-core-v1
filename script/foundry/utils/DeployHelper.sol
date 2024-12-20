@@ -59,7 +59,7 @@ import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "./ICreate3Deployer.sol";
 
 contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
@@ -215,9 +215,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             contractKey = "MockERC20";
             _predeploy(contractKey);
             erc20 = MockERC20(
-                create3Deployer.deploy(
-                    _getSalt(type(MockERC20).name),
-                    abi.encodePacked(type(MockERC20).creationCode, abi.encode(deployer))
+                create3Deployer.deployDeterministic(
+                    abi.encodePacked(type(MockERC20).creationCode, abi.encode(deployer)),
+                    _getSalt(type(MockERC20).name)
                 )
             );
             require(
@@ -231,9 +231,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         contractKey = "ProtocolAccessManager";
         _predeploy(contractKey);
         protocolAccessManager = AccessManager(
-            create3Deployer.deploy(
-                _getSalt(type(AccessManager).name),
-                abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer))
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer)),
+                _getSalt(type(AccessManager).name)
             )
         );
         require(
@@ -245,9 +245,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         contractKey = "ProtocolPauseAdmin";
         _predeploy(contractKey);
         protocolPauser = ProtocolPauseAdmin(
-            create3Deployer.deploy(
-                _getSalt(type(ProtocolPauseAdmin).name),
-                abi.encodePacked(type(ProtocolPauseAdmin).creationCode, abi.encode(address(protocolAccessManager)))
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(type(ProtocolPauseAdmin).creationCode, abi.encode(address(protocolAccessManager))),
+                _getSalt(type(ProtocolPauseAdmin).name)
             )
         );
         require(
@@ -359,7 +359,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         _predeploy(contractKey);
         ipAccountImpl = IPAccountImpl(
-            payable(create3Deployer.deploy(_getSalt(type(IPAccountImpl).name), ipAccountImplCode))
+            payable(create3Deployer.deployDeterministic(ipAccountImplCode, _getSalt(type(IPAccountImpl).name)))
         );
         _postdeploy(contractKey, address(ipAccountImpl));
         require(
@@ -621,24 +621,29 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         _predeploy("IpRoyaltyVaultImpl");
         ipRoyaltyVaultImpl = IpRoyaltyVault(
-            create3Deployer.deploy(
-                _getSalt(type(IpRoyaltyVault).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(disputeModule), address(royaltyModule), address(ipAssetRegistry), address(groupingModule))
-                )
+                    abi.encode(
+                        address(disputeModule),
+                        address(royaltyModule),
+                        address(ipAssetRegistry),
+                        address(groupingModule)
+                    )
+                ),
+                _getSalt(type(IpRoyaltyVault).name)
             )
         );
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
         ipRoyaltyVaultBeacon = UpgradeableBeacon(
-            create3Deployer.deploy(
-                _getSalt(type(UpgradeableBeacon).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(UpgradeableBeacon).creationCode,
                     abi.encode(address(ipRoyaltyVaultImpl), deployer)
-                )
+                ),
+                _getSalt(type(UpgradeableBeacon).name)
             )
         );
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
@@ -665,12 +670,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         _predeploy("CoreMetadataViewModule");
         coreMetadataViewModule = CoreMetadataViewModule(
-            create3Deployer.deploy(
-                _getSalt(type(CoreMetadataViewModule).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(CoreMetadataViewModule).creationCode,
                     abi.encode(address(ipAssetRegistry), address(moduleRegistry))
-                )
+                ),
+                _getSalt(type(CoreMetadataViewModule).name)
             )
         );
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
@@ -679,9 +684,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         if (newDeployedIpGraphACL) {
             _predeploy("IPGraphACL");
             ipGraphACL = IPGraphACL(
-                create3Deployer.deploy(
-                    _getSalt(type(IPGraphACL).name),
-                    abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager)))
+                create3Deployer.deployDeterministic(
+                    abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager))),
+                    _getSalt(type(IPGraphACL).name)
                 )
             );
         } else {
@@ -903,7 +908,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     /// @dev Get the deterministic deployed address of a contract with CREATE3
     function _getDeployedAddress(string memory name) private view returns (address) {
-        return create3Deployer.getDeployed(_getSalt(name));
+        return create3Deployer.predictDeterministicAddress(_getSalt(name));
     }
 
     /// @dev Load the implementation address from the proxy contract

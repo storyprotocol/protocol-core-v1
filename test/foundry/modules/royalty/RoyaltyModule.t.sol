@@ -900,7 +900,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
             amount: 1,
             receiver: ipAcct2,
             royaltyContext: "",
-            maxMintingFee: 1e30
+            maxMintingFee: 1e30,
+            maxRevenueShare: 0
         });
         // register derivative
         vm.startPrank(address(2));

@@ -5,7 +5,7 @@ pragma solidity 0.8.26;
 // external
 import { Test } from "forge-std/Test.sol";
 import { ERC6551Registry } from "erc6551/ERC6551Registry.sol";
-import { Create3Deployer } from "@create3-deployer/contracts/Create3Deployer.sol";
+import { Create3Deployer } from "../../../script/foundry/utils/Create3Deployer.sol";
 
 // contract
 import { IPAccountRegistry } from "../../../contracts/registries/IPAccountRegistry.sol";

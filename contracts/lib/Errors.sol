@@ -573,6 +573,9 @@ library Errors {
     /// @notice Min liveness is above max liveness.
     error ArbitrationPolicyUMA__MinLivenessAboveMax();
 
+    /// @notice Max bond is below minimum bond.
+    error ArbitrationPolicyUMA__MaxBondBelowMinimumBond();
+
     /// @notice IP owner time percent is above max.
     error ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
 

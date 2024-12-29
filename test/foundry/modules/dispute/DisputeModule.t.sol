@@ -204,6 +204,14 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.arbitrationPolicyCooldown(), 100);
     }
 
+    function test_DisputeModule_setArbitrationPolicy_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        disputeModule.setArbitrationPolicy(ipAddr, address(mockArbitrationPolicy2));
+    }
+
     function test_DisputeModule_setArbitrationPolicy_revert_UnauthorizedAccess() public {
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -397,6 +405,16 @@ contract DisputeModuleTest is BaseTest {
         assertEq(parentDisputeId, 0);
     }
 
+    function test_DisputeModule_setDisputeJudgement_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        // set dispute judgement
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+    }
+
     function test_DisputeModule_setDisputeJudgement_revert_NotInDisputeState() public {
         vm.expectRevert(Errors.DisputeModule__NotInDisputeState.selector);
         disputeModule.setDisputeJudgement(1, true, "");
@@ -471,20 +489,12 @@ contract DisputeModuleTest is BaseTest {
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_revert_paused() public {
-        vm.startPrank(ipAccount1);
-        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
-        vm.stopPrank();
-
+    function test_DisputeModule_cancelDispute_revert_paused() public {
         vm.prank(u.admin);
         disputeModule.pause();
 
-        // set dispute judgement
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        vm.startPrank(arbitrationRelayer);
-        disputeModule.setDisputeJudgement(1, true, "");
-        vm.stopPrank();
+        disputeModule.cancelDispute(1, "");
     }
 
     function test_DisputeModule_cancelDispute_revert_NotDisputeInitiator() public {
@@ -629,6 +639,14 @@ contract DisputeModuleTest is BaseTest {
         assertEq(parentDisputeId, 1);
     }
 
+    function test_DisputeModule_resolveDispute_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        disputeModule.resolveDispute(1, "");
+    }
+
     function test_DisputeModule_resolveDispute_revert_NotDisputeInitiator() public {
         vm.expectRevert(Errors.DisputeModule__NotDisputeInitiator.selector);
         disputeModule.resolveDispute(1, "");
@@ -696,6 +714,14 @@ contract DisputeModuleTest is BaseTest {
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
         disputeModule.resolveDispute(1, "");
         vm.stopPrank();
+    }
+
+    function test_DisputeModule_updateActiveArbitrationPolicy_revert_paused() public {
+        vm.prank(u.admin);
+        disputeModule.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        disputeModule.updateActiveArbitrationPolicy(address(1));
     }
 
     function test_DisputeModule_updateActiveArbitrationPolicy_BaseArbitrationPolicyToStart() public {

@@ -161,7 +161,10 @@ contract DisputeModule is
     /// @notice Sets the arbitration policy for an ipId
     /// @param ipId The ipId
     /// @param nextArbitrationPolicy The address of the arbitration policy
-    function setArbitrationPolicy(address ipId, address nextArbitrationPolicy) external verifyPermission(ipId) {
+    function setArbitrationPolicy(
+        address ipId,
+        address nextArbitrationPolicy
+    ) external whenNotPaused verifyPermission(ipId) {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         if (!$.isWhitelistedArbitrationPolicy[nextArbitrationPolicy])
             revert Errors.DisputeModule__NotWhitelistedArbitrationPolicy();
@@ -258,7 +261,7 @@ contract DisputeModule is
     /// @notice Cancels an ongoing dispute
     /// @param disputeId The dispute id
     /// @param data The data to cancel the dispute
-    function cancelDispute(uint256 disputeId, bytes calldata data) external nonReentrant {
+    function cancelDispute(uint256 disputeId, bytes calldata data) external nonReentrant whenNotPaused {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 
@@ -322,7 +325,7 @@ contract DisputeModule is
     /// @notice Resolves a dispute after it has been judged
     /// @param disputeId The dispute id
     /// @param data The data to resolve the dispute
-    function resolveDispute(uint256 disputeId, bytes calldata data) external nonReentrant {
+    function resolveDispute(uint256 disputeId, bytes calldata data) external nonReentrant whenNotPaused {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         Dispute memory dispute = $.disputes[disputeId];
 
@@ -349,7 +352,7 @@ contract DisputeModule is
     /// @notice Updates the active arbitration policy for a given ipId
     /// @param ipId The ipId
     /// @return arbitrationPolicy The address of the arbitration policy
-    function updateActiveArbitrationPolicy(address ipId) external returns (address arbitrationPolicy) {
+    function updateActiveArbitrationPolicy(address ipId) external whenNotPaused returns (address arbitrationPolicy) {
         return _updateActiveArbitrationPolicy(ipId);
     }
 

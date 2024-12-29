@@ -122,6 +122,8 @@ contract ArbitrationPolicyUMA is
     /// @param maxBond The maximum bond value
     function setMaxBond(address token, uint256 maxBond) external restricted {
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
+        if (maxBond < $.oov3.getMinimumBond(token)) revert Errors.ArbitrationPolicyUMA__MaxBondBelowMinimumBond();
+
         $.maxBonds[token] = maxBond;
 
         emit MaxBondSet(token, maxBond);

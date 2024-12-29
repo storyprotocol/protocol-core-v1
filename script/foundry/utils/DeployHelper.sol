@@ -93,7 +93,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     // Policy
     ArbitrationPolicyUMA internal arbitrationPolicyUMA;
-    address internal oov3;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -143,7 +142,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
         TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        oov3 = address(1000); // mock address replaced below depending on chainid
         /// @dev USDC addresses are fetched from
         /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
         /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
@@ -151,9 +149,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
         else if (block.chainid == 1513) {
             erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
-        } else if (block.chainid == 1516) {
-            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
         }
     }
 
@@ -767,9 +762,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.setArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA));
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
-        arbitrationPolicyUMA.setOOV3(address(oov3));
         arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
-        arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
         disputeModule.setArbitrationPolicyCooldown(7 days);
 
         // Core Metadata Module

@@ -72,16 +72,19 @@ jobs:
         run: |
           devnet_version=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}
           if [[ "$devnet_version" == "devnet" ]]; then
-            rpcurl = "http://r1-d.odyssey-devnet.storyrpc.io:8545"
-            chainid = 1315
+            rpcurl="http://r1-d.odyssey-devnet.storyrpc.io:8545"
+            chainid=1315
           else
-            rpcurl = "https://public.storyrpc.io"
-            chainid = 1514
+            rpcurl="https://public.storyrpc.io"
+            chainid=1514
           fi
+
+          echo $rpcurl
+          echo $chainid
 
           result=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC"  --legacy 2>&1)
           echo $result
-          erc721 = $(echo $result | grep "Deployed to:" | cut -d ":" -f 2 | tr -d ' ')
+          erc721=$(echo $result | grep "Deployed to:" | cut -d ":" -f 2 | tr -d ' ')
           echo $erc721
 
           echo "STORY_URL=$rpcurl" >> .env

@@ -793,6 +793,41 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(defenderIpIdOwnerBalAfter - defenderIpIdOwnerBalBefore, bondRecipientAmount);
     }
 
+    function test_ArbitrationPolicyUMA_disputeAssertion_WithIpOwnerTimePercentChange() public {
+        // liveness set to 30 days
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(susd);
+        uint256 bond = 0;
+
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        address targetIpId = address(1);
+
+        uint256 disputeId = newDisputeModule.raiseDispute(
+            targetIpId,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            data
+        );
+        // warp
+        vm.warp(block.timestamp + 4 days);
+        // set the IpOwnerTimePercent to 0%
+        newArbitrationPolicyUMA.setLiveness(10, 100, 0);
+
+        bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+        bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
+        vm.startPrank(address(2));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow.selector,
+                4 days,
+                liveness,
+                address(2)
+            )
+        );
+        newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
+    }
+
     function test_ArbitrationPolicyUMA_assertionResolvedCallback_revert_paused() public {
         newArbitrationPolicyUMA.pause();
 

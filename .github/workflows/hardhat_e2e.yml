@@ -82,7 +82,7 @@ jobs:
           echo $rpcurl
           echo $chainid
 
-          result=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --legacy --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+          result=$(forge create --rpc-url "$rpcurl" --optimize --optimizer-runs 30000 --legacy --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
           echo $result
           erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
           echo $erc721

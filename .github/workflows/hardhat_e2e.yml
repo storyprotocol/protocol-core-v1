@@ -56,8 +56,16 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+
+      - name: Install forge-std
+        run: |
+          cd foundry
+          forge install foundry-rs/forge-std --no-commit
+
+      - name: Install openzeppelin-contracts 
+        run: |
+          cd foundry
+          forge install OpenZeppelin/openzeppelin-contracts --no-commit
 
       - name: 'Create env file'
         run: |

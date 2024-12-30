@@ -524,7 +524,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         //
 
         _predeploy("ArbitrationPolicyUMA");
-        impl = address(new ArbitrationPolicyUMA(address(disputeModule)));
+        impl = address(new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule)));
         arbitrationPolicyUMA = ArbitrationPolicyUMA(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,

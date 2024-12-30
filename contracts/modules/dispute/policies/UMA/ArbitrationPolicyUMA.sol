@@ -7,10 +7,10 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
+import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
 import { IOOV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
-import { BytesConversion } from "../../../../lib/BytesConversion.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 
 /// @title Arbitration Policy UMA
@@ -24,12 +24,13 @@ contract ArbitrationPolicyUMA is
 {
     using SafeERC20 for IERC20;
 
-    /// @notice Returns the percentage scale - represents 100%
-    uint32 public constant MAX_PERCENT = 100_000_000;
-
     /// @notice Dispute module address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    address public immutable DISPUTE_MODULE;
+    IDisputeModule public immutable DISPUTE_MODULE;
+
+    /// @notice Royalty module address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IRoyaltyModule public immutable ROYALTY_MODULE;
 
     /// @dev Storage structure for the ArbitrationPolicyUMA
     /// @param minLiveness The minimum liveness value
@@ -58,17 +59,21 @@ contract ArbitrationPolicyUMA is
 
     /// @dev Restricts the calls to the dispute module
     modifier onlyDisputeModule() {
-        if (msg.sender != DISPUTE_MODULE) revert Errors.ArbitrationPolicyUMA__NotDisputeModule();
+        if (msg.sender != address(DISPUTE_MODULE)) revert Errors.ArbitrationPolicyUMA__NotDisputeModule();
         _;
     }
 
     /// Constructor
     /// @param disputeModule The address of the dispute module
+    /// @param royaltyModule The address of the royalty module
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule) {
+    constructor(address disputeModule, address royaltyModule) {
         if (disputeModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroDisputeModule();
+        if (royaltyModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroRoyaltyModule();
 
-        DISPUTE_MODULE = disputeModule;
+        DISPUTE_MODULE = IDisputeModule(disputeModule);
+        ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
+
         _disableInitializers();
     }
 
@@ -101,7 +106,8 @@ contract ArbitrationPolicyUMA is
         if (minLiveness == 0) revert Errors.ArbitrationPolicyUMA__ZeroMinLiveness();
         if (maxLiveness == 0) revert Errors.ArbitrationPolicyUMA__ZeroMaxLiveness();
         if (minLiveness > maxLiveness) revert Errors.ArbitrationPolicyUMA__MinLivenessAboveMax();
-        if (ipOwnerTimePercent > MAX_PERCENT) revert Errors.ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
+        if (ipOwnerTimePercent > ROYALTY_MODULE.maxPercent())
+            revert Errors.ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         $.minLiveness = minLiveness;
@@ -124,24 +130,20 @@ contract ArbitrationPolicyUMA is
     /// @notice Executes custom logic on raising dispute
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
-    /// @param disputeId The dispute id
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(
-        address caller,
-        uint256 disputeId,
-        bytes calldata data
-    ) external nonReentrant onlyDisputeModule whenNotPaused {
-        (uint64 liveness, address currency, uint256 bond) = abi.decode(data, (uint64, address, uint256));
+    function onRaiseDispute(address caller, bytes calldata data) external nonReentrant onlyDisputeModule whenNotPaused {
+        (bytes memory claim, uint64 liveness, address currency, uint256 bond, bytes32 identifier) = abi.decode(
+            data,
+            (bytes, uint64, address, uint256, bytes32)
+        );
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (liveness < $.minLiveness) revert Errors.ArbitrationPolicyUMA__LivenessBelowMin();
         if (liveness > $.maxLiveness) revert Errors.ArbitrationPolicyUMA__LivenessAboveMax();
         if (bond > $.maxBonds[currency]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
+        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(currency))
+            revert Errors.ArbitrationPolicyUMA__CurrencyNotWhitelisted();
 
-        bytes memory claim = abi.encodePacked(
-            bytes("This IP is infringing according to the information from the dispute Id "),
-            BytesConversion.toUtf8BytesUint(disputeId)
-        );
         IERC20 currencyToken = IERC20(currency);
         IOOV3 oov3 = $.oov3;
         currencyToken.safeTransferFrom(caller, address(this), bond);
@@ -155,14 +157,15 @@ contract ArbitrationPolicyUMA is
             liveness,
             currencyToken,
             bond,
-            bytes32("ASSERT_TRUTH"), // identifier
+            identifier,
             bytes32(0) // domainId
         );
 
+        uint256 disputeId = DISPUTE_MODULE.disputeCounter();
         $.assertionIdToDisputeId[assertionId] = disputeId;
         $.disputeIdToAssertionId[disputeId] = assertionId;
 
-        emit DisputeRaisedUMA(disputeId, caller, liveness, currency, bond);
+        emit DisputeRaisedUMA(disputeId, caller, claim, liveness, currency, bond, identifier);
     }
 
     /// @notice Executes custom logic on disputing judgement
@@ -198,9 +201,9 @@ contract ArbitrationPolicyUMA is
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
         if (disputeId == 0) revert Errors.ArbitrationPolicyUMA__DisputeNotFound();
 
-        (address targetIpId, , , address arbitrationPolicy, , , , uint256 parentDisputeId) = IDisputeModule(
-            DISPUTE_MODULE
-        ).disputes(disputeId);
+        (address targetIpId, , , address arbitrationPolicy, , , , uint256 parentDisputeId) = DISPUTE_MODULE.disputes(
+            disputeId
+        );
 
         if (arbitrationPolicy != address(this)) revert Errors.ArbitrationPolicyUMA__OnlyDisputePolicyUMA();
         if (parentDisputeId > 0) revert Errors.ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
@@ -209,7 +212,8 @@ contract ArbitrationPolicyUMA is
         IOOV3.Assertion memory assertion = $.oov3.getAssertion(assertionId);
         uint64 liveness = assertion.expirationTime - assertion.assertionTime;
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
-        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / MAX_PERCENT;
+        uint32 maxPercent = ROYALTY_MODULE.maxPercent();
+        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / maxPercent;
         if (inIpOwnerTimeWindow && msg.sender != targetIpId)
             revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
                 elapsedTime,
@@ -241,7 +245,7 @@ contract ArbitrationPolicyUMA is
 
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
 
-        IDisputeModule(DISPUTE_MODULE).setDisputeJudgement(disputeId, assertedTruthfully, "");
+        DISPUTE_MODULE.setDisputeJudgement(disputeId, assertedTruthfully, "");
     }
 
     /// @notice OOV3 callback function for when an assertion is disputed
@@ -250,11 +254,6 @@ contract ArbitrationPolicyUMA is
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
         if ($.counterEvidenceHashes[assertionId] == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
-    }
-
-    /// @notice Returns the maximum percentage - represents 100%
-    function maxPercent() external view returns (uint32) {
-        return MAX_PERCENT;
     }
 
     /// @notice Returns the minimum liveness for UMA disputes

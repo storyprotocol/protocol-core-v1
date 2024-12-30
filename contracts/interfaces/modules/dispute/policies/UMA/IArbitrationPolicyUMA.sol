@@ -54,9 +54,6 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
     /// @param counterEvidenceHash The hash of the counter evidence
     function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external;
 
-    /// @notice Returns the maximum percentage - represents 100%
-    function maxPercent() external view returns (uint32);
-
     /// @notice Returns the minimum liveness for UMA disputes
     function minLiveness() external view returns (uint64);
 

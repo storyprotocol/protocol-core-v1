@@ -41,6 +41,7 @@ contract DisputeModule is
     /// @param nextArbitrationPolicies Next arbitration policy for a given ipId
     /// @param arbitrationUpdateTimestamps Timestamp of when the arbitration policy will be updated for a given ipId
     /// @param successfulDisputesPerIp Counter of successful disputes per ipId
+    /// @param isDisputePropagated Indicates if a dispute has been propagated from a parent ipId to a derivative ipId
     /// @custom:storage-location erc7201:story-protocol.DisputeModule
     struct DisputeModuleStorage {
         uint256 disputeCounter;
@@ -54,6 +55,7 @@ contract DisputeModule is
         mapping(address ipId => address) nextArbitrationPolicies;
         mapping(address ipId => uint256) nextArbitrationUpdateTimestamps;
         mapping(address ipId => uint256) successfulDisputesPerIp;
+        mapping(address ipId => mapping(address parentIpId => mapping(uint256 disputeId => bool))) isDisputePropagated;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.DisputeModule")) - 1)) & ~bytes32(uint256(0xff));
@@ -296,6 +298,8 @@ contract DisputeModule is
             revert Errors.DisputeModule__ParentNotTagged();
 
         if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
+        if ($.isDisputePropagated[derivativeIpId][parentIpId][parentDisputeId])
+            revert Errors.DisputeModule__DisputeAlreadyPropagated();
 
         uint256 disputeId = ++$.disputeCounter;
         uint256 disputeTimestamp = block.timestamp;
@@ -311,6 +315,7 @@ contract DisputeModule is
             parentDisputeId: parentDisputeId
         });
 
+        $.isDisputePropagated[derivativeIpId][parentIpId][parentDisputeId] = true;
         $.successfulDisputesPerIp[derivativeIpId]++;
 
         emit DerivativeTaggedOnParentInfringement(

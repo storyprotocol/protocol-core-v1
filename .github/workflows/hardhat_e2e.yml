@@ -59,12 +59,10 @@ jobs:
 
       - name: Install forge-std
         run: |
-          cd foundry
           forge install foundry-rs/forge-std --no-commit
 
       - name: Install openzeppelin-contracts 
         run: |
-          cd foundry
           forge install OpenZeppelin/openzeppelin-contracts --no-commit
 
       - name: 'Create env file'

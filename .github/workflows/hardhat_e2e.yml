@@ -56,14 +56,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Install forge-std
-        run: |
-          forge install foundry-rs/forge-std --no-commit
-
-      - name: Install openzeppelin-contracts 
-        run: |
-          forge install OpenZeppelin/openzeppelin-contracts --no-commit
+        with:
+          version: nightly
 
       - name: 'Create env file'
         run: |
@@ -88,7 +82,8 @@ jobs:
           echo $rpcurl
           echo $chainid
 
-          result=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --legacy --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC")
+          result=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --legacy --force --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" | grep deployedTo)
+          echo $result
           erc721=$(echo $result | jq -r '.deployedTo')
           echo $erc721
 

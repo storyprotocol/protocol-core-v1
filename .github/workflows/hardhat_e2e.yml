@@ -38,7 +38,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.0.0]
+        node-version: [21.x]
 
     steps:
       - name: Check Out Repository Code
@@ -82,7 +82,8 @@ jobs:
           echo $rpcurl
           echo $chainid
 
-          erc721=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --legacy --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" | jq '.deployedTo')
+          result=$(forge create --rpc-url $rpcurl --optimize --optimizer-runs 30000 --legacy --json --private-key ${{ secrets.STORY_PRIVATEKEY }} test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC")
+          erc721=$(echo $result | jq -r '.deployedTo')
           echo $erc721
 
           echo "STORY_URL=$rpcurl" >> .env

@@ -1,9 +1,10 @@
 name: HardHat E2E Test
 
 on:
-  # pull_request:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - add-e2e-workflow
+
   workflow_dispatch:
     inputs:
       devnet_version:

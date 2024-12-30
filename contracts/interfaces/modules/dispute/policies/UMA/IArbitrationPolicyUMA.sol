@@ -76,6 +76,10 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
     /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
     function ipOwnerTimePercent() external view returns (uint32);
 
+    /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
+    /// for a given dispute id
+    function ipOwnerTimePercents(uint256 disputeId) external view returns (uint32);
+
     /// @notice Returns the OOV3 address
     function oov3() external view returns (address);
 

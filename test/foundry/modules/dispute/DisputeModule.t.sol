@@ -560,6 +560,25 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
     }
 
+    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_DisputeAlreadyPropagated() public {
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        assertEq(licenseRegistry.isParentIp(ipAddr, ipAddr2), true);
+
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        vm.expectRevert(Errors.DisputeModule__DisputeAlreadyPropagated.selector);
+        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+    }
+
     function test_DisputeModule_tagDerivativeIfParentInfringed_revert_NotDerivative() public {
         // raise dispute
         vm.startPrank(ipAccount1);

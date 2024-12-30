@@ -530,6 +530,9 @@ library Errors {
     /// @notice Provided parent dispute's target IP is not the derivative IP's parent.
     error DisputeModule__NotDerivative();
 
+    /// @notice Provided parent dispute has already been propagated to the derivative IP.
+    error DisputeModule__DisputeAlreadyPropagated();
+
     /// @notice Provided parent dispute has not been resolved.
     error DisputeModule__ParentDisputeNotResolved();
 

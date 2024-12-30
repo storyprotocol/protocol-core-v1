@@ -6,8 +6,9 @@ interface IArbitrationPolicy {
     /// @notice Executes custom logic on raising dispute
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
+    /// @param disputeId The dispute id
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(address caller, bytes calldata data) external;
+    function onRaiseDispute(address caller, uint256 disputeId, bytes calldata data) external;
 
     /// @notice Executes custom logic on disputing judgement
     /// @dev Enforced to be only callable by the DisputeModule

@@ -7,7 +7,6 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
-import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
 import { IOOV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
@@ -25,13 +24,12 @@ contract ArbitrationPolicyUMA is
 {
     using SafeERC20 for IERC20;
 
+    /// @notice Returns the percentage scale - represents 100%
+    uint32 public constant MAX_PERCENT = 100_000_000;
+
     /// @notice Dispute module address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IDisputeModule public immutable DISPUTE_MODULE;
-
-    /// @notice Royalty module address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    IRoyaltyModule public immutable ROYALTY_MODULE;
+    address public immutable DISPUTE_MODULE;
 
     /// @dev Storage structure for the ArbitrationPolicyUMA
     /// @param minLiveness The minimum liveness value
@@ -42,7 +40,6 @@ contract ArbitrationPolicyUMA is
     /// @param disputeIdToAssertionId The mapping of dispute id to assertion id
     /// @param assertionIdToDisputeId The mapping of assertion id to dispute id
     /// @param counterEvidenceHashes The mapping of assertion id to counter evidence hash
-    /// @param ipOwnerTimePercents The mapping of dispute id to ip owner time percent of the dispute
     /// @custom:storage-location erc7201:story-protocol.ArbitrationPolicyUMA
     struct ArbitrationPolicyUMAStorage {
         uint64 minLiveness;
@@ -53,7 +50,6 @@ contract ArbitrationPolicyUMA is
         mapping(uint256 disputeId => bytes32 assertionId) disputeIdToAssertionId;
         mapping(bytes32 assertionId => uint256 disputeId) assertionIdToDisputeId;
         mapping(bytes32 assertionId => bytes32 counterEvidenceHash) counterEvidenceHashes;
-        mapping(uint256 disputeId => uint32 ipOwnerTimePercent) ipOwnerTimePercents;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.ArbitrationPolicyUMA")) - 1)) & ~bytes32(uint256(0xff));
@@ -62,21 +58,17 @@ contract ArbitrationPolicyUMA is
 
     /// @dev Restricts the calls to the dispute module
     modifier onlyDisputeModule() {
-        if (msg.sender != address(DISPUTE_MODULE)) revert Errors.ArbitrationPolicyUMA__NotDisputeModule();
+        if (msg.sender != DISPUTE_MODULE) revert Errors.ArbitrationPolicyUMA__NotDisputeModule();
         _;
     }
 
     /// Constructor
     /// @param disputeModule The address of the dispute module
-    /// @param royaltyModule The address of the royalty module
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address disputeModule, address royaltyModule) {
+    constructor(address disputeModule) {
         if (disputeModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroDisputeModule();
-        if (royaltyModule == address(0)) revert Errors.ArbitrationPolicyUMA__ZeroRoyaltyModule();
 
-        DISPUTE_MODULE = IDisputeModule(disputeModule);
-        ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
-
+        DISPUTE_MODULE = disputeModule;
         _disableInitializers();
     }
 
@@ -109,8 +101,7 @@ contract ArbitrationPolicyUMA is
         if (minLiveness == 0) revert Errors.ArbitrationPolicyUMA__ZeroMinLiveness();
         if (maxLiveness == 0) revert Errors.ArbitrationPolicyUMA__ZeroMaxLiveness();
         if (minLiveness > maxLiveness) revert Errors.ArbitrationPolicyUMA__MinLivenessAboveMax();
-        if (ipOwnerTimePercent > ROYALTY_MODULE.maxPercent())
-            revert Errors.ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
+        if (ipOwnerTimePercent > MAX_PERCENT) revert Errors.ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         $.minLiveness = minLiveness;
@@ -125,8 +116,6 @@ contract ArbitrationPolicyUMA is
     /// @param maxBond The maximum bond value
     function setMaxBond(address token, uint256 maxBond) external restricted {
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
-        if (maxBond < $.oov3.getMinimumBond(token)) revert Errors.ArbitrationPolicyUMA__MaxBondBelowMinimumBond();
-
         $.maxBonds[token] = maxBond;
 
         emit MaxBondSet(token, maxBond);
@@ -148,8 +137,6 @@ contract ArbitrationPolicyUMA is
         if (liveness < $.minLiveness) revert Errors.ArbitrationPolicyUMA__LivenessBelowMin();
         if (liveness > $.maxLiveness) revert Errors.ArbitrationPolicyUMA__LivenessAboveMax();
         if (bond > $.maxBonds[currency]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
-        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(currency))
-            revert Errors.ArbitrationPolicyUMA__CurrencyNotWhitelisted();
 
         bytes memory claim = abi.encodePacked(
             bytes("This IP is infringing according to the information from the dispute Id "),
@@ -172,7 +159,6 @@ contract ArbitrationPolicyUMA is
             bytes32(0) // domainId
         );
 
-        $.ipOwnerTimePercents[disputeId] = $.ipOwnerTimePercent;
         $.assertionIdToDisputeId[assertionId] = disputeId;
         $.disputeIdToAssertionId[disputeId] = assertionId;
 
@@ -212,9 +198,9 @@ contract ArbitrationPolicyUMA is
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
         if (disputeId == 0) revert Errors.ArbitrationPolicyUMA__DisputeNotFound();
 
-        (address targetIpId, , , address arbitrationPolicy, , , , uint256 parentDisputeId) = DISPUTE_MODULE.disputes(
-            disputeId
-        );
+        (address targetIpId, , , address arbitrationPolicy, , , , uint256 parentDisputeId) = IDisputeModule(
+            DISPUTE_MODULE
+        ).disputes(disputeId);
 
         if (arbitrationPolicy != address(this)) revert Errors.ArbitrationPolicyUMA__OnlyDisputePolicyUMA();
         if (parentDisputeId > 0) revert Errors.ArbitrationPolicyUMA__CannotDisputeAssertionIfTagIsInherited();
@@ -223,8 +209,7 @@ contract ArbitrationPolicyUMA is
         IOOV3.Assertion memory assertion = $.oov3.getAssertion(assertionId);
         uint64 liveness = assertion.expirationTime - assertion.assertionTime;
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
-        uint32 maxPercent = ROYALTY_MODULE.maxPercent();
-        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercents[disputeId]) / maxPercent;
+        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / MAX_PERCENT;
         if (inIpOwnerTimeWindow && msg.sender != targetIpId)
             revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
                 elapsedTime,
@@ -256,7 +241,7 @@ contract ArbitrationPolicyUMA is
 
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
 
-        DISPUTE_MODULE.setDisputeJudgement(disputeId, assertedTruthfully, "");
+        IDisputeModule(DISPUTE_MODULE).setDisputeJudgement(disputeId, assertedTruthfully, "");
     }
 
     /// @notice OOV3 callback function for when an assertion is disputed
@@ -265,6 +250,11 @@ contract ArbitrationPolicyUMA is
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
         if ($.counterEvidenceHashes[assertionId] == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
+    }
+
+    /// @notice Returns the maximum percentage - represents 100%
+    function maxPercent() external view returns (uint32) {
+        return MAX_PERCENT;
     }
 
     /// @notice Returns the minimum liveness for UMA disputes
@@ -280,12 +270,6 @@ contract ArbitrationPolicyUMA is
     /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
     function ipOwnerTimePercent() external view returns (uint32) {
         return _getArbitrationPolicyUMAStorage().ipOwnerTimePercent;
-    }
-
-    /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
-    /// for a given dispute id
-    function ipOwnerTimePercents(uint256 disputeId) external view returns (uint32) {
-        return _getArbitrationPolicyUMAStorage().ipOwnerTimePercents[disputeId];
     }
 
     /// @notice Returns the OOV3 address

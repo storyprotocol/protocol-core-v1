@@ -580,14 +580,16 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
         // sends remaining royalty tokens to the ipId address or
         // in the case the ipId is a group then send to the group reward pool
-        address receiver = ipId;
-        if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
-            receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
-            if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver)) {
-                revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+        uint32 remainingRts = MAX_PERCENT - totalRtsRequiredToLink;
+        if (remainingRts > 0) {
+            address receiver = ipId;
+            if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+                receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
+                if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver))
+                    revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
             }
+            IERC20(ipRoyaltyVault).safeTransfer(receiver, remainingRts);
         }
-        IERC20(ipRoyaltyVault).safeTransfer(receiver, MAX_PERCENT - totalRtsRequiredToLink);
     }
 
     /// @notice Adds a royalty policy to the accumulated royalty policies of an IP asset

@@ -43,6 +43,10 @@ contract IPAssetRegistryTest is BaseTest {
 
     error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed);
 
+    address internal treasury;
+    address internal spg;
+    uint96 internal constant FEE_AMOUNT = 1000;
+
     /// @notice Initializes the IP asset registry testing contract.
     function setUp() public virtual override {
         super.setUp();
@@ -54,6 +58,25 @@ contract IPAssetRegistryTest is BaseTest {
 
         assertEq(ipAccountRegistry.getIPAccountImpl(), address(ipAccountImpl));
         ipId = _getIPAccount(block.chainid, tokenId);
+    }
+
+    function _setupRegistrationFee() internal {
+        address treasury = makeAddr("treasury");
+        vm.prank(u.admin);
+        registry.setRegistrationFee(treasury, address(erc20), FEE_AMOUNT);
+    }
+
+    function _setupSPG() internal returns (address) {
+        address spg = makeAddr("spg");
+        vm.prank(u.admin);
+        registry.setSPG(spg);
+        return spg;
+    }
+
+    function _setupFeePayer(address payer) internal {
+        erc20.mint(payer, FEE_AMOUNT);
+        vm.prank(payer);
+        erc20.approve(address(registry), FEE_AMOUNT);
     }
 
     /// @notice Tests retrieval of IP canonical IDs.
@@ -419,5 +442,60 @@ contract IPAssetRegistryTest is BaseTest {
 
     function _toBytes32(address a) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(a)));
+    }
+
+    function test_SPGRegistrationWithFeePayer() public {
+        // Setup
+        address treasury = makeAddr("treasury");
+        address spg = makeAddr("spg");
+        address user = makeAddr("user");
+
+        vm.startPrank(u.admin);
+        registry.setRegistrationFee(treasury, address(erc20), FEE_AMOUNT);
+        registry.setSPG(spg);
+        vm.stopPrank();
+
+        erc20.mint(user, FEE_AMOUNT);
+        vm.prank(user);
+        erc20.approve(address(registry), FEE_AMOUNT);
+
+        // Test
+        vm.prank(spg);
+        address registeredId = registry.registerWithFeePayer(block.chainid, tokenAddress, tokenId, user);
+
+        assertTrue(registry.isRegistered(registeredId));
+        assertEq(erc20.balanceOf(treasury), FEE_AMOUNT);
+        assertEq(erc20.balanceOf(user), 0);
+    }
+
+    function test_revert_NonSPGCannotRegisterWithFeePayer() public {
+        // Setup
+        address treasury = makeAddr("treasury");
+        address spg = makeAddr("spg");
+
+        vm.startPrank(u.admin);
+        registry.setRegistrationFee(treasury, address(erc20), FEE_AMOUNT);
+        registry.setSPG(spg);
+        vm.stopPrank();
+
+        // Test
+        address nonSpg = makeAddr("nonSpg");
+        vm.prank(nonSpg);
+        vm.expectRevert(Errors.IPAssetRegistry__CallerNotSPG.selector);
+        registry.registerWithFeePayer(block.chainid, tokenAddress, tokenId, makeAddr("user"));
+    }
+
+    function test_revert_SPGCannotRegisterWhenFeeActive() public {
+        // Setup
+        address treasury = makeAddr("treasury");
+        address spg = makeAddr("spg");
+
+        vm.prank(u.admin);
+        registry.setRegistrationFee(treasury, address(erc20), FEE_AMOUNT);
+
+        // Test
+        vm.prank(spg);
+        vm.expectRevert(abi.encodeWithSelector(ERC20InsufficientAllowance.selector, address(registry), 0, FEE_AMOUNT));
+        registry.register(block.chainid, tokenAddress, tokenId);
     }
 }

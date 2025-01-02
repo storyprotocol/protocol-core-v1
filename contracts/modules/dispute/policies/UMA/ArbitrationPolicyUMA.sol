@@ -196,7 +196,7 @@ contract ArbitrationPolicyUMA is
     /// @notice Allows the IP that was targeted to dispute the assertion while providing counter evidence
     /// @param assertionId The identifier of the assertion that was disputed
     /// @param counterEvidenceHash The hash of the counter evidence
-    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external nonReentrant whenNotPaused {
+    function disputeAssertion(bytes32 assertionId, bytes32 counterEvidenceHash) external nonReentrant {
         if (counterEvidenceHash == bytes32(0)) revert Errors.ArbitrationPolicyUMA__NoCounterEvidence();
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();

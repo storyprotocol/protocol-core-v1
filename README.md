@@ -1,10 +1,9 @@
 # Story Protocol Beta
 
-Story Protocol is building the Programmable IP layer to bring programmability to IP. Story Protocol transforms IPs into networks that transcend mediums and platforms, unleashing global creativity and liquidity. Instead of static JPEGs that lack interactivity and composability with other assets, programmable IPs are dynamic and extensible: built to be built upon. Creators and applications can register their IP with Story Protocol, converting their static IP into programmable IP by declaring a set of onchain rights that any program can read and write on.
-
+Story Protocol is building the Programmable IP layer to bring programmability to IP. Story Protocol transforms IPs into networks that transcend mediums and platforms, unleashing global creativity and liquidity. Instead of static JPEGs that lack interactivity and composability with other assets, programmable IPs are dynamic and extensible: built to be built upon. Creators and applications can register their IP with Story Protocol, converting their static IP into programmable IP by declaring a set of on-chain rights that any program can read and write on.
 # Documentation
 
-🚧 WARNING, Beta version: This code is in active development and unaudited. Do not use in Production 🚧
+🚧 WARNING, Beta version: This code is in active development and has not been audited. Do not use in Production 🚧
 
 [Learn more about Story Protocol](https://docs.storyprotocol.xyz/)
 

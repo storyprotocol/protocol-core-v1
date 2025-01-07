@@ -209,7 +209,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_NotDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__NotDisputeModule.selector);
-        newArbitrationPolicyUMA.onRaiseDispute(address(1), 1, bytes(""));
+        newArbitrationPolicyUMA.onRaiseDispute(address(1), address(1), bytes32(0), bytes32(0), 1, bytes(""));
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_BondAboveMax() public {

@@ -139,6 +139,9 @@ library Errors {
     /// @notice The group reward pool is not whitelisted.
     error GroupingModule__GroupRewardPoolNotWhitelisted(address groupId, address groupRewardPool);
 
+    /// @notice To add an IP to group, require the IP royalty vault has been created.
+    error GroupingModule__IpRoyaltyVaultNotCreated(address ipId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

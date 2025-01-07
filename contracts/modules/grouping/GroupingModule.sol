@@ -181,6 +181,9 @@ contract GroupingModule is
             if (DISPUTE_MODULE.isIpTagged(ipIds[i])) {
                 revert Errors.GroupingModule__CannotAddDisputedIpToGroup(ipIds[i]);
             }
+            if (ROYALTY_MODULE.ipRoyaltyVaults(ipIds[i]) == address(0)) {
+                revert Errors.GroupingModule__IpRoyaltyVaultNotCreated(ipIds[i]);
+            }
 
             Licensing.LicensingConfig memory lc = LICENSE_REGISTRY.verifyGroupAddIp(
                 groupIpId,

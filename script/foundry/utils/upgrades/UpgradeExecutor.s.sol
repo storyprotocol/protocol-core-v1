@@ -55,7 +55,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     string fromVersion;
     /// @notice The version to upgrade to
     string toVersion;
-    /// @notice action acumulator for batch txs
+    /// @notice action accumulator for batch txs
     bytes[] multicallData;
 
     /// @dev check if the proxy's authority is the accessManager in the file

@@ -5,7 +5,6 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 // solhint-disable-next-line max-line-length
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
-import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 import { IModuleRegistry } from "../interfaces/registries/IModuleRegistry.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";

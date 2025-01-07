@@ -11,6 +11,7 @@ import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyM
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
 import { IOOV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
+import { BytesConversion } from "../../../../lib/BytesConversion.sol";
 import { Errors } from "../../../../lib/Errors.sol";
 
 /// @title Arbitration Policy UMA
@@ -41,6 +42,7 @@ contract ArbitrationPolicyUMA is
     /// @param disputeIdToAssertionId The mapping of dispute id to assertion id
     /// @param assertionIdToDisputeId The mapping of assertion id to dispute id
     /// @param counterEvidenceHashes The mapping of assertion id to counter evidence hash
+    /// @param ipOwnerTimePercents The mapping of dispute id to ip owner time percent of the dispute
     /// @custom:storage-location erc7201:story-protocol.ArbitrationPolicyUMA
     struct ArbitrationPolicyUMAStorage {
         uint64 minLiveness;
@@ -51,6 +53,7 @@ contract ArbitrationPolicyUMA is
         mapping(uint256 disputeId => bytes32 assertionId) disputeIdToAssertionId;
         mapping(bytes32 assertionId => uint256 disputeId) assertionIdToDisputeId;
         mapping(bytes32 assertionId => bytes32 counterEvidenceHash) counterEvidenceHashes;
+        mapping(uint256 disputeId => uint32 ipOwnerTimePercent) ipOwnerTimePercents;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.ArbitrationPolicyUMA")) - 1)) & ~bytes32(uint256(0xff));
@@ -132,42 +135,49 @@ contract ArbitrationPolicyUMA is
     /// @notice Executes custom logic on raising dispute
     /// @dev Enforced to be only callable by the DisputeModule
     /// @param caller Address of the caller
+    /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
+    /// @param targetTag The target tag of the dispute
+    /// @param disputeId The dispute id
     /// @param data The arbitrary data used to raise the dispute
-    function onRaiseDispute(address caller, bytes calldata data) external nonReentrant onlyDisputeModule whenNotPaused {
-        (bytes memory claim, uint64 liveness, address currency, uint256 bond, bytes32 identifier) = abi.decode(
-            data,
-            (bytes, uint64, address, uint256, bytes32)
-        );
+    function onRaiseDispute(
+        address caller,
+        address targetIpId,
+        bytes32 disputeEvidenceHash,
+        bytes32 targetTag,
+        uint256 disputeId,
+        bytes calldata data
+    ) external nonReentrant onlyDisputeModule whenNotPaused {
+        (uint64 liveness, IERC20 currencyToken, uint256 bond) = abi.decode(data, (uint64, IERC20, uint256));
 
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
         if (liveness < $.minLiveness) revert Errors.ArbitrationPolicyUMA__LivenessBelowMin();
         if (liveness > $.maxLiveness) revert Errors.ArbitrationPolicyUMA__LivenessAboveMax();
-        if (bond > $.maxBonds[currency]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
-        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(currency))
+        if (bond > $.maxBonds[address(currencyToken)]) revert Errors.ArbitrationPolicyUMA__BondAboveMax();
+        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(address(currencyToken)))
             revert Errors.ArbitrationPolicyUMA__CurrencyNotWhitelisted();
 
-        IERC20 currencyToken = IERC20(currency);
         IOOV3 oov3 = $.oov3;
         currencyToken.safeTransferFrom(caller, address(this), bond);
         currencyToken.safeIncreaseAllowance(address(oov3), bond);
 
         bytes32 assertionId = oov3.assertTruth(
-            claim,
+            _constructClaim(targetIpId, targetTag, disputeEvidenceHash, disputeId),
             caller, // asserter
             address(this), // callbackRecipient
             address(0), // escalationManager
             liveness,
             currencyToken,
             bond,
-            identifier,
+            bytes32("ASSERT_TRUTH"), // identifier
             bytes32(0) // domainId
         );
 
-        uint256 disputeId = DISPUTE_MODULE.disputeCounter();
+        $.ipOwnerTimePercents[disputeId] = $.ipOwnerTimePercent;
         $.assertionIdToDisputeId[assertionId] = disputeId;
         $.disputeIdToAssertionId[disputeId] = assertionId;
 
-        emit DisputeRaisedUMA(disputeId, caller, claim, liveness, currency, bond, identifier);
+        emit DisputeRaisedUMA(disputeId, caller, liveness, address(currencyToken), bond);
     }
 
     /// @notice Executes custom logic on disputing judgement
@@ -215,7 +225,7 @@ contract ArbitrationPolicyUMA is
         uint64 liveness = assertion.expirationTime - assertion.assertionTime;
         uint64 elapsedTime = uint64(block.timestamp) - assertion.assertionTime;
         uint32 maxPercent = ROYALTY_MODULE.maxPercent();
-        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercent) / maxPercent;
+        bool inIpOwnerTimeWindow = elapsedTime <= (liveness * $.ipOwnerTimePercents[disputeId]) / maxPercent;
         if (inIpOwnerTimeWindow && msg.sender != targetIpId)
             revert Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow(
                 elapsedTime,
@@ -273,6 +283,12 @@ contract ArbitrationPolicyUMA is
         return _getArbitrationPolicyUMAStorage().ipOwnerTimePercent;
     }
 
+    /// @notice Returns the percentage of liveness time the IP owner has priority to respond to a dispute
+    /// for a given dispute id
+    function ipOwnerTimePercents(uint256 disputeId) external view returns (uint32) {
+        return _getArbitrationPolicyUMAStorage().ipOwnerTimePercents[disputeId];
+    }
+
     /// @notice Returns the OOV3 address
     function oov3() external view returns (address) {
         return address(_getArbitrationPolicyUMAStorage().oov3);
@@ -294,6 +310,34 @@ contract ArbitrationPolicyUMA is
     /// @param assertionId The assertion id
     function assertionIdToDisputeId(bytes32 assertionId) external view returns (uint256) {
         return _getArbitrationPolicyUMAStorage().assertionIdToDisputeId[assertionId];
+    }
+
+    /// @notice Constructs the claim for a given dispute
+    /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
+    /// @param targetTag The target tag of the dispute
+    /// @param disputeId The dispute id
+    /* solhint-disable quotes */
+    function _constructClaim(
+        address targetIpId,
+        bytes32 targetTag,
+        bytes32 disputeEvidenceHash,
+        uint256 disputeId
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                "{\"title\": \"",
+                "IP dispute ",
+                BytesConversion.toUtf8BytesUint(disputeId),
+                "\", \"description\": \"",
+                "The IP with ipId address ",
+                BytesConversion.toUtf8BytesAddress(targetIpId),
+                " is infringing beyond any reasonable doubt with dispute tag ",
+                BytesConversion.toUtf8Bytes(targetTag),
+                " given the evidence hash ",
+                BytesConversion.toUtf8Bytes(disputeEvidenceHash),
+                "\"}"
+            );
     }
 
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable

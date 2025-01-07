@@ -34,7 +34,14 @@ contract MockArbitrationPolicy is IArbitrationPolicy {
         treasury = newTreasury;
     }
 
-    function onRaiseDispute(address caller, uint256 disputeId, bytes calldata data) external onlyDisputeModule {
+    function onRaiseDispute(
+        address caller,
+        address targetIpId,
+        bytes32 disputeEvidenceHash,
+        bytes32 targetTag,
+        uint256 disputeId,
+        bytes calldata data
+    ) external onlyDisputeModule {
         IERC20(PAYMENT_TOKEN).safeTransferFrom(caller, address(this), ARBITRATION_PRICE);
     }
 

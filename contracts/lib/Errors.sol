@@ -926,6 +926,9 @@ library Errors {
     //                          Protocol Pause Admin                          //
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @notice Zero address provided for Access Manager in initializer.
+    error ProtocolPauseAdmin__ZeroAccessManager();
+
     /// @notice Zero address passed.
     error ProtocolPauseAdmin__ZeroAddress();
 

@@ -10,7 +10,7 @@ import { IERC165 } from "@openzeppelin/contracts/interfaces/IERC165.sol";
 /// The License Template contract is also responsible for registering, storing, verifying,
 /// and displaying license terms registered with the License Template.
 /// Anyone can implement a License Template and register it into the Story Protocol.
-/// @dev The License Template should assign an unique ID to each license terms registered.
+/// @dev The License Template should assign a unique ID to each license terms registered.
 interface ILicenseTemplate is IERC165 {
     /// @notice Emitted when a new license terms is registered.
     /// @param licenseTermsId The ID of the license terms.

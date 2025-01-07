@@ -22,7 +22,7 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-1-non-commercial-social-remixing
+    /// https://docs.story.foundation/docs/pil-flavors#flavor-1-non-commercial-social-remixing
     /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
     function nonCommercialSocialRemixing() internal returns (PILTerms memory) {
         return _nonComSocialRemixingPIL();
@@ -36,7 +36,7 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-2-commercial-use
+    /// https://docs.story.foundation/docs/pil-flavors#flavor-2-commercial-use
     /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
     /// @param currencyToken The token to be used to pay the minting fee
     /// @param royaltyPolicy The address of the royalty licenseTerms to be used by the license template.
@@ -63,7 +63,7 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Commercial Remixing licenseTerms flavor, as described in:
-    /// https://docs.storyprotocol.xyz/docs/licensing-presets-flavors#flavor-3-commercial-remix
+    /// https://docs.story.foundation/docs/pil-flavors#flavor-3-commercial-remix
     /// @param commercialRevShare The percentage of the revenue that the commercializer will share
     /// with the parent creator, with 1 decimal (e.g. 10 means 1%)
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.

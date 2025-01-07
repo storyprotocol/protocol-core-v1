@@ -16,7 +16,7 @@
 - Miscellaneous changes (#130)
 - More tests (#101)
 
-Full Changelog: [v1.0.0...v1.1.0](https://github.com/storyprotocol/protocol-core/compare/v1.0.0...v1.1.0)
+Full Changelog: [v1.0.0...v1.1.0](https://github.com/storyprotocol/protocol-core-v1/compare/v1.0.0...v1.1.0)
 
 ## v1.0.0
 
@@ -47,7 +47,7 @@ Full Changelog: [v1.0.0...v1.1.0](https://github.com/storyprotocol/protocol-core
 - Miscellaneous configs (#50), code cleanup (#52, #112) and structure (#56, #85), and pkg bump (#34)
 - Enhance CI/CD (#72, #92)
 
-Full Changelog: [v1.0.0-rc.1...v1.0.0](https://github.com/storyprotocol/protocol-core/compare/v1.0.0-rc.1...v1.0.0)
+Full Changelog: [v1.0.0-rc.1...v1.0.0](https://github.com/storyprotocol/protocol-core-v1/compare/v1.0.0-rc.1...v1.0.0)
 
 ## v1.0.0-rc.1
 

@@ -15,7 +15,7 @@ This guide walks you through setting up your environment and deploying Story's P
 Ensure the following tools are installed:
 
 - **Foundry**: [Installation Guide](https://book.getfoundry.sh/getting-started/installation)
-- **Yarn**: [Installation Guide](https://classic.yarnpkg.com/getting-started/install)
+- **Yarn**: [Installation Guide](https://classic.yarnpkg.com/lang/en/docs/install)
 
 ## Repository Setup
 

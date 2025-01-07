@@ -5,7 +5,7 @@ import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions
 
 /// @title IGroupNFT
 /// @notice Interface for the IP Group (ERC721) NFT collection that manages Group NFTs representing IP Group.
-/// Each Group NFT may represent a IP Group.
+/// Each Group NFT may represent an IP Group.
 /// Group NFTs are ERC721 NFTs that can be minted, transferred, but cannot be burned.
 interface IGroupNFT is IERC721Metadata {
     /// @notice Emitted when a IP Group NFT minted.

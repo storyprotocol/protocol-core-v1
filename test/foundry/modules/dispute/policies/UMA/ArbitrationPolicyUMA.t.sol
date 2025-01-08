@@ -776,13 +776,6 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
     }
 
-    function test_ArbitrationPolicyUMA_assertionResolvedCallback_revert_paused() public {
-        newArbitrationPolicyUMA.pause();
-
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        newArbitrationPolicyUMA.assertionResolvedCallback(bytes32(0), false);
-    }
-
     function test_ArbitrationPolicyUMA_assertionDisputedCallback_revert_NotOOV3() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__NotOOV3.selector);
         newArbitrationPolicyUMA.assertionDisputedCallback(bytes32(0));

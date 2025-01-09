@@ -503,6 +503,9 @@ library Errors {
     /// @notice Not a whitelisted arbitration policy.
     error DisputeModule__NotWhitelistedArbitrationPolicy();
 
+    /// @notice Cannot blacklist the base arbitration policy.
+    error DisputeModule__CannotBlacklistBaseArbitrationPolicy();
+
     /// @notice Not the arbitration relayer.
     error DisputeModule__NotArbitrationRelayer();
 

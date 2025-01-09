@@ -121,6 +121,9 @@ contract DisputeModule is
         if (arbitrationPolicy == address(0)) revert Errors.DisputeModule__ZeroArbitrationPolicy();
 
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (arbitrationPolicy == $.baseArbitrationPolicy && !allowed)
+            revert Errors.DisputeModule__CannotBlacklistBaseArbitrationPolicy();
+
         $.isWhitelistedArbitrationPolicy[arbitrationPolicy] = allowed;
 
         emit ArbitrationPolicyWhitelistUpdated(arbitrationPolicy, allowed);

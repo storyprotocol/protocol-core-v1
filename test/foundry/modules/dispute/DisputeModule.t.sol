@@ -146,6 +146,17 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.whitelistArbitrationPolicy(address(0), true);
     }
 
+    function test_DisputeModule_whitelistArbitrationPolicy_revert_CannotBlacklistBaseArbitrationPolicy() public {
+        vm.startPrank(u.admin);
+        disputeModule.whitelistArbitrationPolicy(address(10), true);
+        disputeModule.setBaseArbitrationPolicy(address(10));
+        assertEq(disputeModule.isWhitelistedArbitrationPolicy(address(10)), true);
+        assertEq(disputeModule.baseArbitrationPolicy(), address(10));
+
+        vm.expectRevert(Errors.DisputeModule__CannotBlacklistBaseArbitrationPolicy.selector);
+        disputeModule.whitelistArbitrationPolicy(address(10), false);
+    }
+
     function test_DisputeModule_whitelistArbitrationPolicy() public {
         vm.startPrank(u.admin);
 

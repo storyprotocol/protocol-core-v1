@@ -10,6 +10,7 @@ import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { ILicensingModule } from "../../../../contracts/interfaces/modules/licensing/ILicensingModule.sol";
 import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
+import { MockIPGraph } from "../../mocks/MockIPGraph.sol";
 import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol";
 import { MockLicensingHook } from "../../mocks/module/MockLicensingHook.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
@@ -19,6 +20,29 @@ import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol
 // test
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+
+contract MockIPGraphDiamond is MockIPGraph {
+    address internal ipId1;
+    address internal ipId2;
+    address internal ipId3;
+
+    function initialize(address ipId1_, address ipId2_, address ipId3_) external {
+        ipId1 = ipId1_;
+        ipId2 = ipId2_;
+        ipId3 = ipId3_;
+    }
+
+    function _getRoyaltyLrp(address ipId, address ancestorIpId) internal override returns (uint256 result) {
+        if (ipId == ipId1 && ancestorIpId == ipId2) {
+            return 50_000_000;
+        } else if (ipId == ipId1 && ancestorIpId == ipId3) {
+            return 75_000_000;
+        } else if (ipId == ipId2 && ancestorIpId == ipId3) {
+            return 50_000_000;
+        }
+        return 0;
+    }
+}
 
 contract LicensingModuleTest is BaseTest {
     using Strings for *;
@@ -2875,6 +2899,86 @@ contract LicensingModuleTest is BaseTest {
             )
         );
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+    }
+
+    function test_LicensingModule_registerDerivative_payRoyaltyMultipleLevels() public {
+        vm.etch(address(0x0101), address(new MockIPGraphDiamond()).code);
+        MockIPGraphDiamond(address(0x0101)).initialize(ipId1, ipId2, ipId3);
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 50_000_000,
+                royaltyPolicy: address(royaltyPolicyLRP),
+                currencyToken: address(erc20)
+            })
+        );
+
+        vm.prank(ipOwner3);
+        licensingModule.attachLicenseTerms(ipId3, address(pilTemplate), termsId);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId3;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = termsId;
+
+        vm.prank(ipOwner2);
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 50_000_000,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.prank(ipOwner2);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+
+        vm.prank(ipOwner3);
+        licensingModule.setLicensingConfig(ipId3, address(pilTemplate), termsId, licensingConfig);
+
+        parentIpIds = new address[](2);
+        parentIpIds[1] = ipId2;
+        parentIpIds[0] = ipId3;
+        licenseTermsIds = new uint256[](2);
+        licenseTermsIds[1] = termsId;
+        licenseTermsIds[0] = termsId;
+
+        vm.prank(ipOwner1);
+        licensingModule.registerDerivative(ipId1, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+
+        assertEq(MockIPGraphDiamond(address(0x0101)).getParentIpsCount(ipId1), 2);
+
+        address revenueCollector = address(0x999);
+        vm.startPrank(revenueCollector);
+        erc20.mint(revenueCollector, 1000);
+        erc20.approve(address(royaltyModule), 1000);
+
+        assertEq(erc20.balanceOf(address(royaltyPolicyLRP)), 0);
+
+        royaltyModule.payRoyaltyOnBehalf(ipId1, address(0), address(erc20), 1000);
+
+        assertEq(erc20.balanceOf(revenueCollector), 0);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 0);
+
+        royaltyPolicyLRP.transferToVault(ipId1, ipId3, address(erc20));
+
+        royaltyPolicyLRP.transferToVault(ipId1, ipId2, address(erc20));
+        vm.stopPrank();
+
+        assertEq(royaltyPolicyLRP.getPolicyRoyaltyStack(ipId1), 100_000_000);
+        assertEq(royaltyPolicyLRP.getPolicyRoyaltyStack(ipId2), 50_000_000);
+        assertEq(royaltyPolicyLRP.getPolicyRoyaltyStack(ipId3), 0);
+
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId2)), 250);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId3)), 750);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 0);
+        assertEq(erc20.balanceOf(address(royaltyPolicyLRP)), 0);
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

@@ -107,7 +107,7 @@ contract MockIPGraph {
     }
 
     // solhint-disable-next-line code-complexity
-    function _getRoyaltyLrp(address ipId, address ancestorIpId) internal returns (uint256 result) {
+    function _getRoyaltyLrp(address ipId, address ancestorIpId) internal virtual returns (uint256 result) {
         result = 0;
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));

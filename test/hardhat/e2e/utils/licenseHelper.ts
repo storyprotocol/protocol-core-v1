@@ -6,7 +6,7 @@ import { terms } from "../licenseTermsTemplate";
 
 export const LicensingConfig = ({
   isSet: true,
-  mintingFee: 20,
+  mintingFee: 0,
   licensingHook: hre.ethers.ZeroAddress,
   hookData: "0x",
   commercialRevShare: 10 * 10 ** 6,

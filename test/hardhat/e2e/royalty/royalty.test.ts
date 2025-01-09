@@ -95,7 +95,7 @@ describe("RoyaltyModule", function () {
        
     // IP2 is registered as IP1's derivative    
     const registerDerivative1Tx = await expect(
-      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivative1Tx.wait();
     console.log("Register derivative transaction hash: ", registerDerivative1Tx.hash);
@@ -103,7 +103,7 @@ describe("RoyaltyModule", function () {
        
     // IP3 is registered as IP2's derivative
     const registerDerivative2Tx = await expect(
-      user3ConnectedLicensingModule.registerDerivative(ipId3, [ipId2], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user3ConnectedLicensingModule.registerDerivative(ipId3, [ipId2], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivative2Tx.wait();
     console.log("Register derivative transaction hash: ", registerDerivative2Tx.hash);
@@ -193,7 +193,7 @@ describe("RoyaltyModule", function () {
        
     // IP2 is registered as IP1's derivative    
     const registerDerivative1Tx = await expect(
-      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLRPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLRPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivative1Tx.wait();
     console.log("Register derivative transaction hash: ", registerDerivative1Tx.hash);
@@ -201,7 +201,7 @@ describe("RoyaltyModule", function () {
        
     // IP3 is registered as IP2's derivative
     const registerDerivative2Tx = await expect(
-      user3ConnectedLicensingModule.registerDerivative(ipId3, [ipId2], [licenseTermsLRPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user3ConnectedLicensingModule.registerDerivative(ipId3, [ipId2], [licenseTermsLRPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivative2Tx.wait();
     console.log("Register derivative transaction hash: ", registerDerivative2Tx.hash);
@@ -308,7 +308,7 @@ describe("RoyaltyModule", function () {
        
     // IP2 is registered as IP1's derivative    
     const registerDerivative1Tx = await expect(
-      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 100000000)
+      user2ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLAPId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 100000000, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivative1Tx.wait();
     console.log("Register derivative transaction hash: ", registerDerivative1Tx.hash);

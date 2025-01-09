@@ -5,7 +5,7 @@ import { MockERC721 } from "../constants";
 import { ethers } from "ethers";
 
 
-export async function mintNFT(singer?: ethers.Wallet): Promise<number> {
+export async function mintNFT(singer?: ethers.Wallet, nonce?: number): Promise<number> {
   let tokenId: any
   const contractAbi = [
     {
@@ -19,7 +19,7 @@ export async function mintNFT(singer?: ethers.Wallet): Promise<number> {
 
   const caller = singer || (await hre.ethers.getSigners())[0]
   const nftContract = await hre.ethers.getContractAt(contractAbi, MockERC721, caller);
-  const tx = await nftContract.mint(caller.address)
+  const tx = await nftContract.mint(caller.address, { nonce: nonce })
   const receipt = await tx.wait()
 
   const logs = receipt.logs

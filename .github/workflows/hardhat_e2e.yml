@@ -1,0 +1,150 @@
+name: HardHat E2E Test
+
+on:
+  # push:
+  #   branches:
+  #     - update-e2e-test
+
+  workflow_dispatch:
+    inputs:
+      devnet_version:
+        description: 'devnet; mainnet;'
+        required: true
+        default: 'devnet'
+        type: choice
+        options:
+          - devnet
+          - mainnet
+      erc721_address:
+        description: 'ERC721 contract address'
+        required: false
+        default: ''
+        type: string
+
+  workflow_call:
+    inputs:
+      devnet_version:
+        description: 'devnet; mainnet;'
+        required: false
+        default: 'devnet'
+        type: string
+      erc721_address:
+        description: 'ERC721 contract address'
+        required: false
+        default: ''
+        type: string
+jobs:
+  print-config:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print Inputs
+        run: |
+          echo "Inputs:"
+          echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}"
+          echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
+
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - name: Check Out Repository Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: 'Create env file'
+        run: |
+          touch .env
+          echo "MAINNET_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "SEPOLIA_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "STORY_USER1=${{ secrets.STORY_USER1 }}" >> .env
+          echo "STORY_USER2=${{ secrets.STORY_USER1 }}" >> .env
+
+      - name: Deploy MockERC721 Contract
+        run: |
+          devnet_version=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}
+          if [[ "$devnet_version" == "devnet" ]]; then
+            rpcurl="http://r1-d.odyssey-devnet.storyrpc.io:8545"
+            chainid=1315
+          else
+            rpcurl="https://public.storyrpc.io"
+            chainid=1514
+          fi
+
+          echo $rpcurl
+          echo $chainid
+
+          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
+          if [[ -n "$erc721_address" ]]; then
+            echo "ERC721 address provided: $erc721_address"
+            erc721=$erc721_address
+          else
+            echo "Deploying MockERC721 contract"
+            result=$(forge create --rpc-url $rpcurl --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+            echo $result
+            erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
+            echo "Deployed to: $erc721"
+          fi
+          
+          echo "STORY_URL=$rpcurl" >> .env
+          echo "STORY_CHAINID=$chainid" >> .env
+          echo "STORY_ERC721=$erc721" >> .env
+
+          # add one more blank line to .env
+          echo "" >> .env
+
+      - name: Run test
+        run: |
+          npx hardhat test --network odyssey
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: poc-test-report
+          path: |
+            ./mochawesome-report
+        if: always()
+
+      - name: Copy report to date folder
+        id: create_folder
+        run: |
+          folder_name=$(date +%Y%m%d)
+          echo "Folder name: $folder_name"
+
+          # Determine version_name based on devnet_version
+          env_name=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}
+          
+          mkdir -p ./tmp/$folder_name/$env_name
+          cp -R ./mochawesome-report/* ./tmp/$folder_name/$env_name
+
+      - name: Deploy report to GitHub Pages
+        if: ${{ inputs.deploy_report == 'true' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./tmp
+          publish_branch: gh-pages
+          keep_files: true
+

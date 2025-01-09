@@ -671,6 +671,9 @@ library Errors {
     /// @notice Amount of ancestors for derivative IP is above the limit.
     error RoyaltyModule__AboveAncestorsLimit();
 
+    /// @notice Royalty policy is already registered as external royalty policy.
+    error RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy();
+
     /// @notice Royalty policy is already whitelisted or registered.
     error RoyaltyModule__PolicyAlreadyWhitelistedOrRegistered();
 

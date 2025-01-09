@@ -33,7 +33,7 @@ describe("LicensingModule - mintLicenseTokens", function () {
     const connectedLicensingModule = this.licensingModule.connect(signers[0]);
 
     const mintLicenseTokensTx = await expect(
-      connectedLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[0].address, hre.ethers.ZeroAddress, 100)
+      connectedLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[0].address, hre.ethers.ZeroAddress, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     expect(mintLicenseTokensTx.hash).to.not.be.empty.and.to.be.a("HexString");
 
@@ -46,7 +46,7 @@ describe("LicensingModule - mintLicenseTokens", function () {
     const nonOwnerLicensingModule = this.licensingModule.connect(signers[1]);
 
     const mintLicenseTokensTx = await expect(
-      nonOwnerLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[0].address, hre.ethers.ZeroAddress, 100)
+      nonOwnerLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[0].address, hre.ethers.ZeroAddress, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     expect(mintLicenseTokensTx.hash).to.not.be.empty.and.to.be.a("HexString");
 
@@ -59,7 +59,7 @@ describe("LicensingModule - mintLicenseTokens", function () {
     const connectedLicensingModule = this.licensingModule.connect(signers[0]);
 
     const mintLicenseTokensTx = await expect(
-      connectedLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 0, signers[0].address, hre.ethers.ZeroAddress, 100)
+      connectedLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 0, signers[0].address, hre.ethers.ZeroAddress, 0, 50 * 10 ** 6)
     ).to.be.rejectedWith("execution reverted");
   });
 
@@ -67,7 +67,7 @@ describe("LicensingModule - mintLicenseTokens", function () {
     const nonOwnerLicensingModule = this.licensingModule.connect(signers[0]);
 
     const mintLicenseTokensTx = await expect(
-      nonOwnerLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[1].address, hre.ethers.ZeroAddress, 100)
+      nonOwnerLicensingModule.mintLicenseTokens(ipId, PILicenseTemplate, this.nonCommericialLicenseId, 2, signers[1].address, hre.ethers.ZeroAddress, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     expect(mintLicenseTokensTx.hash).to.not.be.empty.and.to.be.a("HexString");
 

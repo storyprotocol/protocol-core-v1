@@ -8,7 +8,7 @@ describe("Grouping Module Authorization", function () {
   it("Non-admin whitelist group reward pool", async function () {
     await expect(
       this.groupingModule.connect(this.user1).whitelistGroupRewardPool(EvenSplitGroupPool, false)
-    ).to.be.rejectedWith(Error);
+    ).to.be.rejectedWith(Error).then((error) => {console.log(JSON.stringify(error, null, 2))});
 
     const isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(EvenSplitGroupPool);
     expect(isWhitelisted).to.be.true;

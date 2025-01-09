@@ -1,28 +1,29 @@
 // This is the deployed protocol address constants file.
 
-export const AccessController = "0xf709c8001E94e2ca6F98b7fFBCd5BD3943E46D81";
-export const CoreMetadataModule = "0x89630Ccf23277417FBdfd3076C702F5248267e78";
-export const CoreMetadataViewModule = "0x6839De4A647eE2311bd765f615E09f7bd930ed25";
-export const DisputeModule = "0x692B47fa72eE7Ac0Ec617ea384a0cAD41098F712";
-export const EvenSplitGroupPool = "0xC384B56fD62d6679Cd62A2fE0dA3fe4560f33391";
-export const GroupNFT = "0x5d7C6e71290f034bED4C241eD78642204ad1178A";
-export const GroupingModule = "0xa731948cfE05135ad77d48C71f75066333Da78Bf";
-export const IPAccountImpl = "0x24F08796561d6E1AC08e82b68BF4d9500B374Af6";
-export const IPAssetRegistry = "0x28E59E91C0467e89fd0f0438D47Ca839cDfEc095";
-export const IPGraphACL = "0x680E66e4c7Df9133a7AFC1ed091089B32b89C4ae";
-export const IpRoyaltyVaultBeacon = "0x1F9CEDe79f5Af0a0A8E527Ad84e6C74f57D5F926";
-export const IpRoyaltyVaultImpl = "0x1081250219B16cc3903Aa2d2d1403A75c6A2F9f5";
-export const LicenseRegistry = "0xBda3992c49E98392e75E78d82B934F3598bA495f";
-export const LicenseToken = "0xB138aEd64814F2845554f9DBB116491a077eEB2D";
-export const LicensingModule = "0x5a7D9Fa17DE09350F481A53B470D798c1c1aabae";
-export const MockERC20 = "0x12A8b0DcC6e3bB0915638361D9D49942Da07F455";
-export const ModuleRegistry = "0x9F18c5723BC4Ee447CF9B01a8543D3b08b7F09C7";
-export const PILicenseTemplate = "0x58E2c909D557Cd23EF90D14f8fd21667A5Ae7a93";
-export const ProtocolAccessManager = "0xD22ff1C7e88aF45166aEFe000C4C0c4873Afa284";
-export const ProtocolPauseAdmin = "0x65C6Ec6Cc074eaf7ba3970C540b4379C9BcA8A67";
-export const RoyaltyModule = "0xEa6eD700b11DfF703665CCAF55887ca56134Ae3B";
-export const RoyaltyPolicyLAP = "0x28b4F70ffE5ba7A26aEF979226f77Eb57fb9Fdb6";
-export const RoyaltyPolicyLRP = "0x7D2d9af4E4ab14Afcfd86436BC348928B40963Dd";
+export const AccessController = "0xcCF37d0a503Ee1D4C11208672e622ed3DFB2275a";
+export const ArbitrationPolicyUMA = "0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936";
+export const CoreMetadataModule = "0x6E81a25C99C6e8430aeC7353325EB138aFE5DC16";
+export const CoreMetadataViewModule = "0xB3F88038A983CeA5753E11D144228Ebb5eACdE20";
+export const DisputeModule = "0x9b7A9c70AFF961C799110954fc06F3093aeb94C5";
+export const EvenSplitGroupPool = "0xf96f2c30b41Cb6e0290de43C8528ae83d4f33F89";
+export const GroupNFT = "0x4709798FeA84C84ae2475fF0c25344115eE1529f";
+export const GroupingModule = "0x69D3a7aa9edb72Bc226E745A7cCdd50D947b69Ac";
+export const IPAccountImpl = "0xc93d49fEdED1A2fbE3B54223Df65f4edB3845eb0";
+export const IPAssetRegistry = "0x77319B4031e6eF1250907aa00018B8B1c67a244b";
+export const IPGraphACL = "0x1640A22a8A086747cD377b73954545e2Dfcc9Cad";
+export const IpRoyaltyVaultBeacon = "0x6928ba25Aa5c410dd855dFE7e95713d83e402AA6";
+export const IpRoyaltyVaultImpl = "0x63cC7611316880213f3A4Ba9bD72b0EaA2010298";
+export const LicenseRegistry = "0x529a750E02d8E2f15649c13D69a465286a780e24";
+export const LicenseToken = "0xFe3838BFb30B34170F00030B52eA4893d8aAC6bC";
+export const LicensingModule = "0x04fbd8a2e56dd85CFD5500A4A4DfA955B9f1dE6f";
+export const MockERC20 = "0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6";
+export const ModuleRegistry = "0x022DBAAeA5D8fB31a0Ad793335e39Ced5D631fa5";
+export const PILicenseTemplate = "0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316";
+export const ProtocolAccessManager = "0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53";
+export const ProtocolPauseAdmin = "0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24";
+export const RoyaltyModule = "0xD2f60c40fEbccf6311f8B47c4f2Ec6b040400086";
+export const RoyaltyPolicyLAP = "0xBe54FB168b3c982b7AaE60dB6CF75Bd8447b390E";
+export const RoyaltyPolicyLRP = "0x9156e603C949481883B1d3355c6f1132D191fC41";
 
 // Mock ERC721 contract address
 export const MockERC721 = process.env.DEVNET_ERC721 as string;

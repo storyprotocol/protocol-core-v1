@@ -64,4 +64,7 @@ before(async function () {
   await checkAndApproveSpender(this.user1, RoyaltyPolicyLAP, amountToCheck);
   await checkAndApproveSpender(this.user1, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyPolicyLAP, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
 });

@@ -2,7 +2,7 @@
 
 import hre from "hardhat";
 import { network } from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 
@@ -20,10 +20,15 @@ before(async function () {
   this.royaltyPolicyLRP = await hre.ethers.getContractAt("RoyaltyPolicyLRP", RoyaltyPolicyLRP);
   this.ipRoyaltyVaultImpl = await hre.ethers.getContractAt("IpRoyaltyVault", IpRoyaltyVaultImpl);
   this.evenSplitGroupPool = await hre.ethers.getContractAt("EvenSplitGroupPool", EvenSplitGroupPool);
+  this.disputeModule = await hre.ethers.getContractAt("DisputeModule", DisputeModule);
+  this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
+  this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
   this.errors = await hre.ethers.getContractFactory("Errors");
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
+  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("1.0") });
+  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("1.0") });
   
   console.log(`================= Chain ID =================`);
   const networkConfig = network.config;
@@ -64,4 +69,8 @@ before(async function () {
   await checkAndApproveSpender(this.user1, RoyaltyPolicyLAP, amountToCheck);
   await checkAndApproveSpender(this.user1, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
+  await checkAndApproveSpender(this.user1, ArbitrationPolicyUMA, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyPolicyLAP, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
+  await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
 });

@@ -3,8 +3,9 @@
 import "../setup";
 import { expect } from "chai";
 import hre from "hardhat";
-import { PILicenseTemplate } from "../constants";
+import { MockERC721, PILicenseTemplate } from "../constants";
 import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
+import { mintNFT } from "../utils/nftHelper";
 
 describe("LicensingModule - registerDerivative", function () {
   let signers:any;
@@ -34,7 +35,7 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivativeTx.wait();
     console.log("Register derivative transaction hash: ", registerDerivativeTx.hash);
@@ -50,7 +51,7 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule= this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 100, 10)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 10, 50 * 10 ** 6)
     ).to.be.rejectedWith(`execution reverted`);
   });
 
@@ -72,7 +73,7 @@ describe("LicensingModule - registerDerivative", function () {
 
     // IP2 is registered as IP1's derivative
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [1n], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [1n], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 50 * 10 ** 6)
     ).to.be.rejectedWith(`execution reverted`);
   });
 
@@ -85,7 +86,7 @@ describe("LicensingModule - registerDerivative", function () {
     const connectedLicensingModule = this.licensingModule.connect(signers[0]);
 
     const mintLicenseTokensTx = await expect(
-      connectedLicensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, 1n, 2, signers[1].address, hre.ethers.ZeroAddress, 100)
+      connectedLicensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, 1n, 2, signers[1].address, hre.ethers.ZeroAddress, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     const startLicenseTokenId = await mintLicenseTokensTx.wait().then((receipt:any) => receipt.logs[4].args[6]);
     expect(mintLicenseTokensTx.hash).to.not.be.empty.and.to.be.a("HexString");
@@ -100,5 +101,44 @@ describe("LicensingModule - registerDerivative", function () {
     await registerDerivativeTx.wait();
     console.log("Register derivative transaction hash: ", registerDerivativeTx.hash);
     expect(registerDerivativeTx.hash).to.not.be.empty.and.to.be.a("HexString");
+  });
+
+  it("Verify IP Graph precompiles register derivative error: RoyaltyModule__AboveParentLimit", async function () {
+    const count = 10;
+
+    const mint: Promise<number>[] = [];
+    let nonce = await hre.ethers.provider.getTransactionCount(this.owner.address);
+    console.log("Nonce: ", nonce);
+    for (let i = 0; i < count; i++) {
+      mint.push(
+        mintNFT(this.owner, nonce++)
+      );
+    }
+    const tokenIds = await Promise.all(mint);
+
+    const registerIps: Promise<number>[] = [];
+    for (let i = 0; i < count; i++) {
+      registerIps.push(
+        this.ipAssetRegistry.register(this.chainId, MockERC721, tokenIds[i], { nonce: nonce++ }).then((tx: any) => tx.wait()).then((receipt: any) => receipt.logs[2].args[0])
+      );
+    }
+    const parentIpIds = (await Promise.all(registerIps));
+
+    const licenseTermsIds: number[] = [];
+    const attachLicenseTerms: Promise<void>[] = [];
+    for (let i = 0; i < count; i++) {
+      attachLicenseTerms.push(
+        this.licensingModule.attachLicenseTerms(parentIpIds[i], PILicenseTemplate, this.commericialRemixLicenseId, { nonce: nonce++ })
+      );
+      licenseTermsIds.push(this.commericialRemixLicenseId);
+    }
+
+    console.log("Parent IP Ids: ", parentIpIds);
+    console.log("License Terms Ids: ", licenseTermsIds);
+
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    await expect(
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, parentIpIds, licenseTermsIds, PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).to.be.revertedWithCustomError(this.errors, "RoyaltyModule__AboveParentLimit");
   });
 });

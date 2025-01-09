@@ -44,12 +44,14 @@ contract IPAssetRegistry is
     /// @param treasury The address of the treasury that receives registration fees.
     /// @param feeToken The address of the token used to pay registration fees.
     /// @param feeAmount The amount of the registration fee.
+    /// @param spg The address of the SPG.
     /// @custom:storage-location erc7201:story-protocol.IPAssetRegistry
     struct IPAssetRegistryStorage {
         uint256 totalSupply;
         address treasury;
         address feeToken;
         uint96 feeAmount;
+        address spg;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -146,6 +148,37 @@ contract IPAssetRegistry is
         emit RegistrationFeeSet(treasury, feeToken, feeAmount);
     }
 
+    /// @notice Sets the SPG address.
+    /// @param spg The address of the SPG.
+    function setSPG(address spg) external restricted {
+        if (spg == address(0)) revert Errors.IPAssetRegistry__ZeroAddress("spg");
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+        $.spg = spg;
+    }
+
+    /// @notice Registers an IP on behalf of a user through SPG, with the user paying the fee.
+    /// @param chainid The chain identifier of where the IP NFT resides.
+    /// @param tokenContract The address of the NFT.
+    /// @param tokenId The token identifier of the NFT.
+    /// @param feePayer The address that will pay the registration fee.
+    /// @return id The address of the newly registered IP.
+    function registerWithFeePayer(
+        uint256 chainid,
+        address tokenContract,
+        uint256 tokenId,
+        address feePayer
+    ) external returns (address) {
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+
+        // Only SPG can call this function
+        if (msg.sender != address($.spg)) {
+            revert Errors.IPAssetRegistry__CallerNotSPG();
+        }
+
+        return
+            _register({ chainid: chainid, tokenContract: tokenContract, tokenId: tokenId, registerFeePayer: feePayer });
+    }
+
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
     /// @dev This is equivalent to the address of its bound IP account.
     /// @param chainId The chain identifier of where the IP resides.
@@ -239,4 +272,6 @@ contract IPAssetRegistry is
             $.slot := IPAssetRegistryStorageLocation
         }
     }
+
+    error SPGRegistrationWithFeeNotImplemented();
 }

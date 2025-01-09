@@ -158,6 +158,11 @@ library Errors {
     /// @notice Zero address provided for IP Asset Registry.
     error IPAssetRegistry__ZeroAddress(string name);
 
+    /// @notice Thrown when the caller is not the SPG.
+    error IPAssetRegistry__CallerNotSPG();
+
+    /// @notice Thrown when an invalid token contract is provided.
+
     ////////////////////////////////////////////////////////////////////////////
     //                            License Registry                            //
     ////////////////////////////////////////////////////////////////////////////

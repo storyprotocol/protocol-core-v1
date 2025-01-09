@@ -349,6 +349,12 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         royaltyModule.whitelistRoyaltyToken(address(0), true);
     }
 
+    function test_RoyaltyModule_whitelistRoyaltyPolicy_revert_PolicyAlreadyRegistered() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy.selector);
+        royaltyModule.whitelistRoyaltyPolicy(address(mockExternalRoyaltyPolicy1), true);
+    }
+
     function test_RoyaltyModule_whitelistRoyaltyPolicy() public {
         vm.startPrank(u.admin);
         assertEq(royaltyModule.isWhitelistedRoyaltyPolicy(address(1)), false);

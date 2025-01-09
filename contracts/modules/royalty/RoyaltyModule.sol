@@ -193,9 +193,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param royaltyPolicy The address of the royalty policy
     /// @param allowed Indicates if the royalty policy is whitelisted or not
     function whitelistRoyaltyPolicy(address royaltyPolicy, bool allowed) external restricted {
-        if (royaltyPolicy == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
-
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+        if (royaltyPolicy == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
+        if ($.isRegisteredExternalRoyaltyPolicy[royaltyPolicy])
+            revert Errors.RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy();
+
         $.isWhitelistedRoyaltyPolicy[royaltyPolicy] = allowed;
 
         emit RoyaltyPolicyWhitelistUpdated(royaltyPolicy, allowed);

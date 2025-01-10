@@ -26,11 +26,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
 
     /// @dev Storage structure for the IpRoyaltyVault
     /// @param ipId The ip id to whom this royalty vault belongs to
-    /// @param lastSnapshotTimestamp [DEPRECATED] The last snapshotted timestamp
-    /// @param pendingVaultAmount [DEPRECATED] Amount of revenue token pending to be snapshotted
-    /// @param claimVaultAmount [DEPRECATED] Amount of revenue token in the claim vault
-    /// @param claimableAtSnapshot [DEPRECATED] Amount of revenue token claimable at a given snapshot
-    /// @param isClaimedAtSnapshot [DEPRECATED] Indicates whether the claimer has claimed the token at a given snapshot
     /// @param tokens The list of revenue tokens in the vault
     /// @param vaultAccBalances The accumulated balance of revenue tokens in the vault
     /// @param claimerRevenueDebt The revenue debt of the claimer, used to calculate the claimable revenue,
@@ -38,11 +33,6 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @custom:storage-location erc7201:story-protocol.IpRoyaltyVault
     struct IpRoyaltyVaultStorage {
         address ipId;
-        uint40 lastSnapshotTimestamp;
-        mapping(address token => uint256 amount) pendingVaultAmount;
-        mapping(address token => uint256 amount) claimVaultAmount;
-        mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
-        mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
         mapping(address token => uint256 accBalance) vaultAccBalances;
         mapping(address token => mapping(address claimer => int256 revenueDebt)) claimerRevenueDebt;

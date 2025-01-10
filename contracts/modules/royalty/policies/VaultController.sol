@@ -12,11 +12,9 @@ import { Errors } from "../../../lib/Errors.sol";
 abstract contract VaultController is IVaultController, ProtocolPausableUpgradeable {
     /// @dev Storage structure for the VaultController
     /// @param ipRoyaltyVaultBeacon The ip royalty vault beacon address
-    /// @param snapshotInterval [DEPRECATED] The minimum timestamp interval between snapshots
     /// @custom:storage-location erc7201:story-protocol.VaultController
     struct VaultControllerStorage {
         address ipRoyaltyVaultBeacon;
-        uint256 snapshotInterval;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.VaultController")) - 1)) & ~bytes32(uint256(0xff));

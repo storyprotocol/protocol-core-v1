@@ -22,7 +22,7 @@ contract Main is DeployHelper {
     constructor()
         DeployHelper(
             ERC6551_REGISTRY,
-            address(0), // replaced with USDC in DeployHelper.sol
+            address(0), // replaced with USDC or WIP in DeployHelper.sol
             ARBITRATION_PRICE,
             MAX_ROYALTY_APPROVAL,
             TREASURY_ADDRESS,

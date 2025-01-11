@@ -25,7 +25,7 @@ describe("LicensingModule - registerDerivative", function () {
     const connectedLicensingModule = this.licensingModule.connect(signers[0]);
     // IP1 attach a non-commercial license
     const attachLicenseTx = await expect(
-      connectedLicensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, this.nonCommericialLicenseId)
+      connectedLicensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, this.nonCommercialLicenseId)
     ).not.to.be.rejectedWith(Error);
     await attachLicenseTx.wait();
     console.log("Attach license transaction hash: ", attachLicenseTx.hash);
@@ -34,7 +34,7 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommercialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0)
     ).not.to.be.rejectedWith(Error);
     await registerDerivativeTx.wait();
     console.log("Register derivative transaction hash: ", registerDerivativeTx.hash);
@@ -50,7 +50,7 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule= this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommericialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 100, 10)
+      user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommercialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 100, 10)
     ).to.be.rejectedWith(`execution reverted`);
   });
 
@@ -64,7 +64,7 @@ describe("LicensingModule - registerDerivative", function () {
 
     // IP2 attach a non-commercial license
     const attachLicenseTx = await expect(
-      user1ConnectedLicensingModule.attachLicenseTerms(ipId2, PILicenseTemplate, this.nonCommericialLicenseId)
+      user1ConnectedLicensingModule.attachLicenseTerms(ipId2, PILicenseTemplate, this.nonCommercialLicenseId)
     ).not.to.be.rejectedWith(Error);
     await attachLicenseTx.wait();
     console.log("Attach license transaction hash: ", attachLicenseTx.hash);

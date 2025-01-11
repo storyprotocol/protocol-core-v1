@@ -32,8 +32,8 @@ before(async function () {
 
   console.log(`================= Register non-commercial PIL license terms =================`);
   await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
-  this.nonCommericialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
-  console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
+  this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
+  console.log("Non-commercial licenseTermsId: ", this.nonCommercialLicenseId);
   
   console.log(`================= Register commercial-use PIL license terms =================`);
   let testTerms = terms;
@@ -42,8 +42,8 @@ before(async function () {
   testTerms.commercialUse = true;
   testTerms.currency = MockERC20;
   await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
-  this.commericialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
+  this.commercialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
 
   console.log(`================= Register commercial-remix PIL license terms =================`);
   testTerms = terms;
@@ -53,8 +53,8 @@ before(async function () {
   testTerms.commercialRevShare = 100;
   testTerms.currency = MockERC20;
   await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
-  this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
+  this.commercialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-remix licenseTermsId: ", this.commercialRemixLicenseId);
 
   console.log(`================= ERC20 approve spender =================`);
   const amountToCheck = BigInt(200 * 10 ** 18);

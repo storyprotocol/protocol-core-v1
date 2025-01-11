@@ -228,7 +228,7 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
             registerDerivativeWithLicenseTokens(ipAcct[tokenId], alice_license_from_root_bob, "", u.alice);
         }
 
-        // Carl mints licenses and linkts to multiple parents
+        // Carl mints licenses and links to multiple parents
         // Carl creates NFT 6 IPAccount
         // Carl activates the license on his NFT 6 IPAccount, linking as child to Alice's NFT 1 IPAccount
         {

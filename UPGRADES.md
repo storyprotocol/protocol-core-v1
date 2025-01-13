@@ -58,7 +58,7 @@ Note, some are going to be false positives, especially Solady and UpgradeableBea
 ## 3. Write a script to deploy the new contracts and implementations
 
 Inherit from UpgradedImplHelper to compile the upgrade structs that `_writeUpgradeProposals()` need to generate the output file
-Upgrading is a multi step process, we need to schedule first, then execute. Having an intermediary file helps the auditability
+Upgrading is a multi-step process, we need to schedule first, then execute. Having an intermediary file helps the auditability
 of the process.
 
 Remember to use CREATE3 for new proxy contracts

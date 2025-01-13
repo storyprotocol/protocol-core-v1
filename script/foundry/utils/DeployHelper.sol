@@ -110,11 +110,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     // Token
     address private revenueToken;
 
-    // keep private to avoid conflict with inheriting contracts
-    uint256 private immutable ARBITRATION_PRICE;
-    uint256 private immutable MAX_ROYALTY_APPROVAL;
-    address private immutable TREASURY_ADDRESS;
-
     // DeployHelper variable
     bool private writeDeploys;
 
@@ -123,27 +118,19 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     constructor(
         address erc6551Registry_,
         address revenueToken_,
-        uint256 arbitrationPrice_,
-        uint256 maxRoyaltyApproval_,
-        address treasury_,
         address ipGraphACL_
     ) JsonDeploymentHandler("main") {
         erc6551Registry = ERC6551Registry(erc6551Registry_);
         revenueToken = revenueToken_;
-        MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
-        TREASURY_ADDRESS = treasury_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        /// @dev USDC addresses are fetched from
-        /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
-        /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
-        if (block.chainid == 1) revenueToken = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // USDC
-        else if (block.chainid == 11155111) revenueToken = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // USDC
-        else if (block.chainid == 1514) revenueToken = 0x1514000000000000000000000000000000000000; // WIP
+        if (block.chainid == 1514) revenueToken = 0x1514000000000000000000000000000000000000; // WIP
         else if (block.chainid == 1516) revenueToken = 0x1516000000000000000000000000000000000000; // WIP
     }
 
-    /// @dev To use, run the following command (e.g. for Sepolia):
-    /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
+    /// @dev To use, run the following command (e.g. for Story Odyssey Testnet):
+    /// forge script script/foundry/deployment/Main.s.sol:Main <CREATE3_SEED> \
+    /// --sig "run(uint256)" --fork-url ${STORY_RPC}  --broadcast --sender=<SENDER_ADDRESS> \
+    /// --priority-gas-price 1 --legacy --verify --verifier=<VERIFIER_NAME> --verifier-url=<VERIFIER_URL>
 
     function run(address create3Deployer_, uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version_) public virtual {
         create3Deployer = ICreate3Deployer(create3Deployer_);

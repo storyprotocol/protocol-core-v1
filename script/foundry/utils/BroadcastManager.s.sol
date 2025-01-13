@@ -16,21 +16,7 @@ contract BroadcastManager is Script {
 
     function _beginBroadcast() internal {
         uint256 deployerPrivateKey;
-        if (block.chainid == 1) { // Tenderly mainnet fork
-            deployerPrivateKey = vm.envUint("MAINNET_PRIVATEKEY");
-            deployer = vm.addr(deployerPrivateKey);
-            multisig = vm.envAddress("MAINNET_MULTISIG_ADDRESS");
-            upgraderExecDelay = uint32(vm.envUint("MAINNET_UPGRADER_EXEC_DELAY"));
-            relayer = vm.envAddress("MAINNET_RELAYER_ADDRESS");
-            vm.startBroadcast(deployerPrivateKey);
-        } else if (block.chainid == 11155111) {
-            deployerPrivateKey = vm.envUint("SEPOLIA_PRIVATEKEY");
-            deployer = vm.addr(deployerPrivateKey);
-            multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
-            relayer = vm.envAddress("SEPOLIA_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
-            vm.startBroadcast(deployerPrivateKey);
-        } else if (block.chainid == 1512) {
+        if (block.chainid == 1512) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");

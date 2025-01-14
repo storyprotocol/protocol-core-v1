@@ -385,4 +385,19 @@ contract IPAccountTest is BaseTest {
 
         assertEq(ipAccount.state(), finalState);
     }
+
+    function test_IPAccount_revert_upgrade_disabled() public {
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        vm.prank(owner, owner);
+        address account = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
+
+        ERC6551 ipAccount = ERC6551(payable(account));
+
+        vm.expectRevert(Errors.IPAccount__UUPSUpgradeDisabled.selector);
+        ipAccount.upgradeToAndCall(address(123), "");
+    }
 }

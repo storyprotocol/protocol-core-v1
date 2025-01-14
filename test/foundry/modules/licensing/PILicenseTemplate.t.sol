@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+// solhint-disable quotes
+
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -675,6 +677,79 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(
             pilTemplate.getMetadataURI(),
             "https://github.com/storyprotocol/protocol-core/blob/main/PIL_Beta_Final_2024_02.pdf"
+        );
+    }
+
+    function test_PILicenseTemplate_registerLicenseTerms_revert_PILTermsURIContainsDoubleQuote() public {
+        string memory maliciousUri1 = string.concat(
+            '"}], ',
+            '"name" : "", ',
+            '"description" : "", ',
+            '"external_url" : "", ',
+            '"image" : "", ',
+            '"attributes" : [], ',
+            '"old_attributes" : [{"ok" : ""}'
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote.selector,
+                maliciousUri1
+            )
+        );
+        pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: false,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: maliciousUri1
+            })
+        );
+
+        string memory maliciousUri2 = string.concat(
+            unicode"https://github.com/storyprotocol/protocol-core",
+            '"', // The malicious quote character
+            "/blob/main/PIL_Beta_Final_2024_02.pdf"
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote.selector,
+                maliciousUri2
+            )
+        );
+        pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: false,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: maliciousUri2
+            })
         );
     }
 

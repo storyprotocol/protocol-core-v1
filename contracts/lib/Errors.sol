@@ -26,6 +26,9 @@ library Errors {
     /// @notice Execute operation type is not supported.
     error IPAccount__InvalidOperation();
 
+    /// @notice UUPS is disabled for IP Account.
+    error IPAccount__UUPSUpgradeDisabled();
+
     ////////////////////////////////////////////////////////////////////////////
     //                          CoreMetadataModule                            //
     ////////////////////////////////////////////////////////////////////////////

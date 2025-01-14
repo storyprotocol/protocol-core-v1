@@ -323,20 +323,17 @@ contract ArbitrationPolicyUMA is
     ) internal pure returns (bytes memory) {
         return
             abi.encodePacked(
-                // prettier-ignore
-                "{\"title\": \"",
+                '{"title": "',
                 "IP dispute ",
                 BytesConversion.toUtf8BytesUint(disputeId),
-                // prettier-ignore
-                "\", \"description\": \"",
+                '", "description": "',
                 "The IP with ipId address ",
                 BytesConversion.toUtf8BytesAddress(targetIpId),
                 " is infringing beyond any reasonable doubt with dispute tag ",
                 BytesConversion.toUtf8Bytes(targetTag),
                 " given the evidence hash ",
                 BytesConversion.toUtf8Bytes(disputeEvidenceHash),
-                // prettier-ignore
-                "\"}"
+                '"}'
             );
     }
 

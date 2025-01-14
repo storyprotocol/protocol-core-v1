@@ -19,7 +19,7 @@ import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgrade
 import { IGroupingModule } from "../../interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupRewardPool } from "../../interfaces/modules/grouping/IGroupRewardPool.sol";
 import { GROUPING_MODULE_KEY } from "../../lib/modules/Module.sol";
-import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { ILicenseTemplate } from "../../interfaces/modules/licensing/ILicenseTemplate.sol";
 import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
@@ -150,30 +150,20 @@ contract GroupingModule is
         address[] calldata ipIds
     ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
         _checkIfGroupMembersLocked(groupIpId);
-        // the group IP must has license terms and minting fee is 0 to be able to add IP to group
-        if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
-            revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
-        }
-        (address groupLicenseTemplate, uint256 groupLicenseTermsId) = LICENSE_REGISTRY.getAttachedLicenseTerms(
-            groupIpId,
-            0
-        );
-        // Group must attache a non-default license terms to add IP
-        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
+        (
+            address groupLicenseTemplate,
+            uint256 groupLicenseTermsId,
+            uint256 mintingFee,
+            address currencyToken
+        ) = _getGroupRevenueInfo(groupIpId);
 
-        if (groupLicenseTemplate == defaultLicenseTemplate && groupLicenseTermsId == defaultLicenseTermsId) {
-            revert Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(groupIpId);
-        }
-
-        PILTerms memory groupLicenseTerms = IPILicenseTemplate(groupLicenseTemplate).getLicenseTerms(
-            groupLicenseTermsId
-        );
-        if (groupLicenseTerms.defaultMintingFee != 0) {
+        if (mintingFee != 0) {
             revert Errors.GroupingModule__GroupIPHasMintingFee(groupIpId, groupLicenseTemplate, groupLicenseTermsId);
         }
 
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
+        _collectRoyalties(groupIpId, currencyToken);
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipIds[i])) {
                 revert Errors.GroupingModule__CannotAddGroupToGroup(groupIpId, ipIds[i]);
@@ -212,6 +202,9 @@ contract GroupingModule is
         address[] calldata ipIds
     ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
         _checkIfGroupMembersLocked(groupIpId);
+        (, , , address currencyToken) = _getGroupRevenueInfo(groupIpId);
+        _collectRoyalties(groupIpId, currencyToken);
+        _claimReward(groupIpId, currencyToken, ipIds);
         // remove ip from group
         GROUP_IP_ASSET_REGISTRY.removeGroupMember(groupIpId, ipIds);
         for (uint256 i = 0; i < ipIds.length; i++) {
@@ -225,13 +218,11 @@ contract GroupingModule is
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external nonReentrant whenNotPaused {
-        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
-        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
-            revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
+        (, , , address currencyToken) = _getGroupRevenueInfo(groupId);
+        if (currencyToken != token) {
+            revert Errors.GroupingModule__TokenNotMatchGroupRevenueToken(groupId, currencyToken, token);
         }
-        // trigger group pool to distribute rewards to group members vault
-        uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
-        emit ClaimedReward(groupId, token, ipIds, rewards);
+        _claimReward(groupId, token, ipIds);
     }
 
     /// @notice Collects royalties into the pool, making them claimable by group member IPs.
@@ -241,16 +232,11 @@ contract GroupingModule is
         address groupId,
         address token
     ) external nonReentrant whenNotPaused returns (uint256 royalties) {
-        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
-        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
-            revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
+        (, , , address currencyToken) = _getGroupRevenueInfo(groupId);
+        if (currencyToken != token) {
+            revert Errors.GroupingModule__TokenNotMatchGroupRevenueToken(groupId, currencyToken, token);
         }
-        IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
-
-        if (address(vault) == address(0)) revert Errors.GroupingModule__GroupRoyaltyVaultNotCreated(groupId);
-        royalties = vault.claimRevenueOnBehalf(address(pool), token);
-        pool.depositReward(groupId, token, royalties);
-        emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties);
+        royalties = _collectRoyalties(groupId, token);
     }
 
     function name() external pure override returns (string memory) {
@@ -270,6 +256,67 @@ contract GroupingModule is
         // get claimable reward from group pool
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         return pool.getAvailableReward(groupId, token, ipIds);
+    }
+
+    /// @dev claim reward from group pool
+    function _claimReward(address groupId, address token, address[] calldata ipIds) internal {
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
+        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
+            revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
+        }
+        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(token)) {
+            revert Errors.GroupingModule__RoyaltyTokenNotWhitelisted(groupId, token);
+        }
+        // trigger group pool to distribute rewards to group members vault
+        uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
+        emit ClaimedReward(groupId, token, ipIds, rewards);
+    }
+
+    /// @dev collect royalties into the pool
+    function _collectRoyalties(address groupId, address token) internal returns (uint256 royalties) {
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
+        if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
+            revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
+        }
+        if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(token)) {
+            revert Errors.GroupingModule__RoyaltyTokenNotWhitelisted(groupId, token);
+        }
+        IIpRoyaltyVault vault = IIpRoyaltyVault(ROYALTY_MODULE.ipRoyaltyVaults(groupId));
+
+        if (address(vault) == address(0)) return 0;
+        royalties = vault.claimableRevenue(address(pool), token);
+        if (royalties == 0) return 0;
+        royalties = vault.claimRevenueOnBehalf(address(pool), token);
+        pool.depositReward(groupId, token, royalties);
+        emit CollectedRoyaltiesToGroupPool(groupId, token, address(pool), royalties);
+    }
+
+    /// @dev Get the group revenue info
+    function _getGroupRevenueInfo(
+        address groupIpId
+    )
+        internal
+        view
+        returns (address groupLicenseTemplate, uint256 groupLicenseTermsId, uint256 mintingFee, address currencyToken)
+    {
+        // the group IP must has license terms and minting fee is 0 to be able to add IP to group
+        if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
+            revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
+        }
+        (groupLicenseTemplate, groupLicenseTermsId) = LICENSE_REGISTRY.getAttachedLicenseTerms(groupIpId, 0);
+        // Group must attache a non-default license terms to add IP
+        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
+
+        if (groupLicenseTemplate == defaultLicenseTemplate && groupLicenseTermsId == defaultLicenseTermsId) {
+            revert Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(groupIpId);
+        }
+
+        IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
+        (, , mintingFee, currencyToken) = ILicenseTemplate(groupLicenseTemplate).getRoyaltyPolicy(groupLicenseTermsId);
+        if (currencyToken == address(0)) {
+            revert Errors.GroupingModule__GroupIPLicenseHasNotSpecifyRevenueToken(groupIpId);
+        }
+        return (groupLicenseTemplate, groupLicenseTermsId, mintingFee, currencyToken);
     }
 
     /// @dev The group members are locked if the group has derivative IPs or license tokens minted.

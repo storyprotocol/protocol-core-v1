@@ -139,6 +139,15 @@ library Errors {
     /// @notice The group reward pool is not whitelisted.
     error GroupingModule__GroupRewardPoolNotWhitelisted(address groupId, address groupRewardPool);
 
+    /// @notice The group not yet attached a license terms which specify the revenue token
+    error GroupingModule__GroupIPLicenseHasNotSpecifyRevenueToken(address groupId);
+
+    /// @notice The given token is not match with the group revenue token.
+    error GroupingModule__TokenNotMatchGroupRevenueToken(address groupId, address groupCurrentToken, address token);
+
+    /// @notice The given token is not whitelisted as valid revenue token.
+    error GroupingModule__RoyaltyTokenNotWhitelisted(address groupId, address royaltyToken);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////
@@ -979,4 +988,7 @@ library Errors {
 
     /// @notice Caller is not the GroupingModule.
     error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
+
+    /// @notice Deposit token into pool but the token address is zero.
+    error EvenSplitGroupPool__DepositWithZeroTokenAddress(address groupId);
 }

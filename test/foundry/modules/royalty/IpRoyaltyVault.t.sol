@@ -9,6 +9,7 @@ import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721H
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 // solhint-disable-next-line max-line-length
 import { IIpRoyaltyVault } from "../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 // tests
@@ -320,6 +321,16 @@ contract TestIpRoyaltyVault is BaseTest, ERC721Holder {
 
         address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
         address rewardPool = ipAssetRegistry.getGroupRewardPool(groupId);
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
 
         vm.startPrank(address(licensingModule));
         royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");

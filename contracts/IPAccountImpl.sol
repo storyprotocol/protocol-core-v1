@@ -284,7 +284,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         version = "1";
     }
 
-    function _authorizeUpgrade(address) internal override virtual {
+    function _authorizeUpgrade(address) internal virtual override {
         revert Errors.IPAccount__UUPSUpgradeDisabled();
     }
 }

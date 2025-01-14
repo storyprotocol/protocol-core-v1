@@ -5,6 +5,7 @@ pragma solidity 0.8.26;
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -13,10 +14,24 @@ import { IGroupingModule } from "../../../../contracts/interfaces/modules/groupi
 import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
 // test
 import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
 import { BaseTest } from "../../utils/BaseTest.t.sol";
+
+contract MockRoyaltyModule is RoyaltyModule {
+    constructor(
+        address licensingModule_,
+        address disputeModule_,
+        address licenseRegistry_,
+        address ipAssetRegistry_
+    ) RoyaltyModule(licensingModule_, disputeModule_, licenseRegistry_, ipAssetRegistry_) {}
+
+    function deployRoyaltyVault(address ipId, address receiver) public {
+        _deployIpRoyaltyVault(ipId, receiver);
+    }
+}
 
 contract GroupingModuleTest is BaseTest, ERC721Holder {
     // test register group
@@ -50,6 +65,8 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
     EvenSplitGroupPool public rewardPool;
 
+    uint256 private exploiterLicenseToken;
+
     function setUp() public override {
         super.setUp();
         // Create IPAccounts
@@ -69,6 +86,303 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.label(ipId5, "IPAccount5");
 
         rewardPool = evenSplitGroupPool;
+    }
+
+    function test_GroupingModule_drainRewardPool() public {
+        MockRoyaltyModule newRoyaltyModule = new MockRoyaltyModule(
+            address(licensingModule),
+            address(disputeModule),
+            address(licenseRegistry),
+            address(ipAssetRegistry)
+        );
+        vm.startPrank(admin);
+        protocolAccessManager.schedule(
+            address(royaltyModule),
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, address(newRoyaltyModule), ""),
+            0
+        );
+        vm.warp(upgraderExecDelay + 1);
+        royaltyModule.upgradeToAndCall(address(newRoyaltyModule), "");
+        vm.stopPrank();
+        // Basic terms
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 0,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        // Create 2 honest (non-malicious) group IPs to better simulate the exploit
+        address groupOwner1 = address(150);
+        address groupOwner2 = address(151);
+        (address group1, address group2) = createHonestGroupsWithVaults(
+            groupOwner1,
+            groupOwner2,
+            termsId,
+            address(rewardPool) // both groups share the same reward pool
+        );
+        // Simulate royalty payments to the vaults for the 2 honest group IPs - 5_000 tokens per group
+        erc20.mint(address(this), 10_000);
+        erc20.approve(address(royaltyModule), 10_000);
+        royaltyModule.payRoyaltyOnBehalf(group1, address(0), address(erc20), 5_000);
+        royaltyModule.payRoyaltyOnBehalf(group2, address(0), address(erc20), 5_000);
+
+        // Transfer the royalties to the shared rewardPool
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(group1, address(erc20), address(rewardPool), 5_000);
+        groupingModule.collectRoyalties(group1, address(erc20));
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(group2, address(erc20), address(rewardPool), 5_000);
+        groupingModule.collectRoyalties(group2, address(erc20));
+
+        // Rewards for group1 & group2 are deposited into the reward pool
+        assertEq(erc20.balanceOf(address(rewardPool)), 10_000);
+
+        // Create an Exploiter IP account that will be used as parent for registering the exploiter group IP
+        mockNft.mintId(address(this), 10);
+        address exploiterIP = ipAssetRegistry.register(block.chainid, address(mockNft), 10);
+        licensingModule.attachLicenseTerms(exploiterIP, address(pilTemplate), termsId);
+
+        // Mint license tokens from the exploiterIP - the exploiter group IP will use it to register as derivative
+        exploiterLicenseToken = licensingModule.mintLicenseTokens({
+            licensorIpId: exploiterIP,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: address(this),
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+        // Register an exploiter group IP that shares the same pool as the honest group1 & group2
+        address exploiterGroupIP = groupingModule.registerGroup(address(rewardPool));
+        // Deploy the royalty vault for the exploiter group IP
+        MockRoyaltyModule(address(royaltyModule)).deployRoyaltyVault(
+            exploiterGroupIP,
+            ipAssetRegistry.getGroupRewardPool(exploiterGroupIP)
+        );
+
+        licensingModule.attachLicenseTerms(exploiterGroupIP, address(pilTemplate), termsId);
+
+        // Exploiter groupIP is created
+        assertEq(ipAssetRegistry.isRegisteredGroup(exploiterGroupIP), true);
+
+        // Royalty vault was deployed for exploiterGroupIP
+        address exploiterVault = royaltyModule.ipRoyaltyVaults(exploiterGroupIP);
+        assertNotEq(exploiterVault, address(0));
+
+        // Pay royalties to the exploiterGroup vault
+        erc20.mint(address(this), 10_000);
+        erc20.approve(address(royaltyModule), 10_000);
+        royaltyModule.payRoyaltyOnBehalf(exploiterGroupIP, address(0), address(erc20), 10_000);
+
+        // Transfer the royalties from exploiterVault to the shared reward Pool
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(
+            exploiterGroupIP,
+            address(erc20),
+            address(rewardPool),
+            10_000
+        );
+        groupingModule.collectRoyalties(exploiterGroupIP, address(erc20));
+
+        // Rewards for exploiterGroupIP are deposited into the shared reward pool
+        assertEq(erc20.balanceOf(address(rewardPool)), 20_000);
+
+        // STAGE 2 - DRAIN the shared reward pool
+        // Create 2 regular IPs that belong to the exploiter - they are added as members to exploiterGroupIP
+        (address exploiterIP1, address exploiterIP2) = createExploiterGroupMembers(termsId, address(rewardPool));
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = exploiterIP1;
+        ipIds[1] = exploiterIP2;
+        groupingModule.addIp(exploiterGroupIP, ipIds);
+
+        /*
+         Currently the Shared Reward Pool accounting looks like this:
+         - total reward tokens in the Pool - 20_000
+         - 5_000 belong to group1
+         - 5_000 belong to group2
+         - 10_000 belong to exploiterGroupIP
+         - exploiterGroupIP has two members:
+            - exploiterIP1 - entitled to 5_000
+            - exploiterIP2 - entitled to 5_000
+        */
+
+        // Nothing has been claimed by exploiterIP1 & exploiterIP2
+        assertEq(rewardPool.getIpRewardDebt(exploiterGroupIP, address(erc20), exploiterIP1), 0);
+        assertEq(rewardPool.getIpRewardDebt(exploiterGroupIP, address(erc20), exploiterIP2), 0);
+        assertEq(rewardPool.getAvailableReward(exploiterGroupIP, address(erc20), ipIds)[0], 5_000);
+        assertEq(rewardPool.getAvailableReward(exploiterGroupIP, address(erc20), ipIds)[1], 5_000);
+
+        // Exploiter calls claim for exploiterIP1 & exploiterIP2
+        address[] memory claimIpIds = new address[](2);
+        claimIpIds[0] = exploiterIP1;
+        claimIpIds[1] = exploiterIP2;
+        groupingModule.claimReward(exploiterGroupIP, address(erc20), claimIpIds);
+
+        // Everything was claimed for exploiterGroupIP
+        assertEq(rewardPool.getIpRewardDebt(exploiterGroupIP, address(erc20), exploiterIP1), 5_000);
+        assertEq(rewardPool.getIpRewardDebt(exploiterGroupIP, address(erc20), exploiterIP2), 5_000);
+
+        assertEq(erc20.balanceOf(address(rewardPool)), 10_000);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(exploiterIP1)), 5_000);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(exploiterIP2)), 5_000);
+        // Nothing is left to claim
+        assertEq(rewardPool.getAvailableReward(exploiterGroupIP, address(erc20), claimIpIds)[0], 0);
+        assertEq(rewardPool.getAvailableReward(exploiterGroupIP, address(erc20), claimIpIds)[1], 0);
+
+        // Exploiter removes exploiterIP1 from the group
+        address[] memory removeIpIds = new address[](1);
+        removeIpIds[0] = exploiterIP1;
+        groupingModule.removeIp(exploiterGroupIP, removeIpIds);
+        assertEq(rewardPool.getTotalIps(exploiterGroupIP), 1);
+
+        claimIpIds = new address[](1);
+        claimIpIds[0] = exploiterIP2;
+
+        // Claimable rewards for exploiterIP2 is still 0 now
+        assertEq(rewardPool.getAvailableReward(exploiterGroupIP, address(erc20), claimIpIds)[0], 0);
+
+        // Exploiter claims again
+        groupingModule.claimReward(exploiterGroupIP, address(erc20), claimIpIds);
+
+        // Exploiter can claim nothing
+        assertEq(rewardPool.getIpRewardDebt(exploiterGroupIP, address(erc20), exploiterIP2), 5_000);
+        assertEq(erc20.balanceOf(address(rewardPool)), 10_000);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(exploiterIP2)), 5_000);
+
+        // Exploiter removes exploiterIP2 and brings back exploiterIP1
+        removeIpIds[0] = exploiterIP2;
+        groupingModule.removeIp(exploiterGroupIP, removeIpIds);
+
+        ipIds = new address[](1);
+        ipIds[0] = exploiterIP1;
+        groupingModule.addIp(exploiterGroupIP, ipIds);
+
+        claimIpIds[0] = exploiterIP1;
+        groupingModule.claimReward(exploiterGroupIP, address(erc20), claimIpIds);
+
+        // Pool balance no change
+        assertEq(erc20.balanceOf(address(rewardPool)), 10_000);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(exploiterIP1)), 5_000);
+
+        // the honest group members can still claim from the pool
+        claimIpIds = new address[](1);
+        claimIpIds[0] = ipId1;
+        assertEq(groupingModule.getClaimableReward(group1, address(erc20), claimIpIds)[0], 2500);
+    }
+
+    function createExploiterGroupMembers(
+        uint256 termsId,
+        address pool
+    ) private returns (address exploiterIP1, address exploiterIP2) {
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        // 1. Mint NFTs and turn them into IPs
+        mockNft.mintId(address(this), 200);
+        mockNft.mintId(address(this), 201);
+
+        exploiterIP1 = ipAssetRegistry.register(block.chainid, address(mockNft), 200);
+        exploiterIP2 = ipAssetRegistry.register(block.chainid, address(mockNft), 201);
+
+        // Config the IPs so that they can be registered as derivatives
+        licensingConfig.expectGroupRewardPool = address(pool);
+        licensingModule.attachLicenseTerms(exploiterIP1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(exploiterIP1, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.attachLicenseTerms(exploiterIP2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(exploiterIP2, address(pilTemplate), termsId, licensingConfig);
+
+        // 2. Register the IPs as derivatives - the only reason for this is that it will create Vaults for each one
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = exploiterIP1;
+        parentIpIds[1] = exploiterIP2;
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = termsId;
+        licenseTermsIds[1] = termsId;
+        vm.prank(ipOwner5);
+        licensingModule.registerDerivative(ipId5, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+
+        // Royalty vaults have been deployed for both IPs - we need vaults to be able to claim from the reward pool
+        assertNotEq(royaltyModule.ipRoyaltyVaults(exploiterIP1), address(0));
+        assertNotEq(royaltyModule.ipRoyaltyVaults(exploiterIP2), address(0));
+    }
+
+    // This function creates 2 standard groupIPs and deploys their vaults
+    function createHonestGroupsWithVaults(
+        address owner1,
+        address owner2,
+        uint256 termsId,
+        address pool
+    ) private returns (address groupId1, address groupId2) {
+        // Prepare some IPs to be added to the groups that are cretead
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        // Config to be added to groups
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(pool);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(pool);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        // 1. Register 2 groups and add the above IPs so that `registerDerivative()` can be called on the groups
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+
+        // add IPs to 1st group
+        vm.startPrank(owner1);
+        groupId1 = groupingModule.registerGroup(address(pool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        groupingModule.addIp(groupId1, ipIds);
+        vm.stopPrank();
+
+        // add IPs to 2nd group
+        vm.startPrank(owner2);
+        groupId2 = groupingModule.registerGroup(address(pool));
+        licensingModule.attachLicenseTerms(groupId2, address(pilTemplate), termsId);
+        groupingModule.addIp(groupId2, ipIds);
+        vm.stopPrank();
+
+        // 2. Create derivatives - the only reason is to deploy vaults for groupId1 & groupId2
+        address[] memory parentIpIds = new address[](2);
+        parentIpIds[0] = groupId1;
+        parentIpIds[1] = groupId2;
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        licenseTermsIds[0] = termsId;
+        licenseTermsIds[1] = termsId;
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+
+        // Royalty vaults have been deployed for both groups - we need vaults to be able to pay/claim royalties
+        assertNotEq(royaltyModule.ipRoyaltyVaults(groupId1), address(0));
+        assertNotEq(royaltyModule.ipRoyaltyVaults(groupId2), address(0));
     }
 
     function test_GroupingModule_registerGroup() public {

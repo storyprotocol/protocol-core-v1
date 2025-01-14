@@ -57,4 +57,7 @@ library PILicenseTemplateErrors {
 
     /// @notice Zero address provided for Royalty Module at initialization.
     error PILicenseTemplate__ZeroRoyaltyModule();
+
+    /// @notice The URI field in PILTerms contains invalid double quote characters(").
+    error PILicenseTemplate__PILTermsURIContainsDoubleQuote(string uri);
 }

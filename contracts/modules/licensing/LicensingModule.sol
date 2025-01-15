@@ -568,7 +568,9 @@ contract LicensingModule is
         royaltyPercents = new uint32[](licenseTermsIds.length);
         if (licenseTermsIds.length == 0) return (royaltyPolicies, royaltyPercents);
 
-        (address royaltyPolicy, uint32 royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+        address royaltyPolicy;
+        uint32 royaltyPercent;
+        (royaltyPolicy, royaltyPercent, maxMintingFee) = _executeLicensingHookAndPayMintingFee(
             childIpId,
             parentIpIds[0],
             licenseTemplate,
@@ -581,7 +583,7 @@ contract LicensingModule is
 
         // pay minting fee for all parent IPs
         for (uint256 i = 1; i < parentIpIds.length; i++) {
-            (royaltyPolicy, royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+            (royaltyPolicy, royaltyPercent, maxMintingFee) = _executeLicensingHookAndPayMintingFee(
                 childIpId,
                 parentIpIds[i],
                 licenseTemplate,
@@ -604,7 +606,7 @@ contract LicensingModule is
         uint256 licenseTermsId,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
-    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent, uint256 remainingFeeAllowance) {
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
             parentIpId,
             licenseTemplate,
@@ -625,7 +627,7 @@ contract LicensingModule is
                 lsc.hookData
             );
         }
-        (royaltyPolicy, royaltyPercent) = _payMintingFee(
+        (royaltyPolicy, royaltyPercent, remainingFeeAllowance) = _payMintingFee(
             parentIpId,
             licenseTemplate,
             licenseTermsId,
@@ -701,6 +703,8 @@ contract LicensingModule is
     /// @param maxMintingFee The maximum minting fee that the caller is willing to pay.
     /// @return royaltyPolicy The address of the royalty policy.
     /// @return royaltyPercent The license royalty percentage
+    /// @return remainingFeeAllowance The unused portion of the maximum minting fee after
+    ///         deducting the minting fee required for the transaction.
     function _payMintingFee(
         address parentIpId,
         address licenseTemplate,
@@ -710,7 +714,7 @@ contract LicensingModule is
         Licensing.LicensingConfig memory licensingConfig,
         uint256 mintingFeeByHook,
         uint256 maxMintingFee
-    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent, uint256 remainingFeeAllowance) {
         RoyaltyPolicyInfo memory royaltyInfo = _getRoyaltyPolicyInfo(licenseTemplate, licenseTermsId);
         royaltyPolicy = royaltyInfo.royaltyPolicy;
         royaltyPercent = royaltyInfo.royaltyPercent;
@@ -731,6 +735,7 @@ contract LicensingModule is
             }
             // pay minting fee
             if (tmf > 0) {
+                remainingFeeAllowance = maxMintingFee > tmf ? maxMintingFee - tmf : 0;
                 ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, royaltyInfo.currencyToken, tmf);
             }
         }

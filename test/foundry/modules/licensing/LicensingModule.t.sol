@@ -1420,6 +1420,92 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
     }
 
+    function test_LicensingModule_registerDerivative_revert_singleParent_mintingFeeExceedMaxMintingFee() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 500,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = ipId1;
+        licenseTermsIds[0] = commRemixTermsId;
+
+        vm.startPrank(ipOwner5);
+        erc20.mint(ipOwner5, 500);
+        erc20.approve(address(royaltyModule), 500);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__MintingFeeExceedMaxMintingFee.selector, 500, 200)
+        );
+        licensingModule.registerDerivative({
+            childIpId: ipId5,
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: "",
+            maxMintingFee: 200,
+            maxRts: 100e6,
+            maxRevenueShare: 0
+        });
+        vm.stopPrank();
+    }
+
+    function test_LicensingModule_registerDerivative_revert_multipleParent_mintingFeeExceedMaxMintingFee() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 200,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commRemixTermsId);
+
+        vm.prank(ipOwner3);
+        licensingModule.attachLicenseTerms(ipId3, address(pilTemplate), commRemixTermsId);
+
+        address[] memory parentIpIds = new address[](3);
+        uint256[] memory licenseTermsIds = new uint256[](3);
+        parentIpIds[0] = ipId1;
+        parentIpIds[1] = ipId2;
+        parentIpIds[2] = ipId3;
+        licenseTermsIds[0] = commRemixTermsId;
+        licenseTermsIds[1] = commRemixTermsId;
+        licenseTermsIds[2] = commRemixTermsId;
+
+        vm.startPrank(ipOwner5);
+        erc20.mint(ipOwner5, 600);
+        erc20.approve(address(royaltyModule), 600);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__MintingFeeExceedMaxMintingFee.selector, 200, 500 - 200 - 200)
+        );
+        licensingModule.registerDerivative({
+            childIpId: ipId5,
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: "",
+            maxMintingFee: 500,
+            maxRts: 100e6,
+            maxRevenueShare: 0
+        });
+        vm.stopPrank();
+    }
+
     function test_LicensingModule_registerDerivativeWithLicenseTokens_ownedByDelegator() public {
         vm.prank(ipOwner3);
         accessController.setAllPermissions(ipId3, ipOwner2, AccessPermission.ALLOW);

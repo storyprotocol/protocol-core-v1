@@ -32,7 +32,15 @@ library Errors {
     ////////////////////////////////////////////////////////////////////////////
     //                          CoreMetadataModule                            //
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for Access Manager.
     error CoreMetadataModule__ZeroAccessManager();
+
+    /// @notice Metadata URI contains double quotes.
+    error CoreMetadataModule__MetadataURIContainsDoubleQuote(string uri);
+
+    /// @notice NFT token URI contains double quotes.
+    error CoreMetadataModule__NFTTokenURIContainsDoubleQuote(string uri);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Account Storage                          //

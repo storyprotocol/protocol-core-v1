@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+/* solhint-disable quotes */
 import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { ICoreMetadataModule } from "../../../../contracts/interfaces/modules/metadata/ICoreMetadataModule.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -234,5 +235,87 @@ contract CoreMetadataModuleTest is BaseTest {
         );
         vm.prank(bob);
         coreMetadataModule.freezeMetadata(address(ipAccount));
+    }
+
+    function test_CoreMetadata_revert_updateNftTokenURI_ContainsDoubleQuote() public {
+        string memory maliciousNftTokenURI = string.concat(
+            'malicious-nft-token-uri/"}, ',
+            '{"trait_type": "RegistrationDate", ',
+            '"value": "malicious-registration-date"}'
+        );
+
+        vm.prank(alice);
+        mockNFT.setTokenURI(1, maliciousNftTokenURI);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.CoreMetadataModule__NFTTokenURIContainsDoubleQuote.selector,
+                string.concat("https://storyprotocol.xyz/erc721/", maliciousNftTokenURI)
+            )
+        );
+        vm.prank(alice);
+        coreMetadataModule.updateNftTokenURI(address(ipAccount), bytes32("0x1234"));
+    }
+
+    function test_CoreMetadata_revert_setMetadataURI_ContainsDoubleQuote() public {
+        string memory invalidMetadataURI = string.concat(
+            'ipfs://malicious-metadata-uri/"}, ',
+            '{"trait_type": "NFTMetadataHash", ',
+            '"value": "malicious-metadata-hash"}'
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.CoreMetadataModule__MetadataURIContainsDoubleQuote.selector,
+                invalidMetadataURI
+            )
+        );
+        vm.prank(alice);
+        coreMetadataModule.setMetadataURI(address(ipAccount), invalidMetadataURI, bytes32(0));
+    }
+
+    function test_CoreMetadata_revert_setAll_ContainsDoubleQuote() public {
+        string memory maliciousMetadataURI = string.concat(
+            'My MetadataURI with "unescaped quote/"}, ',
+            '{"trait_type": "NFTMetadataHash", ',
+            '"value": "malicious-metadata-hash"}'
+        );
+
+        string memory maliciousNftTokenURI = string.concat(
+            'malicious-nft-token-uri/"}, ',
+            '{"trait_type": "RegistrationDate", ',
+            '"value": "malicious-registration-date"}'
+        );
+
+        // malicious metadata uri, valid nft token uri
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.CoreMetadataModule__MetadataURIContainsDoubleQuote.selector,
+                maliciousMetadataURI
+            )
+        );
+        vm.prank(alice);
+        coreMetadataModule.setAll(address(ipAccount), maliciousMetadataURI, bytes32(0), bytes32(0));
+
+        // malicious nft token uri, valid metadata uri
+        vm.prank(alice);
+        mockNFT.setTokenURI(1, maliciousNftTokenURI);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.CoreMetadataModule__NFTTokenURIContainsDoubleQuote.selector,
+                string.concat("https://storyprotocol.xyz/erc721/", maliciousNftTokenURI)
+            )
+        );
+        vm.prank(alice);
+        coreMetadataModule.setAll(address(ipAccount), "https://storyprotocol.xyz/erc721/good", bytes32(0), bytes32(0));
+
+        // malicious metadata uri, malicious nft token uri
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.CoreMetadataModule__NFTTokenURIContainsDoubleQuote.selector,
+                string.concat("https://storyprotocol.xyz/erc721/", maliciousNftTokenURI)
+            )
+        );
+        vm.prank(alice);
+        coreMetadataModule.setAll(address(ipAccount), maliciousMetadataURI, bytes32(0), bytes32(0));
     }
 }

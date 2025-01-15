@@ -21,6 +21,7 @@ import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
 import { PILTermsRenderer } from "./PILTermsRenderer.sol";
+import { URIChecker } from "../../lib/URIChecker.sol";
 
 /// @title PILicenseTemplate
 contract PILicenseTemplate is
@@ -104,7 +105,7 @@ contract PILicenseTemplate is
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyRequiresCurrencyToken();
         }
 
-        if (_containsDoubleQuote(terms.uri)) {
+        if (URIChecker.containsDoubleQuote(terms.uri)) {
             revert PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote(terms.uri);
         }
 
@@ -442,22 +443,6 @@ contract PILicenseTemplate is
     /// @dev Checks if a license terms exists.
     function _exists(uint256 licenseTermsId) internal view returns (bool) {
         return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
-    }
-
-    /// @dev Checks if the URI contains double quotes.
-    /// @param uri The URI string to validate.
-    /// @return returns true if the URI contains at least one double quote, false otherwise.
-    function _containsDoubleQuote(string memory uri) internal pure returns (bool) {
-        bytes memory uriBytes = bytes(uri);
-        // solhint-disable-next-line quotes
-        bytes1 doubleQuote = bytes('"')[0];
-
-        for (uint256 i = 0; i < uriBytes.length; i++) {
-            if (uriBytes[i] == doubleQuote) {
-                return true;
-            }
-        }
-        return false;
     }
 
     ////////////////////////////////////////////////////////////////////////////

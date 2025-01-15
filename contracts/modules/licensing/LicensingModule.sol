@@ -495,21 +495,25 @@ contract LicensingModule is
             maxMintingFee
         );
 
+        uint32 remainingRevenueShareAllowance = maxRevenueShare;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             royaltyPercents[i] = LICENSE_REGISTRY.getRoyaltyPercent(
                 parentIpIds[i],
                 licenseTemplate,
                 licenseTermsIds[i]
             );
-            if (maxRevenueShare != 0 && royaltyPercents[i] > maxRevenueShare) {
+            if (remainingRevenueShareAllowance != 0 && royaltyPercents[i] > remainingRevenueShareAllowance) {
                 revert Errors.LicensingModule__ExceedMaxRevenueShare(
                     parentIpIds[i],
                     licenseTemplate,
                     licenseTermsIds[i],
                     royaltyPercents[i],
-                    maxRevenueShare
+                    remainingRevenueShareAllowance
                 );
             }
+            remainingRevenueShareAllowance = remainingRevenueShareAllowance > royaltyPercents[i]
+                ? remainingRevenueShareAllowance - royaltyPercents[i]
+                : 0;
         }
 
         if (royaltyPolicies.length == 0 || royaltyPolicies[0] == address(0)) return;

@@ -489,7 +489,7 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId,
         uint32 revenueShare,
-        uint32 maxRevenueShare
+        uint32 maxRevenueShareRemaining
     );
 
     ////////////////////////////////////////////////////////////////////////////

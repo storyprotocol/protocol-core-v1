@@ -376,7 +376,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address payerAddress,
         address token,
         uint256 amount
-    ) external onlyLicensingModule {
+    ) external nonReentrant onlyLicensingModule {
         uint256 amountAfterFee = _payRoyalty(receiverIpId, payerAddress, token, amount);
 
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount, amountAfterFee);

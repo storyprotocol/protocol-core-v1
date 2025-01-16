@@ -461,7 +461,7 @@ library Errors {
     error LicensingModule__InvalidLicenseTermsId(address licenseTemplate, uint256 licenseTermsId);
 
     /// @notice licensing minting fee is above the maximum minting fee.
-    error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFeeRemaining);
+    error LicensingModule__MintingFeeExceedMaxMintingFee(uint256 mintingFee, uint256 maxMintingFee);
 
     /// @notice license terms disabled.
     error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
@@ -507,7 +507,7 @@ library Errors {
         address licenseTemplate,
         uint256 licenseTermsId,
         uint32 revenueShare,
-        uint32 maxRevenueShareRemaining
+        uint32 maxRevenueShare
     );
 
     ////////////////////////////////////////////////////////////////////////////

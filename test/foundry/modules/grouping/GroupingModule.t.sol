@@ -1137,6 +1137,102 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         assertEq(rewardPool.getIpAddedTime(groupId, ipId1), block.timestamp);
     }
 
+    function test_GroupingModule_addIp_revert_groupIPHasMintingFee() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 10,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__GroupIPHasMintingFee.selector,
+                groupId,
+                address(pilTemplate),
+                termsId
+            )
+        );
+        groupingModule.addIp(groupId, ipIds);
+    }
+
+    function test_GroupingModule_addIp_revert_groupIpLicensingConfigHasMintingFee() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 10,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__GroupIPLicensingConfigHasMintingFee.selector,
+                groupId,
+                address(pilTemplate),
+                termsId
+            )
+        );
+        groupingModule.addIp(groupId, ipIds);
+    }
+
     function test_GroupingModule_registerDerivative_revert_emptyGroup() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

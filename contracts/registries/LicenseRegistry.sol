@@ -370,6 +370,16 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             groupLicenseTemplate,
             groupLicenseTermsId
         );
+
+        // group IP's license config should not have minting fee
+        if (groupLct.mintingFee != 0) {
+            revert Errors.LicenseRegistry__GroupIPLicensingConfigHasMintingFee(
+                groupId,
+                groupLicenseTemplate,
+                groupLicenseTermsId
+            );
+        }
+
         // minting fee must be the same
         if (lct.mintingFee != groupLct.mintingFee) {
             revert Errors.LicenseRegistry__IpMintingFeeNotMatchWithGroup(ipId, lct.mintingFee, groupLct.mintingFee);

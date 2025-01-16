@@ -317,6 +317,13 @@ library Errors {
         uint32 groupCommercialRevShare
     );
 
+    /// @notice The licensing config for the Group IP's license terms should not have minting fee.
+    error LicenseRegistry__GroupIPLicensingConfigHasMintingFee(
+        address groupId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

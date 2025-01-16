@@ -372,7 +372,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getDeployedAddress(type(LicensingModule).name),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
             )
         );
         royaltyModule = RoyaltyModule(
@@ -758,6 +759,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ipGraphACL.whitelistAddress(address(licenseRegistry));
             ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
             ipGraphACL.whitelistAddress(address(royaltyPolicyLRP));
+            ipGraphACL.whitelistAddress(address(royaltyModule));
         }
 
         // set default license to non-commercial social remixing

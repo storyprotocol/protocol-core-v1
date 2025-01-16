@@ -22,6 +22,7 @@ import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.s
 import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
+import { IPGraphACL } from "../../access/IPGraphACL.sol";
 
 /// @title Story Protocol Royalty Module
 /// @notice The Story Protocol royalty module governs the way derivatives pay royalties to their ancestors
@@ -51,6 +52,10 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @notice Returns the canonical protocol-wide IPAssetRegistry
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupIPAssetRegistry public immutable IP_ASSET_REGISTRY;
+
+    /// @notice IPGraphACL address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
 
     /// @dev Storage structure for the RoyaltyModule
     /// @param maxParents The maximum number of parents an IP asset can have
@@ -95,16 +100,24 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param licenseRegistry The address of the license registry
     /// @param ipAssetRegistry The address of the ip asset registry
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule, address licenseRegistry, address ipAssetRegistry) {
+    constructor(
+        address licensingModule,
+        address disputeModule,
+        address licenseRegistry,
+        address ipAssetRegistry,
+        address ipGraphAcl
+    ) {
         if (licensingModule == address(0)) revert Errors.RoyaltyModule__ZeroLicensingModule();
         if (disputeModule == address(0)) revert Errors.RoyaltyModule__ZeroDisputeModule();
         if (licenseRegistry == address(0)) revert Errors.RoyaltyModule__ZeroLicenseRegistry();
         if (ipAssetRegistry == address(0)) revert Errors.RoyaltyModule__ZeroIpAssetRegistry();
+        if (ipGraphAcl == address(0)) revert Errors.RoyaltyModule__ZeroIpGraphAcl();
 
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
 
         _disableInitializers();
     }
@@ -701,9 +714,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ipId The ID of the IP asset
     /// @return The number of ancestors
     function _getAncestorCount(address ipId) internal returns (uint256) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (uint256));
     }
@@ -713,9 +728,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ancestorIpId The ancestor ipId to check if it is an ancestor
     /// @return True if the IP has the ancestor
     function _hasAncestorIp(address ipId, address ancestorIpId) internal returns (bool) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (bool));
     }

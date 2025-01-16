@@ -194,9 +194,11 @@ contract RoyaltyPolicyLAP is
     /// @param ipId The ipId to get the royalty stack for
     /// @return The royalty stack for a given IP asset for LAP royalty policy
     function _getRoyaltyStackLAP(address ipId) internal returns (uint32) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyaltyStack(address,uint256)", ipId, uint256(0))
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyPolicyLAP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }
@@ -223,9 +225,11 @@ contract RoyaltyPolicyLAP is
     /// @param ancestorIpId The ancestor ipId to get the royalty for
     /// @return The royalty percentage between an IP asset and its ancestor via royalty policy LAP
     function _getRoyaltyLAP(address ipId, address ancestorIpId) internal returns (uint32) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyalty(address,address,uint256)", ipId, ancestorIpId, uint256(0))
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyPolicyLAP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }

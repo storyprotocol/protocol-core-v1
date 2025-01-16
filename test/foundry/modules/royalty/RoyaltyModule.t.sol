@@ -199,7 +199,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
@@ -217,7 +218,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxParents.selector);
@@ -235,7 +237,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroMaxAncestors.selector);
@@ -253,7 +256,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit.selector);

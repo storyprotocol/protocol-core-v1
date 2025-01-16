@@ -252,7 +252,7 @@ contract LicensingModule is
                 childIpId,
                 parentIpIds,
                 licenseTermsIds,
-                childIpOwner
+                msg.sender
             )
         ) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(childIpId);
@@ -326,7 +326,7 @@ contract LicensingModule is
         // Verify that the derivative IP is permitted under all license terms from the parent IPs.
         // Check the compatibility of all licenses
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!lct.verifyRegisterDerivativeForAllParents(childIpId, parentIpIds, licenseTermsIds, childIpOwner)) {
+        if (!lct.verifyRegisterDerivativeForAllParents(childIpId, parentIpIds, licenseTermsIds, msg.sender)) {
             revert Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative(childIpId, licenseTokenIds);
         }
 

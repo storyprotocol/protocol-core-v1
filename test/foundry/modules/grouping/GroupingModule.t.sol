@@ -25,8 +25,9 @@ contract MockRoyaltyModule is RoyaltyModule {
         address licensingModule_,
         address disputeModule_,
         address licenseRegistry_,
-        address ipAssetRegistry_
-    ) RoyaltyModule(licensingModule_, disputeModule_, licenseRegistry_, ipAssetRegistry_) {}
+        address ipAssetRegistry_,
+        address ipGraphAcl_
+    ) RoyaltyModule(licensingModule_, disputeModule_, licenseRegistry_, ipAssetRegistry_, ipGraphAcl_) {}
 
     function deployRoyaltyVault(address ipId, address receiver) public {
         _deployIpRoyaltyVault(ipId, receiver);
@@ -93,7 +94,8 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
             address(licensingModule),
             address(disputeModule),
             address(licenseRegistry),
-            address(ipAssetRegistry)
+            address(ipAssetRegistry),
+            address(ipGraphACL)
         );
         vm.startPrank(admin);
         protocolAccessManager.schedule(

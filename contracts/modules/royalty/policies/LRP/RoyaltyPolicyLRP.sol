@@ -223,9 +223,11 @@ contract RoyaltyPolicyLRP is
     /// @param ipId The ipId to get the royalty stack for
     /// @return The royalty stack for a given IP asset for LRP royalty policy
     function _getRoyaltyStackLRP(address ipId) internal returns (uint32) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyaltyStack(address,uint256)", ipId, uint256(1))
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyPolicyLRP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }
@@ -252,9 +254,11 @@ contract RoyaltyPolicyLRP is
     /// @param ancestorIpId The ancestor ipId to get the royalty for
     /// @return The royalty percentage between an IP asset and its ancestor via royalty policy LRP
     function _getRoyaltyLRP(address ipId, address ancestorIpId) internal returns (uint32) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getRoyalty(address,address,uint256)", ipId, ancestorIpId, uint256(1))
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyPolicyLRP__CallFailed();
         return uint32(abi.decode(returnData, (uint256)));
     }

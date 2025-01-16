@@ -66,12 +66,12 @@ interface ILicenseRegistry {
     /// @notice Checks if an IP is a derivative IP.
     /// @param ipId The address of the IP to check.
     /// @return Whether the IP is a derivative IP.
-    function isDerivativeIp(address ipId) external view returns (bool);
+    function isDerivativeIp(address ipId) external returns (bool);
 
     /// @notice Checks if an IP has derivative IPs.
     /// @param ipId The address of the IP to check.
     /// @return Whether the IP has derivative IPs.
-    function hasDerivativeIps(address ipId) external view returns (bool);
+    function hasDerivativeIps(address ipId) external returns (bool);
 
     /// @notice Verifies the minting of a license token.
     /// @param licensorIpId The address of the licensor IP.
@@ -156,18 +156,18 @@ interface ILicenseRegistry {
     /// @param childIpId The address of the IP.
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
-    function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId);
+    function getParentIp(address childIpId, uint256 index) external returns (address parentIpId);
 
     /// @notice Checks if an IP is a parent IP.
     /// @param parentIpId The address of the parent IP.
     /// @param childIpId The address of the child IP.
     /// @return Whether the IP is a parent IP.
-    function isParentIp(address parentIpId, address childIpId) external view returns (bool);
+    function isParentIp(address parentIpId, address childIpId) external returns (bool);
 
     /// @notice Gets the count of parent IPs.
     /// @param childIpId The address of the childIP.
     /// @return The count of parent IPs.
-    function getParentIpCount(address childIpId) external view returns (uint256);
+    function getParentIpCount(address childIpId) external returns (uint256);
 
     /// @notice Retrieves the minting license configuration for a given license terms of the IP.
     /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.

@@ -320,7 +320,7 @@ contract GroupingModule is
     }
 
     /// @dev The group members are locked if the group has derivative IPs or license tokens minted.
-    function _checkIfGroupMembersLocked(address groupIpId) internal view {
+    function _checkIfGroupMembersLocked(address groupIpId) internal {
         if (LICENSE_REGISTRY.hasDerivativeIps(groupIpId)) {
             revert Errors.GroupingModule__GroupFrozenDueToHasDerivativeIps(groupIpId);
         }

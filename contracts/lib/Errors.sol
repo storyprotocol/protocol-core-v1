@@ -725,6 +725,9 @@ library Errors {
     /// @notice Zero address for ip asset registry.
     error RoyaltyModule__ZeroIpAssetRegistry();
 
+    /// @notice Zero address for ipgraph access control.
+    error RoyaltyModule__ZeroIpGraphAcl();
+
     /// @notice Not a whitelisted royalty token.
     error RoyaltyModule__NotWhitelistedRoyaltyToken();
 

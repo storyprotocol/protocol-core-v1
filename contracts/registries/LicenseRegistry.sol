@@ -420,7 +420,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @notice Checks if an IP is a derivative IP.
     /// @param childIpId The address of the IP to check.
     /// @return Whether the IP is a derivative IP.
-    function isDerivativeIp(address childIpId) external view returns (bool) {
+    function isDerivativeIp(address childIpId) external returns (bool) {
         return _isDerivativeIp(childIpId);
     }
 
@@ -508,10 +508,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the IP.
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
-    function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
+    function getParentIp(address childIpId, uint256 index) external returns (address parentIpId) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIps(address)", childIpId)
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         address[] memory parentIps = abi.decode(returnData, (address[]));
         if (index >= parentIps.length) {
@@ -520,10 +522,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         parentIpId = parentIps[index];
     }
 
-    function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
+    function isParentIp(address parentIpId, address childIpId) external returns (bool) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return (abi.decode(returnData, (bool)));
     }
@@ -531,10 +535,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @notice Gets the count of parent IPs.
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
-    function getParentIpCount(address childIpId) external view returns (uint256) {
+    function getParentIpCount(address childIpId) external returns (uint256) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
+        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256));
     }
@@ -705,10 +711,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
 
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
-    function _isDerivativeIp(address childIpId) internal view returns (bool) {
+    function _isDerivativeIp(address childIpId) internal returns (bool) {
+        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
         );
+        IP_GRAPH_ACL.allow();
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256)) > 0;
     }

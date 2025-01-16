@@ -66,7 +66,9 @@ contract ArbitrationPolicyUMATest is BaseTest {
         );
 
         // deploy royalty module
-        address newRoyaltyModuleImpl = address(new RoyaltyModule(address(1), address(1), address(1), address(1)));
+        address newRoyaltyModuleImpl = address(
+            new RoyaltyModule(address(1), address(1), address(1), address(1), address(1))
+        );
         newRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 newRoyaltyModuleImpl,

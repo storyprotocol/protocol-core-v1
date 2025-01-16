@@ -162,7 +162,13 @@ contract PILicenseTemplate is
         if (terms.commercializerChecker != address(0)) {
             // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
             // when the policy was registered.
-            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
+            if (
+                !IHookModule(terms.commercializerChecker).verify(
+                    licensorIpId,
+                    licensee,
+                    terms.commercializerCheckerData
+                )
+            ) {
                 return false;
             }
         }
@@ -206,19 +212,19 @@ contract PILicenseTemplate is
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpIds The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param childIpOwner The address of the derivative IP owner.
+    /// @param caller The address initiating the derivative registration.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
-        address childIpOwner
+        address caller
     ) external override returns (bool) {
         if (!_verifyCompatibleLicenseTerms(licenseTermsIds)) {
             return false;
         }
         for (uint256 i = 0; i < licenseTermsIds.length; i++) {
-            if (!_verifyRegisterDerivative(childIpId, parentIpIds[i], licenseTermsIds[i], childIpOwner)) {
+            if (!_verifyRegisterDerivative(childIpId, parentIpIds[i], licenseTermsIds[i], caller)) {
                 return false;
             }
         }
@@ -410,7 +416,9 @@ contract PILicenseTemplate is
         if (terms.commercializerChecker != address(0)) {
             // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
             // when the policy was registered.
-            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
+            if (
+                !IHookModule(terms.commercializerChecker).verify(parentIpId, licensee, terms.commercializerCheckerData)
+            ) {
                 return false;
             }
         }

@@ -129,13 +129,13 @@ interface ILicenseTemplate is IERC165 {
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpId The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param childIpOwner The address of the derivative IP owner.
+    /// @param caller The address initiating the derivative registration.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpId,
         uint256[] calldata licenseTermsIds,
-        address childIpOwner
+        address caller
     ) external returns (bool);
 
     /// @notice Verifies if the royalty percentage defined in the licenseTermsId can be overridden with

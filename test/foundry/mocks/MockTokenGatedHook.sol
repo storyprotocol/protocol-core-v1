@@ -14,7 +14,7 @@ contract MockTokenGatedHook is BaseModule, IHookModule {
 
     string public constant override name = "MockTokenGatedHook";
 
-    function verify(address caller, bytes calldata data) external view returns (bool) {
+    function verify(address ipId, address caller, bytes calldata data) external view returns (bool) {
         address tokenAddress = abi.decode(data, (address));
         if (caller == address(0)) {
             return false;

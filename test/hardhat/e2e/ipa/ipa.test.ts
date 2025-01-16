@@ -5,6 +5,7 @@ import { expect } from "chai"
 import { mintNFT } from "../utils/nftHelper"
 import hre from "hardhat";
 import { MockERC721 } from "../constants";
+import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
 
 describe("IP Asset", function () {
   let signers:any;
@@ -61,5 +62,18 @@ describe("IP Asset", function () {
     await expect(
       connectedRegistry.register(this.chainId, MockERC721, tokenId)
     ).to.be.rejectedWith(`insufficient funds`, `"code": -32000, "message": "insufficient funds for gas * price + value: balance 0`);
+  });
+
+  it("Check the default license after registering IP asset", async function () {
+    console.log("============ Register IPA ============");
+    const { ipId } = await mintNFTAndRegisterIPA();
+
+    console.log("============ Get Default License Terms ============");
+    const { licenseTermsId: defaultId } = await this.licenseRegistry.getDefaultLicenseTerms();
+    console.log("defaultId", defaultId);
+
+    console.log("============ Get Attached License Terms ============");
+    const { licenseTermsId } = await this.licenseRegistry.getAttachedLicenseTerms(ipId, 0);
+    expect(licenseTermsId).to.equal(defaultId);
   });
 });

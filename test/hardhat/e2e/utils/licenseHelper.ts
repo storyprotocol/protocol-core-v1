@@ -15,21 +15,25 @@ export const LicensingConfig = ({
   expectGroupRewardPool: EvenSplitGroupPool,
 });
 
-export async function registerPILTerms(
+export async function registerPILTerms
+(
   commercialUse: boolean = false,
   mintingFee: number = 0,
   commercialRevShare: number = 0,
   royaltyPolicy: string = hre.ethers.ZeroAddress,
-  currencyToken: string = MockERC20): Promise<number> {
+  expiration: number = 0,
+  currencyToken: string = MockERC20,
+): Promise<number> {
   
   const licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
 
-  const testTerms = terms;
+  const testTerms = { ...terms };
   testTerms.royaltyPolicy = royaltyPolicy;
   testTerms.defaultMintingFee = mintingFee;
   testTerms.commercialUse = commercialUse;
   testTerms.commercialRevShare = commercialRevShare;
   testTerms.currency = currencyToken;
+  testTerms.expiration = expiration;
 
   await licenseTemplate.registerLicenseTerms(testTerms).then((tx) => tx.wait());
   const licenseTermsId = await licenseTemplate.getLicenseTermsId(testTerms);

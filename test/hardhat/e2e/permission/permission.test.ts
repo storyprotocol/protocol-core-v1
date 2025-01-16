@@ -24,13 +24,23 @@ describe("Permission", function () {
     let permissionAfter: number;
     let result: any;
 
+    const connecedAccessController = this.accessController.connect(signers[0]);
+
+    // add ALLOW permission for invalid ipId
+    await expect(
+      connecedAccessController.setPermission("0x0", signers[0].address, LicensingModule, func, ALLOW_permission)
+    ).to.be.rejectedWith(Error);
+
+    // add DENY permission for invalid ipId
+    await expect(
+      connecedAccessController.setPermission("0x0", signers[0].address, LicensingModule, func, DENY_permission)
+    ).to.be.rejectedWith(Error);
+
     const ipId = await expect(
       connectedRegistry.register(this.chainId, MockERC721, tokenId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
     console.log("ipId:", ipId);
     expect(ipId).to.not.be.empty.and.to.be.a("HexString");
-
-    const connecedAccessController = this.accessController.connect(signers[0]);
 
     const permissionBefore = await connecedAccessController.getPermission(ipId, signers[0].address, LicensingModule, func);
     expect(permissionBefore).to.equal(0);

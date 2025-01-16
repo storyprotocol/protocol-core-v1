@@ -3,9 +3,11 @@
 import "../setup";
 import { expect } from "chai";
 import hre from "hardhat";
-import { MockERC721, PILicenseTemplate } from "../constants";
-import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
+import { MockERC20, MockERC721, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants";
+import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "../utils/mintNFTAndRegisterIPA";
 import { mintNFT } from "../utils/nftHelper";
+import { terms } from "../licenseTermsTemplate";
+import { registerPILTerms } from "../utils/licenseHelper";
 
 describe("LicensingModule - registerDerivative", function () {
   let signers:any;
@@ -140,5 +142,101 @@ describe("LicensingModule - registerDerivative", function () {
     await expect(
       this.licensingModule.connect(this.user1).registerDerivative(childIpId, parentIpIds, licenseTermsIds, PILicenseTemplate, "0x", 0, 100e6, 0)
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyModule__AboveParentLimit");
+  });
+
+  it("Derivative IP asset should not attached license itself", async function () {
+    const { ipId: parentIpId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+
+    console.log("============ Register derivative ============")
+    await expect(
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId], [this.commericialRemixLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    console.log("============ Attach license to derivative ============")
+    await expect(
+      this.licensingModule.connect(this.user1).attachLicenseTerms(childIpId, PILicenseTemplate, this.commericialUseLicenseId)
+    ).to.be.revertedWithCustomError(this.errors, "LicensingModule__DerivativesCannotAddLicenseTerms");
+  });
+
+  it("Register derivative with an incorrect license token", async function () {
+    const { ipId: parentIpId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+
+    console.log("============ Register derivative ============")
+    await expect(
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [this.commericialRemixLicenseId, this.commericialRemixLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__ParentIpHasNoLicenseTerms");
+  });
+
+  it("Register derivatives chain with Royalty LAP policy, revenue share > 100%", async function () {
+    const testTerms = { ...terms };
+    testTerms.commercialUse = true;
+    testTerms.commercialRevShare = 33.4 * 10 ** 6;
+    testTerms.royaltyPolicy = RoyaltyPolicyLAP;
+    testTerms.derivativesReciprocal = true;
+    testTerms.currency = MockERC20;
+
+    console.log("============ Register license terms ============")
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(testTerms)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    const commRemixTermsId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    console.log("Commercial-remix licenseTermsId: ", commRemixTermsId);
+
+    console.log("============ Register root IP ============")
+    const { ipId: rootIpId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId);
+
+    console.log("============ Register derivative from root ============")
+    const { ipId: childIpId1 } = await mintNFTAndRegisterIPA();
+    await expect(
+      this.licensingModule.registerDerivative(childIpId1, [rootIpId], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    console.log("============ Register derivative from child 1 ============")
+    const { ipId: childIpId2 } = await mintNFTAndRegisterIPA();
+    await expect(
+      this.licensingModule.registerDerivative(childIpId2, [childIpId1], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    console.log("============ Register derivative from child 2 ============")
+    const { ipId: childIpId3 } = await mintNFTAndRegisterIPA();
+    await expect(
+      this.licensingModule.registerDerivative(childIpId3, [childIpId2], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLAP__AboveMaxPercent");
+  });
+
+  it("Derivative IP Asset attach incompatible licenses", async function () {
+    console.log("============ Register IPs ============")
+    const { ipId: parentIpId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+
+    console.log("============ Register derivative ============")
+    await expect(
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [this.commericialRemixLicenseId, this.commericialUseLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).to.be.revertedWithCustomError(this.errors, "LicensingModule__RoyaltyPolicyMismatch");
+  });
+
+  it("Derivative IP Asset attach compatible licenses", async function () {
+    console.log("============ Register License Terms ============")
+    const commRemixTermsId1 = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
+    console.log("Commercial-remix licenseTermsId1: ", commRemixTermsId1);
+    const commRemixTermsId2 = await registerPILTerms(true, 0, 15 * 10 ** 6, RoyaltyPolicyLAP);
+    console.log("Commercial-remix licenseTermsId2: ", commRemixTermsId2);
+
+    console.log("============ Register IPs ============")
+    const { ipId: parentIpId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId1);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId2);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+
+    console.log("============ Register derivative ============")
+    await expect(
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [commRemixTermsId1, commRemixTermsId2], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    const parentCount = await this.licenseRegistry.getParentIpCount(childIpId);
+    expect(parentCount).to.equal(2);
   });
 });

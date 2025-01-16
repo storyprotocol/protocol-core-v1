@@ -2,7 +2,7 @@
 
 import hre from "hardhat";
 import { network } from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3 } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 
@@ -21,6 +21,7 @@ before(async function () {
   this.ipRoyaltyVaultImpl = await hre.ethers.getContractAt("IpRoyaltyVault", IpRoyaltyVaultImpl);
   this.evenSplitGroupPool = await hre.ethers.getContractAt("EvenSplitGroupPool", EvenSplitGroupPool);
   this.disputeModule = await hre.ethers.getContractAt("DisputeModule", DisputeModule);
+  this.arbitrationPolicyUMA = await hre.ethers.getContractAt("ArbitrationPolicyUMA", ArbitrationPolicyUMA);
   this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
   this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
   this.errors = await hre.ethers.getContractFactory("Errors");
@@ -73,4 +74,13 @@ before(async function () {
   await checkAndApproveSpender(this.user2, RoyaltyPolicyLAP, amountToCheck);
   await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
+
+  if (STORY_OOV3) {
+    console.log(`================= Set UMA =================`)
+    await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait())
+    await this.disputeModule
+      .setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address)
+      .then((tx: any) => tx.wait())
+    await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait())
+  }
 });

@@ -246,7 +246,6 @@ contract LicensingModule is
         // Check the compatibility of all license terms (specified by 'licenseTermsIds') across all parent IPs.
         // All license terms must be compatible with each other.
         // Verify that the derivative IP is permitted under all license terms from the parent IPs.
-        address childIpOwner = IIPAccount(payable(childIpId)).owner();
         if (
             !ILicenseTemplate(licenseTemplate).verifyRegisterDerivativeForAllParents(
                 childIpId,

@@ -729,7 +729,7 @@ contract PILicenseTemplateTest is BaseTest {
         );
     }
 
-    function test_PILicenseTemplate_registerLicenseTerms_revert_PILTermsURIContainsDoubleQuote() public {
+    function test_PILicenseTemplate_registerLicenseTerms_PILTermsURIContainsDoubleQuote() public {
         string memory maliciousUri1 = string.concat(
             '"}], ',
             '"name" : "", ',
@@ -740,13 +740,7 @@ contract PILicenseTemplateTest is BaseTest {
             '"old_attributes" : [{"ok" : ""}'
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote.selector,
-                maliciousUri1
-            )
-        );
-        pilTemplate.registerLicenseTerms(
+        uint256 termsId = pilTemplate.registerLicenseTerms(
             PILTerms({
                 transferable: true,
                 royaltyPolicy: address(0),
@@ -768,37 +762,36 @@ contract PILicenseTemplateTest is BaseTest {
             })
         );
 
-        string memory maliciousUri2 = string.concat(
-            unicode"https://github.com/storyprotocol/protocol-core",
-            '"', // The malicious quote character
-            "/blob/main/PIL_Beta_Final_2024_02.pdf"
-        );
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote.selector,
-                maliciousUri2
+        string memory termsInJson = pilTemplate.toJson(termsId);
+
+        assertEq(
+            termsInJson,
+            string.concat(
+                '{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},',
+                '{"trait_type": "Default Minting Fee", "value": "0"},',
+                '{"trait_type": "Expiration", "value": "never"},',
+                '{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},',
+                // all special characters are escaped
+                string.concat(
+                    '{"trait_type": "URI", "value": "\\"}], ',
+                    '\\"name\\" : \\"\\", ',
+                    '\\"description\\" : \\"\\", ',
+                    '\\"external_url\\" : \\"\\", ',
+                    '\\"image\\" : \\"\\", ',
+                    '\\"attributes\\" : [], ',
+                    '\\"old_attributes\\" : [{\\"ok\\" : \\"\\"}"},'
+                ),
+                '{"trait_type": "Commercial Use", "value": "false"},',
+                '{"trait_type": "Commercial Attribution", "value": "false"},',
+                '{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},',
+                '{"trait_type": "Commercial Revenue Ceiling", "value": 0},',
+                '{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},',
+                '{"trait_type": "Derivatives Allowed", "value": "false"},',
+                '{"trait_type": "Derivatives Attribution", "value": "false"},',
+                '{"trait_type": "Derivatives Revenue Ceiling", "value": 0},',
+                '{"trait_type": "Derivatives Approval", "value": "false"},',
+                '{"trait_type": "Derivatives Reciprocal", "value": "false"},'
             )
-        );
-        pilTemplate.registerLicenseTerms(
-            PILTerms({
-                transferable: true,
-                royaltyPolicy: address(0),
-                defaultMintingFee: 0,
-                expiration: 0,
-                commercialUse: false,
-                commercialAttribution: false,
-                commercializerChecker: address(0),
-                commercializerCheckerData: "",
-                commercialRevShare: 0,
-                commercialRevCeiling: 0,
-                derivativesAllowed: false,
-                derivativesAttribution: false,
-                derivativesApproval: false,
-                derivativesReciprocal: false,
-                derivativeRevCeiling: 0,
-                currency: address(0),
-                uri: maliciousUri2
-            })
         );
     }
 

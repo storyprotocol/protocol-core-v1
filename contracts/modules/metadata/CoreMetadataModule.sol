@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import { LibString } from "@solady/src/utils/LibString.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { IERC721Metadata } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -13,7 +14,6 @@ import { Errors } from "../../lib/Errors.sol";
 import { IPAccountStorageOps } from "../../lib/IPAccountStorageOps.sol";
 import { CORE_METADATA_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { ICoreMetadataModule } from "../../interfaces/modules/metadata/ICoreMetadataModule.sol";
-import { URIChecker } from "../../lib/URIChecker.sol";
 
 /// @title CoreMetadataModule
 /// @notice Manages the core metadata for IP assets within the Story Protocol.
@@ -127,18 +127,14 @@ contract CoreMetadataModule is
     function _updateNftTokenURI(address ipId, bytes32 nftMetadataHash) internal onlyMutable(ipId) {
         (, address tokenAddress, uint256 tokenId) = IIPAccount(payable(ipId)).token();
         string memory nftTokenURI = IERC721Metadata(tokenAddress).tokenURI(tokenId);
-        if (URIChecker.containsDoubleQuote(nftTokenURI)) {
-            revert Errors.CoreMetadataModule__NFTTokenURIContainsDoubleQuote(nftTokenURI);
-        }
+        nftTokenURI = LibString.escapeJSON(nftTokenURI);
         IIPAccount(payable(ipId)).setString("NFT_TOKEN_URI", nftTokenURI);
         IIPAccount(payable(ipId)).setBytes32("NFT_METADATA_HASH", nftMetadataHash);
         emit NFTTokenURISet(ipId, nftTokenURI, nftMetadataHash);
     }
 
     function _setMetadataURI(address ipId, string memory metadataURI, bytes32 metadataHash) internal onlyMutable(ipId) {
-        if (URIChecker.containsDoubleQuote(metadataURI)) {
-            revert Errors.CoreMetadataModule__MetadataURIContainsDoubleQuote(metadataURI);
-        }
+        metadataURI = LibString.escapeJSON(metadataURI);
         IIPAccount(payable(ipId)).setString("METADATA_URI", metadataURI);
         IIPAccount(payable(ipId)).setBytes32("METADATA_HASH", metadataHash);
         emit MetadataURISet(ipId, metadataURI, metadataHash);

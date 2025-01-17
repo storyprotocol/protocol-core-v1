@@ -32,7 +32,7 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
         bool value = true;
 
         assembly {
-            sstore(slot, value)
+            tstore(slot, value)
         }
     }
 
@@ -42,7 +42,7 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
         bool value = false;
 
         assembly {
-            sstore(slot, value)
+            tstore(slot, value)
         }
     }
 
@@ -52,7 +52,7 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
         bool value;
 
         assembly {
-            value := sload(slot)
+            value := tload(slot)
         }
 
         return value;

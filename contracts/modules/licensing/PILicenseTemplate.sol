@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 // external
+import { LibString } from "@solady/src/utils/LibString.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -22,7 +23,6 @@ import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing
 import { BaseLicenseTemplateUpgradeable } from "../../modules/licensing/BaseLicenseTemplateUpgradeable.sol";
 import { LicensorApprovalChecker } from "../../modules/licensing/parameter-helpers/LicensorApprovalChecker.sol";
 import { PILTermsRenderer } from "./PILTermsRenderer.sol";
-import { URIChecker } from "../../lib/URIChecker.sol";
 
 /// @title PILicenseTemplate
 contract PILicenseTemplate is
@@ -110,14 +110,13 @@ contract PILicenseTemplate is
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyRequiresCurrencyToken();
         }
 
-        if (URIChecker.containsDoubleQuote(terms.uri)) {
-            revert PILicenseTemplateErrors.PILicenseTemplate__PILTermsURIContainsDoubleQuote(terms.uri);
-        }
+        PILTerms memory termsEscaped = terms;
+        termsEscaped.uri = LibString.escapeJSON(terms.uri);
 
-        _verifyCommercialUse(terms);
-        _verifyDerivatives(terms);
+        _verifyCommercialUse(termsEscaped);
+        _verifyDerivatives(termsEscaped);
 
-        bytes32 hashedLicense = keccak256(abi.encode(terms));
+        bytes32 hashedLicense = keccak256(abi.encode(termsEscaped));
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         id = $.hashedLicenseTerms[hashedLicense];
         // license id start from 1
@@ -125,10 +124,10 @@ contract PILicenseTemplate is
             return id;
         }
         id = ++$.licenseTermsCounter;
-        $.licenseTerms[id] = terms;
+        $.licenseTerms[id] = termsEscaped;
         $.hashedLicenseTerms[hashedLicense] = id;
 
-        emit LicenseTermsRegistered(id, address(this), abi.encode(terms));
+        emit LicenseTermsRegistered(id, address(this), abi.encode(termsEscaped));
     }
 
     /// @notice Checks if a license terms exists.
@@ -339,7 +338,7 @@ contract PILicenseTemplate is
 
     /// @dev Checks the configuration of commercial use and throws if the policy is not compliant
     // solhint-disable-next-line code-complexity
-    function _verifyCommercialUse(PILTerms calldata terms) internal view {
+    function _verifyCommercialUse(PILTerms memory terms) internal view {
         if (!terms.commercialUse) {
             if (terms.commercialAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddAttribution();
@@ -380,7 +379,7 @@ contract PILicenseTemplate is
     }
 
     /// @dev notice Checks the configuration of derivative parameters and throws if the policy is not compliant
-    function _verifyDerivatives(PILTerms calldata terms) internal pure {
+    function _verifyDerivatives(PILTerms memory terms) internal pure {
         if (!terms.derivativesAllowed) {
             if (terms.derivativesAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddAttribution();

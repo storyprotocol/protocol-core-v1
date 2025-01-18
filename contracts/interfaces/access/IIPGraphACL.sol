@@ -19,6 +19,15 @@ interface IIPGraphACL {
     /// @notice Check if access to the IPGraph contract is allowed.
     function isAllowed() external view returns (bool);
 
+    /// @notice Start access to the IPGraph contract from internal contracts.
+    function startInternalAccess() external;
+
+    /// @notice End internal access to the IPGraph contract.
+    function endInternalAccess() external;
+
+    /// @notice Check if access to the IPGraph contract is from internal contract.
+    function isInternalAccess() external view returns (bool);
+
     /// @notice Whitelist an address that can allow or disallow access to the IPGraph contract.
     /// @param addr The address to whitelist.
     function whitelistAddress(address addr) external;

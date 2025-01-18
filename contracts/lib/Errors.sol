@@ -526,6 +526,9 @@ library Errors {
     /// @notice Zero address provided for Access Controller.
     error DisputeModule__ZeroAccessController();
 
+    /// @notice Zero address provided for IP Graph ACL.
+    error DisputeModule__ZeroIPGraphACL();
+
     /// @notice Zero address provided for Arbitration Policy.
     error DisputeModule__ZeroArbitrationPolicy();
 

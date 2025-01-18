@@ -10,6 +10,7 @@ import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
 import { IOOV3 } from "contracts/interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { Errors } from "contracts/lib/Errors.sol";
+import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 import { MockIpAssetRegistry } from "test/foundry/mocks/dispute/MockIpAssetRegistry.sol";
@@ -30,6 +31,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
     RoyaltyModule newRoyaltyModule;
     address internal newOOV3;
     AccessManager newAccessManager;
+    IPGraphACL newIPGraphACL;
     address internal newAdmin;
     address internal susd;
     address internal mockAncillary;
@@ -52,11 +54,18 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newAdmin = address(100);
         newAccessManager = new AccessManager(newAdmin);
 
+        newIPGraphACL = new IPGraphACL(address(newAccessManager));
+
         vm.startPrank(newAdmin);
 
         // deploy dispute module
         address newDisputeModuleImpl = address(
-            new DisputeModule(address(newAccessManager), address(mockIpAssetRegistry), address(2))
+            new DisputeModule(
+                address(newAccessManager),
+                address(mockIpAssetRegistry),
+                address(2),
+                address(newIPGraphACL)
+            )
         );
         newDisputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(

@@ -347,7 +347,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         contractKey = "DisputeModule";
         _predeploy(contractKey);
         impl = address(
-            new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
+            new DisputeModule(
+                address(accessController),
+                address(ipAssetRegistry),
+                address(licenseRegistry),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL))
         );
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
@@ -760,6 +764,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
             ipGraphACL.whitelistAddress(address(royaltyPolicyLRP));
             ipGraphACL.whitelistAddress(address(royaltyModule));
+            ipGraphACL.whitelistAddress(address(disputeModule));
         }
 
         // set default license to non-commercial social remixing

@@ -13,6 +13,9 @@ import { IIPGraphACL } from "../interfaces/access/IIPGraphACL.sol";
 contract IPGraphACL is AccessManaged, IIPGraphACL {
     // keccak256(abi.encode(uint256(keccak256("story-protocol.IPGraphACL")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant IP_GRAPH_ACL_SLOT = 0xaf99b37fdaacca72ee7240cb1435cc9e498aee6ef4edc19c8cc0cd787f4e6800;
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.IPGraphACL.internal")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant IP_GRAPH_ACL_INTERNAL_SLOT =
+        0x12f3ababaacf4ad583e6f4432db5f70a1dbfa9803ecdf84a0efbfe1521160600;
 
     /// @notice Whitelisted addresses that can allow or disallow access to the IPGraph contract.
     mapping(address => bool) public whitelist;
@@ -49,6 +52,38 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
     /// @notice Check if access to the IPGraph contract is allowed.
     function isAllowed() external view returns (bool) {
         bytes32 slot = IP_GRAPH_ACL_SLOT;
+        bool value;
+
+        assembly {
+            value := tload(slot)
+        }
+
+        return value;
+    }
+
+    /// @notice Start access to the IPGraph contract from internal contracts.
+    function startInternalAccess() external onlyWhitelisted {
+        bytes32 slot = IP_GRAPH_ACL_INTERNAL_SLOT;
+        bool value = true;
+
+        assembly {
+            tstore(slot, value)
+        }
+    }
+
+    /// @notice End internal access to the IPGraph contract.
+    function endInternalAccess() external onlyWhitelisted {
+        bytes32 slot = IP_GRAPH_ACL_INTERNAL_SLOT;
+        bool value = false;
+
+        assembly {
+            tstore(slot, value)
+        }
+    }
+
+    /// @notice Check if access to the IPGraph contract is from internal contract.
+    function isInternalAccess() external view returns (bool) {
+        bytes32 slot = IP_GRAPH_ACL_INTERNAL_SLOT;
         bool value;
 
         assembly {

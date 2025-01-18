@@ -14,6 +14,7 @@ import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
+import { IPGraphACL } from "../../access/IPGraphACL.sol";
 
 /// @title Dispute Module
 /// @notice The dispute module acts as an enforcement layer for IP assets that allows raising and resolving disputes
@@ -71,6 +72,9 @@ contract DisputeModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
+
     /// Constructor
     /// @param accessController The address of the access controller
     /// @param ipAssetRegistry The address of the asset registry
@@ -79,13 +83,16 @@ contract DisputeModule is
     constructor(
         address accessController,
         address ipAssetRegistry,
-        address licenseRegistry
+        address licenseRegistry,
+        address ipGraphAcl
     ) AccessControlled(accessController, ipAssetRegistry) {
         if (licenseRegistry == address(0)) revert Errors.DisputeModule__ZeroLicenseRegistry();
         if (ipAssetRegistry == address(0)) revert Errors.DisputeModule__ZeroIPAssetRegistry();
         if (accessController == address(0)) revert Errors.DisputeModule__ZeroAccessController();
+        if (ipGraphAcl == address(0)) revert Errors.DisputeModule__ZeroIPGraphACL();
 
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         _disableInitializers();
     }
 
@@ -307,7 +314,10 @@ contract DisputeModule is
         if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
             revert Errors.DisputeModule__ParentNotTagged();
 
+        IP_GRAPH_ACL.startInternalAccess();
         if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
+        IP_GRAPH_ACL.endInternalAccess();
+
         if ($.isDisputePropagated[derivativeIpId][parentIpId][parentDisputeId])
             revert Errors.DisputeModule__DisputeAlreadyPropagated();
 

@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
+import { StorageSlot } from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import { Errors } from "../lib/Errors.sol";
 import { IIPGraphACL } from "../interfaces/access/IIPGraphACL.sol";
 
@@ -17,49 +18,14 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
     bytes32 private constant IP_GRAPH_ACL_INTERNAL_SLOT =
         0x12f3ababaacf4ad583e6f4432db5f70a1dbfa9803ecdf84a0efbfe1521160600;
 
-    /// @notice Whitelisted addresses that can allow or disallow access to the IPGraph contract.
-    mapping(address => bool) public whitelist;
-
     modifier onlyWhitelisted() {
-        if (!whitelist[msg.sender]) {
+        if (!_isWhitelisted(msg.sender)) {
             revert Errors.IPGraphACL__NotWhitelisted(msg.sender);
         }
         _;
     }
 
     constructor(address accessManager) AccessManaged(accessManager) {}
-
-    /// @notice Allow access to the IPGraph contract.
-    function allow() external onlyWhitelisted {
-        bytes32 slot = IP_GRAPH_ACL_SLOT;
-        bool value = true;
-
-        assembly {
-            tstore(slot, value)
-        }
-    }
-
-    /// @notice Disallow access to the IPGraph contract.
-    function disallow() external onlyWhitelisted {
-        bytes32 slot = IP_GRAPH_ACL_SLOT;
-        bool value = false;
-
-        assembly {
-            tstore(slot, value)
-        }
-    }
-
-    /// @notice Check if access to the IPGraph contract is allowed.
-    function isAllowed() external view returns (bool) {
-        bytes32 slot = IP_GRAPH_ACL_SLOT;
-        bool value;
-
-        assembly {
-            value := tload(slot)
-        }
-
-        return value;
-    }
 
     /// @notice Start access to the IPGraph contract from internal contracts.
     function startInternalAccess() external onlyWhitelisted {
@@ -96,20 +62,24 @@ contract IPGraphACL is AccessManaged, IIPGraphACL {
     /// @notice Whitelist an address that can allow or disallow access to the IPGraph contract.
     /// @param addr The address to whitelist.
     function whitelistAddress(address addr) external restricted {
-        whitelist[addr] = true;
+        StorageSlot.getBooleanSlot(keccak256(abi.encodePacked(addr, IP_GRAPH_ACL_SLOT))).value = true;
         emit WhitelistedAddress(addr);
     }
 
     /// @notice Revoke whitelisted address.
     /// @param addr The address to revoke.
     function revokeWhitelistedAddress(address addr) external restricted {
-        whitelist[addr] = false;
+        StorageSlot.getBooleanSlot(keccak256(abi.encodePacked(addr, IP_GRAPH_ACL_SLOT))).value = false;
         emit RevokedWhitelistedAddress(addr);
     }
 
     /// @notice Check if an address is whitelisted.
     /// @param addr The address to check.
     function isWhitelisted(address addr) external view returns (bool) {
-        return whitelist[addr];
+        return _isWhitelisted(addr);
+    }
+
+    function _isWhitelisted(address addr) internal view returns (bool) {
+        return StorageSlot.getBooleanSlot(keccak256(abi.encodePacked(addr, IP_GRAPH_ACL_SLOT))).value;
     }
 }

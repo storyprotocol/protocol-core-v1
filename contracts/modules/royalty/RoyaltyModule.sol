@@ -714,11 +714,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ipId The ID of the IP asset
     /// @return The number of ancestors
     function _getAncestorCount(address ipId) internal returns (uint256) {
-        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("getAncestorIpsCount(address)", ipId)
         );
-        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (uint256));
     }
@@ -728,11 +726,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param ancestorIpId The ancestor ipId to check if it is an ancestor
     /// @return True if the IP has the ancestor
     function _hasAncestorIp(address ipId, address ancestorIpId) internal returns (bool) {
-        IP_GRAPH_ACL.allow();
         (bool success, bytes memory returnData) = IP_GRAPH.call(
             abi.encodeWithSignature("hasAncestorIp(address,address)", ipId, ancestorIpId)
         );
-        IP_GRAPH_ACL.disallow();
         if (!success) revert Errors.RoyaltyModule__CallFailed();
         return abi.decode(returnData, (bool));
     }

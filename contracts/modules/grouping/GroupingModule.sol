@@ -145,10 +145,15 @@ contract GroupingModule is
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
+    /// @param maxAllowedRewardShare The maximum reward share percentage that can be allocated to each member IP.
     function addIp(
         address groupIpId,
-        address[] calldata ipIds
+        address[] calldata ipIds,
+        uint256 maxAllowedRewardShare
     ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
+        if (maxAllowedRewardShare > 100 * 10 ** 6) {
+            revert Errors.GroupingModule__MaxAllowedRewardShareExceeds100Percent(groupIpId, maxAllowedRewardShare);
+        }
         _checkIfGroupMembersLocked(groupIpId);
         (
             address groupLicenseTemplate,
@@ -179,6 +184,14 @@ contract GroupingModule is
                 groupLicenseTemplate,
                 groupLicenseTermsId
             );
+            if (lc.expectMinimumGroupRewardShare > maxAllowedRewardShare) {
+                revert Errors.GroupingModule__IpExpectedShareExceedsMaxAllowedShare(
+                    groupIpId,
+                    ipIds[i],
+                    maxAllowedRewardShare,
+                    lc.expectMinimumGroupRewardShare
+                );
+            }
             uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lc.expectMinimumGroupRewardShare);
             if (totalGroupRewardShare > 100 * 10 ** 6) {
                 revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
@@ -189,7 +202,6 @@ contract GroupingModule is
                 );
             }
         }
-
         emit AddedIpToGroup(groupIpId, ipIds);
     }
 

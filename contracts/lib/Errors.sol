@@ -144,6 +144,17 @@ library Errors {
         uint256 expectGroupRewardShare
     );
 
+    /// @notice The maximum allowed reward share exceeds 100%.
+    error GroupingModule__MaxAllowedRewardShareExceeds100Percent(address groupId, uint256 maxAllowedRewardShare);
+
+    /// @notice The IP expected reward share exceeds the maximum allowed reward share.
+    error GroupingModule__IpExpectedShareExceedsMaxAllowedShare(
+        address groupId,
+        address ipId,
+        uint256 maxAllowedRewardShare,
+        uint256 expectGroupRewardShare
+    );
+
     /// @notice The disputed IP is not allowed to be added to the group.
     error GroupingModule__CannotAddDisputedIpToGroup(address ipId);
 

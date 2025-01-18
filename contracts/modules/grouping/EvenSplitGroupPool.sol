@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -34,6 +35,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         uint32 totalMembers; // Total number of IPs in the group
         uint128 pendingBalance; // Pending balance to be added to accRewardPerIp
         uint128 accRewardPerIp; // Accumulated rewards per IP, times MAX_GROUP_SIZE.
+        uint256 averageRewardShare; // The avg reward share per IP, only increases as new IPs join with higher min share
     }
 
     /// @dev Storage structure for the EvenSplitGroupPool
@@ -42,7 +44,6 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         mapping(address groupId => mapping(address ipId => uint256 addedTime)) ipAddedTime;
         mapping(address groupId => GroupInfo groupInfo) groupInfo;
         mapping(address groupId => mapping(address ipId => uint256)) ipRewardDebt;
-        mapping(address groupId => uint256 totalMinimumRewardShare) totalMinimumRewardShare;
         mapping(address groupId => mapping(address ipId => uint256 minimumRewardShare)) minimumRewardShare;
     }
 
@@ -95,17 +96,17 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         uint256 minimumGroupRewardShare
     ) external onlyGroupingModule returns (uint256 totalGroupRewardShare) {
         EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
-        // ignore if IP is already added to pool
-        if (_isIpAdded(groupId, ipId)) return $.totalMinimumRewardShare[groupId];
-        $.ipAddedTime[groupId][ipId] = block.timestamp;
         GroupInfo storage groupInfo = $.groupInfo[groupId];
+        // ignore if IP is already added to pool
+        if (_isIpAdded(groupId, ipId)) return groupInfo.averageRewardShare * $.groupInfo[groupId].totalMembers;
+        $.ipAddedTime[groupId][ipId] = block.timestamp;
         groupInfo.totalMembers += 1;
         if (minimumGroupRewardShare > 0) {
             $.minimumRewardShare[groupId][ipId] = minimumGroupRewardShare;
-            $.totalMinimumRewardShare[groupId] += minimumGroupRewardShare;
+            groupInfo.averageRewardShare = Math.max(groupInfo.averageRewardShare, minimumGroupRewardShare);
         }
         $.ipRewardDebt[groupId][ipId] = groupInfo.accRewardPerIp / MAX_GROUP_SIZE;
-        totalGroupRewardShare = $.totalMinimumRewardShare[groupId];
+        totalGroupRewardShare = groupInfo.averageRewardShare * groupInfo.totalMembers;
     }
 
     /// @notice Removes an IP from the group pool
@@ -120,7 +121,6 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         GroupInfo storage groupInfo = $.groupInfo[groupId];
         groupInfo.totalMembers -= 1;
         if ($.minimumRewardShare[groupId][ipId] > 0) {
-            $.totalMinimumRewardShare[groupId] -= $.minimumRewardShare[groupId][ipId];
             $.minimumRewardShare[groupId][ipId] = 0;
         }
         $.ipRewardDebt[groupId][ipId] = 0;
@@ -217,8 +217,9 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         return _getEvenSplitGroupPoolStorage().minimumRewardShare[groupId][ipId];
     }
 
-    function getTotalMinimumRewardShare(address groupId) external view returns (uint256) {
-        return _getEvenSplitGroupPoolStorage().totalMinimumRewardShare[groupId];
+    function getTotalAllocatedRewardShare(address groupId) external view returns (uint256) {
+        GroupInfo storage groupInfo = _getEvenSplitGroupPoolStorage().groupInfo[groupId];
+        return groupInfo.averageRewardShare * groupInfo.totalMembers;
     }
 
     function _updateGroupInfo(GroupInfo storage groupInfo) internal {

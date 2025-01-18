@@ -124,7 +124,7 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             ipIds[0] = ipAcct[1];
             ipIds[1] = ipAcct[2];
             vm.startPrank(groupOwner);
-            groupingModule.addIp(groupId, ipIds);
+            groupingModule.addIp(groupId, ipIds, 100e6);
             vm.stopPrank();
         }
 

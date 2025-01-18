@@ -105,14 +105,14 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         rewardPool.addIp(group1, ipId1, 10 * 10 ** 6);
         rewardPool.addIp(group1, ipId2, 20 * 10 ** 6);
         rewardPool.addIp(group1, ipId3, 60 * 10 ** 6);
-        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 90 * 10 ** 6);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 180 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 10 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
 
         // add ip again
         rewardPool.addIp(group1, ipId1, 10 * 10 ** 6);
-        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 90 * 10 ** 6);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 180 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 10 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
@@ -120,7 +120,7 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         rewardPool.removeIp(group1, ipId1);
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
-        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 80 * 10 ** 6);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 120 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 0);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
@@ -128,7 +128,7 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         rewardPool.removeIp(group1, ipId1);
         assertEq(rewardPool.getIpAddedTime(group1, ipId1), 0);
         assertFalse(rewardPool.isIPAdded(group1, ipId1));
-        assertEq(rewardPool.getTotalMinimumRewardShare(group1), 80 * 10 ** 6);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 120 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 0);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 60 * 10 ** 6);
@@ -314,6 +314,36 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         assertEq(rewardDebt, 50);
         rewardDebt = rewardPool.getIpRewardDebt(group1, address(erc20), ipId2);
         assertEq(rewardDebt, 50);
+
+        vm.stopPrank();
+    }
+
+    function test_EvenSplitGroupPool_AddAndRemoveMultipleIps() public {
+        vm.startPrank(address(groupingModule));
+        rewardPool.addIp(group1, ipId1, 80 * 10 ** 6);
+        rewardPool.addIp(group1, ipId2, 20 * 10 ** 6);
+        rewardPool.addIp(group1, ipId3, 0);
+
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 240 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 20 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 0);
+
+        rewardPool.removeIp(group1, ipId2);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 160 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 0);
+
+        rewardPool.addIp(group1, ipId2, 85 * 10 ** 6);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 255 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 85 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId3), 0);
+
+        rewardPool.removeIp(group1, ipId3);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 170 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 80 * 10 ** 6);
+        assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 85 * 10 ** 6);
 
         vm.stopPrank();
     }

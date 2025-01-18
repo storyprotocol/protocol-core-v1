@@ -56,13 +56,7 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     MockIPGraph ipGraph = MockIPGraph(address(0x0101));
     MockArbitrationPolicy mockArbitrationPolicy;
 
-    constructor()
-        DeployHelper(
-            address(ERC6551_REGISTRY),
-            address(erc20),
-            address(0)
-        )
-    {}
+    constructor() DeployHelper(address(ERC6551_REGISTRY), address(erc20), address(0)) {}
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {

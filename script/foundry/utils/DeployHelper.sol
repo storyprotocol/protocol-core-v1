@@ -17,7 +17,11 @@ import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
 import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpgradeable.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
+import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
+import { IGraphAwareRoyaltyPolicy } from "contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
+import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
+import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
 import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY, GROUPING_MODULE_KEY } from "contracts/lib/modules/Module.sol";
@@ -32,10 +36,13 @@ import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/Royalty
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
+import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
+import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
+import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
-import { PILicenseTemplate } from "contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
 import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
@@ -218,13 +225,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ProtocolPauseAdmin";
         _predeploy(contractKey);
-        address impl = address(new ProtocolPauseAdmin());
         protocolPauser = ProtocolPauseAdmin(
-            TestProxyHelper.deployUUPSProxy(
-                create3Deployer,
-                _getSalt(type(ProtocolPauseAdmin).name),
-                impl,
-                abi.encodeCall(ProtocolPauseAdmin.initialize, address(protocolAccessManager))
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(type(ProtocolPauseAdmin).creationCode, abi.encode(address(protocolAccessManager))),
+                _getSalt(type(ProtocolPauseAdmin).name)
             )
         );
         require(
@@ -235,7 +239,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
-        impl = address(new ModuleRegistry());
+        address impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -575,8 +579,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule),
-                address(moduleRegistry)
+                address(royaltyModule)
             )
         );
         pilTemplate = PILicenseTemplate(
@@ -724,6 +727,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(ipAssetRegistry));
         protocolPauser.addPausable(address(groupingModule));
         protocolPauser.addPausable(address(evenSplitGroupPool));
+        protocolPauser.addPausable(address(arbitrationPolicyUMA));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -745,7 +749,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistDisputeTag("IMPROPER_USAGE", true);
         disputeModule.whitelistDisputeTag("IMPROPER_PAYMENT", true);
         disputeModule.whitelistDisputeTag("CONTENT_STANDARDS_VIOLATION", true);
-        disputeModule.whitelistDisputeTag("OTHERS", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
         disputeModule.setArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA));
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
@@ -816,10 +819,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ProtocolAdmin.UPGRADER_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
-            address(protocolPauser),
+            address(arbitrationPolicyUMA),
             selectors,
             ProtocolAdmin.UPGRADER_ROLE
         );
+
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyModule
@@ -873,6 +877,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         );
         protocolAccessManager.setTargetFunctionRole(
             address(evenSplitGroupPool),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicyUMA),
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );

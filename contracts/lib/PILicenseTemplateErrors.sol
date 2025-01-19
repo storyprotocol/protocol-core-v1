@@ -60,4 +60,7 @@ library PILicenseTemplateErrors {
 
     /// @notice The URI field in PILTerms contains invalid double quote characters(").
     error PILicenseTemplate__PILTermsURIContainsDoubleQuote(string uri);
+
+    /// @notice The commercializer checker is not registered in the Module Registry.
+    error PILicenseTemplate__CommercializerCheckerNotRegistered(address commercializerChecker);
 }

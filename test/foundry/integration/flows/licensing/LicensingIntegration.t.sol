@@ -44,7 +44,8 @@ contract LicensingIntegrationTest is BaseIntegration {
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(moduleRegistry)
             )
         );
 

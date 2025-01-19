@@ -13,6 +13,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
+import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
@@ -49,6 +50,8 @@ contract PILicenseTemplate is
     IRoyaltyModule public immutable ROYALTY_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     PILTermsRenderer public immutable TERMS_RENDERER;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IModuleRegistry public immutable MODULE_REGISTRY;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
@@ -59,13 +62,15 @@ contract PILicenseTemplate is
         address accessController,
         address ipAccountRegistry,
         address licenseRegistry,
-        address royaltyModule
+        address royaltyModule,
+        address moduleRegistry
     ) LicensorApprovalChecker(accessController, ipAccountRegistry) {
         if (licenseRegistry == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroLicenseRegistry();
         if (royaltyModule == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroRoyaltyModule();
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         TERMS_RENDERER = new PILTermsRenderer();
+        MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         _disableInitializers();
     }
 
@@ -361,6 +366,11 @@ contract PILicenseTemplate is
             if (terms.commercializerChecker != address(0)) {
                 if (!terms.commercializerChecker.supportsInterface(type(IHookModule).interfaceId)) {
                     revert PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerDoesNotSupportHook(
+                        terms.commercializerChecker
+                    );
+                }
+                if (!MODULE_REGISTRY.isRegistered(terms.commercializerChecker)) {
+                    revert PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerNotRegistered(
                         terms.commercializerChecker
                     );
                 }

@@ -575,7 +575,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(moduleRegistry)
             )
         );
         pilTemplate = PILicenseTemplate(

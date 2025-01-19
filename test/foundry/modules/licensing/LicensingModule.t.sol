@@ -1792,6 +1792,9 @@ contract LicensingModuleTest is BaseTest {
         royaltyModule.whitelistRoyaltyToken(address(0x123), true);
 
         MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(tokenGatedHook));
+
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
@@ -1843,6 +1846,9 @@ contract LicensingModuleTest is BaseTest {
         royaltyModule.whitelistRoyaltyToken(address(0x123), true);
 
         MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(tokenGatedHook));
+
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),
@@ -1892,6 +1898,9 @@ contract LicensingModuleTest is BaseTest {
         royaltyModule.whitelistRoyaltyToken(address(0x123), true);
 
         MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(tokenGatedHook));
+
         PILTerms memory terms = PILTerms({
             transferable: true,
             royaltyPolicy: address(royaltyPolicyLAP),

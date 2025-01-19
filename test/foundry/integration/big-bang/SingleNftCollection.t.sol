@@ -38,6 +38,9 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
         ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
 
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(mockTokenGatedHook));
+
         commDerivTermsId = registerSelectedPILicenseTerms(
             "commercial_flexible",
             PILTerms({

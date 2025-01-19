@@ -14,12 +14,16 @@ import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPI
 // test
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
+import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
 
 contract PILicenseTemplateTest is BaseTest {
     using Strings for *;
 
     MockERC721 internal gatedNftFoo = new MockERC721{ salt: bytes32(uint256(1)) }("GatedNftFoo");
     MockERC721 internal gatedNftBar = new MockERC721{ salt: bytes32(uint256(2)) }("GatedNftBar");
+
+    MockTokenGatedHook internal verifiedTokenGatedHook = new MockTokenGatedHook();
+    MockTokenGatedHook internal unverifiedTokenGatedHook = new MockTokenGatedHook();
 
     mapping(uint256 => address) internal ipAcct;
     mapping(uint256 => address) internal ipOwner;
@@ -50,6 +54,9 @@ contract PILicenseTemplateTest is BaseTest {
         vm.label(ipAcct[2], "IPAccount2");
         vm.label(ipAcct[3], "IPAccount3");
         vm.label(ipAcct[5], "IPAccount5");
+
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(verifiedTokenGatedHook));
     }
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
@@ -134,6 +141,48 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);
 
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
+    }
+
+    function test_PILicenseTemplate_registerLicenseTerms_withCommercializerChecker() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.commercializerChecker = address(verifiedTokenGatedHook);
+        terms.commercializerCheckerData = abi.encode(address(gatedNftFoo));
+
+        uint256 termsIdBefore = pilTemplate.totalRegisteredLicenseTerms();
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(terms);
+        assertEq(commUseTermsId, termsIdBefore + 1);
+        (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
+            .getRoyaltyPolicy(commUseTermsId);
+        assertEq(royaltyPolicy, address(royaltyPolicyLAP));
+        assertEq(royaltyPercent, 0);
+        assertEq(mintingFee, 100);
+        assertEq(currency, address(erc20));
+        assertEq(pilTemplate.getLicenseTerms(commUseTermsId).commercializerChecker, address(verifiedTokenGatedHook));
+        assertEq(
+            pilTemplate.getLicenseTerms(commUseTermsId).commercializerCheckerData,
+            abi.encode(address(gatedNftFoo))
+        );
+    }
+
+    function test_PILicenseTemplate_revert_registerLicenseTerms_CommercializerCheckerNotRegistered() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.commercializerChecker = address(unverifiedTokenGatedHook);
+        terms.commercializerCheckerData = abi.encode(address(gatedNftFoo));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerNotRegistered.selector,
+                address(unverifiedTokenGatedHook)
+            )
+        );
+        pilTemplate.registerLicenseTerms(terms);
     }
 
     function test_PILicenseTemplate_revert_registerRevCeiling() public {

@@ -260,7 +260,8 @@ contract LicensingModuleBaseInvariant is BaseTest {
             address(accessController),
             address(ipAccountRegistry),
             address(licenseRegistry),
-            address(royaltyModule)
+            address(royaltyModule),
+            address(moduleRegistry)
         );
         p = address(
             TestProxyHelper.deployUUPSProxy(

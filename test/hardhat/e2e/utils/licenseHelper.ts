@@ -23,6 +23,7 @@ export async function registerPILTerms
   royaltyPolicy: string = hre.ethers.ZeroAddress,
   expiration: number = 0,
   currencyToken: string = MockERC20,
+  derivativesReciprocal: boolean = true,
 ): Promise<number> {
   
   const licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
@@ -34,6 +35,7 @@ export async function registerPILTerms
   testTerms.commercialRevShare = commercialRevShare;
   testTerms.currency = currencyToken;
   testTerms.expiration = expiration;
+  testTerms.derivativesReciprocal = derivativesReciprocal;
 
   await licenseTemplate.registerLicenseTerms(testTerms).then((tx) => tx.wait());
   const licenseTermsId = await licenseTemplate.getLicenseTermsId(testTerms);

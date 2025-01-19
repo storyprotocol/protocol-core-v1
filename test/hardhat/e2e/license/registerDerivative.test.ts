@@ -221,9 +221,9 @@ describe("LicensingModule - registerDerivative", function () {
 
   it("Derivative IP Asset attach compatible licenses", async function () {
     console.log("============ Register License Terms ============")
-    const commRemixTermsId1 = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
+    const commRemixTermsId1 = await registerPILTerms(true, 100, 10 * 10 ** 6, RoyaltyPolicyLAP, 0, MockERC20, false);
     console.log("Commercial-remix licenseTermsId1: ", commRemixTermsId1);
-    const commRemixTermsId2 = await registerPILTerms(true, 0, 15 * 10 ** 6, RoyaltyPolicyLAP);
+    const commRemixTermsId2 = await registerPILTerms(true, 50, 15 * 10 ** 6, RoyaltyPolicyLAP, 0, MockERC20, false);
     console.log("Commercial-remix licenseTermsId2: ", commRemixTermsId2);
 
     console.log("============ Register IPs ============")
@@ -236,7 +236,8 @@ describe("LicensingModule - registerDerivative", function () {
       this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [commRemixTermsId1, commRemixTermsId2], PILicenseTemplate, "0x", 0, 100e6, 0)
     ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
 
-    const parentCount = await this.licenseRegistry.getParentIpCount(childIpId);
-    expect(parentCount).to.equal(2);
+    const count = await this.licenseRegistry.getParentIpCount(childIpId);
+    console.log("Parent IP count: ", count);
+    expect(count).to.equal(2);
   });
 });

@@ -49,14 +49,15 @@ const config: HardhatUserConfig = {
     compilers: [
       {
         version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+          evmVersion: "cancun",
+        },
       },
     ],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 2000,
-      },
-    },
   },
   paths: {
     sources: "./contracts",

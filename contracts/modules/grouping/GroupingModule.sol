@@ -252,6 +252,11 @@ contract GroupingModule is
         address token,
         address[] calldata ipIds
     ) external view returns (uint256[] memory) {
+        // if the group is disputed, then the claimable reward is 0
+        if (DISPUTE_MODULE.isIpTagged(groupId)) {
+            return new uint256[](ipIds.length);
+        }
+
         // get claimable reward from group pool
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         return pool.getAvailableReward(groupId, token, ipIds);
@@ -259,6 +264,9 @@ contract GroupingModule is
 
     /// @dev claim reward from group pool
     function _claimReward(address groupId, address token, address[] calldata ipIds) internal {
+        if (DISPUTE_MODULE.isIpTagged(groupId)) {
+            revert Errors.GroupingModule__DisputedGroupCannotClaimReward(groupId);
+        }
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
             revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));
@@ -273,6 +281,9 @@ contract GroupingModule is
 
     /// @dev collect royalties into the pool
     function _collectRoyalties(address groupId, address token) internal returns (uint256 royalties) {
+        if (DISPUTE_MODULE.isIpTagged(groupId)) {
+            revert Errors.GroupingModule__DisputedGroupCannotCollectRoyalties(groupId);
+        }
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupId));
         if (!GROUP_IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(address(pool))) {
             revert Errors.GroupingModule__GroupRewardPoolNotWhitelisted(groupId, address(pool));

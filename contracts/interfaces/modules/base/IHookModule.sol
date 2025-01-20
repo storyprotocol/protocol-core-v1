@@ -10,7 +10,7 @@ interface IHookModule is IModule {
     /// @param caller The address of the caller
     /// @param data The arbitrary data to be verified
     /// @return bool Whether or not the caller has passed the hook's verification
-    function verify(address ipId, address caller, bytes calldata data) external returns (bool);
+    function verify(address ipId, address caller, bytes calldata data) external view returns (bool);
 
     /// @notice Validates the configuration for the hook.
     /// @param configData The configuration data for the hook.

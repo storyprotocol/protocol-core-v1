@@ -335,6 +335,9 @@ library Errors {
         uint256 licenseTermsId
     );
 
+    /// @notice The provided parent IP ID is not registered.
+    error LicenseRegistry__ParentIpNotRegistered(address parentIpId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

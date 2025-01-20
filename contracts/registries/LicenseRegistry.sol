@@ -20,6 +20,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IPGraphACL } from "../access/IPGraphACL.sol";
 import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
+import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
@@ -258,6 +259,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // earliest expiration time
         uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
+            if (
+                !GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(parentIpIds[i]) &&
+                !IIPAssetRegistry(address(GROUP_IP_ASSET_REGISTRY)).isRegistered(parentIpIds[i])
+            ) {
+                revert Errors.LicenseRegistry__ParentIpNotRegistered(parentIpIds[i]);
+            }
             earliestExp = ExpiringOps.getEarliestExpirationTime(earliestExp, _getExpireTime(parentIpIds[i]));
             _verifyDerivativeFromParent(
                 parentIpIds[i],

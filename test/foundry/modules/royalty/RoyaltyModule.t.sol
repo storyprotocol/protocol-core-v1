@@ -9,7 +9,10 @@ import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721H
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
+import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
+import { Licensing } from "../../../../contracts/lib/Licensing.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
@@ -1105,6 +1108,94 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
             USDC.balanceOf(address(100)) - usdcTreasuryAmountBefore,
             (royaltyAmount * 10e6) / royaltyModule.maxPercent()
         );
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_IpIsGroup() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address payerIpId = address(3);
+
+        // set fee and treasury
+        vm.startPrank(u.admin);
+        address treasury = address(100);
+        royaltyModule.setTreasury(treasury);
+        royaltyModule.setRoyaltyFeePercent(uint32(10 * 10 ** 6)); // 10%
+        vm.stopPrank();
+
+        // register group + add ip
+        vm.warp(100);
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(0);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory groupMembers = new address[](1);
+        groupMembers[0] = ipId1;
+        groupingModule.addIp(groupId, groupMembers, 100e6);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(ipId1, address(royaltyPolicyLAP), uint32(15e6), "");
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(15e6), "");
+        address groupVault = royaltyModule.ipRoyaltyVaults(groupId);
+        vm.stopPrank();
+
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, 1000e18);
+        USDC.approve(address(royaltyModule), 1000e18);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 groupVaultUSDCBalBefore = USDC.balanceOf(groupVault);
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(treasury);
+
+        royaltyModule.payRoyaltyOnBehalf(groupId, payerIpId, address(USDC), 1000e18);
+
+        uint256 payerIpIdUSDCBalAfter = USDC.balanceOf(payerIpId);
+        uint256 groupVaultUSDCBalAfter = USDC.balanceOf(groupVault);
+        uint256 usdcTreasuryAmountAfter = USDC.balanceOf(treasury);
+
+        assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, 1000e18);
+        assertEq(groupVaultUSDCBalAfter - groupVaultUSDCBalBefore, 900e18);
+        assertEq(usdcTreasuryAmountAfter - usdcTreasuryAmountBefore, 100e18);
+
+        groupingModule.collectRoyalties(groupId, address(erc20));
+
+        assertEq(USDC.balanceOf(address(evenSplitGroupPool)), 900e18);
+        assertEq(groupVaultUSDCBalAfter - USDC.balanceOf(groupVault), 900e18);
+
+        groupingModule.claimReward(groupId, address(erc20), groupMembers);
+
+        address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipId1);
+
+        assertEq(USDC.balanceOf(address(evenSplitGroupPool)), 0);
+        assertEq(USDC.balanceOf(groupVault), 0);
+        assertEq(USDC.balanceOf(ipRoyaltyVault1), 900e18);
+
+        IpRoyaltyVault(ipRoyaltyVault1).claimRevenueOnBehalf(ipId1, address(USDC));
+
+        assertEq(USDC.balanceOf(ipId1), 900e18);
+        assertEq(USDC.balanceOf(treasury), 100e18);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee_revert_ZeroAmount() public {

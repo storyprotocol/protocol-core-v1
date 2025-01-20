@@ -652,7 +652,12 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if (LICENSE_REGISTRY.isExpiredNow(receiverIpId)) revert Errors.RoyaltyModule__IpExpired();
 
         // pay fee to the treasury
-        uint256 feeAmount = (amount * $.royaltyFeePercent) / MAX_PERCENT;
+        // if the caller is a group reward pool, then no fee is paid given that the royalty fee has already been
+        // charged on the the payment to the group ip royalty vault itself. Otherwise, royalty fee for grouping
+        // would be charged twice.
+        uint256 feeAmount = IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(msg.sender) == true
+            ? 0
+            : (amount * $.royaltyFeePercent) / MAX_PERCENT;
         if (feeAmount > 0) IERC20(token).safeTransferFrom(payerAddress, $.treasury, feeAmount);
 
         // pay to the whitelisted royalty policies first

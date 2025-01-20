@@ -57,4 +57,13 @@ library PILicenseTemplateErrors {
 
     /// @notice Zero address provided for Royalty Module at initialization.
     error PILicenseTemplate__ZeroRoyaltyModule();
+
+    /// @notice The commercializer checker is not registered in the Module Registry.
+    error PILicenseTemplate__CommercializerCheckerNotRegistered(address commercializerChecker);
+
+    /// @notice Minting fee requires a royalty policy.
+    error PILicenseTemplate__MintingFeeRequiresRoyaltyPolicy();
+
+    /// @notice Minting fee requires a currency token.
+    error PILicenseTemplate__MintingFeeRequiresCurrencyToken();
 }

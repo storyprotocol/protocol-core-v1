@@ -375,6 +375,7 @@ contract LicensingModule is
     /// @param licenseTermsId The ID of the license terms within the license template.
     /// If not specified, the configuration applies to all licenses.
     /// @param licensingConfig The licensing configuration for the license.
+    /* solhint-disable-next-line code-complexity */
     function setLicensingConfig(
         address ipId,
         address licenseTemplate,
@@ -384,13 +385,11 @@ contract LicensingModule is
         if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
             revert Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
         }
-
         if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
             _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         }
-
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         if (licensingConfig.commercialRevShare != 0) {
-            ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
             if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
                 revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
             }
@@ -402,7 +401,12 @@ contract LicensingModule is
                 );
             }
         }
-
+        if (licensingConfig.mintingFee > 0) {
+            (address royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsId);
+            if (royaltyPolicy == address(0)) {
+                revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+            }
+        }
         if (
             licensingConfig.licensingHook != address(0) &&
             (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||

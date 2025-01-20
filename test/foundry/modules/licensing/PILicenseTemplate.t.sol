@@ -143,6 +143,30 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
     }
 
+    function test_PILicenseTemplate_registerLicenseTerms_revert_MintingFeeRequiresRoyaltyPolicy() public {
+        PILTerms memory terms = PILTerms({
+            transferable: true,
+            royaltyPolicy: address(0),
+            defaultMintingFee: 100e6,
+            expiration: 0,
+            commercialUse: false,
+            commercialAttribution: false,
+            commercializerChecker: address(0),
+            commercializerCheckerData: "",
+            commercialRevShare: 0,
+            commercialRevCeiling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: false,
+            derivativeRevCeiling: 0,
+            currency: address(erc20),
+            uri: ""
+        });
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__MintingFeeRequiresRoyaltyPolicy.selector);
+        pilTemplate.registerLicenseTerms(terms);
+    }
+
     function test_PILicenseTemplate_registerLicenseTerms_withCommercializerChecker() public {
         PILTerms memory terms = PILFlavors.commercialUse({
             mintingFee: 100,
@@ -270,7 +294,7 @@ contract PILicenseTemplateTest is BaseTest {
         pilTemplate.registerLicenseTerms(terms);
 
         terms = PILFlavors.commercialUse({
-            mintingFee: 100,
+            mintingFee: 0,
             currencyToken: address(erc20),
             royaltyPolicy: address(royaltyPolicyLAP)
         });

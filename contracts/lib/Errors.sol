@@ -513,6 +513,9 @@ library Errors {
         uint32 maxRevenueShare
     );
 
+    /// @notice Minting fee requires a royalty policy.
+    error LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////

@@ -110,6 +110,10 @@ contract PILicenseTemplate is
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyRequiresCurrencyToken();
         }
 
+        if (terms.defaultMintingFee > 0 && terms.royaltyPolicy == address(0)) {
+            revert PILicenseTemplateErrors.PILicenseTemplate__MintingFeeRequiresRoyaltyPolicy();
+        }
+
         PILTerms memory termsEscaped = terms;
         termsEscaped.uri = LibString.escapeJSON(terms.uri);
 

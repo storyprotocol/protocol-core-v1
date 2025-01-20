@@ -459,6 +459,10 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseToken.totalMintedTokens(), 1);
         assertEq(licenseToken.totalSupply(), 1);
         assertEq(licenseToken.balanceOf(receiver), 1);
+
+        // check licensor IP received the minting fee
+        address licensorRoyaltyVault = royaltyModule.ipRoyaltyVaults(ipId1);
+        assertEq(erc20.balanceOf(licensorRoyaltyVault), 100);
     }
 
     function test_LicensingModule_revert_mintLicenseTokens_ExceededMaxMintingFee() public {
@@ -2538,7 +2542,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2549,7 +2553,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, true);
-        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).licensingHook,
             address(licensingHook)
@@ -2566,7 +2570,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner2);
         licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, true);
-        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).licensingHook,
             address(licensingHook)
@@ -2685,7 +2689,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2696,7 +2700,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, true);
-        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).licensingHook,
             address(licensingHook)
@@ -2715,7 +2719,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner2);
         licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, true);
-        assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).mintingFee, 100);
+        assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
             licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).licensingHook,
             address(licensingHook)
@@ -2731,6 +2735,44 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, false);
     }
 
+    function test_LicensingModule_setLicensingConfig_revert_MintingFeeRequiresRoyaltyPolicy() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: true,
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: ""
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 100,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+        vm.expectRevert(Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy.selector);
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+    }
+
     function test_LicensingModule_setLicensingConfig_revert_invalidTermsId() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         MockLicensingHook licensingHook = new MockLicensingHook();
@@ -2738,7 +2780,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2841,7 +2883,7 @@ contract LicensingModuleTest is BaseTest {
         MockLicensingHook licensingHook = new MockLicensingHook();
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2862,7 +2904,7 @@ contract LicensingModuleTest is BaseTest {
 
         licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(tokenGatedHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2907,7 +2949,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 0,
@@ -2938,7 +2980,7 @@ contract LicensingModuleTest is BaseTest {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,
@@ -3356,7 +3398,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(ipOwner2)),
             commercialRevShare: 0,
@@ -3390,7 +3432,7 @@ contract LicensingModuleTest is BaseTest {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 0,
             licensingHook: address(0),
             hookData: "",
             commercialRevShare: 0,

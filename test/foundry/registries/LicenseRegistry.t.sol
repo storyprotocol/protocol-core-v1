@@ -669,6 +669,36 @@ contract LicenseRegistryTest is BaseTest {
         assertEq(attachedTermsId2, termsId2);
     }
 
+    function test_LicenseRegistry_registerDerivativeIp_revert_ParentIpNotRegistered() public {
+        (, uint256 termsId) = licenseRegistry.getDefaultLicenseTerms();
+
+        address[] memory parentIpIds = new address[](2);
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        parentIpIds[0] = ipAcct[1];
+
+        // registers ERC6551 account without registering it in the Group IP asset registry
+        parentIpIds[1] = erc6551Registry.createAccount(
+            ipAssetRegistry.IP_ACCOUNT_IMPL(),
+            ipAssetRegistry.IP_ACCOUNT_SALT(),
+            block.chainid,
+            address(mockNFT),
+            100
+        );
+
+        licenseTermsIds[0] = termsId;
+        licenseTermsIds[1] = termsId;
+
+        vm.prank(address(licensingModule));
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__ParentIpNotRegistered.selector, parentIpIds[1]));
+        licenseRegistry.registerDerivativeIp({
+            childIpId: ipAcct[3],
+            parentIpIds: parentIpIds,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsIds: licenseTermsIds,
+            isUsingLicenseToken: false
+        });
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

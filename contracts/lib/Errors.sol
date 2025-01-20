@@ -170,6 +170,12 @@ library Errors {
     /// @notice The given token is not whitelisted as valid revenue token.
     error GroupingModule__RoyaltyTokenNotWhitelisted(address groupId, address royaltyToken);
 
+    /// @notice The disputed group cannot collect royalties.
+    error GroupingModule__DisputedGroupCannotCollectRoyalties(address groupId);
+
+    /// @notice The disputed group cannot claim reward.
+    error GroupingModule__DisputedGroupCannotClaimReward(address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

@@ -55,7 +55,7 @@ interface ICoreMetadataViewModule is IViewModule {
     function getCoreMetadata(address ipId) external view returns (CoreMetadata memory);
 
     /// @notice Generates a JSON string formatted according to the standard NFT metadata schema for the IPAsset,
-    ////        including all relevant metadata fields.
+    ///        including all relevant metadata fields.
     /// @dev This function consolidates metadata from both IPAssetRegistry
     ///      and CoreMetadataModule, with "name" from CoreMetadataModule taking precedence.
     /// @param ipId The address of the IPAsset.

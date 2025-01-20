@@ -5,7 +5,7 @@ import { IModule } from "./IModule.sol";
 
 /// @notice View Module Interface
 /// View modules typically are read-only modules that are responsible for displaying
-/// IP-related data in various ways to meet different needs.For instance,
+/// IP-related data in various ways to meet different needs. For instance,
 /// they can display simple/base/core metadata, book specific metadata, license details metadata,
 /// or even IP graph data for the same IPAccount using different View Modules.
 /// This module offers flexibility in selecting which data to display and how to present it.

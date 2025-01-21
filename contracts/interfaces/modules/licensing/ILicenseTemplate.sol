@@ -144,4 +144,9 @@ interface ILicenseTemplate is IERC165 {
     /// @param newRoyaltyPercent The new royalty percentage.
     /// @return True if the royalty percentage can be overridden, false otherwise.
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool);
+
+    /// @notice queries if the derivative registration is allowed under the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the derivative registration is allowed, false otherwise.
+    function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool);
 }

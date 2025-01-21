@@ -331,6 +331,12 @@ library Errors {
     /// @notice The provided parent IP ID is not registered.
     error LicenseRegistry__ParentIpNotRegistered(address parentIpId);
 
+    /// @notice parents is above the maximum parents limit.
+    error LicenseRegistry__TooManyParents(address ipId, uint256 parents, uint256 maxParents);
+
+    /// @notice ancestors is above the maximum ancestors limit.
+    error LicenseRegistry__TooManyAncestors(address ipId, uint256 ancestors, uint256 maxAncestors);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -409,6 +415,9 @@ library Errors {
 
     /// @notice Zero address provided for Module Registry.
     error LicensingModule__ZeroModuleRegistry();
+
+    /// @notice Zero address provided for IPGraph ACL.
+    error LicensingModule__ZeroIPGraphACL();
 
     /// @notice minting a license for non-registered IP.
     error LicensingModule__LicensorIpNotRegistered();
@@ -508,6 +517,14 @@ library Errors {
 
     /// @notice Minting fee requires a royalty policy.
     error LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+
+    /// @notice the licensor IP has too many ancestors that above or equal to maximum ancestor limit for
+    /// minting license token.
+    error LicensingModule__TooManyAncestorsForMintingLicenseTokenAllowRegisterDerivative(
+        address licensorIpId,
+        uint256 ancestors,
+        uint256 maxAncestors
+    );
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
@@ -678,12 +695,6 @@ library Errors {
     /// @notice Zero address provided for Royalty Token.
     error RoyaltyModule__ZeroRoyaltyToken();
 
-    /// @notice Zero maximum parents provided.
-    error RoyaltyModule__ZeroMaxParents();
-
-    /// @notice Zero maximum ancestors provided.
-    error RoyaltyModule__ZeroMaxAncestors();
-
     /// @notice Zero address provided for parent ipId.
     error RoyaltyModule__ZeroParentIpId();
 
@@ -702,17 +713,8 @@ library Errors {
     /// @notice IP is dispute tagged.
     error RoyaltyModule__IpIsTagged();
 
-    /// @notice Last position IP is not able to mint more licenses.
-    error RoyaltyModule__LastPositionNotAbleToMintLicense();
-
     /// @notice The IP is not allowed to link to parents.
     error RoyaltyModule__UnlinkableToParents();
-
-    /// @notice Size of parent IP list is above limit.
-    error RoyaltyModule__AboveParentLimit();
-
-    /// @notice Amount of ancestors for derivative IP is above the limit.
-    error RoyaltyModule__AboveAncestorsLimit();
 
     /// @notice Royalty policy is already registered as external royalty policy.
     error RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy();

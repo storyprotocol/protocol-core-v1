@@ -124,23 +124,12 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
 
     /// @notice Initializer for this implementation contract
     /// @param accessManager The address of the protocol admin roles contract
-    /// @param parentLimit The maximum number of parents an IP asset can have
-    /// @param ancestorLimit The maximum number of ancestors an IP asset can have
     /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
-    function initialize(
-        address accessManager,
-        uint256 parentLimit,
-        uint256 ancestorLimit,
-        uint256 accumulatedRoyaltyPoliciesLimit
-    ) external initializer {
+    function initialize(address accessManager, uint256 accumulatedRoyaltyPoliciesLimit) external initializer {
         if (accessManager == address(0)) revert Errors.RoyaltyModule__ZeroAccessManager();
-        if (parentLimit == 0) revert Errors.RoyaltyModule__ZeroMaxParents();
-        if (ancestorLimit == 0) revert Errors.RoyaltyModule__ZeroMaxAncestors();
         if (accumulatedRoyaltyPoliciesLimit == 0) revert Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit();
 
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
-        $.maxParents = parentLimit;
-        $.maxAncestors = ancestorLimit;
         $.maxAccumulatedRoyaltyPolicies = accumulatedRoyaltyPoliciesLimit;
 
         __ProtocolPausable_init(accessManager);
@@ -179,26 +168,15 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         emit RoyaltyFeePercentSet(royaltyFeePercent);
     }
 
-    /// @notice Sets the ip graph limits
+    /// @notice Sets the royalty limits
     /// @dev Enforced to be only callable by the protocol admin
-    /// @param parentLimit The maximum number of parents an IP asset can have
-    /// @param ancestorLimit The maximum number of ancestors an IP asset can have
     /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
-    function setIpGraphLimits(
-        uint256 parentLimit,
-        uint256 ancestorLimit,
-        uint256 accumulatedRoyaltyPoliciesLimit
-    ) external restricted {
-        if (parentLimit == 0) revert Errors.RoyaltyModule__ZeroMaxParents();
-        if (ancestorLimit == 0) revert Errors.RoyaltyModule__ZeroMaxAncestors();
+    function setRoyaltyLimits(uint256 accumulatedRoyaltyPoliciesLimit) external restricted {
         if (accumulatedRoyaltyPoliciesLimit == 0) revert Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit();
 
-        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
-        $.maxParents = parentLimit;
-        $.maxAncestors = ancestorLimit;
-        $.maxAccumulatedRoyaltyPolicies = accumulatedRoyaltyPoliciesLimit;
+        _getRoyaltyModuleStorage().maxAccumulatedRoyaltyPolicies = accumulatedRoyaltyPoliciesLimit;
 
-        emit IpGraphLimitsUpdated(parentLimit, ancestorLimit, accumulatedRoyaltyPoliciesLimit);
+        emit RoyaltyLimitsUpdated(accumulatedRoyaltyPoliciesLimit);
     }
 
     /// @notice Whitelist a royalty policy
@@ -270,10 +248,6 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if (!$.isWhitelistedRoyaltyPolicy[royaltyPolicy] && !$.isRegisteredExternalRoyaltyPolicy[royaltyPolicy])
             revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
 
-        // If the an ipId has the maximum number of ancestors
-        // it can not have any derivative and therefore is not allowed to mint a license
-        if (_getAncestorCount(ipId) >= $.maxAncestors) revert Errors.RoyaltyModule__LastPositionNotAbleToMintLicense();
-
         // deploy ipRoyaltyVault for the ipId given in case it does not exist yet
         if ($.ipRoyaltyVaults[ipId] == address(0)) {
             address receiver = ipId;
@@ -318,8 +292,6 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         if ($.ipRoyaltyVaults[ipId] != address(0)) revert Errors.RoyaltyModule__UnlinkableToParents();
 
         if (parentIpIds.length == 0) revert Errors.RoyaltyModule__NoParentsOnLinking();
-        if (parentIpIds.length > $.maxParents) revert Errors.RoyaltyModule__AboveParentLimit();
-        if (_getAncestorCount(ipId) > $.maxAncestors) revert Errors.RoyaltyModule__AboveAncestorsLimit();
 
         // deploy ipRoyaltyVault for the ipId given it does not exist yet
         address ipRoyaltyVault = _deployIpRoyaltyVault(ipId, address(this));
@@ -380,12 +352,6 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         uint256 amountAfterFee = _payRoyalty(receiverIpId, payerAddress, token, amount);
 
         emit LicenseMintingFeePaid(receiverIpId, payerAddress, token, amount, amountAfterFee);
-    }
-
-    /// @notice Returns the number of ancestors for a given IP asset
-    /// @param ipId The ID of IP asset
-    function getAncestorsCount(address ipId) external returns (uint256) {
-        return _getAncestorCount(ipId);
     }
 
     /// @notice Indicates if an IP asset has a specific ancestor IP asset

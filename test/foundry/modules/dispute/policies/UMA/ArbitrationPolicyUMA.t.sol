@@ -81,10 +81,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newRoyaltyModule = RoyaltyModule(
             TestProxyHelper.deployUUPSProxy(
                 newRoyaltyModuleImpl,
-                abi.encodeCall(
-                    RoyaltyModule.initialize,
-                    (address(newAccessManager), uint256(8), uint256(1024), uint256(15))
-                )
+                abi.encodeCall(RoyaltyModule.initialize, (address(newAccessManager), uint256(15)))
             )
         );
         newRoyaltyModule.whitelistRoyaltyToken(susd, true);

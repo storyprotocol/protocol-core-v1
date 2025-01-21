@@ -9,7 +9,7 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-
+import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IVaultController } from "contracts/interfaces/modules/royalty/policies/IVaultController.sol";
 
 // script
@@ -61,7 +61,8 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     /// @dev check if the proxy's authority is the accessManager in the file
     /// @param proxy The proxy address
     modifier onlyMatchingAccessManager(string memory contractKey, address proxy) {
-        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault"))) {
+        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault")) &&
+            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccount"))) {
             require(
                 AccessManaged(proxy).authority() == address(accessManager),
                 "Proxy's Authority must equal accessManager"
@@ -275,6 +276,9 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
         if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IpRoyaltyVault"))) {
             console2.log("encoding upgradeVaults");
             data = abi.encodeCall(IVaultController.upgradeVaults, (p.newImpl));
+        } else if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IPAccount"))) {
+            console2.log("encoding upgradeIPAccount");
+            data = abi.encodeCall(IIPAssetRegistry.upgradeIPAccountImpl, (p.newImpl));
         } else {
             console2.log("encoding upgradeUUPS");
             data = abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (p.newImpl, ""));

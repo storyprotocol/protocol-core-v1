@@ -9,6 +9,7 @@ import { AccessManagerUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 // contracts
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
+import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAssetRegistry } from "contracts/registries/IPAssetRegistry.sol";
@@ -79,6 +80,8 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     address arbitrationPolicyUMA;
     address protocolAccessManager;
     address protocolPauseAdmin;
+    address ipAccountImplBeaconProxy;
+    address ipAccountImplBeacon;
 
     constructor() JsonDeploymentHandler("main") {
         create3Deployer = ICreate3Deployer(CREATE3_DEPLOYER);
@@ -107,6 +110,8 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
         evenSplitGroupPool = _readAddress("EvenSplitGroupPool");
         arbitrationPolicyUMA = _readAddress("ArbitrationPolicyUMA");
         protocolPauseAdmin = _readAddress("ProtocolPauseAdmin");
+        ipAccountImplBeaconProxy = _readAddress("IPAccountImplBeaconProxy");
+        ipAccountImplBeacon = _readAddress("IPAccountImplBeacon");
 
         _beginBroadcast(); // BroadcastManager.s.sol
 
@@ -139,8 +144,9 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
         impl = address(
             new IPAssetRegistry(
                 address(ERC6551_REGISTRY),
-                ipAccountImpl,
-                groupingModule
+                address(ipAccountImplBeaconProxy),
+                groupingModule,
+                address(ipAccountImplBeacon)
             )
         );
         upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: address(ipAssetRegistry), newImpl: impl }));
@@ -281,10 +287,29 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
                         address(groupingModule)
                     )
                 ),
-                _getSalt("IpRoyaltyVaultVx.x.x")
+                _getSalt(string.concat("IpRoyaltyVault", PROPOSAL_VERSION))
             )
         ));
         upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: address(royaltyModule), newImpl: impl }));
+        impl = address(0);
+
+        contractKey = "IPAccountImplCode";
+        _predeploy(contractKey);
+        impl = address(IPAccountImpl(
+            payable(create3Deployer.deployDeterministic(
+                abi.encodePacked(
+                    type(IPAccountImpl).creationCode,
+                    abi.encode(
+                        address(accessController),
+                        address(ipAssetRegistry),
+                        address(licenseRegistry),
+                        address(moduleRegistry)
+                    )
+                ),
+                _getSalt(string.concat("IPAccountImplCode", PROPOSAL_VERSION))
+            ))
+        ));
+        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: address(ipAccountImpl), newImpl: impl }));
         impl = address(0);
 
         contractKey = "EvenSplitGroupPool";

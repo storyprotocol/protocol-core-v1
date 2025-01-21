@@ -58,6 +58,10 @@ interface IIPAssetRegistry is IIPAccountRegistry {
     /// @return id The address of the newly registered IP.
     function register(uint256 chainid, address tokenContract, uint256 tokenId) external returns (address id);
 
+    /// @notice Upgrades the IP account implementation.
+    /// @param newIpAccountImpl The address of the new IP account implementation.
+    function upgradeIPAccountImpl(address newIpAccountImpl) external;
+
     /// @notice Gets the canonical IP identifier associated with an IP NFT.
     /// @dev This is equivalent to the address of its bound IP account.
     /// @param chainId The chain identifier of where the IP resides.

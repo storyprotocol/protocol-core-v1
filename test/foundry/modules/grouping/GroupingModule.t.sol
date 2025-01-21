@@ -6,6 +6,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
@@ -1858,6 +1859,11 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         assertEq(ipAssetRegistry.totalMembers(groupId1), 2);
         assertEq(rewardPool.getTotalIps(groupId1), 2);
+    }
+
+    function test_GroupingModule_revert_GroupNFT_NonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 100));
+        groupNft.tokenURI(100);
     }
 
     function _raiseAndSetDisputeJudgement(address targetIp, address initiator, bytes32 disputeEvidenceHash) internal {

@@ -256,6 +256,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        _requireOwned(id);
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
 
         LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[id];

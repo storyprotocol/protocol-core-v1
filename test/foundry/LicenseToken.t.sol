@@ -3,6 +3,8 @@ pragma solidity 0.8.26;
 
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+
 // contract
 import { Errors } from "../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
@@ -54,6 +56,11 @@ contract LicenseTokenTest is BaseTest {
         vm.expectEmit(address(licenseToken));
         emit LicenseToken.BatchMetadataUpdate(1, 0);
         licenseToken.setLicensingImageUrl("new_url");
+    }
+
+    function test_LicenseToken_revert_TokenURI_NonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 100));
+        licenseToken.tokenURI(100);
     }
 
     function test_LicenseToken_isLicenseTokenRevoked() public {

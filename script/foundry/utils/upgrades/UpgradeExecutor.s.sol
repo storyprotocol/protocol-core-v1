@@ -27,7 +27,7 @@ import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
  * @dev This script will read a deployment file and upgrade proposals file to schedule, execute, or cancel upgrades
  */
 abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHandler, JsonBatchTxHelper {
-    address internal CREATE3_DEPLOYER = 0x384a891dFDE8180b054f04D66379f16B7a678Ad6;
+    address internal CREATE3_DEPLOYER = 0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf;
     uint256 internal CREATE3_DEFAULT_SEED = 0;
 
     /// @notice Upgrade modes
@@ -60,11 +60,13 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
 
     /// @dev check if the proxy's authority is the accessManager in the file
     /// @param proxy The proxy address
-    modifier onlyMatchingAccessManager(address proxy) {
-        require(
-            AccessManaged(proxy).authority() == address(accessManager),
-            "Proxy's Authority must equal accessManager"
-        );
+    modifier onlyMatchingAccessManager(string memory contractKey, address proxy) {
+        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault"))) {
+            require(
+                AccessManaged(proxy).authority() == address(accessManager),
+                "Proxy's Authority must equal accessManager"
+            );
+        }
         _;
     }
 
@@ -153,7 +155,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _scheduleUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) onlyUpgraderRole {
+    ) private onlyMatchingAccessManager(key, p.proxy) onlyUpgraderRole {
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");
@@ -196,7 +198,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _executeUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) {
+    ) private onlyMatchingAccessManager(key,p.proxy) {
         bytes memory data = _getExecutionData(key, p);
         uint48 schedule = accessManager.getSchedule(accessManager.hashOperation(deployer, p.proxy, data));
         console2.log("schedule", schedule);
@@ -233,7 +235,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _cancelScheduledUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) {
+    ) private onlyMatchingAccessManager(key, p.proxy) {
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");

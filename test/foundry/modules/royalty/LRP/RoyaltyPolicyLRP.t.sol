@@ -250,7 +250,10 @@ contract TestRoyaltyPolicyLRP is BaseTest {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
         vm.stopPrank();
 
-        assertEq(royaltyModule.totalRevenueTokensReceived(ipAccount1, address(USDC)), 100 * 10 ** 6);
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(ipAccount1, address(USDC), address(royaltyPolicyLRP)),
+            100 * 10 ** 6
+        );
         address ancestorIpRoyaltyVault = royaltyModule.ipRoyaltyVaults(address(10));
 
         vm.expectEmit(true, true, true, true, address(royaltyPolicyLRP));

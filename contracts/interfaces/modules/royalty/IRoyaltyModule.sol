@@ -220,4 +220,17 @@ interface IRoyaltyModule is IModule {
     /// @param ipId The ID of IP asset
     /// @param token The token address
     function totalRevenueTokensReceived(address ipId, address token) external view returns (uint256);
+
+    /// @notice Returns the total revenue tokens received by a given IP asset while a given royalty
+    /// policy is whitelisted. If a royalty policy is whitelisted since the beginning then the value will be equal
+    /// to the total revenue tokens received over the lifetime of the IP asset. But whenever a payment is made to an
+    /// IP asset while a royalty policy is blacklisted then that payment will not be accounted for that royalty policy.
+    /// @param ipId The ID of IP asset
+    /// @param token The token address
+    /// @param royaltyPolicy The royalty policy address
+    function totalRevenueTokensAccounted(
+        address ipId,
+        address token,
+        address royaltyPolicy
+    ) external view returns (uint256);
 }

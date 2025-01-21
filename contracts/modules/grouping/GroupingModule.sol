@@ -145,20 +145,18 @@ contract GroupingModule is
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
+    /// @param maxAllowedRewardShare The maximum reward share percentage that can be allocated to each member IP.
     function addIp(
         address groupIpId,
-        address[] calldata ipIds
+        address[] calldata ipIds,
+        uint256 maxAllowedRewardShare
     ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
-        (
-            address groupLicenseTemplate,
-            uint256 groupLicenseTermsId,
-            uint256 mintingFee,
-            address currencyToken
-        ) = _getGroupRevenueInfo(groupIpId);
-
-        if (mintingFee != 0) {
-            revert Errors.GroupingModule__GroupIPHasMintingFee(groupIpId, groupLicenseTemplate, groupLicenseTermsId);
+        if (maxAllowedRewardShare > 100 * 10 ** 6) {
+            revert Errors.GroupingModule__MaxAllowedRewardShareExceeds100Percent(groupIpId, maxAllowedRewardShare);
         }
+        (address groupLicenseTemplate, uint256 groupLicenseTermsId, address currencyToken) = _getGroupRevenueInfo(
+            groupIpId
+        );
 
         GROUP_IP_ASSET_REGISTRY.addGroupMember(groupIpId, ipIds);
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
@@ -178,6 +176,14 @@ contract GroupingModule is
                 groupLicenseTemplate,
                 groupLicenseTermsId
             );
+            if (lc.expectMinimumGroupRewardShare > maxAllowedRewardShare) {
+                revert Errors.GroupingModule__IpExpectedShareExceedsMaxAllowedShare(
+                    groupIpId,
+                    ipIds[i],
+                    maxAllowedRewardShare,
+                    lc.expectMinimumGroupRewardShare
+                );
+            }
             uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lc.expectMinimumGroupRewardShare);
             if (totalGroupRewardShare > 100 * 10 ** 6) {
                 revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
@@ -188,7 +194,6 @@ contract GroupingModule is
                 );
             }
         }
-
         emit AddedIpToGroup(groupIpId, ipIds);
     }
 
@@ -201,7 +206,7 @@ contract GroupingModule is
         address[] calldata ipIds
     ) external nonReentrant whenNotPaused verifyPermission(groupIpId) {
         _checkIfGroupMembersLocked(groupIpId);
-        (, , , address currencyToken) = _getGroupRevenueInfo(groupIpId);
+        (, , address currencyToken) = _getGroupRevenueInfo(groupIpId);
         _collectRoyalties(groupIpId, currencyToken);
         _claimReward(groupIpId, currencyToken, ipIds);
         // remove ip from group
@@ -217,7 +222,7 @@ contract GroupingModule is
     /// @param token The address of the token.
     /// @param ipIds The IP IDs.
     function claimReward(address groupId, address token, address[] calldata ipIds) external nonReentrant whenNotPaused {
-        (, , , address currencyToken) = _getGroupRevenueInfo(groupId);
+        (, , address currencyToken) = _getGroupRevenueInfo(groupId);
         if (currencyToken != token) {
             revert Errors.GroupingModule__TokenNotMatchGroupRevenueToken(groupId, currencyToken, token);
         }
@@ -231,7 +236,7 @@ contract GroupingModule is
         address groupId,
         address token
     ) external nonReentrant whenNotPaused returns (uint256 royalties) {
-        (, , , address currencyToken) = _getGroupRevenueInfo(groupId);
+        (, , address currencyToken) = _getGroupRevenueInfo(groupId);
         if (currencyToken != token) {
             revert Errors.GroupingModule__TokenNotMatchGroupRevenueToken(groupId, currencyToken, token);
         }
@@ -304,11 +309,7 @@ contract GroupingModule is
     /// @dev Get the group revenue info
     function _getGroupRevenueInfo(
         address groupIpId
-    )
-        internal
-        view
-        returns (address groupLicenseTemplate, uint256 groupLicenseTermsId, uint256 mintingFee, address currencyToken)
-    {
+    ) internal view returns (address groupLicenseTemplate, uint256 groupLicenseTermsId, address currencyToken) {
         // the group IP must has license terms and minting fee is 0 to be able to add IP to group
         if (LICENSE_REGISTRY.getAttachedLicenseTermsCount(groupIpId) == 0) {
             revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
@@ -322,11 +323,11 @@ contract GroupingModule is
         }
 
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
-        (, , mintingFee, currencyToken) = ILicenseTemplate(groupLicenseTemplate).getRoyaltyPolicy(groupLicenseTermsId);
+        (, , , currencyToken) = ILicenseTemplate(groupLicenseTemplate).getRoyaltyPolicy(groupLicenseTermsId);
         if (currencyToken == address(0)) {
             revert Errors.GroupingModule__GroupIPLicenseHasNotSpecifyRevenueToken(groupIpId);
         }
-        return (groupLicenseTemplate, groupLicenseTermsId, mintingFee, currencyToken);
+        return (groupLicenseTemplate, groupLicenseTermsId, currencyToken);
     }
 
     /// @dev The group members are locked if the group has derivative IPs or license tokens minted.

@@ -389,7 +389,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 create3Deployer,
                 _getSalt(type(RoyaltyModule).name),
                 impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(8), uint256(1024), uint256(15)))
+                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(15)))
             )
         );
         require(
@@ -461,7 +461,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                _getDeployedAddress(type(LicenseToken).name)
+                _getDeployedAddress(type(LicenseToken).name),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
             )
         );
         licensingModule = LicensingModule(
@@ -769,6 +770,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ipGraphACL.whitelistAddress(address(royaltyPolicyLRP));
             ipGraphACL.whitelistAddress(address(royaltyModule));
             ipGraphACL.whitelistAddress(address(disputeModule));
+            ipGraphACL.whitelistAddress(address(licensingModule));
         }
 
         // set default license to non-commercial social remixing

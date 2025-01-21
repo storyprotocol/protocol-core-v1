@@ -89,7 +89,7 @@ contract MockIPGraph {
         return false;
     }
 
-    function getAncestorIpsCount(address ipId) external returns (uint256) {
+    function getAncestorIpsCount(address ipId) external virtual returns (uint256) {
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));
         while (queue.length() > 0) {

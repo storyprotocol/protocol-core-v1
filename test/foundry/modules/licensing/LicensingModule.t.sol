@@ -25,11 +25,20 @@ contract MockIPGraphDiamond is MockIPGraph {
     address internal ipId1;
     address internal ipId2;
     address internal ipId3;
+    mapping(address => uint256) internal ancestorsCount;
 
     function initialize(address ipId1_, address ipId2_, address ipId3_) external {
         ipId1 = ipId1_;
         ipId2 = ipId2_;
         ipId3 = ipId3_;
+    }
+
+    function setAncestorsCount(address ipId, uint256 count) external {
+        ancestorsCount[ipId] = count;
+    }
+
+    function getAncestorIpsCount(address ipId) external virtual override returns (uint256) {
+        return ancestorsCount[ipId];
     }
 
     function _getRoyaltyLrp(address ipId, address ancestorIpId) internal override returns (uint256 result) {
@@ -3008,6 +3017,41 @@ contract LicensingModuleTest is BaseTest {
             licenseTermsId: termsId,
             amount: 1,
             receiver: receiver,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+    }
+
+    function test_LicensingModule_mintLicenseToken_revert_OverMaxAncestorsLimit() public {
+        uint256 maxAncestors = 1024;
+
+        vm.etch(address(0x0101), address(new MockIPGraphDiamond()).code);
+        MockIPGraphDiamond(address(0x0101)).setAncestorsCount(ipId1, maxAncestors);
+
+        uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 10, address(royaltyPolicyLAP), address(erc20))
+        );
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+        vm.stopPrank();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__TooManyAncestorsForMintingLicenseTokenAllowRegisterDerivative.selector,
+                ipId1,
+                maxAncestors,
+                licenseRegistry.MAX_ANCESTORS()
+            )
+        );
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: socialRemixTermsId,
+            amount: 1,
+            receiver: ipOwner2,
             royaltyContext: "",
             maxMintingFee: 0,
             maxRevenueShare: 0

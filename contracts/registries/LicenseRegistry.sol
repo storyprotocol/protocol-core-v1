@@ -31,6 +31,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
+    /// @notice A derivative IP can have 16 parent IPs at most.
+    uint256 public constant MAX_PARENTS = 16;
+
+    /// @notice A derivative IP can have 1024 ancestor IPs at most.
+    uint256 public constant MAX_ANCESTORS = 1024;
     address public constant IP_GRAPH = address(0x0101);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
@@ -235,6 +240,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
     /// @param isUsingLicenseToken Whether the derivative IP is registered with license tokens.
+    // solhint-disable code-complexity
     function registerDerivativeIp(
         address childIpId,
         address[] calldata parentIpIds,
@@ -242,6 +248,10 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256[] calldata licenseTermsIds,
         bool isUsingLicenseToken
     ) external onlyLicensingModule {
+        if (parentIpIds.length > MAX_PARENTS) {
+            revert Errors.LicenseRegistry__TooManyParents(childIpId, parentIpIds.length, MAX_PARENTS);
+        }
+
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
 
         IP_GRAPH_ACL.startInternalAccess();
@@ -289,6 +299,8 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // All the validation is done in the LicensingModule:
         // 1. Should be no duplicate parent IP.
         // 2. Should not addParentIp again to the same child IP.
+        // 3. Should over max parents limitation.
+        // 4. Should over max ancestors limitation.
         (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
@@ -296,6 +308,15 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!success) {
             revert Errors.LicenseRegistry__AddParentIpToIPGraphFailed(childIpId, parentIpIds);
         }
+
+        IP_GRAPH_ACL.startInternalAccess();
+        uint256 ancestors = _getAncestorIpsCount(childIpId);
+        IP_GRAPH_ACL.endInternalAccess();
+
+        if (ancestors > MAX_ANCESTORS) {
+            revert Errors.LicenseRegistry__TooManyAncestors(childIpId, ancestors, MAX_ANCESTORS);
+        }
+
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms
         earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
@@ -511,7 +532,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
-        (bool success, bytes memory returnData) = _staiccallIpGraph(
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
             abi.encodeWithSignature("getParentIps(address)", childIpId),
             abi.encodeWithSignature("getParentIpsExt(address)", childIpId)
         );
@@ -525,7 +546,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
-        (bool success, bytes memory returnData) = _staiccallIpGraph(
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
             abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId),
             abi.encodeWithSignature("hasParentIpExt(address,address)", childIpId, parentIpId)
         );
@@ -538,13 +559,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256) {
-        (bool success, bytes memory returnData) = _staiccallIpGraph(
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId),
             abi.encodeWithSignature("getParentIpsCountExt(address)", childIpId)
         );
 
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256));
+    }
+
+    /// @notice Gets the count of ancestors IPs
+    /// @param ipId The ID of IP asset
+    function getAncestorsCount(address ipId) external returns (uint256) {
+        return _getAncestorIpsCount(ipId);
     }
 
     /// @notice Retrieves the minting license configuration for a given license terms of the IP.
@@ -690,12 +717,23 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         earliestExp = ExpiringOps.getEarliestExpirationTime(earliestParentIpExp, licenseExp);
     }
 
-    function _staiccallIpGraph(
+    function _staticcallIpGraph(
         bytes memory internalFunc,
         bytes memory externalFunc
     ) internal view returns (bool, bytes memory) {
         bytes memory callData = IP_GRAPH_ACL.isInternalAccess() ? internalFunc : externalFunc;
         (bool success, bytes memory returnData) = IP_GRAPH.staticcall(callData);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+        return (success, returnData);
+    }
+
+    function _callIpGraph(bytes memory internalFunc, bytes memory externalFunc) internal returns (bool, bytes memory) {
+        bytes memory callData = IP_GRAPH_ACL.isInternalAccess() ? internalFunc : externalFunc;
+        (bool success, bytes memory returnData) = IP_GRAPH.call(callData);
         if (!success) {
             assembly {
                 revert(add(returnData, 32), mload(returnData))
@@ -728,13 +766,25 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
-        (bool success, bytes memory returnData) = _staiccallIpGraph(
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
             abi.encodeWithSignature("getParentIpsCount(address)", childIpId),
             abi.encodeWithSignature("getParentIpsCountExt(address)", childIpId)
         );
 
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256)) > 0;
+    }
+
+    /// @dev Returns the count of ancestors for the given IP asset
+    /// @param ipId The ID of the IP asset
+    /// @return The number of ancestors
+    function _getAncestorIpsCount(address ipId) internal returns (uint256) {
+        (bool success, bytes memory returnData) = _callIpGraph(
+            abi.encodeWithSignature("getAncestorIpsCount(address)", ipId),
+            abi.encodeWithSignature("getAncestorIpsCountExt(address)", ipId)
+        );
+        if (!success) revert Errors.RoyaltyModule__CallFailed();
+        return abi.decode(returnData, (uint256));
     }
 
     /// @dev Retrieves the minting license configuration for a given license terms of the IP.

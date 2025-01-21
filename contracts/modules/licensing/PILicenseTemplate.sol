@@ -324,6 +324,14 @@ contract PILicenseTemplate is
         return terms.commercialUse && newRoyaltyPercent >= terms.commercialRevShare;
     }
 
+    /// @notice queries if the derivative registration is allowed under the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the derivative registration is allowed, false otherwise.
+    function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool) {
+        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        return terms.derivativesAllowed;
+    }
+
     /// @notice checks the contract whether supports the given interface.
     function supportsInterface(
         bytes4 interfaceId

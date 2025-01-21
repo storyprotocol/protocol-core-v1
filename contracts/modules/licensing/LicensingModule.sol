@@ -28,6 +28,7 @@ import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 import { ILicensingHook } from "../..//interfaces/modules/licensing/ILicensingHook.sol";
 import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
+import { IPGraphACL } from "../../access/IPGraphACL.sol";
 
 /// @title Licensing Module
 /// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
@@ -59,6 +60,8 @@ contract LicensingModule is
     /// @inheritdoc IModule
     string public constant override name = LICENSING_MODULE_KEY;
 
+    uint256 private constant MAX_ANCESTOR = 1024;
+
     /// @notice Returns the canonical protocol-wide RoyaltyModule
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     RoyaltyModule public immutable ROYALTY_MODULE;
@@ -79,6 +82,9 @@ contract LicensingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
+
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicensingModuleStorageLocation =
         0x0f7178cb62e4803c52d40f70c08a6f88d6ee1af1838d58e0c83a222a6c3d3100;
@@ -97,18 +103,21 @@ contract LicensingModule is
         address royaltyModule,
         address licenseRegistry,
         address disputeModule,
-        address licenseToken
+        address licenseToken,
+        address ipGraphAcl
     ) AccessControlled(accessController, ipAccountRegistry) {
         if (royaltyModule == address(0)) revert Errors.LicensingModule__ZeroRoyaltyModule();
         if (licenseRegistry == address(0)) revert Errors.LicensingModule__ZeroLicenseRegistry();
         if (disputeModule == address(0)) revert Errors.LicensingModule__ZeroDisputeModule();
         if (licenseToken == address(0)) revert Errors.LicensingModule__ZeroLicenseToken();
         if (moduleRegistry == address(0)) revert Errors.LicensingModule__ZeroModuleRegistry();
+        if (ipGraphAcl == address(0)) revert Errors.LicensingModule__ZeroIPGraphACL();
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_NFT = ILicenseToken(licenseToken);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         _disableInitializers();
     }
 
@@ -179,6 +188,8 @@ contract LicensingModule is
             revert Errors.LicensingModule__LicensorIpNotRegistered();
         }
         _verifyIpNotDisputed(licensorIpId);
+
+        IP_GRAPH_ACL.startInternalAccess();
         uint256 paidMintingFee = _verifyAndPayMintingFee(
             licensorIpId,
             licenseTemplate,
@@ -188,6 +199,8 @@ contract LicensingModule is
             royaltyContext,
             maxMintingFee
         );
+        IP_GRAPH_ACL.endInternalAccess();
+
         if (maxMintingFee != 0 && paidMintingFee > maxMintingFee) {
             revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(paidMintingFee, maxMintingFee);
         }
@@ -666,6 +679,17 @@ contract LicensingModule is
             licenseTermsId,
             _hasPermission(licensorIpId)
         );
+
+        if (ILicenseTemplate(licenseTemplate).allowDerivativeRegistration(licenseTermsId)) {
+            uint256 ancestors = LICENSE_REGISTRY.getAncestorsCount(licensorIpId);
+            if (ancestors >= MAX_ANCESTOR) {
+                revert Errors.LicensingModule__TooManyAncestorsForMintingLicenseTokenAllowRegisterDerivative(
+                    licensorIpId,
+                    ancestors,
+                    MAX_ANCESTOR
+                );
+            }
+        }
 
         if (lsc.isSet && lsc.disabled) {
             revert Errors.LicensingModule__LicenseDisabled(licensorIpId, licenseTemplate, licenseTermsId);

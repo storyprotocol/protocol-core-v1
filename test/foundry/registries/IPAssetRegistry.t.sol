@@ -12,14 +12,32 @@ import { ShortStrings } from "@openzeppelin/contracts/utils/ShortStrings.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { MockERC721WithoutMetadata } from "test/foundry/mocks/token/MockERC721WithoutMetadata.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
 
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 contract MockIPAccountRegistry is IPAccountRegistry {
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    constructor(
+        address erc6551Registry,
+        address ipAccountImpl,
+        address ipAccountImplBeacon
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl, ipAccountImplBeacon) {}
 
     function registerIpAccount(uint256 chainId, address tokenContract, uint256 tokenId) public returns (address) {
         return _registerIpAccount(chainId, tokenContract, tokenId);
+    }
+}
+
+contract MockIPAccountImplV2 is IPAccountImpl {
+    constructor(
+        address accessController,
+        address ipAssetRegistry,
+        address licenseRegistry,
+        address moduleRegistry
+    ) IPAccountImpl(accessController, ipAssetRegistry, licenseRegistry, moduleRegistry) {}
+
+    function newFunction(uint256 arg) external returns (uint256) {
+        return arg;
     }
 }
 
@@ -393,7 +411,8 @@ contract IPAssetRegistryTest is BaseTest {
     function test_IPAssetRegistry_revert_registerWithDummyIPAccountRegister() public {
         MockIPAccountRegistry mockIpAccountRegistry = new MockIPAccountRegistry(
             ipAccountRegistry.ERC6551_PUBLIC_REGISTRY(),
-            ipAccountRegistry.IP_ACCOUNT_IMPL()
+            ipAccountRegistry.IP_ACCOUNT_IMPL(),
+            ipAccountRegistry.IP_ACCOUNT_IMPL_UPGRADEABLE_BEACON()
         );
         address owner = vm.addr(1);
         uint256 tokenId = 100;
@@ -403,6 +422,90 @@ contract IPAssetRegistryTest is BaseTest {
         vm.prank(owner, owner);
         address account = mockIpAccountRegistry.registerIpAccount(block.chainid, address(mockNFT), tokenId);
         assertTrue(!IPAccountChecker.isIpAccount(ipAssetRegistry, account));
+    }
+
+    function test_IPAccount_upgrade() public {
+        // register IPAssets (based on existing IpAccountImpl : ipId1 and ipId2
+        // call newFunction() on IpId1 and IpId2 and expected revert due to no such function found
+        // upgrade IPAccount to new IpAccountImplV2
+        // validate call newFunction() on IpId1 and IpId2 succeeded.
+        address owner = vm.addr(1);
+        uint256 tokenId = 100;
+
+        mockNFT.mintId(owner, tokenId);
+
+        address ipId1 = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId);
+        (uint256 chainid1, address tokenContract1, uint256 tokenId1) = MockIPAccountImplV2(payable(ipId1)).token();
+        assertEq(block.chainid, chainid1);
+        assertEq(address(mockNFT), tokenContract1);
+        assertEq(tokenId, tokenId1);
+
+        // expect revert due to no such function found in IpAccountImpl
+        vm.expectRevert();
+        MockIPAccountImplV2(payable(ipId1)).newFunction(123);
+
+        MockIPAccountImplV2 ipAccountImplV2 = new MockIPAccountImplV2(
+            address(accessController),
+            address(ipAssetRegistry),
+            address(licenseRegistry),
+            address(moduleRegistry)
+        );
+        vm.prank(admin);
+        (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
+            address(ipAssetRegistry),
+            abi.encodeCall(IPAssetRegistry.upgradeIPAccountImpl, (address(ipAccountImplV2))),
+            0 // earliest time possible, upgraderExecDelay
+        );
+        vm.warp(upgraderExecDelay + 1);
+        vm.prank(admin);
+        ipAssetRegistry.upgradeIPAccountImpl(address(ipAccountImplV2));
+
+        // new function found in IpAccountImplV2
+        uint256 value = MockIPAccountImplV2(payable(ipId1)).newFunction(123);
+        assertEq(123, value);
+    }
+
+    function test_IPAccount_upgradeAll() public {
+        address owner = vm.addr(1);
+        uint256 tokenId1 = 100;
+        uint256 tokenId2 = 101;
+
+        mockNFT.mintId(owner, tokenId1);
+        mockNFT.mintId(owner, tokenId2);
+
+        address ipId1 = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId1);
+
+        address ipId2 = ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId2);
+
+        // expect revert due to no such function found in IpAccountImpl
+        vm.expectRevert();
+        MockIPAccountImplV2(payable(ipId1)).newFunction(123);
+
+        vm.expectRevert();
+        MockIPAccountImplV2(payable(ipId2)).newFunction(123);
+
+        MockIPAccountImplV2 ipAccountImplV2 = new MockIPAccountImplV2(
+            address(accessController),
+            address(ipAssetRegistry),
+            address(licenseRegistry),
+            address(moduleRegistry)
+        );
+        vm.prank(admin);
+        (bytes32 operationId, uint32 nonce) = protocolAccessManager.schedule(
+            address(ipAssetRegistry),
+            abi.encodeCall(IPAssetRegistry.upgradeIPAccountImpl, (address(ipAccountImplV2))),
+            0 // earliest time possible, upgraderExecDelay
+        );
+        vm.warp(upgraderExecDelay + 1);
+        vm.prank(admin);
+        ipAssetRegistry.upgradeIPAccountImpl(address(ipAccountImplV2));
+
+        // new function found in IpAccountImplV2
+        uint256 value = MockIPAccountImplV2(payable(ipId1)).newFunction(123);
+        assertEq(123, value);
+
+        value = MockIPAccountImplV2(payable(ipId2)).newFunction(123);
+        assertEq(123, value);
     }
 
     /// @notice Helper function for generating an account address.

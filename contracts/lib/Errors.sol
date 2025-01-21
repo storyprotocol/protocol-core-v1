@@ -65,6 +65,9 @@ library Errors {
     /// @notice Zero address provided for ERC6551 Registry.
     error IPAccountRegistry_ZeroERC6551Registry();
 
+    /// @notice Zero address provided for IP Account implementation upgradeable beacon.
+    error IPAccountRegistry_ZeroIpAccountImplBeacon();
+
     ////////////////////////////////////////////////////////////////////////////
     //                        Group IP Asset Registry                         //
     ////////////////////////////////////////////////////////////////////////////

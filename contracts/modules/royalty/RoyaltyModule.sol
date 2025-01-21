@@ -69,9 +69,14 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param globalRoyaltyStack Sum of royalty stack from each whitelisted royalty policy for a given IP asset
     /// @param accumulatedRoyaltyPolicies The accumulated royalty policies for a given IP asset
     /// @param totalRevenueTokensReceived The total lifetime revenue tokens received for a given IP asset
+    /// @param totalRevenueTokensAccounted The total revenue tokens received by a given IP asset while a given royalty
+    /// policy is whitelisted. If a royalty policy is whitelisted since the beginning then the value will be equal to
+    /// the total revenue tokens received over the lifetime of the IP asset. But whenever a payment is made to an
+    /// IP asset while a royalty policy is blacklisted then that payment will not be accounted for that royalty policy.
     /// @param treasury The treasury address
     /// @param royaltyFeePercent The royalty fee percentage
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
+    // solhint-disable max-line-length
     struct RoyaltyModuleStorage {
         uint256 maxParents;
         uint256 maxAncestors;
@@ -84,9 +89,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         mapping(address ipId => uint32) globalRoyaltyStack;
         mapping(address ipId => EnumerableSet.AddressSet) accumulatedRoyaltyPolicies;
         mapping(address ipId => mapping(address token => uint256)) totalRevenueTokensReceived;
+        mapping(address ipId => mapping(address token => mapping(address royaltyPolicy => uint256))) totalRevenueTokensAccounted;
         address treasury;
         uint32 royaltyFeePercent;
     }
+    // solhint-enable max-line-length
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.RoyaltyModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant RoyaltyModuleStorageLocation =
@@ -444,6 +451,21 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         return _getRoyaltyModuleStorage().totalRevenueTokensReceived[ipId][token];
     }
 
+    /// @notice Returns the total revenue tokens received by a given IP asset while a given royalty
+    /// policy is whitelisted. If a royalty policy is whitelisted since the beginning then the value will be equal
+    /// to the total revenue tokens received over the lifetime of the IP asset. But whenever a payment is made to an
+    /// IP asset while a royalty policy is blacklisted then that payment will not be accounted for that royalty policy.
+    /// @param ipId The ID of IP asset
+    /// @param token The token address
+    /// @param royaltyPolicy The royalty policy address
+    function totalRevenueTokensAccounted(
+        address ipId,
+        address token,
+        address royaltyPolicy
+    ) external view returns (uint256) {
+        return _getRoyaltyModuleStorage().totalRevenueTokensAccounted[ipId][token][royaltyPolicy];
+    }
+
     /// @notice IERC165 interface support
     function supportsInterface(bytes4 interfaceId) public view virtual override(BaseModule, IERC165) returns (bool) {
         return interfaceId == type(IRoyaltyModule).interfaceId || super.supportsInterface(interfaceId);
@@ -659,6 +681,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
             if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
                 uint32 royaltyStack = IRoyaltyPolicy(accRoyaltyPolicies[i]).getPolicyRoyaltyStack(receiverIpId);
                 if (royaltyStack == 0) continue;
+
+                // add the amount to the total revenue tokens accounted for the whitelisted royalty policy
+                $.totalRevenueTokensAccounted[receiverIpId][token][accRoyaltyPolicies[i]] += amount;
 
                 uint256 amountToTransfer = (amount * royaltyStack) / MAX_PERCENT;
                 totalAmountPaid += amountToTransfer;

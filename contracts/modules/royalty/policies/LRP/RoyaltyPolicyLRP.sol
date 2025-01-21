@@ -168,7 +168,7 @@ contract RoyaltyPolicyLRP is
 
         // calculate the amount to transfer
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
-        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
+        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensAccounted(ipId, token, address(this));
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
         maxAmount -= (maxAmount * $.royaltyStackLRP[ancestorIpId]) / royaltyModule.maxPercent();
 

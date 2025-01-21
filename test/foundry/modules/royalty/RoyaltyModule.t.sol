@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
@@ -102,16 +101,6 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         });
 
         mockNFT.mintId(u.alice, 0);
-
-        address expectedAddr = ERC6551AccountLib.computeAddress(
-            address(erc6551Registry),
-            address(ipAccountImpl),
-            ipAccountRegistry.IP_ACCOUNT_SALT(),
-            block.chainid,
-            address(mockNFT),
-            0
-        );
-        vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.alice);
         ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
@@ -981,6 +970,83 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         assertEq(
             USDC.balanceOf(address(100)) - usdcTreasuryAmountBefore,
             (royaltyAmount * 10e6) / royaltyModule.maxPercent()
+        );
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_WithWhitelistedRoyaltyPolicy() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address payerIpId = address(3);
+        USDC.mint(payerIpId, royaltyAmount * 2);
+
+        mockNFT.mintId(u.alice, 1);
+        vm.startPrank(u.alice);
+        address receiverIpId = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);
+        vm.stopPrank();
+
+        address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(20);
+        parents[2] = address(30);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[2] = address(royaltyPolicyLRP);
+        parentRoyalties[0] = uint32(10 * 10 ** 6);
+        parentRoyalties[1] = uint32(10 * 10 ** 6);
+        parentRoyalties[2] = uint32(20 * 10 ** 6);
+        ipGraph.addParentIp(receiverIpId, parents);
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLinkToParents(receiverIpId, parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
+        vm.stopPrank();
+
+        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(receiverIpId);
+
+        vm.startPrank(payerIpId);
+        USDC.mint(address(1), royaltyAmount * 2);
+        USDC.approve(address(royaltyModule), royaltyAmount * 2);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
+        assertEq(royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)), 0);
+        assertEq(royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)), 0);
+
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        assertEq(payerIpIdUSDCBalBefore - USDC.balanceOf(payerIpId), royaltyAmount);
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 60e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)),
+            royaltyAmount
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)),
+            royaltyAmount
+        );
+
+        // now LAP is blacklisted while LRP is not
+        vm.startPrank(u.admin);
+        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), false);
+        vm.stopPrank();
+
+        vm.startPrank(payerIpId);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 60e6 + royaltyAmount * 80e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)),
+            royaltyAmount
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)),
+            royaltyAmount * 2
         );
     }
 

@@ -1866,6 +1866,52 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         groupNft.tokenURI(100);
     }
 
+    function test_GroupingModule_revert_addIp_DisputedGroupCannotAddIp() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 10 * 10 ** 6,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+
+        _raiseAndSetDisputeJudgement(groupId, ipId3, "IMPROPER_REGISTRATION");
+
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__DisputedGroupCannotAddIp.selector, groupId));
+        groupingModule.addIp(groupId, ipIds, 100e6);
+    }
+
     function _raiseAndSetDisputeJudgement(address targetIp, address initiator, bytes32 disputeEvidenceHash) internal {
         vm.startPrank(initiator);
         USDC.mint(initiator, 1000 * 10 ** 6);

@@ -167,6 +167,9 @@ library Errors {
     /// @notice The disputed group cannot claim reward.
     error GroupingModule__DisputedGroupCannotClaimReward(address groupId);
 
+    /// @notice The disputed group cannot add IP.
+    error GroupingModule__DisputedGroupCannotAddIp(address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
     ////////////////////////////////////////////////////////////////////////////

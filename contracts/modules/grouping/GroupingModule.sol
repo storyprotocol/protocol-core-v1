@@ -154,6 +154,9 @@ contract GroupingModule is
         if (maxAllowedRewardShare > 100 * 10 ** 6) {
             revert Errors.GroupingModule__MaxAllowedRewardShareExceeds100Percent(groupIpId, maxAllowedRewardShare);
         }
+        if (DISPUTE_MODULE.isIpTagged(groupIpId)) {
+            revert Errors.GroupingModule__DisputedGroupCannotAddIp(groupIpId);
+        }
         (address groupLicenseTemplate, uint256 groupLicenseTermsId, address currencyToken) = _getGroupRevenueInfo(
             groupIpId
         );

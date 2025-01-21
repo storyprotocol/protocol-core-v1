@@ -819,6 +819,39 @@ contract PILicenseTemplateTest is BaseTest {
         );
     }
 
+    function test_PILicenseTemplate_canOverrideRoyaltyPercent() public {
+        // license terms id is 0
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(0, 100));
+
+        // terms is not commercial use
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(termsId, 100));
+
+        // new royalty percent is 0
+        termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 100,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        assertTrue(pilTemplate.canOverrideRoyaltyPercent(termsId, 0));
+
+        // new royalty percent is greater than commercial rev share
+        termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 100,
+                commercialRevShare: 10,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(erc20)
+            })
+        );
+        assertTrue(pilTemplate.canOverrideRoyaltyPercent(termsId, 100));
+
+        // new royalty percent is less than commercial rev share
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(termsId, 5));
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

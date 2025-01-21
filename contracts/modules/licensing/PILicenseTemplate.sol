@@ -319,9 +319,9 @@ contract PILicenseTemplate is
     /// @param newRoyaltyPercent The new royalty percentage.
     /// @return True if the royalty percentage can be overridden, false otherwise.
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
-        if (licenseTermsId == 0 || newRoyaltyPercent == 0) return false;
+        if (licenseTermsId == 0) return false;
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-        return terms.commercialUse && newRoyaltyPercent >= terms.commercialRevShare;
+        return terms.commercialUse && (newRoyaltyPercent == 0 || newRoyaltyPercent >= terms.commercialRevShare);
     }
 
     /// @notice queries if the derivative registration is allowed under the license terms.

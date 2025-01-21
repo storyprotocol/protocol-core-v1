@@ -117,9 +117,6 @@ library Errors {
     /// @notice The Royalty Vault has not been created.
     error GroupingModule__GroupRoyaltyVaultNotCreated(address groupId);
 
-    /// @notice The Group IP's license terms should not have minting fee.
-    error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice Cannot add group to group.
     error GroupingModule__CannotAddGroupToGroup(address groupId, address childGroupId);
 
@@ -326,13 +323,6 @@ library Errors {
         address groupId,
         uint32 ipCommercialRevShare,
         uint32 groupCommercialRevShare
-    );
-
-    /// @notice The licensing config for the Group IP's license terms should not have minting fee.
-    error LicenseRegistry__GroupIPLicensingConfigHasMintingFee(
-        address groupId,
-        address licenseTemplate,
-        uint256 licenseTermsId
     );
 
     /// @notice The provided parent IP ID is not registered.

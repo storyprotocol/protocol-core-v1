@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 
 // external
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
@@ -17,11 +18,7 @@ import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
 import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpgradeable.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IGraphAwareRoyaltyPolicy } from "contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
-import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
 import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY, GROUPING_MODULE_KEY } from "contracts/lib/modules/Module.sol";
@@ -36,13 +33,10 @@ import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/Royalty
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
-import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
-import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
-import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
-import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILicenseTemplate } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
 import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
@@ -73,7 +67,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     ICreate3Deployer internal create3Deployer;
     // seed for CREATE3 salt
     uint256 internal create3SaltSeed;
-    IPAccountImpl internal ipAccountImpl;
+
+    IPAccountImpl internal ipAccountImplCode;
+    UpgradeableBeacon internal ipAccountImplBeacon;
+    BeaconProxy internal ipAccountImpl;
+    string internal constant IP_ACCOUNT_IMPL_CODE = "IPAccountImplCode";
+    string internal constant IP_ACCOUNT_IMPL_BEACON = "IPAccountImplBeacon";
+    string internal constant IP_ACCOUNT_IMPL_BEACON_PROXY = "IPAccountImplBeaconProxy";
 
     // Registry
     IPAssetRegistry internal ipAssetRegistry;
@@ -173,6 +173,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
 
+        if (address(ipAssetRegistry) != ipAccountImplBeacon.owner()) {
+            revert RoleConfigError("IPAssetRegistry is not owner of ipAccountImplBeacon");
+        }
+
         if (address(royaltyModule) != ipRoyaltyVaultBeacon.owner()) {
             revert RoleConfigError("RoyaltyModule is not owner of ipRoyaltyVaultBeacon");
         }
@@ -225,10 +229,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ProtocolPauseAdmin";
         _predeploy(contractKey);
+        address impl = address(new ProtocolPauseAdmin());
         protocolPauser = ProtocolPauseAdmin(
-            create3Deployer.deployDeterministic(
-                abi.encodePacked(type(ProtocolPauseAdmin).creationCode, abi.encode(address(protocolAccessManager))),
-                _getSalt(type(ProtocolPauseAdmin).name)
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
+                _getSalt(type(ProtocolPauseAdmin).name),
+                impl,
+                abi.encodeCall(ProtocolPauseAdmin.initialize, address(protocolAccessManager))
             )
         );
         require(
@@ -239,7 +246,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
-        address impl = address(new ModuleRegistry());
+        impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -261,8 +268,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(
             new IPAssetRegistry(
                 address(erc6551Registry),
-                _getDeployedAddress(type(IPAccountImpl).name),
-                _getDeployedAddress(type(GroupingModule).name)
+                _getDeployedAddress(IP_ACCOUNT_IMPL_BEACON_PROXY),
+                _getDeployedAddress(type(GroupingModule).name),
+                _getDeployedAddress(IP_ACCOUNT_IMPL_BEACON)
             )
         );
         ipAssetRegistry = IPAssetRegistry(
@@ -328,8 +336,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
 
-        contractKey = "IPAccountImpl";
-        bytes memory ipAccountImplCode = abi.encodePacked(
+        contractKey = IP_ACCOUNT_IMPL_CODE;
+        bytes memory ipAccountImplCodeBytes = abi.encodePacked(
             type(IPAccountImpl).creationCode,
             abi.encode(
                 address(accessController),
@@ -339,14 +347,38 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             )
         );
         _predeploy(contractKey);
-        ipAccountImpl = IPAccountImpl(
-            payable(create3Deployer.deployDeterministic(ipAccountImplCode, _getSalt(type(IPAccountImpl).name)))
+        ipAccountImplCode = IPAccountImpl(
+            payable(create3Deployer.deployDeterministic(ipAccountImplCodeBytes, _getSalt(IP_ACCOUNT_IMPL_CODE)))
         );
-        _postdeploy(contractKey, address(ipAccountImpl));
+        _postdeploy(contractKey, address(ipAccountImplCode));
         require(
-            _getDeployedAddress(type(IPAccountImpl).name) == address(ipAccountImpl),
-            "Deploy: IP Account Impl Address Mismatch"
+            _getDeployedAddress(IP_ACCOUNT_IMPL_CODE) == address(ipAccountImplCode),
+            "Deploy: IP Account Impl Code Address Mismatch"
         );
+
+        _predeploy(IP_ACCOUNT_IMPL_BEACON);
+        ipAccountImplBeacon = UpgradeableBeacon(
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(
+                    type(UpgradeableBeacon).creationCode,
+                    abi.encode(address(ipAccountImplCode), deployer)
+                ),
+                _getSalt(IP_ACCOUNT_IMPL_BEACON)
+            )
+        );
+        _postdeploy(IP_ACCOUNT_IMPL_BEACON, address(ipAccountImplBeacon));
+
+        _predeploy(IP_ACCOUNT_IMPL_BEACON_PROXY);
+        ipAccountImpl = BeaconProxy(payable(
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(
+                    type(BeaconProxy).creationCode,
+                    abi.encode(address(ipAccountImplBeacon), "")
+                ),
+                _getSalt(IP_ACCOUNT_IMPL_BEACON_PROXY)
+            ))
+        );
+        _postdeploy(IP_ACCOUNT_IMPL_BEACON_PROXY, address(ipAccountImpl));
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
@@ -580,7 +612,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(moduleRegistry)
             )
         );
         pilTemplate = PILicenseTemplate(
@@ -745,6 +778,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
 
+        // IP Asset Registry
+        ipAccountImplBeacon.transferOwnership(address(ipAssetRegistry));
+
         // Dispute Module and Dispute Policy
         disputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
         disputeModule.whitelistDisputeTag("IMPROPER_USAGE", true);
@@ -802,7 +838,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(evenSplitGroupPool), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(
@@ -821,11 +856,22 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ProtocolAdmin.UPGRADER_ROLE
         );
         protocolAccessManager.setTargetFunctionRole(
+            address(protocolPauser),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
             address(arbitrationPolicyUMA),
             selectors,
             ProtocolAdmin.UPGRADER_ROLE
         );
 
+        // IPAsset and Upgrade Beacon
+        // Owner of the beacon is the IPAssetRegistry
+        selectors = new bytes4[](2);
+        selectors[0] = IPAssetRegistry.upgradeIPAccountImpl.selector;
+        selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
+        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyModule

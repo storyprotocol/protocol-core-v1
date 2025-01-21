@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import { IERC6551Registry } from "erc6551/interfaces/IERC6551Registry.sol";
 
 import { IIPAccountRegistry } from "../interfaces/registries/IIPAccountRegistry.sol";
@@ -22,13 +23,19 @@ abstract contract IPAccountRegistry is IIPAccountRegistry {
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable ERC6551_PUBLIC_REGISTRY;
 
+    /// @notice the IPAccount implementation upgradeable beacon address
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable IP_ACCOUNT_IMPL_UPGRADEABLE_BEACON;
+
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address erc6551Registry, address ipAccountImpl) {
+    constructor(address erc6551Registry, address ipAccountImpl, address ipAccountImplBeacon) {
         if (ipAccountImpl == address(0)) revert Errors.IPAccountRegistry_ZeroIpAccountImpl();
         if (erc6551Registry == address(0)) revert Errors.IPAccountRegistry_ZeroERC6551Registry();
+        if (ipAccountImplBeacon == address(0)) revert Errors.IPAccountRegistry_ZeroIpAccountImplBeacon();
         IP_ACCOUNT_IMPL = ipAccountImpl;
         IP_ACCOUNT_SALT = bytes32(0);
         ERC6551_PUBLIC_REGISTRY = erc6551Registry;
+        IP_ACCOUNT_IMPL_UPGRADEABLE_BEACON = ipAccountImplBeacon;
     }
 
     /// @notice Returns the IPAccount address for the given NFT token.
@@ -81,5 +88,10 @@ abstract contract IPAccountRegistry is IIPAccountRegistry {
                 tokenContract,
                 tokenId
             );
+    }
+
+    /// @dev Helper function to upgrade the IPAccount implementation.
+    function _upgradeIPAccountImpl(address newIpAccountImpl) internal {
+        UpgradeableBeacon(IP_ACCOUNT_IMPL_UPGRADEABLE_BEACON).upgradeTo(newIpAccountImpl);
     }
 }

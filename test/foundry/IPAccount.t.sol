@@ -12,7 +12,11 @@ import { MockModule } from "./mocks/module/MockModule.sol";
 import { BaseTest } from "./utils/BaseTest.t.sol";
 
 contract MockIPAccountRegistry is IPAccountRegistry {
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    constructor(
+        address erc6551Registry,
+        address ipAccountImpl,
+        address ipAccountImplBeacon
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl, ipAccountImplBeacon) {}
 
     function registerIpAccount(uint256 chainId, address tokenContract, uint256 tokenId) public returns (address) {
         return _registerIpAccount(chainId, tokenContract, tokenId);
@@ -29,7 +33,8 @@ contract IPAccountTest is BaseTest {
         module = new MockModule(address(ipAssetRegistry), address(moduleRegistry), "MockModule");
         mockIpAccountRegistry = new MockIPAccountRegistry(
             ipAccountRegistry.ERC6551_PUBLIC_REGISTRY(),
-            ipAccountRegistry.IP_ACCOUNT_IMPL()
+            ipAccountRegistry.IP_ACCOUNT_IMPL(),
+            ipAccountRegistry.IP_ACCOUNT_IMPL_UPGRADEABLE_BEACON()
         );
 
         vm.startPrank(u.admin); // used twice, name() and registerModule()

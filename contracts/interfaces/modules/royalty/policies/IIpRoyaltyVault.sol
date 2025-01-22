@@ -14,6 +14,12 @@ interface IIpRoyaltyVault {
     /// @param amount The amount of revenue token claimed
     event RevenueTokenClaimed(address claimer, address token, uint256 amount);
 
+    /// @notice Event emitted when a revenue debt of a claimer is updated
+    /// @param claimer The address of the claimer
+    /// @param token The revenue token claimed
+    /// @param revenueDebt The amount of revenue token claimed
+    event RevenueDebtUpdated(address claimer, address token, int256 revenueDebt);
+
     /// @notice Initializer for this implementation contract
     /// @param name The name of the royalty token
     /// @param symbol The symbol of the royalty token

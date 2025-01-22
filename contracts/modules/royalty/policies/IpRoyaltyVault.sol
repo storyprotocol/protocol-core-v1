@@ -243,12 +243,15 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             uint256 pendingFrom = _claimableRevenueWithExtraDecimal(from, tokenList[i]);
             uint256 pendingTo = _claimableRevenueWithExtraDecimal(to, tokenList[i]);
             uint256 accBalance = $.vaultAccBalances[tokenList[i]];
-            $.claimerRevenueDebt[tokenList[i]][to] =
-                int256((accBalance * (balanceOf(to) + amount))) -
-                int256(pendingTo);
-            $.claimerRevenueDebt[tokenList[i]][from] =
-                int256((accBalance * (balanceOfFrom - amount))) -
-                int256(pendingFrom);
+
+            int256 revenueDebtTo = int256((accBalance * (balanceOf(to) + amount))) - int256(pendingTo);
+            $.claimerRevenueDebt[tokenList[i]][to] = revenueDebtTo;
+
+            int256 revenueDebtFrom = int256((accBalance * (balanceOfFrom - amount))) - int256(pendingFrom);
+            $.claimerRevenueDebt[tokenList[i]][from] = revenueDebtFrom;
+
+            emit RevenueDebtUpdated(to, tokenList[i], revenueDebtTo);
+            emit RevenueDebtUpdated(from, tokenList[i], revenueDebtFrom);
         }
 
         super._update(from, to, amount);
@@ -284,6 +287,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
             claimedAmounts[i] = _claimPendingRevenue(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
             $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]) * int256(totalSupply());
+            emit RevenueDebtUpdated(claimer, tokenList[i], $.claimerRevenueDebt[tokenList[i]][claimer]);
         }
 
         return claimedAmounts;

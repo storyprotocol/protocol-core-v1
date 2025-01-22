@@ -157,4 +157,8 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool) {
         return true;
     }
+
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool) {
+        return true;
+    }
 }

@@ -115,7 +115,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 0,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -453,7 +453,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -501,7 +501,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -551,7 +551,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -601,7 +601,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         erc20.approve(address(royaltyModule), 1000);
         royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
         vm.stopPrank();
-        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20));
+        royaltyPolicyLRP.transferToVault(ipId3, groupId, address(erc20));
         vm.warp(vm.getBlockTimestamp() + 7 days);
 
         vm.expectEmit();
@@ -631,7 +631,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -681,7 +681,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         erc20.approve(address(royaltyModule), 1000);
         royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
         vm.stopPrank();
-        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20));
+        royaltyPolicyLRP.transferToVault(ipId3, groupId, address(erc20));
         vm.warp(vm.getBlockTimestamp() + 7 days);
 
         vm.prank(address(groupingModule));
@@ -735,7 +735,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -765,7 +765,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         vm.startPrank(alice);
@@ -789,6 +789,28 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
     }
 
+    function test_GroupingModule_addIp_revert_LAPRoyaltyPolicy() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__LicenseTermsCannotAttachToGroupIp.selector,
+                address(pilTemplate),
+                termsId
+            )
+        );
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        vm.stopPrank();
+    }
+
     function test_GroupingModule_addIp_revert_DisputedIp() public {
         bytes32 disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
         uint256 termsId = pilTemplate.registerLicenseTerms(
@@ -796,7 +818,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         vm.startPrank(alice);
@@ -826,7 +848,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         vm.startPrank(alice);
@@ -874,7 +896,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         vm.startPrank(alice);
@@ -923,7 +945,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         vm.startPrank(alice);
@@ -964,7 +986,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1024,7 +1046,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
             mintingFee: 0,
             commercialRevShare: 10,
             currencyToken: address(erc20),
-            royaltyPolicy: address(royaltyPolicyLAP)
+            royaltyPolicy: address(royaltyPolicyLRP)
         });
         expiredTerms.expiration = 10 days;
         uint256 termsId = pilTemplate.registerLicenseTerms(expiredTerms);
@@ -1076,7 +1098,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1139,7 +1161,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 10,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1183,7 +1205,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 10,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1227,7 +1249,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1258,7 +1280,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1281,7 +1303,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1318,7 +1340,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1386,7 +1408,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1436,7 +1458,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         erc20.approve(address(royaltyModule), 1000);
         royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
         vm.stopPrank();
-        royaltyPolicyLAP.transferToVault(ipId3, groupId, address(erc20));
+        royaltyPolicyLRP.transferToVault(ipId3, groupId, address(erc20));
         vm.warp(vm.getBlockTimestamp() + 7 days);
 
         groupingModule.collectRoyalties(groupId, address(erc20));
@@ -1474,7 +1496,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1529,7 +1551,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1619,7 +1641,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1725,7 +1747,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1771,7 +1793,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 
@@ -1873,7 +1895,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10_000_000,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
 

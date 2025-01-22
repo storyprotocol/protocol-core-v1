@@ -204,11 +204,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
         // The group can only attach one license terms which is common for all members.
-        if (
-            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId) &&
-            _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0
-        ) {
-            revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+        if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+            if (_getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0) {
+                revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+            }
+            if (!ILicenseTemplate(licenseTemplate).canAttachToGroupIp(licenseTermsId)) {
+                revert Errors.LicenseRegistry__LicenseTermsCannotAttachToGroupIp(licenseTemplate, licenseTermsId);
+            }
         }
 
         if (_isExpiredNow(ipId)) {

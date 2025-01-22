@@ -149,4 +149,9 @@ interface ILicenseTemplate is IERC165 {
     /// @param licenseTermsId The ID of the license terms.
     /// @return True if the derivative registration is allowed, false otherwise.
     function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool);
+
+    /// @notice check if the license terms support associate with group IP assets
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the license terms support associate with group IP assets, false otherwise.
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool);
 }

@@ -1084,7 +1084,7 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
@@ -1110,8 +1110,8 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         groupingModule.addIp(groupId, groupMembers, 100e6);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(ipId1, address(royaltyPolicyLAP), uint32(15e6), "");
-        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(15e6), "");
+        royaltyModule.onLicenseMinting(ipId1, address(royaltyPolicyLRP), uint32(15e6), "");
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLRP), uint32(15e6), "");
         address groupVault = royaltyModule.ipRoyaltyVaults(groupId);
         vm.stopPrank();
 

@@ -337,6 +337,10 @@ library Errors {
     /// @notice ancestors is above the maximum ancestors limit.
     error LicenseRegistry__TooManyAncestors(address ipId, uint256 ancestors, uint256 maxAncestors);
 
+    /// @notice The license terms does not support to be attached to Group IP.
+    /// for example, the license terms using LAP Royalty Policy which does not support group.
+    error LicenseRegistry__LicenseTermsCannotAttachToGroupIp(address licenseTemplate, uint256 licenseTermsId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

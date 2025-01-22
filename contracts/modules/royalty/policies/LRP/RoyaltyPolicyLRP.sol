@@ -217,6 +217,12 @@ contract RoyaltyPolicyLRP is
         return _getRoyaltyPolicyLRPStorage().transferredTokenLRP[ipId][ancestorIpId][token];
     }
 
+    /// @notice Returns the royalty policy support working with group
+    /// @return True if the royalty policy support working with group otherwise false
+    function isSupportGroup() external view returns (bool) {
+        return true;
+    }
+
     /// @notice Returns the royalty stack for a given IP asset for LRP royalty policy
     /// @param ipId The ipId to get the royalty stack for
     /// @return The royalty stack for a given IP asset for LRP royalty policy

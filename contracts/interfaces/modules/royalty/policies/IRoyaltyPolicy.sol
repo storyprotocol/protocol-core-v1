@@ -32,4 +32,8 @@ interface IRoyaltyPolicy is IExternalRoyaltyPolicyBase {
     /// @param ipId The ID of the IP asset
     /// @return royaltyStack Sum of the royalty percentages to be paid to ancestors for a given royalty policy
     function getPolicyRoyaltyStack(address ipId) external view returns (uint32);
+
+    /// @notice Returns the royalty policy support working with group
+    /// @return True if the royalty policy support working with group otherwise false
+    function isSupportGroup() external view returns (bool);
 }

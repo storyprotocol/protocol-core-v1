@@ -188,6 +188,13 @@ contract RoyaltyPolicyLAP is
         return _getRoyaltyPolicyLAPStorage().transferredTokenLAP[ipId][ancestorIpId][token];
     }
 
+    /// @notice Returns the royalty policy support working with group
+    /// @return True if the royalty policy support working with group otherwise false
+    function isSupportGroup() external view returns (bool) {
+        // LAP royalty policy does not support working with group
+        return false;
+    }
+
     /// @notice Returns the royalty stack for a given IP asset for LAP royalty policy
     /// @param ipId The ipId to get the royalty stack for
     /// @return The royalty stack for a given IP asset for LAP royalty policy

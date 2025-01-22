@@ -17,6 +17,7 @@ import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
 import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { ExpiringOps } from "../../lib/ExpiringOps.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
@@ -330,6 +331,21 @@ contract PILicenseTemplate is
     function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
         return terms.derivativesAllowed;
+    }
+
+    /// @notice check if the license terms support associate with group IP assets
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the license terms support associate with group IP assets, false otherwise.
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool) {
+        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        address royaltyPolicy = terms.royaltyPolicy;
+        if (royaltyPolicy == address(0)) {
+            return true;
+        }
+        if (ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(royaltyPolicy)) {
+            return IRoyaltyPolicy(royaltyPolicy).isSupportGroup();
+        }
+        return false;
     }
 
     /// @notice checks the contract whether supports the given interface.

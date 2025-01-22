@@ -44,7 +44,7 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             PILFlavors.commercialRemix({
                 mintingFee: 0,
                 commercialRevShare: defaultCommRevShare,
-                royaltyPolicy: address(royaltyPolicyLAP),
+                royaltyPolicy: address(royaltyPolicyLRP),
                 currencyToken: address(erc20)
             })
         );
@@ -175,7 +175,7 @@ contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            royaltyPolicyLAP.transferToVault(ipAcct[3], groupId, address(mockToken));
+            royaltyPolicyLRP.transferToVault(ipAcct[3], groupId, address(mockToken));
 
             vm.warp(block.timestamp + 7 days + 1);
 

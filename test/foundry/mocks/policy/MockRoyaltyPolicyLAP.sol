@@ -48,6 +48,9 @@ contract MockRoyaltyPolicyLAP is IGraphAwareRoyaltyPolicy {
     function getPolicyRoyalty(address ipId, address ancestorIpId) external view returns (uint32) {}
     function getAncestorPercent(address ipId, address ancestorIpId) external view returns (uint32) {}
     function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {}
+    function isSupportGroup() external view returns (bool) {
+        return false;
+    }
 
     function _getRoyaltyPolicyLAPStorage() private pure returns (RoyaltyPolicyLAPStorage storage $) {
         assembly {

@@ -327,13 +327,13 @@ contract TestIpRoyaltyVault is BaseTest, ERC721Holder {
                 mintingFee: 0,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
-                royaltyPolicy: address(royaltyPolicyLAP)
+                royaltyPolicy: address(royaltyPolicyLRP)
             })
         );
         licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
 
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLRP), uint32(10 * 10 ** 6), "");
         IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId));
         vm.stopPrank();
 

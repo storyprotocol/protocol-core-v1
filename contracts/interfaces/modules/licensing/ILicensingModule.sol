@@ -57,6 +57,11 @@ interface ILicensingModule is IModule {
         address licenseTemplate
     );
 
+    /// @notice Attaches default license terms to an IP.
+    /// the function must be called by the IP owner or an authorized operator.
+    /// @param ipId The IP ID.
+    function attachDefaultLicenseTerms(address ipId) external;
+
     /// @notice Attaches license terms to an IP.
     /// the function must be called by the IP owner or an authorized operator.
     /// @param ipId The IP ID.

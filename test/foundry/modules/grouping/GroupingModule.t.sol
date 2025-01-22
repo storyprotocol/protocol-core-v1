@@ -759,7 +759,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         assertEq(rewardPool.getIpAddedTime(groupId1, ipId1), 0);
     }
 
-    function test_GroupingModule_addIp_revert_GroupOnlyAttachedDefaultLicense() public {
+    function test_GroupingModule_addIp_revert_group_defaultLicense() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 0,
@@ -770,6 +770,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         );
         vm.startPrank(alice);
         address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachDefaultLicenseTerms(groupId1);
         vm.stopPrank();
 
         vm.prank(ipOwner1);
@@ -777,10 +778,10 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
 
         address[] memory ipIds = new address[](1);
         ipIds[0] = ipId1;
-        vm.expectRevert(
-            abi.encodeWithSelector(Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms.selector, groupId1)
-        );
         vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.GroupingModule__GroupIPLicenseHasNotSpecifyRevenueToken.selector, groupId1)
+        );
         groupingModule.addIp(groupId1, ipIds, 100e6);
 
         assertEq(ipAssetRegistry.totalMembers(groupId1), 0);

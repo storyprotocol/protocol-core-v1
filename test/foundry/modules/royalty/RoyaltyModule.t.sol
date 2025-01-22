@@ -881,6 +881,20 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
     }
 
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_PaymentAmountIsTooLow() public {
+        uint256 royaltyAmount = 1999; // 0.01999 USDC
+        address receiverIpId = address(2);
+        address payerIpId = address(3);
+
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(5 * 10 ** 4)); // 0.05%
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.RoyaltyModule__PaymentAmountIsTooLow.selector);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+    }
+
     function test_RoyaltyModule_payRoyaltyOnBehalf() public {
         uint256 royaltyAmount = 100 * 10 ** 6;
         address receiverIpId = address(2);
@@ -1165,6 +1179,23 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(USDC), 100);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_PaymentAmountIsTooLow() public {
+        uint256 royaltyAmount = 1999; // 0.01999 USDC
+        address receiverIpId = address(2);
+        address payerAddress = address(3);
+        address token = address(USDC);
+
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(5 * 10 ** 4)); // 0.05%
+        vm.stopPrank();
+
+        vm.startPrank(address(licensingModule));
+
+        vm.expectRevert(Errors.RoyaltyModule__PaymentAmountIsTooLow.selector);
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {

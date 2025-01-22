@@ -749,6 +749,9 @@ library Errors {
     /// @notice IP is expired.
     error RoyaltyModule__IpExpired();
 
+    /// @notice Payment amount is too low.
+    error RoyaltyModule__PaymentAmountIsTooLow();
+
     /// @notice Invalid external royalty policy.
     error RoyaltyModule__InvalidExternalRoyaltyPolicy();
 

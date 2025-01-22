@@ -643,10 +643,15 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         // if the caller is a group reward pool, then no fee is paid given that the royalty fee has already been
         // charged on the the payment to the group ip royalty vault itself. Otherwise, royalty fee for grouping
         // would be charged twice.
-        uint256 feeAmount = IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(msg.sender) == true
-            ? 0
-            : (amount * $.royaltyFeePercent) / MAX_PERCENT;
-        if (feeAmount > 0) IERC20(token).safeTransferFrom(payerAddress, $.treasury, feeAmount);
+        uint256 feeAmount;
+        if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(msg.sender)) {
+            uint32 royaltyFeePercent = $.royaltyFeePercent;
+            feeAmount = (amount * royaltyFeePercent) / MAX_PERCENT;
+            if (feeAmount > 0) IERC20(token).safeTransferFrom(payerAddress, $.treasury, feeAmount);
+            // when the royaltyFeePercent is higher than zero, then payments that are too small and below the threshold
+            // that would be free of charge are no longer allowed
+            if (feeAmount == 0 && royaltyFeePercent > 0) revert Errors.RoyaltyModule__PaymentAmountIsTooLow();
+        }
 
         // pay to the whitelisted royalty policies first
         uint256 amountAfterFee = amount - feeAmount;

@@ -126,9 +126,6 @@ library Errors {
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
 
-    /// @notice Group IP should attach non default license terms.
-    error GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(address groupId);
-
     /// @notice The total group reward share exceeds 100% when adding IP to the group.
     /// means the IP is not allowed to be added to the group.
     error GroupingModule__TotalGroupRewardShareExceeds100Percent(

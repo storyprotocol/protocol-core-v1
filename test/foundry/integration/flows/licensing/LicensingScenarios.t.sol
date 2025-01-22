@@ -112,14 +112,6 @@ contract Licensing_Scenarios is BaseIntegration {
         // Add policies to IP account
         vm.startPrank(u.alice);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commTermsId);
         vm.stopPrank();

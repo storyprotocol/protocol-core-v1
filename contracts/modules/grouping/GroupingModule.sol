@@ -318,12 +318,6 @@ contract GroupingModule is
             revert Errors.GroupingModule__GroupIPHasNoLicenseTerms(groupIpId);
         }
         (groupLicenseTemplate, groupLicenseTermsId) = LICENSE_REGISTRY.getAttachedLicenseTerms(groupIpId, 0);
-        // Group must attache a non-default license terms to add IP
-        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
-
-        if (groupLicenseTemplate == defaultLicenseTemplate && groupLicenseTermsId == defaultLicenseTermsId) {
-            revert Errors.GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(groupIpId);
-        }
 
         IGroupRewardPool pool = IGroupRewardPool(GROUP_IP_ASSET_REGISTRY.getGroupRewardPool(groupIpId));
         (, , , currencyToken) = ILicenseTemplate(groupLicenseTemplate).getRoyaltyPolicy(groupLicenseTermsId);

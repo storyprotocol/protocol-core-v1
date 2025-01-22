@@ -132,6 +132,13 @@ contract LicensingModule is
         __ProtocolPausable_init(accessManager);
     }
 
+    function attachDefaultLicenseTerms(address ipId) external {
+        _verifyIpNotDisputed(ipId);
+        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
+        LICENSE_REGISTRY.attachLicenseTermsToIp(ipId, defaultLicenseTemplate, defaultLicenseTermsId);
+        emit LicenseTermsAttached(msg.sender, ipId, defaultLicenseTemplate, defaultLicenseTermsId);
+    }
+
     /// @notice Attaches license terms to an IP.
     /// the function must be called by the IP owner or an authorized operator.
     /// @param ipId The IP ID.

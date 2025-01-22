@@ -96,14 +96,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
         vm.startPrank(u.alice);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commDerivTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[100],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[100], address(pilTemplate), ncSocialRemixTermsId);
 
         vm.startPrank(u.bob);
@@ -113,14 +105,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
         vm.startPrank(u.bob);
         // NOTE: the two calls below achieve the same functionality
         // licensingModule.attachLicenseTerms(ipAcct[3], address(pilTemplate), ncSocialRemixTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[3],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         IIPAccount(payable(ipAcct[3])).execute(
             address(licensingModule),
             0,

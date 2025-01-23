@@ -93,8 +93,7 @@ contract MockCoreMetadataViewModule is BaseModule, IViewModule {
     }
 
     function isSupported(address ipAccount) external returns (bool) {
-        return
-            !_isEmptyString(IIPAccount(payable(ipAccount)).getString(ipAssetRegistry, "NAME"));
+        return !_isEmptyString(IIPAccount(payable(ipAccount)).getString(ipAssetRegistry, "NAME"));
     }
 
     function _isEmptyString(string memory str) internal pure returns (bool) {

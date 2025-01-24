@@ -724,6 +724,71 @@ contract LicenseRegistryTest is BaseTest {
         });
     }
 
+    function test_LicenseRegistry_registerDerivativeIp_revert_groupIsNotSoleParent() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        vm.prank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), termsId);
+        vm.prank(ipOwner[2]);
+        licensingModule.attachLicenseTerms(ipAcct[2], address(pilTemplate), termsId);
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+        vm.prank(ipOwner[1]);
+        licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), termsId, licensingConfig);
+        vm.prank(ipOwner[2]);
+        licensingModule.setLicensingConfig(ipAcct[2], address(pilTemplate), termsId, licensingConfig);
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipAcct[1];
+        vm.prank(alice);
+        groupingModule.addIp(groupId, ipIds, 100e6);
+
+        vm.startPrank(ipOwner[3]);
+        address[] memory parentIpIds = new address[](2);
+        uint256[] memory licenseTermsIds = new uint256[](2);
+        parentIpIds[0] = groupId;
+        parentIpIds[1] = ipAcct[2];
+        licenseTermsIds[0] = termsId;
+        licenseTermsIds[1] = termsId;
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicenseRegistry__GroupMustBeSoleParent.selector, ipAcct[3], groupId)
+        );
+        licensingModule.registerDerivative(
+            ipAcct[3],
+            parentIpIds,
+            licenseTermsIds,
+            address(pilTemplate),
+            "",
+            0,
+            100e6,
+            0
+        );
+        vm.stopPrank();
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

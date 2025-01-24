@@ -341,6 +341,9 @@ library Errors {
     /// for example, the license terms using LAP Royalty Policy which does not support group.
     error LicenseRegistry__LicenseTermsCannotAttachToGroupIp(address licenseTemplate, uint256 licenseTermsId);
 
+    /// @notice if a child IP is a derivative of a group IP, the child IP cannot have other parent IPs.
+    error LicenseRegistry__GroupMustBeSoleParent(address childIpId, address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

@@ -374,16 +374,27 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         licensingModule.attachLicenseTerms(groupId2, address(pilTemplate), termsId);
         groupingModule.addIp(groupId2, ipIds, 100e6);
         vm.stopPrank();
-
-        // 2. Create derivatives - the only reason is to deploy vaults for groupId1 & groupId2
-        address[] memory parentIpIds = new address[](2);
-        parentIpIds[0] = groupId1;
-        parentIpIds[1] = groupId2;
-        uint256[] memory licenseTermsIds = new uint256[](2);
-        licenseTermsIds[0] = termsId;
-        licenseTermsIds[1] = termsId;
-        vm.prank(ipOwner3);
-        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+        // 2. minting license token - the only reason is to deploy vaults for groupId1 & groupId2
+        licensingModule.mintLicenseTokens({
+            licensorIpId: groupId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: address(this),
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+        licensingModule.mintLicenseTokens({
+            licensorIpId: groupId2,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId,
+            amount: 1,
+            receiver: address(this),
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
 
         // Royalty vaults have been deployed for both groups - we need vaults to be able to pay/claim royalties
         assertNotEq(royaltyModule.ipRoyaltyVaults(groupId1), address(0));

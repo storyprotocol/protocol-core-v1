@@ -271,9 +271,12 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // earliest expiration time
         uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
+            bool isRegisteredGroup = GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(parentIpIds[i]);
+            if (isRegisteredGroup && parentIpIds.length > 1) {
+                revert Errors.LicenseRegistry__GroupMustBeSoleParent(childIpId, parentIpIds[i]);
+            }
             if (
-                !GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(parentIpIds[i]) &&
-                !IIPAssetRegistry(address(GROUP_IP_ASSET_REGISTRY)).isRegistered(parentIpIds[i])
+                !isRegisteredGroup && !IIPAssetRegistry(address(GROUP_IP_ASSET_REGISTRY)).isRegistered(parentIpIds[i])
             ) {
                 revert Errors.LicenseRegistry__ParentIpNotRegistered(parentIpIds[i]);
             }

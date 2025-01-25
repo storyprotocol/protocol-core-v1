@@ -68,4 +68,20 @@ interface IGroupIPAssetRegistry {
     /// @param groupId The address of the Group IPA.
     /// @return totalMembers The total number of members in the Group IPA.
     function totalMembers(address groupId) external view returns (uint256);
+
+    /// @notice Retrieves the groups contains the given IPA
+    /// @param ipId The address of the IPA.
+    /// @param startIndex The start index of the groups to retrieve
+    /// @param size The size of the groups to retrieve
+    /// @return results The addresses of the groups contains the IPA
+    function getGroupsContainsTheIp(
+        address ipId,
+        uint256 startIndex,
+        uint256 size
+    ) external view returns (address[] memory results);
+
+    /// @notice Retrieves the total number of groups contains the given IPA
+    /// @param ipId The address of the IPA.
+    /// @return totalGroups The total number of groups contains the IPA.
+    function totalGroupsContainsTheIp(address ipId) external view returns (uint256);
 }

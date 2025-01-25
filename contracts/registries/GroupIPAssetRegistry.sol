@@ -23,9 +23,11 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
     struct GroupIPAssetRegistryStorage {
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
-        mapping(address ipId => address rewardPool) rewardPools;
+        mapping(address groupIpId => address rewardPool) rewardPools;
         // whitelisted group reward pools
         mapping(address rewardPool => bool isWhitelisted) whitelistedGroupRewardPools;
+        // IP belongs to which groups
+        mapping(address ipId => EnumerableSet.AddressSet groups) ipInGroups;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.GroupIPAssetRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -94,6 +96,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (!_isRegistered(ipIds[i])) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipIds[i]);
             allMemberIpIds.add(ipIds[i]);
+            $.ipInGroups[ipIds[i]].add(groupId);
         }
     }
 
@@ -108,6 +111,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         EnumerableSet.AddressSet storage allMemberIpIds = $.groups[groupId];
         for (uint256 i = 0; i < ipIds.length; i++) {
             allMemberIpIds.remove(ipIds[i]);
+            $.ipInGroups[ipIds[i]].remove(groupId);
         }
     }
 
@@ -168,6 +172,35 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @return totalMembers The total number of members in the Group IPA.
     function totalMembers(address groupId) external view returns (uint256) {
         return _getGroupIPAssetRegistryStorage().groups[groupId].length();
+    }
+
+    /// @notice Retrieves the groups contains the given IPA
+    /// @param ipId The address of the IPA.
+    /// @param startIndex The start index of the groups to retrieve
+    /// @param size The size of the groups to retrieve
+    /// @return results The addresses of the groups contains the IPA
+    function getGroupsContainsTheIp(
+        address ipId,
+        uint256 startIndex,
+        uint256 size
+    ) external view returns (address[] memory results) {
+        EnumerableSet.AddressSet storage allGroups = _getGroupIPAssetRegistryStorage().ipInGroups[ipId];
+        uint256 totalSize = allGroups.length();
+        if (startIndex >= totalSize) return new address[](0);
+
+        uint256 resultsSize = (startIndex + size) > totalSize ? size - ((startIndex + size) - totalSize) : size;
+        results = new address[](resultsSize);
+        for (uint256 i = 0; i < resultsSize; i++) {
+            results[i] = allGroups.at(startIndex + i);
+        }
+        return results;
+    }
+
+    /// @notice Retrieves the total number of groups contains the given IPA
+    /// @param ipId The address of the IPA.
+    /// @return totalGroups The total number of groups contains the IPA.
+    function totalGroupsContainsTheIp(address ipId) external view returns (uint256) {
+        return _getGroupIPAssetRegistryStorage().ipInGroups[ipId].length();
     }
 
     /// @dev Checks whether a group IPA is registered

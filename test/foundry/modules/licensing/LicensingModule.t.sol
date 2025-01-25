@@ -2502,7 +2502,7 @@ contract LicensingModuleTest is BaseTest {
         moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
         Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
             isSet: true,
-            mintingFee: 100,
+            mintingFee: 1000,
             licensingHook: address(licensingHook),
             hookData: abi.encode(address(0x123)),
             commercialRevShare: 10_000_000,
@@ -2515,7 +2515,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), commercialRemixTermsId).isSet, true);
         assertEq(
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), commercialRemixTermsId).mintingFee,
-            100
+            1000
         );
         assertEq(
             licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), commercialRemixTermsId).licensingHook,
@@ -3305,7 +3305,7 @@ contract LicensingModuleTest is BaseTest {
         // reset to default minting fee
         Licensing.LicensingConfig memory licensingConfig2 = Licensing.LicensingConfig({
             isSet: false,
-            mintingFee: 0,
+            mintingFee: 300,
             licensingHook: address(0),
             hookData: abi.encode(address(0)),
             commercialRevShare: 0,
@@ -3491,6 +3491,43 @@ contract LicensingModuleTest is BaseTest {
             )
         );
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+    }
+
+    function test_LicensingModule_setLicensingConfig_revert_ConfigMintingFeeLessThanDefaultMintingFee() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 300,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 200, // Set lower than default minting fee of 300
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicensingModule__LicensingConfigMintingFeeBelowDefault.selector,
+                address(pilTemplate),
+                termsId,
+                200,
+                300
+            )
+        );
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

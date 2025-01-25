@@ -408,23 +408,33 @@ contract LicensingModule is
         if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
             _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         }
-        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (licensingConfig.commercialRevShare != 0) {
-            if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
-                revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
+        if (licenseTemplate != address(0)) {
+            ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+            if (licensingConfig.commercialRevShare != 0) {
+                if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
+                    revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
+                }
+                if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
+                    revert Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
+                        licenseTemplate,
+                        licenseTermsId,
+                        licensingConfig.commercialRevShare
+                    );
+                }
             }
-            if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
-                revert Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
+            (address royaltyPolicy, , uint256 defaultMintingFee, ) = lct.getRoyaltyPolicy(licenseTermsId);
+            if (licensingConfig.mintingFee < defaultMintingFee) {
+                revert Errors.LicensingModule__LicensingConfigMintingFeeBelowDefault(
                     licenseTemplate,
                     licenseTermsId,
-                    licensingConfig.commercialRevShare
+                    licensingConfig.mintingFee,
+                    defaultMintingFee
                 );
             }
-        }
-        if (licensingConfig.mintingFee > 0) {
-            (address royaltyPolicy, , , ) = lct.getRoyaltyPolicy(licenseTermsId);
-            if (royaltyPolicy == address(0)) {
-                revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+            if (licensingConfig.mintingFee > 0) {
+                if (royaltyPolicy == address(0)) {
+                    revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+                }
             }
         }
         if (

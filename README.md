@@ -182,3 +182,8 @@ docgen: {
 ```
 
 You can refer to the [config.ts](https://github.com/OpenZeppelin/solidity-docgen/blob/master/src/config.ts) of solidity-docgen for the full list of configurable parameters.
+
+## 🟣 Contact Us
+
+- [Join our Discord](https://discord.gg/storyprotocol)
+

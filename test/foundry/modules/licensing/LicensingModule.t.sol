@@ -3519,7 +3519,7 @@ contract LicensingModuleTest is BaseTest {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                Errors.LicensingModule__LicensingConfigMintingFeeBelowDefault.selector,
+                Errors.LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms.selector,
                 address(pilTemplate),
                 termsId,
                 200,

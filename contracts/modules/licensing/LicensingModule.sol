@@ -424,7 +424,7 @@ contract LicensingModule is
             }
             (address royaltyPolicy, , uint256 defaultMintingFee, ) = lct.getRoyaltyPolicy(licenseTermsId);
             if (licensingConfig.mintingFee < defaultMintingFee) {
-                revert Errors.LicensingModule__LicensingConfigMintingFeeBelowDefault(
+                revert Errors.LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
                     licenseTemplate,
                     licenseTermsId,
                     licensingConfig.mintingFee,

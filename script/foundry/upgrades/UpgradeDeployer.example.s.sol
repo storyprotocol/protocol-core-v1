@@ -100,7 +100,7 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
         accessController = _readAddress("AccessController");
         moduleRegistry = _readAddress("ModuleRegistry");
         coreMetadataModule = _readAddress("CoreMetadataModule");
-        ipAccountImpl = _readAddress("IPAccountImpl");
+        ipAccountImpl = _readAddress("IPAccountImplCode");
         ipGraphACL = _readAddress("IPGraphACL");
         groupNft = _readAddress("GroupNFT");
         licenseToken = _readAddress("LicenseToken");
@@ -309,7 +309,7 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
                 _getSalt(string.concat("IPAccountImplCode", PROPOSAL_VERSION))
             ))
         ));
-        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: address(ipAccountImpl), newImpl: impl }));
+        upgradeProposals.push(UpgradeProposal({ key: contractKey, proxy: address(ipAssetRegistry), newImpl: impl }));
         impl = address(0);
 
         contractKey = "EvenSplitGroupPool";

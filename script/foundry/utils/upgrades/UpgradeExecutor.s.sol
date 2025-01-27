@@ -62,7 +62,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     /// @param proxy The proxy address
     modifier onlyMatchingAccessManager(string memory contractKey, address proxy) {
         if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault")) &&
-            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccount"))) {
+            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccountImplCode"))) {
             require(
                 AccessManaged(proxy).authority() == address(accessManager),
                 "Proxy's Authority must equal accessManager"
@@ -276,7 +276,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
         if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IpRoyaltyVault"))) {
             console2.log("encoding upgradeVaults");
             data = abi.encodeCall(IVaultController.upgradeVaults, (p.newImpl));
-        } else if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IPAccount"))) {
+        } else if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IPAccountImplCode"))) {
             console2.log("encoding upgradeIPAccount");
             data = abi.encodeCall(IIPAssetRegistry.upgradeIPAccountImpl, (p.newImpl));
         } else {

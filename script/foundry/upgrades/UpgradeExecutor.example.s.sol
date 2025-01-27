@@ -46,7 +46,7 @@ contract UpgradeExecutorExample is UpgradeExecutor {
         _scheduleUpgrade("EvenSplitGroupPool");
         _scheduleUpgrade("ArbitrationPolicyUMA");
         _scheduleUpgrade("ProtocolPauseAdmin");
-        _scheduleUpgrade("IPAccount");
+        _scheduleUpgrade("IPAccountImplCode");
     }
 
     /**
@@ -75,7 +75,7 @@ contract UpgradeExecutorExample is UpgradeExecutor {
         _executeUpgrade("EvenSplitGroupPool");
         _executeUpgrade("ArbitrationPolicyUMA");
         _executeUpgrade("ProtocolPauseAdmin");
-        _executeUpgrade("IPAccount");
+        _executeUpgrade("IPAccountImplCode");
     }
 
 
@@ -105,6 +105,6 @@ contract UpgradeExecutorExample is UpgradeExecutor {
         _cancelScheduledUpgrade("EvenSplitGroupPool");
         _cancelScheduledUpgrade("ArbitrationPolicyUMA");
         _cancelScheduledUpgrade("ProtocolPauseAdmin");
-        _cancelScheduledUpgrade("IPAccount");
+        _cancelScheduledUpgrade("IPAccountImplCode");
     }
 }

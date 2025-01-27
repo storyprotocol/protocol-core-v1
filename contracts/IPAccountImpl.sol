@@ -257,6 +257,10 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         // Smart contract signature
         if (v == 0) {
             // Signer address encoded in r
+            // prevent from signature malleability
+            if ((bytes32(signature[:32]) >> 160) != 0) {
+                revert Errors.IPAccount__InvalidSigner();
+            }
             signer = address(uint160(uint256(bytes32(signature[:32]))));
 
             // Allow recursive signature verification

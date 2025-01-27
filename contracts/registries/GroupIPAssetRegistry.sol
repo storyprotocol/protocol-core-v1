@@ -147,6 +147,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         uint256 startIndex,
         uint256 size
     ) external view returns (address[] memory results) {
+        if (size > 100) revert Errors.GroupIPAssetRegistry__PageSizeExceedsLimit(size, 100);
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
         uint256 totalSize = allMemberIpIds.length();
         if (startIndex >= totalSize) return new address[](0);
@@ -184,6 +185,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         uint256 startIndex,
         uint256 size
     ) external view returns (address[] memory results) {
+        if (size > 100) revert Errors.GroupIPAssetRegistry__PageSizeExceedsLimit(size, 100);
         EnumerableSet.AddressSet storage allGroups = _getGroupIPAssetRegistryStorage().ipInGroups[ipId];
         uint256 totalSize = allGroups.length();
         if (startIndex >= totalSize) return new address[](0);

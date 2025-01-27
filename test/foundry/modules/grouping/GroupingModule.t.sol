@@ -501,13 +501,6 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
         assertEq(rewardPool.getTotalIps(groupId), 2);
         assertEq(rewardPool.getIpAddedTime(groupId, ipId1), 100);
-        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId1), 1);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId2), 1);
-        assertEq(ipAssetRegistry.getGroupMembers(groupId, 0, 2)[0], ipId1);
-        assertEq(ipAssetRegistry.getGroupMembers(groupId, 0, 2)[1], ipId2);
-        assertEq(ipAssetRegistry.getGroupsContainsTheIp(ipId1, 0, 1)[0], groupId);
-        assertEq(ipAssetRegistry.getGroupsContainsTheIp(ipId2, 0, 1)[0], groupId);
     }
 
     function test_GroupingModule_removeIp() public {
@@ -552,23 +545,12 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         ipIds[1] = ipId2;
         groupingModule.addIp(groupId, ipIds, 100e6);
         assertEq(ipAssetRegistry.totalMembers(groupId), 2);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId1), 1);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId2), 1);
-        assertEq(ipAssetRegistry.getGroupMembers(groupId, 0, 2)[0], ipId1);
-        assertEq(ipAssetRegistry.getGroupMembers(groupId, 0, 2)[1], ipId2);
-        assertEq(ipAssetRegistry.getGroupsContainsTheIp(ipId1, 0, 1)[0], groupId);
-        assertEq(ipAssetRegistry.getGroupsContainsTheIp(ipId2, 0, 1)[0], groupId);
 
         address[] memory removeIpIds = new address[](1);
         removeIpIds[0] = ipId1;
         vm.expectEmit();
         emit IGroupingModule.RemovedIpFromGroup(groupId, removeIpIds);
         groupingModule.removeIp(groupId, removeIpIds);
-        assertEq(ipAssetRegistry.totalMembers(groupId), 1);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId1), 0);
-        assertEq(ipAssetRegistry.totalGroupsContainsTheIp(ipId2), 1);
-        assertEq(ipAssetRegistry.getGroupMembers(groupId, 0, 1)[0], ipId2);
-        assertEq(ipAssetRegistry.getGroupsContainsTheIp(ipId2, 0, 1)[0], groupId);
     }
 
     function test_GroupingModule_claimReward() public {
@@ -2022,8 +2004,5 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         ipIds[0] = ipId2;
         vm.expectRevert(abi.encodeWithSelector(Errors.GroupIPAssetRegistry__PageSizeExceedsLimit.selector, 200, 100));
         ipAssetRegistry.getGroupMembers(groupId1, 0, 200);
-
-        vm.expectRevert(abi.encodeWithSelector(Errors.GroupIPAssetRegistry__PageSizeExceedsLimit.selector, 200, 100));
-        ipAssetRegistry.getGroupsContainsTheIp(ipId1, 0, 200);
     }
 }

@@ -535,11 +535,11 @@ library Errors {
 
     /// @notice Minting fee specified in the licensing config is below the default minting fee specified
     /// in the license terms.
-    error LicensingModule__LicensingConfigMintingFeeBelowDefault(
+    error LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
         address licenseTemplate,
         uint256 licenseTermsId,
         uint256 licensingConfigMintingFee,
-        uint256 defaultMintingFee
+        uint256 licenseTermsMintingFee
     );
 
     ////////////////////////////////////////////////////////////////////////////

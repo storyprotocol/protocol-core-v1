@@ -106,7 +106,7 @@ describe("LicensingModule - registerDerivative", function () {
   });
 
   it("Verify IP Graph precompiles register derivative error: RoyaltyModule__AboveParentLimit", async function () {
-    const count = 10;
+    const count = 17;
 
     const mint: Promise<number>[] = [];
     let nonce = await hre.ethers.provider.getTransactionCount(this.owner.address);
@@ -141,7 +141,7 @@ describe("LicensingModule - registerDerivative", function () {
     const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
     await expect(
       this.licensingModule.connect(this.user1).registerDerivative(childIpId, parentIpIds, licenseTermsIds, PILicenseTemplate, "0x", 0, 100e6, 0)
-    ).to.be.revertedWithCustomError(this.errors, "RoyaltyModule__AboveParentLimit");
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__TooManyParents");
   });
 
   it("Derivative IP asset should not attached license itself", async function () {

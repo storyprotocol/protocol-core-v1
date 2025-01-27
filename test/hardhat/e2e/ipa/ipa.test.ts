@@ -73,7 +73,6 @@ describe("IP Asset", function () {
     console.log("defaultId", defaultId);
 
     console.log("============ Get Attached License Terms ============");
-    const { licenseTermsId } = await this.licenseRegistry.getAttachedLicenseTerms(ipId, 0);
-    expect(licenseTermsId).to.equal(defaultId);
+    expect(await this.licenseRegistry.getAttachedLicenseTermsCount(ipId)).to.be.equal(0);
   });
 });

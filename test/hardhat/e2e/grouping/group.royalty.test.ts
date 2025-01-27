@@ -2,7 +2,7 @@
 
 import "../setup"
 import { expect } from "chai"
-import { EvenSplitGroupPool, MockERC20, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants"
+import { EvenSplitGroupPool, MockERC20, PILicenseTemplate, RoyaltyPolicyLRP } from "../constants"
 import { LicensingConfig, registerPILTerms } from "../utils/licenseHelper";
 import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms, registerGroupIPA } from "../utils/mintNFTAndRegisterIPA";
 import { getErc20Balance } from "../utils/erc20Helper";
@@ -21,7 +21,7 @@ describe("Group IP Asset Royalty Distribution", function () {
   before(async function () {
     // Register group
     console.log("============ Register Group ============");
-    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
     const groupLicensingConfig = { ...LicensingConfig };
     groupLicensingConfig.expectGroupRewardPool = hre.ethers.ZeroAddress;
     groupId = await registerGroupIPA(EvenSplitGroupPool, commRemixTermsId, groupLicensingConfig);
@@ -42,7 +42,7 @@ describe("Group IP Asset Royalty Distribution", function () {
     // Add IP to the group
     console.log("============ Add IPs to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1, ipId2])
+      this.groupingModule.addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     expect(
@@ -68,7 +68,7 @@ describe("Group IP Asset Royalty Distribution", function () {
 
     // console.log("============ Transfer to vault ============");
     await expect(
-      this.royaltyPolicyLAP.transferToVault(ipId3, groupId, MockERC20)
+      this.royaltyPolicyLRP.transferToVault(ipId3, groupId, MockERC20)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     // Collect royalty 
@@ -138,7 +138,7 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
   before(async function () {
     // Register group
     console.log("============ Register Group ============");
-    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
     const groupLicensingConfig = { ...LicensingConfig };
     groupLicensingConfig.expectGroupRewardPool = hre.ethers.ZeroAddress;
     groupId = await registerGroupIPA(EvenSplitGroupPool, commRemixTermsId, groupLicensingConfig);
@@ -159,7 +159,7 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
     // Add IP to the group
     console.log("============ Add IPs to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1, ipId2])
+      this.groupingModule.addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     expect(

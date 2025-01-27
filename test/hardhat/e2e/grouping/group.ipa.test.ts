@@ -62,8 +62,9 @@ describe("Add/Remove IP from Group IPA", function () {
     // Add IP to the group
     console.log("============ Add IP to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    
     
     let containsIp = await this.ipAssetRegistry.containsIp(groupId, ipId);
     expect(containsIp).to.be.true;
@@ -91,7 +92,7 @@ describe("Add/Remove IP from Group IPA", function () {
    
     // Add multiple IPs to the group
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1, ipId2])
+      this.groupingModule.addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     let containsIp1 = await this.ipAssetRegistry.containsIp(groupId, ipId1);
@@ -116,7 +117,7 @@ describe("Add/Remove IP from Group IPA", function () {
       this.licensingModule.setLicensingConfig(ipId, PILicenseTemplate, commRemixTermsId, LicensingConfig)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.groupingModule.connect(this.user1).addIp(groupId, [ipId])
+      this.groupingModule.connect(this.user1).addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "AccessController__PermissionDenied");
 
     const containsIp = await this.ipAssetRegistry.containsIp(groupId, ipId);
@@ -129,7 +130,7 @@ describe("Add/Remove IP from Group IPA", function () {
       this.licensingModule.setLicensingConfig(ipId, PILicenseTemplate, commRemixTermsId, LicensingConfig)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     let containsIp = await this.ipAssetRegistry.containsIp(groupId, ipId);
     expect(containsIp).to.be.true;
@@ -146,7 +147,7 @@ describe("Add/Remove IP from Group IPA", function () {
     const { ipId } = await mintNFTAndRegisterIPA();
     // IP has no license term attached
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");
 
     // IP has different license term attached
@@ -154,7 +155,7 @@ describe("Add/Remove IP from Group IPA", function () {
       this.licensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commericialUseLicenseId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");
   });
 });
@@ -182,7 +183,7 @@ describe("Group is locked due to registered derivative", function () {
     // Add IP to the group
     console.log("============ Add Ips to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1])
+      this.groupingModule.addIp(groupId, [ipId1], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     expect(
       await this.evenSplitGroupPool.getTotalIps(groupId)
@@ -203,8 +204,8 @@ describe("Group is locked due to registered derivative", function () {
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
-    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToHasDerivativeIps");
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
   });
 
   it("Remove Ip from locked group", async function () {
@@ -236,7 +237,7 @@ describe("Group is locked due to minted license token", function () {
     // Add IP to the group
     console.log("============ Add Ips to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1])
+      this.groupingModule.addIp(groupId, [ipId1], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     expect(
       await this.evenSplitGroupPool.getTotalIps(groupId)
@@ -256,8 +257,8 @@ describe("Group is locked due to minted license token", function () {
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
-    ).to.be.revertedWithCustomError(this.errors, "GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens");
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
   });
 
   it("Remove Ip from locked group", async function () {
@@ -298,7 +299,7 @@ describe("Add IP to group - negative tests", function () {
 
     console.log("============ Add IP to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [childIpId])
+      this.groupingModule.addIp(groupId, [childIpId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__CannotAddIpWithExpirationToGroup");
   });
 
@@ -313,7 +314,7 @@ describe("Add IP to group - negative tests", function () {
 
     console.log("============ Add IP to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");
   });
 
@@ -322,7 +323,7 @@ describe("Add IP to group - negative tests", function () {
 
     console.log("============ Add IP to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId])
+      this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "GroupIPAssetRegistry__NotRegisteredIP");
   });
 });

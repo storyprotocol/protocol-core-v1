@@ -28,8 +28,8 @@ before(async function () {
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
-  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("1.0") });
-  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("1.0") });
+  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("1.0") }).then((tx: any) => tx.wait());
+  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("1.0") }).then((tx: any) => tx.wait());
   
   console.log(`================= Chain ID =================`);
   const networkConfig = network.config;
@@ -63,7 +63,7 @@ before(async function () {
   console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
 
   console.log(`================= ERC20 approve spender =================`);
-  const amountToCheck = BigInt(200 * 10 ** 18);
+  const amountToCheck = BigInt(1 * 10 ** 18);
   await checkAndApproveSpender(this.owner, RoyaltyPolicyLAP, amountToCheck);
   await checkAndApproveSpender(this.owner, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.owner, RoyaltyModule, amountToCheck);

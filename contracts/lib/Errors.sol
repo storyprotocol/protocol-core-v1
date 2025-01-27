@@ -600,20 +600,17 @@ library Errors {
     /// @notice Not a registered IP.
     error DisputeModule__NotRegisteredIpId();
 
-    /// @notice Provided parent IP and the parent dispute's target IP is different.
-    error DisputeModule__ParentIpIdMismatch();
+    /// @notice The dispute does not have infringement tag.
+    error DisputeModule__DisputeWithoutInfringementTag();
 
-    /// @notice Provided parent dispute's target IP is not dispute tagged.
-    error DisputeModule__ParentNotTagged();
-
-    /// @notice Provided parent dispute's target IP is not the derivative IP's parent.
-    error DisputeModule__NotDerivative();
+    /// @notice Provided target IP is not the derivative or group ip related to the infringing IP.
+    error DisputeModule__NotDerivativeOrGroupIp();
 
     /// @notice Provided parent dispute has already been propagated to the derivative IP.
     error DisputeModule__DisputeAlreadyPropagated();
 
-    /// @notice Provided parent dispute has not been resolved.
-    error DisputeModule__ParentDisputeNotResolved();
+    /// @notice Provided related dispute has not been resolved.
+    error DisputeModule__RelatedDisputeNotResolved();
 
     /// @notice Zero arbitration policy cooldown provided.
     error DisputeModule__ZeroArbitrationPolicyCooldown();

@@ -12,6 +12,7 @@ import { AccessControlled } from "../../access/AccessControlled.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IArbitrationPolicy } from "../../interfaces/modules/dispute/policies/IArbitrationPolicy.sol";
+import { IGroupIPAssetRegistry } from "../../interfaces/registries/IGroupIPAssetRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 import { IPGraphACL } from "../../access/IPGraphACL.sol";
@@ -56,7 +57,7 @@ contract DisputeModule is
         mapping(address ipId => address) nextArbitrationPolicies;
         mapping(address ipId => uint256) nextArbitrationUpdateTimestamps;
         mapping(address ipId => uint256) successfulDisputesPerIp;
-        mapping(address ipId => mapping(address parentIpId => mapping(uint256 disputeId => bool))) isDisputePropagated;
+        mapping(address ipId => mapping(uint256 disputeId => bool)) isDisputePropagated;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.DisputeModule")) - 1)) & ~bytes32(uint256(0xff));
@@ -71,6 +72,10 @@ contract DisputeModule is
     /// @notice Protocol-wide license registry
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicenseRegistry public immutable LICENSE_REGISTRY;
+
+    /// @notice Protocol-wide group IP asset registry
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPGraphACL public immutable IP_GRAPH_ACL;
@@ -92,6 +97,7 @@ contract DisputeModule is
         if (ipGraphAcl == address(0)) revert Errors.DisputeModule__ZeroIPGraphACL();
 
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
+        GROUP_IP_ASSET_REGISTRY = IGroupIPAssetRegistry(ipAssetRegistry);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         _disableInitializers();
     }
@@ -222,7 +228,7 @@ contract DisputeModule is
             disputeEvidenceHash: disputeEvidenceHash,
             targetTag: targetTag,
             currentTag: IN_DISPUTE,
-            parentDisputeId: 0
+            infringerDisputeId: 0
         });
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(
@@ -295,54 +301,55 @@ contract DisputeModule is
     }
 
     /// @notice Tags a derivative if a parent has been tagged with an infringement tag
-    /// @param parentIpId The infringing parent ipId
-    /// @param derivativeIpId The derivative ipId
-    /// @param parentDisputeId The dispute id that tagged the parent ipId as infringing
-    function tagDerivativeIfParentInfringed(
-        address parentIpId,
-        address derivativeIpId,
-        uint256 parentDisputeId
-    ) external whenNotPaused {
+    /// or a group ip if a group member has been tagged with an infringement tag
+    /// @param ipIdToTag The ipId to tag
+    /// @param infringerDisputeId The dispute id that tagged the related infringing ipId
+    function tagIfRelatedIpInfringed(address ipIdToTag, uint256 infringerDisputeId) external whenNotPaused {
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
 
-        Dispute memory parentDispute = $.disputes[parentDisputeId];
-        if (parentDispute.targetIpId != parentIpId) revert Errors.DisputeModule__ParentIpIdMismatch();
+        Dispute memory infringerDispute = $.disputes[infringerDisputeId];
+        address infringerIpId = infringerDispute.targetIpId;
 
         // a dispute current tag can be in 3 states:
         // IN_DISPUTE, 0, or a tag (ie. "IMPROPER_REGISTRATION")
-        // by restricting IN_DISPUTE and 0 - it is ensured the parent has been tagged before tagging the derivative
-        if (parentDispute.currentTag == IN_DISPUTE || parentDispute.currentTag == bytes32(0))
-            revert Errors.DisputeModule__ParentNotTagged();
+        // by restricting IN_DISPUTE and 0 - it is ensured the infringer has been tagged before tagging the ipIdToTag
+        if (infringerDispute.currentTag == IN_DISPUTE || infringerDispute.currentTag == bytes32(0))
+            revert Errors.DisputeModule__DisputeWithoutInfringementTag();
 
+        // if the ipIdToTag is a group ip, check if the infringer is a member of the group
+        // if the ipIdToTag is not a group ip, check if the infringer is the parent ipId
         IP_GRAPH_ACL.startInternalAccess();
-        if (!LICENSE_REGISTRY.isParentIp(parentIpId, derivativeIpId)) revert Errors.DisputeModule__NotDerivative();
+        if (
+            !LICENSE_REGISTRY.isParentIp(infringerIpId, ipIdToTag) &&
+            !GROUP_IP_ASSET_REGISTRY.containsIp(ipIdToTag, infringerIpId)
+        ) revert Errors.DisputeModule__NotDerivativeOrGroupIp();
         IP_GRAPH_ACL.endInternalAccess();
 
-        if ($.isDisputePropagated[derivativeIpId][parentIpId][parentDisputeId])
+        if ($.isDisputePropagated[ipIdToTag][infringerDisputeId])
             revert Errors.DisputeModule__DisputeAlreadyPropagated();
 
         uint256 disputeId = ++$.disputeCounter;
         uint256 disputeTimestamp = block.timestamp;
 
         $.disputes[disputeId] = Dispute({
-            targetIpId: derivativeIpId,
+            targetIpId: ipIdToTag,
             disputeInitiator: msg.sender,
             disputeTimestamp: disputeTimestamp,
-            arbitrationPolicy: parentDispute.arbitrationPolicy,
-            disputeEvidenceHash: "",
-            targetTag: parentDispute.currentTag,
-            currentTag: parentDispute.currentTag,
-            parentDisputeId: parentDisputeId
+            arbitrationPolicy: infringerDispute.arbitrationPolicy,
+            disputeEvidenceHash: infringerDispute.disputeEvidenceHash,
+            targetTag: infringerDispute.currentTag,
+            currentTag: infringerDispute.currentTag,
+            infringerDisputeId: infringerDisputeId
         });
 
-        $.isDisputePropagated[derivativeIpId][parentIpId][parentDisputeId] = true;
-        $.successfulDisputesPerIp[derivativeIpId]++;
+        $.isDisputePropagated[ipIdToTag][infringerDisputeId] = true;
+        $.successfulDisputesPerIp[ipIdToTag]++;
 
-        emit DerivativeTaggedOnParentInfringement(
-            parentIpId,
-            derivativeIpId,
-            parentDisputeId,
-            parentDispute.currentTag,
+        emit IpTaggedOnRelatedIpInfringement(
+            infringerIpId,
+            ipIdToTag,
+            infringerDisputeId,
+            infringerDispute.currentTag,
             disputeTimestamp
         );
     }
@@ -355,13 +362,13 @@ contract DisputeModule is
         Dispute memory dispute = $.disputes[disputeId];
 
         // there are two types of disputes - those that are subject to judgment and those that are not
-        // the way to distinguish is by whether dispute.parentDisputeId is 0 or higher than 0
+        // the way to distinguish is by whether dispute.infringerDisputeId is 0 or higher than 0
         // for the former - only the dispute initiator can resolve
-        if (dispute.parentDisputeId == 0 && msg.sender != dispute.disputeInitiator)
+        if (dispute.infringerDisputeId == 0 && msg.sender != dispute.disputeInitiator)
             revert Errors.DisputeModule__NotDisputeInitiator();
-        // for the latter - resolving is permissionless as long as the parent dispute has been resolved
-        if (dispute.parentDisputeId > 0 && $.disputes[dispute.parentDisputeId].currentTag != bytes32(0))
-            revert Errors.DisputeModule__ParentDisputeNotResolved();
+        // for the latter - resolving is permissionless as long as the infringer dispute has been resolved
+        if (dispute.infringerDisputeId > 0 && $.disputes[dispute.infringerDisputeId].currentTag != bytes32(0))
+            revert Errors.DisputeModule__RelatedDisputeNotResolved();
 
         if (dispute.currentTag == IN_DISPUTE || dispute.currentTag == bytes32(0))
             revert Errors.DisputeModule__NotAbleToResolve();
@@ -412,7 +419,7 @@ contract DisputeModule is
     /// @return disputeEvidenceHash The hash pointing to the dispute evidence
     /// @return targetTag The target tag of the dispute
     /// @return currentTag The current tag of the dispute
-    /// @return parentDisputeId The parent dispute id
+    /// @return infringerDisputeId The infringer dispute id
     function disputes(
         uint256 disputeId
     )
@@ -426,7 +433,7 @@ contract DisputeModule is
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
-            uint256 parentDisputeId
+            uint256 infringerDisputeId
         )
     {
         Dispute memory dispute = _getDisputeModuleStorage().disputes[disputeId];
@@ -438,7 +445,7 @@ contract DisputeModule is
             dispute.disputeEvidenceHash,
             dispute.targetTag,
             dispute.currentTag,
-            dispute.parentDisputeId
+            dispute.infringerDisputeId
         );
     }
 

@@ -9,9 +9,13 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 import { Errors } from "contracts/lib/Errors.sol";
 import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
 import { IDisputeModule } from "contracts/interfaces/modules/dispute/IDisputeModule.sol";
+import { IGroupingModule } from "contracts/interfaces/modules/grouping/IGroupingModule.sol";
+import { Licensing } from "contracts/lib/Licensing.sol";
+import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // test
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 import { MockArbitrationPolicy } from "test/foundry/mocks/dispute/MockArbitrationPolicy.sol";
+import { MockERC721 } from "test/foundry/mocks/token/MockERC721.sol";
 
 contract DisputeModuleTest is BaseTest {
     event TagWhitelistUpdated(bytes32 tag, bool allowed);
@@ -41,6 +45,11 @@ contract DisputeModuleTest is BaseTest {
     MockArbitrationPolicy internal mockArbitrationPolicy2;
 
     bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
+
+    // grouping
+    MockERC721 internal mockNft = new MockERC721("MockERC721");
+    address public ipIdGroupMember;
+    address public ipOwnerGroupMember = address(0x222);
 
     function setUp() public override {
         super.setUp();
@@ -547,31 +556,26 @@ contract DisputeModuleTest is BaseTest {
         assertFalse(disputeModule.isIpTagged(ipAddr));
     }
 
-    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_ParentIpIdMismatch() public {
-        vm.expectRevert(Errors.DisputeModule__ParentIpIdMismatch.selector);
-        disputeModule.tagDerivativeIfParentInfringed(address(1), address(2), 1);
-    }
-
-    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_paused() public {
+    function test_DisputeModule_tagIfRelatedIpInfringed_revert_paused() public {
         vm.prank(u.admin);
         disputeModule.pause();
 
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        disputeModule.tagDerivativeIfParentInfringed(address(1), address(2), 1);
+        disputeModule.tagIfRelatedIpInfringed(address(2), 1);
     }
 
-    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_ParentNotTagged() public {
+    function test_DisputeModule_tagIfRelatedIpInfringed_revert_DisputeWithoutInfringementTag() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
         disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
-        vm.expectRevert(Errors.DisputeModule__ParentNotTagged.selector);
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        vm.expectRevert(Errors.DisputeModule__DisputeWithoutInfringementTag.selector);
+        disputeModule.tagIfRelatedIpInfringed(ipAddr2, 1);
     }
 
-    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_DisputeAlreadyPropagated() public {
+    function test_DisputeModule_tagIfRelatedIpInfringed_revert_DisputeAlreadyPropagated() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -585,12 +589,12 @@ contract DisputeModuleTest is BaseTest {
 
         assertEq(licenseRegistry.isParentIp(ipAddr, ipAddr2), true);
 
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        disputeModule.tagIfRelatedIpInfringed(ipAddr2, 1);
         vm.expectRevert(Errors.DisputeModule__DisputeAlreadyPropagated.selector);
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        disputeModule.tagIfRelatedIpInfringed(ipAddr2, 1);
     }
 
-    function test_DisputeModule_tagDerivativeIfParentInfringed_revert_NotDerivative() public {
+    function test_DisputeModule_tagIfRelatedIpInfringed_revert_NotDerivative() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -602,11 +606,11 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.setDisputeJudgement(1, true, "");
         vm.stopPrank();
 
-        vm.expectRevert(Errors.DisputeModule__NotDerivative.selector);
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, address(0), 1);
+        vm.expectRevert(Errors.DisputeModule__NotDerivativeOrGroupIp.selector);
+        disputeModule.tagIfRelatedIpInfringed(address(0), 1);
     }
 
-    function test_DisputeModule_tagDerivativeIfParentInfringed() public {
+    function test_DisputeModule_tagIfRelatedIpInfringed_Derivative() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -631,7 +635,7 @@ contract DisputeModuleTest is BaseTest {
         // tag child ip
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
-        emit IDisputeModule.DerivativeTaggedOnParentInfringement(
+        emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
             ipAddr,
             ipAddr2,
             1,
@@ -641,7 +645,7 @@ contract DisputeModuleTest is BaseTest {
 
         uint256 disputeIdBefore = disputeModule.disputeCounter();
 
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        disputeModule.tagIfRelatedIpInfringed(ipAddr2, 1);
 
         uint256 disputeIdAfter = disputeModule.disputeCounter();
 
@@ -663,10 +667,100 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeInitiator, address(1));
         assertEq(disputeTimestamp, block.timestamp);
         assertEq(arbitrationPolicy, address(mockArbitrationPolicy));
-        assertEq(disputeEvidenceHash, bytes32(0));
+        assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
         assertEq(targetTag, bytes32("IMPROPER_REGISTRATION"));
         assertEq(currentTag, bytes32("IMPROPER_REGISTRATION"));
         assertEq(parentDisputeId, 1);
+    }
+
+    function test_DisputeModule_tagIfRelatedIpInfringed_Group() public {
+        // set group member
+        mockNft.mintId(ipOwnerGroupMember, 11);
+        ipIdGroupMember = ipAssetRegistry.register(block.chainid, address(mockNft), 11);
+
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipIdGroupMember);
+        licensingModule.attachLicenseTerms(ipIdGroupMember, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipIdGroupMember, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(0);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipIdGroupMember;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        groupingModule.addIp(groupId, ipIds, 100e6);
+
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipIdGroupMember, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        // tag group ip
+        vm.startPrank(address(1));
+        vm.expectEmit(true, true, true, true, address(disputeModule));
+        emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
+            ipIdGroupMember,
+            groupId,
+            1,
+            "IMPROPER_REGISTRATION",
+            block.timestamp
+        );
+
+        disputeModule.tagIfRelatedIpInfringed(groupId, 1);
+
+        (
+            address targetIpId,
+            address disputeInitiator,
+            uint256 disputeTimestamp,
+            address arbitrationPolicy,
+            bytes32 disputeEvidenceHash,
+            bytes32 targetTag,
+            bytes32 currentTag,
+            uint256 infringerDisputeId
+        ) = disputeModule.disputes(disputeModule.disputeCounter());
+
+        assertEq(disputeModule.disputeCounter(), 2);
+        assertTrue(disputeModule.isIpTagged(groupId));
+        assertEq(targetIpId, groupId);
+        assertEq(disputeInitiator, address(1));
+        assertEq(disputeTimestamp, block.timestamp);
+        assertEq(arbitrationPolicy, address(mockArbitrationPolicy));
+        assertEq(disputeEvidenceHash, disputeEvidenceHashExample);
+        assertEq(targetTag, bytes32("IMPROPER_REGISTRATION"));
+        assertEq(currentTag, bytes32("IMPROPER_REGISTRATION"));
+        assertEq(infringerDisputeId, 1);
     }
 
     function test_DisputeModule_resolveDispute_revert_paused() public {
@@ -694,7 +788,7 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.resolveDispute(1, "");
     }
 
-    function test_DisputeModule_resolveDispute_revert_ParentDisputeNotResolved() public {
+    function test_DisputeModule_resolveDispute_revert_RelatedDisputeNotResolved() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -707,13 +801,13 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
 
         // tag derivative
-        disputeModule.tagDerivativeIfParentInfringed(ipAddr, ipAddr2, 1);
+        disputeModule.tagIfRelatedIpInfringed(ipAddr2, 1);
 
-        vm.expectRevert(Errors.DisputeModule__ParentDisputeNotResolved.selector);
+        vm.expectRevert(Errors.DisputeModule__RelatedDisputeNotResolved.selector);
         disputeModule.resolveDispute(2, "");
     }
 
-    function test_DisputeModule_resolveDispute() public {
+    function test_DisputeModule_resolveDispute_Derivative() public {
         // raise dispute
         vm.startPrank(ipAccount1);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
@@ -744,6 +838,85 @@ contract DisputeModuleTest is BaseTest {
         vm.expectRevert(Errors.DisputeModule__NotAbleToResolve.selector);
         disputeModule.resolveDispute(1, "");
         vm.stopPrank();
+    }
+
+    function test_DisputeModule_resolveDispute_Group() public {
+        // set group member
+        mockNft.mintId(ipOwnerGroupMember, 11);
+        ipIdGroupMember = ipAssetRegistry.register(block.chainid, address(mockNft), 11);
+
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipIdGroupMember);
+        licensingModule.attachLicenseTerms(ipIdGroupMember, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipIdGroupMember, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(0);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipIdGroupMember;
+        vm.expectEmit();
+        emit IGroupingModule.AddedIpToGroup(groupId, ipIds);
+        groupingModule.addIp(groupId, ipIds, 100e6);
+
+        // raise dispute
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipIdGroupMember, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+
+        // set dispute judgement
+        vm.startPrank(arbitrationRelayer);
+        disputeModule.setDisputeJudgement(1, true, "");
+        vm.stopPrank();
+
+        // tag group ip
+        vm.startPrank(address(1));
+        vm.expectEmit(true, true, true, true, address(disputeModule));
+        emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
+            ipIdGroupMember,
+            groupId,
+            1,
+            "IMPROPER_REGISTRATION",
+            block.timestamp
+        );
+        disputeModule.tagIfRelatedIpInfringed(groupId, 1);
+        assertEq(disputeModule.disputeCounter(), 2);
+
+        // resolve dispute of group member
+        vm.startPrank(ipAccount1);
+        disputeModule.resolveDispute(1, "");
+        vm.stopPrank();
+
+        // resolve dispute of group ip
+        disputeModule.resolveDispute(2, "");
+
+        assertFalse(disputeModule.isIpTagged(ipIdGroupMember));
+        assertFalse(disputeModule.isIpTagged(groupId));
     }
 
     function test_DisputeModule_updateActiveArbitrationPolicy_revert_paused() public {

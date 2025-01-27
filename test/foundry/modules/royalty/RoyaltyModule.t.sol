@@ -12,6 +12,7 @@ import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/I
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
@@ -20,7 +21,6 @@ import { MockExternalRoyaltyPolicy1 } from "../../mocks/policy/MockExternalRoyal
 import { MockExternalRoyaltyPolicy2 } from "../../mocks/policy/MockExternalRoyaltyPolicy2.sol";
 import { MockExternalRoyaltyPolicy3 } from "../../mocks/policy/MockExternalRoyaltyPolicy3.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
-import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
 contract TestRoyaltyModule is BaseTest, ERC721Holder {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);

@@ -84,6 +84,9 @@ library Errors {
     /// @notice Zero address provided for Group Reward Pool.
     error GroupIPAssetRegistry__InvalidGroupRewardPool(address rewardPool);
 
+    /// @notice page size exceeds the limit.
+    error GroupIPAssetRegistry__PageSizeExceedsLimit(uint256 pageSize, uint256 limit);
+
     /// @notice Zero address provided for Group Reward Pool.
     error GroupingModule__ZeroGroupRewardPool();
 

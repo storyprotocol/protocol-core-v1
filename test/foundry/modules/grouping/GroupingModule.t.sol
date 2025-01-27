@@ -1975,4 +1975,55 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.prank(u.relayer);
         disputeModule.setDisputeJudgement(1, true, "");
     }
+
+    function test_GroupingModule_addIp_revert_PageSizeExceedLimit() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 60 * 10 ** 6,
+            expectGroupRewardPool: address(rewardPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        vm.prank(alice);
+        groupingModule.addIp(groupId1, ipIds, 100e6);
+
+        ipIds[0] = ipId2;
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupIPAssetRegistry__PageSizeExceedsLimit.selector, 200, 100));
+        ipAssetRegistry.getGroupMembers(groupId1, 0, 200);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupIPAssetRegistry__PageSizeExceedsLimit.selector, 200, 100));
+        ipAssetRegistry.getGroupsContainsTheIp(ipId1, 0, 200);
+    }
 }

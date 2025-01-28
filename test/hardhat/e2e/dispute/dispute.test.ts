@@ -126,7 +126,7 @@ describe("Dispute Flow", function () {
     let disputeCounter = await this.disputeModule.disputeCounter();
     console.log("disputeCount before", disputeCounter);
     await expect(
-      this.disputeModule.connect(this.user2).tagDerivativeIfParentInfringed(rootIpId, childIpId1, disputeId)
+      this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(childIpId1, disputeId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     expect(await this.disputeModule.isIpTagged(childIpId1)).to.be.true;
     expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.false;
@@ -135,7 +135,7 @@ describe("Dispute Flow", function () {
 
     console.log("============ Tag Derivative 2 ============");
     await expect(
-      this.disputeModule.connect(this.user2).tagDerivativeIfParentInfringed(childIpId1, childIpId2, disputeIp1)
+      this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(childIpId2, disputeIp1)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     expect(await this.disputeModule.isIpTagged(childIpId1)).to.be.true;
     expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.true;
@@ -184,8 +184,8 @@ describe("Dispute Flow", function () {
 
     console.log("============ Tag Derivative ============");
     await expect(
-      this.disputeModule.connect(this.user2).tagDerivativeIfParentInfringed(ipId, childIpId, disputeId)
-    ).to.be.revertedWithCustomError(this.errors, "DisputeModule__ParentNotTagged");
+      this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(ipId, disputeId)
+    ).to.be.revertedWithCustomError(this.errors, "DisputeModule__DisputeWithoutInfringementTag");
     expect(await this.disputeModule.isIpTagged(childIpId)).to.be.false;
   });
 

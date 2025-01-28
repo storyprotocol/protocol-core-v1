@@ -310,7 +310,7 @@ describe("Add IP to group - negative tests", function () {
     console.log("============ IP Attach License Config ============");
     await expect(
       this.licensingModule.connect(this.user1).setLicensingConfig(ipId, PILicenseTemplate, this.commericialRemixLicenseId, LicensingConfig)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    ).to.be.revertedWithCustomError(this.errors, "LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms");
 
     console.log("============ Add IP to group ============");
     await expect(

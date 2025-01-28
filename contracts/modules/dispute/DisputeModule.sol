@@ -58,6 +58,7 @@ contract DisputeModule is
         mapping(address ipId => uint256) nextArbitrationUpdateTimestamps;
         mapping(address ipId => uint256) successfulDisputesPerIp;
         mapping(address ipId => mapping(uint256 disputeId => bool)) isDisputePropagated;
+        mapping(bytes32 evidenceHash => bool) isUsedEvidenceHash;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.DisputeModule")) - 1)) & ~bytes32(uint256(0xff));
@@ -215,6 +216,7 @@ contract DisputeModule is
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
         if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
+        if ($.isUsedEvidenceHash[disputeEvidenceHash]) revert Errors.DisputeModule__EvidenceHashAlreadyUsed();
 
         address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
         uint256 disputeId = ++$.disputeCounter;
@@ -230,6 +232,8 @@ contract DisputeModule is
             currentTag: IN_DISPUTE,
             infringerDisputeId: 0
         });
+
+        $.isUsedEvidenceHash[disputeEvidenceHash] = true;
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(
             msg.sender,

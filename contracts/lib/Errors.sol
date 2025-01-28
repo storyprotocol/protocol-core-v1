@@ -615,6 +615,9 @@ library Errors {
     /// @notice Zero arbitration policy cooldown provided.
     error DisputeModule__ZeroArbitrationPolicyCooldown();
 
+    /// @notice Evidence hash already used.
+    error DisputeModule__EvidenceHashAlreadyUsed();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Arbitration Policy UMA                     //
     ////////////////////////////////////////////////////////////////////////////

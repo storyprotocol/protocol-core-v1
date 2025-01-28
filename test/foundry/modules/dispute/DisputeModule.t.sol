@@ -308,6 +308,16 @@ contract DisputeModuleTest is BaseTest {
         disputeModule.raiseDispute(ipAddr, bytes32(""), "IMPROPER_REGISTRATION", "");
     }
 
+    function test_DisputeModule_raiseDispute_revert_EvidenceHashAlreadyUsed() public {
+        vm.startPrank(ipAccount1);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+
+        vm.expectRevert(Errors.DisputeModule__EvidenceHashAlreadyUsed.selector);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+    }
+
     function test_DisputeModule_raiseDispute_revert_paused() public {
         vm.prank(u.admin);
         disputeModule.pause();

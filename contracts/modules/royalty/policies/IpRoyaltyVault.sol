@@ -260,10 +260,14 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     /// @dev Claims the pending revenue token for a claimer
     /// @param claimer The address of the claimer
     /// @param token The revenue token to claim
-    function _claimPendingRevenue(address claimer, address token) internal returns (uint256 pending) {
+    function _claimPendingRevenue(
+        address claimer,
+        address token
+    ) internal returns (uint256 pendingWithExtraDecimal, uint256 pending) {
         // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
-        if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
-        pending = _claimableRevenueWithExtraDecimal(claimer, token) / totalSupply();
+        if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return (0, 0);
+        pendingWithExtraDecimal = _claimableRevenueWithExtraDecimal(claimer, token);
+        pending = pendingWithExtraDecimal / totalSupply();
         if (pending > 0) {
             emit RevenueTokenClaimed(claimer, token, pending);
             IERC20(token).safeTransfer(claimer, pending);
@@ -284,9 +288,10 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
 
         uint256[] memory claimedAmounts = new uint256[](tokenList.length);
         for (uint256 i = 0; i < tokenList.length; i++) {
-            claimedAmounts[i] = _claimPendingRevenue(claimer, tokenList[i]);
+            uint256 claimedAmountWithExtraDecimal;
+            (claimedAmountWithExtraDecimal, claimedAmounts[i]) = _claimPendingRevenue(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
-            $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]) * int256(totalSupply());
+            $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmountWithExtraDecimal);
             emit RevenueDebtUpdated(claimer, tokenList[i], $.claimerRevenueDebt[tokenList[i]][claimer]);
         }
 

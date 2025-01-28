@@ -24,7 +24,7 @@ before(async function () {
   this.arbitrationPolicyUMA = await hre.ethers.getContractAt("ArbitrationPolicyUMA", ArbitrationPolicyUMA);
   this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
   this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
-  this.errors = await hre.ethers.getContractFactory("Errors");
+  this.errors = await hre.ethers.getContractFactory("contracts/lib/Errors.sol:Errors");
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();

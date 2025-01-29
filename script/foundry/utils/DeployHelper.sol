@@ -122,6 +122,11 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     string private version;
 
+    // Timelocks
+    uint32 internal upgraderExecDelay;
+    uint32 internal grantRoleDelay;
+    uint32 internal adminActionDelay;
+
     constructor(
         address erc6551Registry_,
         address revenueToken_,
@@ -130,8 +135,26 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         erc6551Registry = ERC6551Registry(erc6551Registry_);
         revenueToken = revenueToken_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        if (block.chainid == 1514) revenueToken = 0x1514000000000000000000000000000000000000; // WIP
-        else if (block.chainid == 1516) revenueToken = 0x1516000000000000000000000000000000000000; // WIP
+        if (block.chainid == 1514) {
+            revenueToken = 0x1514000000000000000000000000000000000000; // WIP
+            upgraderExecDelay = 1 days;
+            grantRoleDelay = 5 days;
+            adminActionDelay = 5 days;
+        } else if (block.chainid == 1516) {
+            revenueToken = 0x1516000000000000000000000000000000000000; // WIP
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 10 minutes;
+            adminActionDelay = 10 minutes;
+        } else if (block.chainid == 31337) {
+            // For local testing
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 0;
+            adminActionDelay = 0;
+        } else {
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 10 minutes;
+            adminActionDelay = 10 minutes;
+        }
     }
 
     /// @dev To use, run the following command (e.g. for Story Odyssey Testnet):
@@ -186,6 +209,16 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         }
         if (!multisigUpgrader) {
             revert RoleConfigError("Multisig upgrader role not granted");
+        }
+
+        (bool hasGuardianRole, ) = protocolAccessManager.hasRole(ProtocolAdmin.GUARDIAN_ROLE, guardian);
+        if (!hasGuardianRole) {
+            revert RoleConfigError("Guardian role not granted");
+        }
+
+        (uint64 upgraderRoleGuardian) = protocolAccessManager.getRoleGuardian(ProtocolAdmin.UPGRADER_ROLE);
+        if (upgraderRoleGuardian != ProtocolAdmin.GUARDIAN_ROLE) {
+            revert RoleConfigError("Upgrader role guardian not set");
         }
 
         if (writeDeploys) _writeDeployment(version);
@@ -938,7 +971,15 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);
         protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, multisig, 0);
         protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, address(protocolPauser), 0);
-        protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, 0);
+        protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, adminActionDelay);
+
+        ///////// Guardian Role /////////
+        protocolAccessManager.setRoleGuardian(ProtocolAdmin.UPGRADER_ROLE, ProtocolAdmin.GUARDIAN_ROLE);
+        protocolAccessManager.grantRole(ProtocolAdmin.GUARDIAN_ROLE, guardian, 0);
+
+        // Set grant delay to 5 days, for both guardian and protocol admin roles
+        protocolAccessManager.setGrantDelay(ProtocolAdmin.GUARDIAN_ROLE, grantRoleDelay);
+        protocolAccessManager.setGrantDelay(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, grantRoleDelay);
 
         ///////// Renounce admin role /////////
         protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);

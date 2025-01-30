@@ -33,19 +33,19 @@ contract ArbitrationPolicyUMATest is BaseTest {
     AccessManager newAccessManager;
     IPGraphACL newIPGraphACL;
     address internal newAdmin;
-    address internal susd;
+    address internal wip;
     address internal mockAncillary;
     bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
 
     function setUp() public virtual override {
         // Fork the desired network where UMA contracts are deployed
-        uint256 forkId = vm.createFork("https://odyssey.storyrpc.io/");
+        uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
-        // Odyssey testnet
-        newOOV3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
-        mockAncillary = 0x3baD7AD0728f9917d1Bf08af5782dCbD516cDd96;
-        susd = 0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5;
+        // Aeneid
+        newOOV3 = 0xABac6a158431edED06EE6cba37eDE8779F599eE4;
+        mockAncillary = 0xE71bf0858B0D1deC83a5068F5332ba5B7e8239Dd;
+        wip = 0x1514000000000000000000000000000000000000; // WIP address
 
         // deploy mock ip asset registry
         mockIpAssetRegistry = new MockIpAssetRegistry();
@@ -84,7 +84,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
                 abi.encodeCall(RoyaltyModule.initialize, (address(newAccessManager), uint256(15)))
             )
         );
-        newRoyaltyModule.whitelistRoyaltyToken(susd, true);
+        newRoyaltyModule.whitelistRoyaltyToken(wip, true);
 
         // deploy arbitration policy UMA
         address newArbitrationPolicyUMAImpl = address(
@@ -100,7 +100,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         // setup UMA parameters
         newArbitrationPolicyUMA.setOOV3(newOOV3);
         newArbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
-        newArbitrationPolicyUMA.setMaxBond(susd, 25000e18); // 25k USD max bond
+        newArbitrationPolicyUMA.setMaxBond(wip, 100e18);
 
         // whitelist dispute tag, arbitration policy and arbitration relayer
         newDisputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
@@ -110,7 +110,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         vm.label(newOOV3, "newOOV3");
         vm.label(mockAncillary, "mockAncillary");
-        vm.label(susd, "susd");
+        vm.label(wip, "wip");
         vm.label(address(newArbitrationPolicyUMA), "newArbitrationPolicyUMA");
         vm.label(address(newDisputeModule), "newDisputeModule");
     }
@@ -175,7 +175,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newArbitrationPolicyUMA.pause();
 
         uint64 liveness = 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -186,7 +186,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessBelowMin() public {
         uint64 liveness = 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -197,7 +197,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessAboveMax() public {
         uint64 liveness = 365 days + 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -208,11 +208,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_setMaxBond() public {
         vm.expectEmit(true, true, true, true);
-        emit MaxBondSet(susd, 1);
+        emit MaxBondSet(wip, 1);
 
-        newArbitrationPolicyUMA.setMaxBond(susd, 1);
+        newArbitrationPolicyUMA.setMaxBond(wip, 1);
 
-        assertEq(newArbitrationPolicyUMA.maxBonds(susd), 1);
+        assertEq(newArbitrationPolicyUMA.maxBonds(wip), 1);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_NotDisputeModule() public {
@@ -222,7 +222,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_BondAboveMax() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 25000e18 + 1;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -259,7 +259,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -278,16 +278,14 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_WithBond() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
 
         bytes memory data = abi.encode(liveness, currency, bond);
 
-        /* vm.expectEmit(true, true, true, true);
-        emit DisputeRaisedUMA(1, address(2), claim, liveness, address(currency), bond, identifier); */
-
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         uint256 raiserBalBefore = currency.balanceOf(address(2));
@@ -310,7 +308,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onDisputeCancel_revert_CannotCancel() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -323,7 +321,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_revert_AssertionNotExpired() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -344,7 +342,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDispute() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -373,7 +371,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDisputeWithBond() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -381,7 +379,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         address disputer = address(2);
 
         vm.startPrank(disputer);
-        MockERC20(susd).mint(disputer, bond);
+        vm.deal(disputer, bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -412,7 +411,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithDispute() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -451,7 +450,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_CannotDisputeAssertionTwice() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -475,7 +474,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_NoCounterEvidence() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -497,7 +496,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_DisputeNotFound() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -515,7 +514,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_OnlyTargetIpIdCanDispute() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -543,7 +542,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_IPA() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -584,7 +583,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_NotIPA() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -627,7 +626,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_WithBondAndIpTagged() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -636,7 +635,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // raise dispute
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -648,7 +648,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // dispute the assertion
         vm.startPrank(address(1));
-        MockERC20(susd).mint(address(1), bond);
+        vm.deal(address(1), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -689,7 +690,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_disputeAssertion_WithBondAndIpNotTagged() public {
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
         bytes memory data = abi.encode(liveness, currency, bond);
 
@@ -698,7 +699,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // raise dispute
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -710,7 +712,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // dispute the assertion
         vm.startPrank(address(1));
-        MockERC20(susd).mint(address(1), bond);
+        vm.deal(address(1), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -752,7 +755,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
     function test_ArbitrationPolicyUMA_disputeAssertion_WithIpOwnerTimePercentChange() public {
         // liveness set to 30 days
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
 
         bytes memory data = abi.encode(liveness, currency, bond);
@@ -799,4 +802,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
 interface AuxiliaryOOV3Interface {
     function stampAssertion(bytes32 assertionId) external view returns (bytes memory);
+}
+
+interface IWIP is IERC20 {
+    function deposit() external payable;
 }

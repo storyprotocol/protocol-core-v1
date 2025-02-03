@@ -186,4 +186,3 @@ You can refer to the [config.ts](https://github.com/OpenZeppelin/solidity-docgen
 ## Contact Us
 
 - [Join our Discord](https://discord.gg/storyprotocol)
-- [Contact Form](https://us12.list-manage.com/contact-form?u=31e9becc054689c22a9946af4&form_id=2745f1aa221b6ccc31aa51f1c5b44366)

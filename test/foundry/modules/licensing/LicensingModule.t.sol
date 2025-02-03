@@ -2475,7 +2475,7 @@ contract LicensingModuleTest is BaseTest {
         );
 
         vm.prank(ipOwner2);
-        licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).isSet, true);
         assertEq(licenseRegistry.getLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
@@ -2624,7 +2624,7 @@ contract LicensingModuleTest is BaseTest {
 
         licensingConfig.isSet = true;
         vm.prank(ipOwner2);
-        licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, true);
         assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).mintingFee, 0);
         assertEq(
@@ -2638,7 +2638,7 @@ contract LicensingModuleTest is BaseTest {
 
         licensingConfig.isSet = false;
         vm.prank(ipOwner2);
-        licensingModule.setLicensingConfig(ipId2, address(0), 0, licensingConfig);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId, licensingConfig);
         assertEq(licenseRegistry.getLicensingConfig(ipId2, address(pilTemplate), socialRemixTermsId).isSet, false);
     }
 
@@ -2702,14 +2702,10 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), 0, licensingConfig);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicensingModule__InvalidLicenseTermsId.selector,
-                address(0),
-                socialRemixTermsId
-            )
+            abi.encodeWithSelector(Errors.LicensingModule__InvalidLicenseTermsId.selector, address(pilTemplate), 0)
         );
         vm.prank(ipOwner1);
-        licensingModule.setLicensingConfig(ipId1, address(0), socialRemixTermsId, licensingConfig);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), 0, licensingConfig);
     }
 
     function test_LicensingModule_setLicensingConfig_revert_InvalidRoyaltyPercentConfig() public {
@@ -2732,10 +2728,6 @@ contract LicensingModuleTest is BaseTest {
         );
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(0x123), 1, licensingConfig);
-
-        vm.expectRevert(Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent.selector);
-        vm.prank(ipOwner1);
-        licensingModule.setLicensingConfig(ipId1, address(0), socialRemixTermsId, licensingConfig);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -3528,6 +3520,27 @@ contract LicensingModuleTest is BaseTest {
         );
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+    }
+
+    function test_LicensingModule_setLicensingConfig_revert_ZeroLicenseTemplate() public {
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.expectRevert(Errors.LicensingModule__ZeroLicenseTemplate.selector);
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(0), 0, licensingConfig);
+
+        vm.expectRevert(Errors.LicensingModule__ZeroLicenseTemplate.selector);
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(0), 1, licensingConfig);
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

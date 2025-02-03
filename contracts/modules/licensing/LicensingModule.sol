@@ -402,39 +402,37 @@ contract LicensingModule is
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) whenNotPaused {
-        if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
-            revert Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
+        if (licenseTemplate == address(0)) {
+            revert Errors.LicensingModule__ZeroLicenseTemplate();
         }
         if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
             _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         }
-        if (licenseTemplate != address(0)) {
-            ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-            if (licensingConfig.commercialRevShare != 0) {
-                if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
-                    revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
-                }
-                if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
-                    revert Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
-                        licenseTemplate,
-                        licenseTermsId,
-                        licensingConfig.commercialRevShare
-                    );
-                }
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
+        if (licensingConfig.commercialRevShare != 0) {
+            if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
+                revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
             }
-            (address royaltyPolicy, , uint256 defaultMintingFee, ) = lct.getRoyaltyPolicy(licenseTermsId);
-            if (licensingConfig.mintingFee < defaultMintingFee) {
-                revert Errors.LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
+            if (!lct.canOverrideRoyaltyPercent(licenseTermsId, licensingConfig.commercialRevShare)) {
+                revert Errors.LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
                     licenseTemplate,
                     licenseTermsId,
-                    licensingConfig.mintingFee,
-                    defaultMintingFee
+                    licensingConfig.commercialRevShare
                 );
             }
-            if (licensingConfig.mintingFee > 0) {
-                if (royaltyPolicy == address(0)) {
-                    revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
-                }
+        }
+        (address royaltyPolicy, , uint256 defaultMintingFee, ) = lct.getRoyaltyPolicy(licenseTermsId);
+        if (licensingConfig.mintingFee < defaultMintingFee) {
+            revert Errors.LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
+                licenseTemplate,
+                licenseTermsId,
+                licensingConfig.mintingFee,
+                defaultMintingFee
+            );
+        }
+        if (licensingConfig.mintingFee > 0) {
+            if (royaltyPolicy == address(0)) {
+                revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
             }
         }
         if (
@@ -444,9 +442,7 @@ contract LicensingModule is
         ) {
             revert Errors.LicensingModule__InvalidLicensingHook(licensingConfig.licensingHook);
         }
-        if (licenseTemplate == address(0) && licenseTermsId == 0) {
-            LICENSE_REGISTRY.setLicensingConfigForIp(ipId, licensingConfig);
-        } else if (licenseTemplate != address(0) && licenseTermsId != 0) {
+        if (licenseTemplate != address(0) && licenseTermsId != 0) {
             LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         } else {
             revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);

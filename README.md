@@ -185,4 +185,4 @@ You can refer to the [config.ts](https://github.com/OpenZeppelin/solidity-docgen
 
 ## Contact Us
 
-- [Join our Discord](https://discord.gg/storyprotocol)
+- [Join our Discord](https://discord.gg/storyprotocol) 

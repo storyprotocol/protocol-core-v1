@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { TransientSlot } from "@openzeppelin/contracts/utils/TransientSlot.sol";
 // solhint-disable-next-line max-line-length
 
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
@@ -30,6 +31,18 @@ import { Errors } from "../lib/Errors.sol";
 /// - checkPermission: Checks if a specific function call is allowed.
 contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUPSUpgradeable {
     using IPAccountChecker for IIPAssetRegistry;
+    using TransientSlot for *;
+
+    // solhint-disable-next-line max-line-length
+    // keccak256(abi.encode(uint256(keccak256("story-protocol.AccessController-TransientPermission")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant TRANSIENT_PERMISSION_SLOT =
+        0x55aa2c4cf058a8e32191027e4897f2eec4c890df0e178393ed5558115d936a00;
+
+    // the slot to store the transient permission flag, to indicate whether the transient permission is used
+    // when the flag is set to true, the transient permission will be used
+    // permanent permission will be ignored
+    bytes32 private constant TRANSIENT_FLAG_SLOT =
+        keccak256(abi.encodePacked(TRANSIENT_PERMISSION_SLOT, "TransientPermissionFlag"));
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IIPAssetRegistry public immutable IP_ASSET_REGISTRY;
@@ -88,6 +101,26 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         }
     }
 
+    /// @notice Sets a batch of transient permissions in a single transaction.
+    /// This functions similarly to setBatchPermissions, but the transient permission only applies
+    /// to the current transaction.
+    /// @dev This function allows setting multiple permissions at once. Pausable via setPermission.
+    /// @param permissions An array of `Permission` structs, each representing the permission to be set.
+    function setBatchTransientPermissions(AccessPermission.Permission[] memory permissions) external {
+        for (uint256 i = 0; i < permissions.length; ) {
+            setTransientPermission(
+                permissions[i].ipAccount,
+                permissions[i].signer,
+                permissions[i].to,
+                permissions[i].func,
+                permissions[i].permission
+            );
+            unchecked {
+                i += 1;
+            }
+        }
+    }
+
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
     /// address to a function selector to a permission level. The permission level can be 0 (ABSTAIN), 1 (ALLOW), or
@@ -112,7 +145,27 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (to == address(0) && func == bytes4(0)) {
             revert Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
         }
-        _setPermission(ipAccount, signer, to, func, permission);
+        _setPermission(ipAccount, signer, to, func, permission, false);
+    }
+
+    /// @notice Sets the transient permission for a specific function call.
+    /// This functions similarly to setPermission, but the transient permission only applies to the current transaction.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @param permission The new permission level
+    function setTransientPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func,
+        uint8 permission
+    ) public whenNotPaused {
+        if (to == address(0) && func == bytes4(0)) {
+            revert Errors.AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
+        }
+        _setPermission(ipAccount, signer, to, func, permission, true);
     }
 
     /// @notice Sets permission to a signer for all functions across all modules.
@@ -120,11 +173,22 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
     /// @param signer The address of the signer receiving the permissions.
     /// @param permission The new permission.
     function setAllPermissions(address ipAccount, address signer, uint8 permission) external whenNotPaused {
-        _setPermission(ipAccount, signer, address(0), bytes4(0), permission);
+        _setPermission(ipAccount, signer, address(0), bytes4(0), permission, false);
+    }
+
+    /// @notice Sets transient permission to a signer for all functions across all modules.
+    /// This functions similarly to setAllPermissions, but the transient permission only applies to the
+    /// current transaction.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`.
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param permission The new permission.
+    function setAllTransientPermissions(address ipAccount, address signer, uint8 permission) external whenNotPaused {
+        _setPermission(ipAccount, signer, address(0), bytes4(0), permission, true);
     }
 
     /// @notice Checks the permission level for a specific function call. Reverts if permission is not granted.
-    /// Otherwise, the function is a noop.
+    /// Otherwise, the function is a noop. If TransientPermission is used, the transient permission will be checked,
+    /// and permanent permission will be ignored.
     /// @dev This function checks the permission level for a specific function call.
     /// If a specific permission is set, it overrides the general (wildcard) permission.
     /// If the current level permission is ABSTAIN, the final permission is determined by the upper level.
@@ -150,8 +214,8 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (to != address(this) && !MODULE_REGISTRY.isRegistered(to) && !MODULE_REGISTRY.isRegistered(signer)) {
             revert Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule(signer, to);
         }
-
-        uint functionPermission = getPermission(ipAccount, signer, to, func);
+        bool isTransient = _usingTransientPermission();
+        uint functionPermission = _getPermission(ipAccount, signer, to, func, isTransient);
         // Specific function permission overrides wildcard/general permission
         if (functionPermission == AccessPermission.ALLOW) {
             return;
@@ -161,7 +225,7 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
             revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
         }
         // Function permission is ABSTAIN, check module level permission
-        uint8 modulePermission = getPermission(ipAccount, signer, to, bytes4(0));
+        uint8 modulePermission = _getPermission(ipAccount, signer, to, bytes4(0), isTransient);
         // Return true if allow to call all functions of the module
         if (modulePermission == AccessPermission.ALLOW) {
             return;
@@ -173,25 +237,67 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         // Module level permission is ABSTAIN, check transaction signer level permission
         // Pass if the ipAccount allow the signer to call all functions of all modules
         // Otherwise, revert
-        if (getPermission(ipAccount, signer, address(0), bytes4(0)) != AccessPermission.ALLOW) {
+        if (_getPermission(ipAccount, signer, address(0), bytes4(0), isTransient) != AccessPermission.ALLOW) {
             revert Errors.AccessController__PermissionDenied(ipAccount, signer, to, func);
         }
         // If the transaction signer is allowed to call all functions of all modules, return
     }
 
-    /// @notice Returns the permission level for a specific function call.
+    /// @notice Returns the permission level for a specific function call. if TransientPermission is used,
+    /// the transient permission will be returned, and permanent permission will be ignored.
     /// @param ipAccount The address of the IP account that grants the permission for `signer`
     /// @param signer The address that can call `to` on behalf of the `ipAccount`
     /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @return permission The current permission level for the function call on `to` by the `signer` for `ipAccount`
     function getPermission(address ipAccount, address signer, address to, bytes4 func) public view returns (uint8) {
-        AccessControllerStorage storage $ = _getAccessControllerStorage();
-        return $.encodedPermissions[_encodePermission(ipAccount, signer, to, func)];
+        if (_usingTransientPermission()) {
+            return _getPermission(ipAccount, signer, to, func, true);
+        }
+        return _getPermission(ipAccount, signer, to, func, false);
+    }
+
+    /// @notice Returns the permanent permission level for a specific function call.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address that can call `to` on behalf of the `ipAccount`
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @return permission The current permanent permission level for the function call on `to` by the `signer`
+    /// for `ipAccount`
+    function getPermanentPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func
+    ) external view returns (uint8) {
+        return _getPermission(ipAccount, signer, to, func, false);
+    }
+
+    /// @notice Returns the transient permission level for a specific function call.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address that can call `to` on behalf of the `ipAccount`
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @return permission The current transient permission level for the function call on `to` by the `signer`
+    /// for `ipAccount`
+    function getTransientPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func
+    ) external view returns (uint8) {
+        return _getPermission(ipAccount, signer, to, func, true);
     }
 
     /// @dev The permission parameters will be encoded into bytes32 as key in the permissions mapping to save storage
-    function _setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) internal {
+    function _setPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func,
+        uint8 permission,
+        bool isTransient
+    ) internal {
         // IPAccount and signer does not support wildcard permission
         if (ipAccount == address(0)) {
             revert Errors.AccessController__IPAccountIsZeroAddress();
@@ -210,9 +316,28 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (ipAccount != msg.sender && IIPAccount(payable(ipAccount)).owner() != msg.sender) {
             revert Errors.AccessController__CallerIsNotIPAccountOrOwner();
         }
-        $.encodedPermissions[_encodePermission(ipAccount, signer, to, func)] = permission;
+        if (isTransient) {
+            TRANSIENT_FLAG_SLOT.asBoolean().tstore(true);
+            bytes32 transientPermissionSlot = keccak256(
+                abi.encodePacked(TRANSIENT_PERMISSION_SLOT, _encodePermission(ipAccount, signer, to, func))
+            );
+            transientPermissionSlot.asUint256().tstore(uint256(permission));
+            emit TransientPermissionSet(
+                IIPAccount(payable(ipAccount)).owner(),
+                ipAccount,
+                signer,
+                to,
+                func,
+                permission
+            );
+        } else {
+            $.encodedPermissions[_encodePermission(ipAccount, signer, to, func)] = permission;
+            emit PermissionSet(IIPAccount(payable(ipAccount)).owner(), ipAccount, signer, to, func, permission);
+        }
+    }
 
-        emit PermissionSet(IIPAccount(payable(ipAccount)).owner(), ipAccount, signer, to, func, permission);
+    function _setTransientPermissionFlag() internal {
+        TRANSIENT_FLAG_SLOT.asBoolean().tstore(true);
     }
 
     /// @dev encode permission to hash (bytes32)
@@ -223,6 +348,31 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         bytes4 func
     ) internal view returns (bytes32) {
         return keccak256(abi.encode(IIPAccount(payable(ipAccount)).owner(), ipAccount, signer, to, func));
+    }
+
+    /// @dev Returns true if the transient permission is used
+    function _usingTransientPermission() internal view returns (bool) {
+        return TRANSIENT_FLAG_SLOT.asBoolean().tload();
+    }
+
+    /// @dev Returns the permission level for a specific function call.
+    /// It returns transient permission if `isTransient` is true. Otherwise, it returns the permanent permission.
+    function _getPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func,
+        bool isTransient
+    ) internal view returns (uint8) {
+        bytes32 encodedPermissionKey = _encodePermission(ipAccount, signer, to, func);
+        if (isTransient) {
+            bytes32 transientPermissionSlot = keccak256(
+                abi.encodePacked(TRANSIENT_PERMISSION_SLOT, encodedPermissionKey)
+            );
+            uint256 permission = transientPermissionSlot.asUint256().tload();
+            return uint8(permission);
+        }
+        return _getAccessControllerStorage().encodedPermissions[encodedPermissionKey];
     }
 
     /// @dev Returns the storage struct of AccessController.

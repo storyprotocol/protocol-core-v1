@@ -849,9 +849,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // register creative commons attribution
         pilTemplate.registerLicenseTerms(PILFlavors.creativeCommonsAttribution());
 
-        // register default values PIL terms
-        pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-
         // add evenSplitGroupPool to whitelist of group pools
         groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
     }

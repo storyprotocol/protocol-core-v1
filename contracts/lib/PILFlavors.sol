@@ -129,7 +129,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -153,7 +153,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -181,7 +181,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -210,7 +210,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -233,7 +233,7 @@ library PILFlavors {
             derivativesReciprocal: true,
             derivativeRevCeiling: 0,
             currency: address(0),
-            uri: "https://ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
+            uri: "https://ipfs.io/ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
         });
     }
 }

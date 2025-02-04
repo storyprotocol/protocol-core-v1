@@ -160,32 +160,6 @@ contract LicenseRegistryTest is BaseTest {
         licenseRegistry.setLicensingConfigForLicense(ipAcct[1], address(pilTemplate2), termsId, mintingLicenseConfig);
     }
 
-    function test_LicenseRegistry_setLicensingConfigForIp() public {
-        uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        Licensing.LicensingConfig memory mintingLicenseConfig = Licensing.LicensingConfig({
-            isSet: true,
-            mintingFee: 100,
-            licensingHook: address(0),
-            hookData: "",
-            commercialRevShare: 0,
-            disabled: false,
-            expectMinimumGroupRewardShare: 0,
-            expectGroupRewardPool: address(0)
-        });
-
-        vm.prank(address(licensingModule));
-        licenseRegistry.setLicensingConfigForIp(ipAcct[1], mintingLicenseConfig);
-
-        Licensing.LicensingConfig memory returnedLicensingConfig = licenseRegistry.getLicensingConfig(
-            ipAcct[1],
-            address(pilTemplate),
-            defaultTermsId
-        );
-        assertEq(returnedLicensingConfig.mintingFee, 100);
-        assertEq(returnedLicensingConfig.licensingHook, address(0));
-        assertEq(returnedLicensingConfig.hookData, "");
-    }
-
     // test attachLicenseTermsToIp
     function test_LicenseRegistry_attachLicenseTermsToIp_revert_CannotAttachToDerivativeIP() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());

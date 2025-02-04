@@ -481,9 +481,6 @@ library Errors {
     /// @notice license terms disabled.
     error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
-    /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
-    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
-
     /// @notice Current License does not allow to override royalty percentage.
     error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
         address licenseTemplate,
@@ -544,6 +541,9 @@ library Errors {
         uint256 licensingConfigMintingFee,
         uint256 licenseTermsMintingFee
     );
+
+    /// @notice When setting licensing config, the license template cannot be zero address.
+    error LicensingModule__ZeroLicenseTemplate();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //

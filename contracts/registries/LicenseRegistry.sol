@@ -59,8 +59,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplates Mapping of license templates to IP IDs
     /// @param expireTimes Mapping of IP IDs to expire times
     /// @param licensingConfigs Mapping of minting license configs to a licenseTerms of an IP
-    /// @param licensingConfigsForIp Mapping of minting license configs to an IP,
-    /// the config will apply to all licenses under the IP
     /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
@@ -73,7 +71,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
         mapping(bytes32 ipLicenseHash => Licensing.LicensingConfig licensingConfig) licensingConfigs;
-        mapping(address ipId => Licensing.LicensingConfig licensingConfig) licensingConfigsForIp;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -166,29 +163,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         });
 
         emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
-    }
-
-    /// @notice Sets the LicensingConfig for an IP and applies it to all licenses attached to the IP.
-    /// @dev This function will set a global configuration for all licenses under a specific IP.
-    /// However, this global configuration can be overridden by a configuration set at a specific license level.
-    /// @param ipId The IP ID for which the configuration is being set.
-    /// @param licensingConfig The LicensingConfig to be set for all licenses under the given IP.
-    function setLicensingConfigForIp(
-        address ipId,
-        Licensing.LicensingConfig calldata licensingConfig
-    ) external onlyLicensingModule {
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.licensingConfigsForIp[ipId] = Licensing.LicensingConfig({
-            isSet: licensingConfig.isSet,
-            mintingFee: licensingConfig.mintingFee,
-            licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData,
-            commercialRevShare: licensingConfig.commercialRevShare,
-            disabled: licensingConfig.disabled,
-            expectMinimumGroupRewardShare: licensingConfig.expectMinimumGroupRewardShare,
-            expectGroupRewardPool: licensingConfig.expectGroupRewardPool
-        });
-        emit LicensingConfigSetForIP(ipId, licensingConfig);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -779,7 +753,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @dev Retrieves the minting license configuration for a given license terms of the IP.
-    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
     /// @param ipId The address of the IP.
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
@@ -795,7 +768,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if ($.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
             return $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
         }
-        return $.licensingConfigsForIp[ipId];
+        return
+            Licensing.LicensingConfig({
+                isSet: false,
+                mintingFee: 0,
+                licensingHook: address(0),
+                hookData: "",
+                commercialRevShare: 0,
+                disabled: false,
+                expectMinimumGroupRewardShare: 0,
+                expectGroupRewardPool: address(0)
+            });
     }
 
     /// @dev Get the hash of the IP ID, license template, and license terms ID

@@ -1679,4 +1679,191 @@ contract AccessControllerTest is BaseTest {
             )
         );
     }
+    // transient permission can be set and check properly
+    function test_AccessController_transientPermission() public {
+        address signer = vm.addr(2);
+        vm.prank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setTransientPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                bytes4(0),
+                AccessPermission.ALLOW
+            )
+        );
+        assertEq(
+            accessController.getPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.ALLOW
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.ABSTAIN
+        );
+
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+
+        vm.prank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setTransientPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector,
+                AccessPermission.DENY
+            )
+        );
+        assertEq(
+            accessController.getPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.ALLOW
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.DENY
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
+        );
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+    }
+
+    // transient permission can override persistent permission
+    function test_AccessController_transientPermissionOverridePersistentPermission() public {
+        address signer = vm.addr(2);
+        vm.startPrank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                bytes4(0),
+                AccessPermission.DENY
+            )
+        );
+        assertEq(
+            accessController.getPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.DENY
+        );
+
+        assertEq(
+            accessController.getPermanentPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.DENY
+        );
+
+        assertEq(
+            accessController.getTransientPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.ABSTAIN
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.ABSTAIN
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            )
+        );
+
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+        vm.stopPrank();
+
+        vm.startPrank(owner);
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setTransientPermission(address,address,address,bytes4,uint8)",
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                bytes4(0),
+                AccessPermission.ALLOW
+            )
+        );
+        assertEq(
+            accessController.getPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.ALLOW
+        );
+
+        assertEq(
+            accessController.getPermanentPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.DENY
+        );
+
+        assertEq(
+            accessController.getTransientPermission(address(ipAccount), signer, address(mockModule), bytes4(0)),
+            AccessPermission.ALLOW
+        );
+
+        assertEq(
+            accessController.getPermission(
+                address(ipAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector
+            ),
+            AccessPermission.ABSTAIN
+        );
+
+        accessController.checkPermission(
+            address(ipAccount),
+            signer,
+            address(mockModule),
+            mockModule.executeSuccessfully.selector
+        );
+        vm.stopPrank();
+    }
 }

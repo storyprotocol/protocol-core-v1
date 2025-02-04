@@ -336,10 +336,6 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         }
     }
 
-    function _setTransientPermissionFlag() internal {
-        TRANSIENT_FLAG_SLOT.asBoolean().tstore(true);
-    }
-
     /// @dev encode permission to hash (bytes32)
     function _encodePermission(
         address ipAccount,

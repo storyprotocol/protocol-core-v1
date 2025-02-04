@@ -1054,5 +1054,5 @@ library Errors {
     error EvenSplitGroupPool__DepositWithZeroTokenAddress(address groupId);
 
     /// @notice The maximum group size has been reached.
-    error EvenSplitGroupPool__MaxGroupSizeReached(address groupId, uint256 maxGroupSize);
+    error EvenSplitGroupPool__MaxGroupSizeReached(address groupId, uint32 groupSize, uint256 maxGroupSize);
 }

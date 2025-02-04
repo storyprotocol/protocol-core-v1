@@ -102,7 +102,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         $.ipAddedTime[groupId][ipId] = block.timestamp;
         groupInfo.totalMembers += 1;
         if (groupInfo.totalMembers > MAX_GROUP_SIZE) {
-            revert Errors.EvenSplitGroupPool__MaxGroupSizeReached(groupInfo.totalMembers, MAX_GROUP_SIZE);
+            revert Errors.EvenSplitGroupPool__MaxGroupSizeReached(groupId, groupInfo.totalMembers, MAX_GROUP_SIZE);
         }
         if (minimumGroupRewardShare > 0) {
             $.minimumRewardShare[groupId][ipId] = minimumGroupRewardShare;

@@ -765,7 +765,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        return $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
+        if ($.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
+            return $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
+        }
+        return Licensing.LicensingConfig({
+            isSet: false,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
     }
 
     /// @dev Get the hash of the IP ID, license template, and license terms ID

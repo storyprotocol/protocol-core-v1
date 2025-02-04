@@ -2794,7 +2794,7 @@ contract LicensingModuleTest is BaseTest {
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(licensingHook))
         );
         vm.prank(ipOwner1);
-        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), 0, licensingConfig);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
 
         // unsupport licensing hook interface
         MockTokenGatedHook tokenGatedHook = new MockTokenGatedHook();
@@ -2815,7 +2815,7 @@ contract LicensingModuleTest is BaseTest {
             abi.encodeWithSelector(Errors.LicensingModule__InvalidLicensingHook.selector, address(tokenGatedHook))
         );
         vm.prank(ipOwner1);
-        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), 0, licensingConfig);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), socialRemixTermsId, licensingConfig);
     }
 
     function test_LicensingModule_setLicensingConfig_revert_paused() public {

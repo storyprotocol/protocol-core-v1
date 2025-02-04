@@ -405,6 +405,9 @@ contract LicensingModule is
         if (licenseTemplate == address(0)) {
             revert Errors.LicensingModule__ZeroLicenseTemplate();
         }
+        if (licenseTermsId == 0) {
+            revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
+        }
         if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
             _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         }
@@ -442,11 +445,7 @@ contract LicensingModule is
         ) {
             revert Errors.LicensingModule__InvalidLicensingHook(licensingConfig.licensingHook);
         }
-        if (licenseTemplate != address(0) && licenseTermsId != 0) {
-            LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
-        } else {
-            revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
-        }
+        LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
     }
 
     /// @notice pre-compute the minting license fee for the given IP and license terms.

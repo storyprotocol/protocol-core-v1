@@ -333,6 +333,8 @@ contract ArbitrationPolicyUMA is
                 BytesConversion.toUtf8Bytes(targetTag),
                 " given the evidence hash ",
                 BytesConversion.toUtf8Bytes(disputeEvidenceHash),
+                // solhint-disable-next-line max-line-length
+                ". This dispute is original and not a duplicate of a previous dispute that has been raised against the same IP.",
                 '"}'
             );
     }

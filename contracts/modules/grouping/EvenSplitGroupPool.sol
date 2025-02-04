@@ -26,7 +26,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
 
-    uint32 public constant MAX_GROUP_SIZE = 1_000_000_000;
+    uint32 public constant MAX_GROUP_SIZE = 1_000;
 
     /// @dev Storage structure for the GroupInfo
     /// As a group can only attach one non-default license to it, the reward token is defined by the license terms
@@ -101,6 +101,9 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         if (_isIpAdded(groupId, ipId)) return groupInfo.averageRewardShare * $.groupInfo[groupId].totalMembers;
         $.ipAddedTime[groupId][ipId] = block.timestamp;
         groupInfo.totalMembers += 1;
+        if (groupInfo.totalMembers > MAX_GROUP_SIZE) {
+            revert Errors.EvenSplitGroupPool__MaxGroupSizeReached(groupInfo.totalMembers, MAX_GROUP_SIZE);
+        }
         if (minimumGroupRewardShare > 0) {
             $.minimumRewardShare[groupId][ipId] = minimumGroupRewardShare;
             groupInfo.averageRewardShare = Math.max(groupInfo.averageRewardShare, minimumGroupRewardShare);

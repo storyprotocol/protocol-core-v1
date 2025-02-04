@@ -16,6 +16,8 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    uint256 public constant MAX_GROUP_SIZE = 1000;
+
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupingModule public immutable GROUPING_MODULE;
 
@@ -94,6 +96,9 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         for (uint256 i = 0; i < ipIds.length; i++) {
             if (!_isRegistered(ipIds[i])) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipIds[i]);
             allMemberIpIds.add(ipIds[i]);
+        }
+        if (allMemberIpIds.length() > MAX_GROUP_SIZE) {
+            revert Errors.GroupIPAssetRegistry__GroupSizeExceedsLimit(allMemberIpIds.length(), MAX_GROUP_SIZE);
         }
     }
 

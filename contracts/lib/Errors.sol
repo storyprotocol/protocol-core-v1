@@ -114,6 +114,9 @@ library Errors {
     /// @notice Group Pool is not registered.
     error GroupIPAssetRegistry__GroupRewardPoolNotRegistered(address groupPool);
 
+    /// @notice The group size exceeds the limit.
+    error GroupIPAssetRegistry__GroupSizeExceedsLimit(uint256 groupSize, uint256 limit);
+
     /// @notice The group ip has derivative IPs.
     error GroupingModule__GroupFrozenDueToHasDerivativeIps(address groupId);
 
@@ -1049,4 +1052,7 @@ library Errors {
 
     /// @notice Deposit token into pool but the token address is zero.
     error EvenSplitGroupPool__DepositWithZeroTokenAddress(address groupId);
+
+    /// @notice The maximum group size has been reached.
+    error EvenSplitGroupPool__MaxGroupSizeReached(address groupId, uint256 maxGroupSize);
 }

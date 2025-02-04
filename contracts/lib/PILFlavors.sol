@@ -96,6 +96,19 @@ library PILFlavors {
             );
     }
 
+    /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
+    function creativeCommonsAttribution() internal pure returns (PILTerms memory) {
+        return _creativeCommonsAttributionPIL();
+    }
+
+    /// @notice Helper method to get the licenseTermsId for the creativeCommonsAttribution() configuration
+    /// @param pilTemplate The address of the PILicenseTemplate
+    /// @return The licenseTermsId for the creativeCommonsAttribution() configuration, 0 if not registered
+    function getCreativeCommonsAttributionId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_creativeCommonsAttributionPIL());
+    }
+
     /// @notice Gets the default values of PIL terms
     function _defaultPIL() private pure returns (PILTerms memory) {
         return
@@ -116,7 +129,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: ""
+                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -140,7 +153,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: ""
+                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -168,7 +181,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: ""
+                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
     }
 
@@ -197,7 +210,30 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: ""
+                uri: "https://ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
             });
+    }
+
+    /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
+    function _creativeCommonsAttributionPIL() private pure returns (PILTerms memory) {
+        PILTerms({
+            transferable: true,
+            royaltyPolicy: address(0),
+            defaultMintingFee: 0,
+            expiration: 0,
+            commercialUse: true,
+            commercialAttribution: true,
+            commercializerChecker: address(0),
+            commercializerCheckerData: EMPTY_BYTES,
+            commercialRevShare: 0,
+            commercialRevCeiling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: true,
+            derivativeRevCeiling: 0,
+            currency: address(0),
+            uri: "https://ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
+        });
     }
 }

@@ -72,14 +72,14 @@ contract LicensingIntegrationTest is BaseIntegration {
         uint256 lcId2 = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
         );
-        assertEq(lcId2, 4);
+        assertEq(lcId2, 3);
         assertEq(
             pilTemplate.getLicenseTermsId(
                 PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
             ),
-            4
+            3
         );
-        assertTrue(pilTemplate.exists(4));
+        assertTrue(pilTemplate.exists(3));
 
         assertTrue(pilTemplate.exists(lcId2));
 

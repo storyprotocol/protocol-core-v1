@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+/*solhint-disable max-line-length*/
 import { IPILicenseTemplate, PILTerms } from "../interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 /// @title PILFlavors Library
@@ -129,7 +130,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://github.com/piplabs/pil-document/blob/ad67bb632a310d2557f8abcccd428e4c9c798db1/off-chain-terms/Default.json"
             });
     }
 
@@ -153,7 +154,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/NCSR.json"
             });
     }
 
@@ -181,7 +182,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://github.com/piplabs/pil-document/blob/9a1f803fcf8101a8a78f1dcc929e6014e144ab56/off-chain-terms/CommercialUse.json"
             });
     }
 
@@ -210,7 +211,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: "https://ipfs.io/ipfs/bafkreicixfagqyltznmzvy2t65hpm3fskocnsuddojb7qxbabigsqf4ery"
+                uri: "https://github.com/piplabs/pil-document/blob/ad67bb632a310d2557f8abcccd428e4c9c798db1/off-chain-terms/CommercialRemix.json"
             });
     }
 
@@ -233,7 +234,7 @@ library PILFlavors {
             derivativesReciprocal: true,
             derivativeRevCeiling: 0,
             currency: address(0),
-            uri: "https://ipfs.io/ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
+            uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/CC-BY.json"
         });
     }
 }

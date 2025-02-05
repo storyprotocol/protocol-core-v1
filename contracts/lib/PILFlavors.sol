@@ -216,24 +216,25 @@ library PILFlavors {
 
     /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
     function _creativeCommonsAttributionPIL() private pure returns (PILTerms memory) {
-        PILTerms({
-            transferable: true,
-            royaltyPolicy: address(0),
-            defaultMintingFee: 0,
-            expiration: 0,
-            commercialUse: true,
-            commercialAttribution: true,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: 0,
-            commercialRevCeiling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: true,
-            derivativeRevCeiling: 0,
-            currency: address(0),
-            uri: "https://ipfs.io/ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
-        });
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: "https://ipfs.io/ipfs/bafkreiaafyws65engc2jotfuyuwfmbpaze5h22cnkw2ewvv3r3cjfzbfnu"
+            });
     }
 }

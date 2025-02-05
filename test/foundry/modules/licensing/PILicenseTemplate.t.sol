@@ -60,7 +60,7 @@ contract PILicenseTemplateTest is BaseTest {
     }
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
-    function test_PILicenseTemplate_registerLicenseTerms() public {
+    function test_PILicenseTemplate_registerLicenseTerms__() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(socialRemixTermsId, 1);
         (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
@@ -75,14 +75,14 @@ contract PILicenseTemplateTest is BaseTest {
         assertTrue(pilTemplate.exists(socialRemixTermsId), "license terms should exist");
 
         uint256 defaultTermsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
-        assertEq(defaultTermsId, 3);
+        assertEq(defaultTermsId, 2);
         (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(defaultTermsId);
         assertEq(royaltyPolicy, address(0), "royaltyPolicy should be address(0)");
         assertEq(royaltyPercent, 0, "royaltyPercent should be empty");
         assertEq(mintingFee, 0, "mintingFee should be 0");
         assertEq(currency, address(0), "currency should be address(0)");
         assertTrue(pilTemplate.isLicenseTransferable(defaultTermsId), "license should be transferable");
-        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.defaultValuesLicenseTerms()), 3);
+        assertEq(pilTemplate.getLicenseTermsId(PILFlavors.defaultValuesLicenseTerms()), 2);
         assertEq(pilTemplate.getExpireTime(defaultTermsId, block.timestamp), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(defaultTermsId), "license terms should exist");
 
@@ -93,7 +93,7 @@ contract PILicenseTemplateTest is BaseTest {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
-        assertEq(commUseTermsId, 4);
+        assertEq(commUseTermsId, 3);
         (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commUseTermsId);
         assertEq(royaltyPolicy, address(royaltyPolicyLAP));
         assertEq(royaltyPercent, 0);
@@ -102,10 +102,10 @@ contract PILicenseTemplateTest is BaseTest {
         assertTrue(pilTemplate.isLicenseTransferable(commUseTermsId));
         assertEq(
             pilTemplate.getLicenseTermsId(PILFlavors.commercialUse(100, address(erc20), address(royaltyPolicyLAP))),
-            4
+            3
         );
         assertEq(pilTemplate.getExpireTime(commUseTermsId, block.timestamp), 0, "expire time should be 0");
-        assertEq(pilTemplate.totalRegisteredLicenseTerms(), 4);
+        assertEq(pilTemplate.totalRegisteredLicenseTerms(), 3);
 
         uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
@@ -115,7 +115,7 @@ contract PILicenseTemplateTest is BaseTest {
                 currencyToken: address(erc20)
             })
         );
-        assertEq(commRemixTermsId, 5);
+        assertEq(commRemixTermsId, 4);
         (royaltyPolicy, royaltyPercent, mintingFee, currency) = pilTemplate.getRoyaltyPolicy(commRemixTermsId);
         assertEq(royaltyPolicy, address(royaltyPolicyLAP));
         assertEq(royaltyPercent, 10);
@@ -126,12 +126,12 @@ contract PILicenseTemplateTest is BaseTest {
             pilTemplate.getLicenseTermsId(
                 PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
             ),
-            5
+            4
         );
         assertEq(pilTemplate.getExpireTime(commRemixTermsId, block.timestamp), 0, "expire time should be 0");
         assertTrue(pilTemplate.exists(commRemixTermsId), "license terms should exist");
 
-        assertEq(pilTemplate.totalRegisteredLicenseTerms(), 5);
+        assertEq(pilTemplate.totalRegisteredLicenseTerms(), 4);
 
         uint256[] memory licenseTermsIds = new uint256[](4);
         licenseTermsIds[0] = defaultTermsId;

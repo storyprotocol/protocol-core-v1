@@ -98,16 +98,27 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @param currencyToken The token to be used to pay the minting fee
     /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
-    function creativeCommonsAttribution() internal pure returns (PILTerms memory) {
-        return _creativeCommonsAttributionPIL();
+    function creativeCommonsAttribution(
+        address royaltyPolicy,
+        address currencyToken
+    ) internal pure returns (PILTerms memory) {
+        return _creativeCommonsAttributionPIL(royaltyPolicy, currencyToken);
     }
 
     /// @notice Helper method to get the licenseTermsId for the creativeCommonsAttribution() configuration
     /// @param pilTemplate The address of the PILicenseTemplate
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @param currencyToken The token to be used to pay the minting fee
     /// @return The licenseTermsId for the creativeCommonsAttribution() configuration, 0 if not registered
-    function getCreativeCommonsAttributionId(IPILicenseTemplate pilTemplate) internal view returns (uint256) {
-        return pilTemplate.getLicenseTermsId(_creativeCommonsAttributionPIL());
+    function getCreativeCommonsAttributionId(
+        IPILicenseTemplate pilTemplate,
+        address royaltyPolicy,
+        address currencyToken
+    ) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_creativeCommonsAttributionPIL(royaltyPolicy, currencyToken));
     }
 
     /// @notice Gets the default values of PIL terms
@@ -216,25 +227,29 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
-    function _creativeCommonsAttributionPIL() private pure returns (PILTerms memory) {
-        PILTerms({
-            transferable: true,
-            royaltyPolicy: address(0),
-            defaultMintingFee: 0,
-            expiration: 0,
-            commercialUse: true,
-            commercialAttribution: true,
-            commercializerChecker: address(0),
-            commercializerCheckerData: EMPTY_BYTES,
-            commercialRevShare: 0,
-            commercialRevCeiling: 0,
-            derivativesAllowed: true,
-            derivativesAttribution: true,
-            derivativesApproval: false,
-            derivativesReciprocal: true,
-            derivativeRevCeiling: 0,
-            currency: address(0),
-            uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/CC-BY.json"
-        });
+    function _creativeCommonsAttributionPIL(
+        address royaltyPolicy,
+        address currencyToken
+    ) private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: currencyToken,
+                uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/CC-BY.json"
+            });
     }
 }

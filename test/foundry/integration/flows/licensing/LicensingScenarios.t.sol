@@ -77,9 +77,12 @@ contract Licensing_Scenarios is BaseIntegration {
 
         uint256 ccByTermsId = registerSelectedPILicenseTerms(
             "creative_commons_attribution",
-            PILFlavors.creativeCommonsAttribution()
+            PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(USDC))
         );
-        assertEq(ccByTermsId, PILFlavors.getCreativeCommonsAttributionId(pilTemplate));
+        assertEq(
+            ccByTermsId,
+            PILFlavors.getCreativeCommonsAttributionId(pilTemplate, address(royaltyPolicyLAP), address(USDC))
+        );
     }
 
     // solhint-disable-next-line max-line-length

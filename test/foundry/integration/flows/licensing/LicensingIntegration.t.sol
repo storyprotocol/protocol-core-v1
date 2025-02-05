@@ -72,16 +72,28 @@ contract LicensingIntegrationTest is BaseIntegration {
         uint256 lcId2 = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
         );
-        assertEq(lcId2, 3);
+        assertEq(lcId2, 2);
         assertEq(
             pilTemplate.getLicenseTermsId(
                 PILFlavors.commercialRemix(100, 10, address(royaltyPolicyLAP), address(erc20))
             ),
+            2
+        );
+
+        uint256 lcId3 = pilTemplate.registerLicenseTerms(
+            PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20))
+        );
+        assertEq(lcId3, 3);
+        assertEq(
+            pilTemplate.getLicenseTermsId(
+                PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20))
+            ),
             3
         );
-        assertTrue(pilTemplate.exists(3));
 
+        assertTrue(pilTemplate.exists(lcId1));
         assertTrue(pilTemplate.exists(lcId2));
+        assertTrue(pilTemplate.exists(lcId3));
 
         // attach licenses
         vm.startPrank(u.alice);
@@ -103,6 +115,11 @@ contract LicensingIntegrationTest is BaseIntegration {
         assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), lcId2), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 2);
 
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), lcId3);
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), lcId3), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 3);
+
         (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
         assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, lcId1);
@@ -110,6 +127,10 @@ contract LicensingIntegrationTest is BaseIntegration {
         (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 1);
         assertEq(attachedTemplate, address(pilTemplate));
         assertEq(attachedId, lcId2);
+
+        (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 2);
+        assertEq(attachedTemplate, address(pilTemplate));
+        assertEq(attachedId, lcId3);
         vm.stopPrank();
 
         // register derivative directly

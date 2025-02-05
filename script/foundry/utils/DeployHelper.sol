@@ -846,9 +846,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         uint256 nonCommercialSocialRemixingTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), nonCommercialSocialRemixingTermsId);
 
-        // register creative commons attribution
-        pilTemplate.registerLicenseTerms(PILFlavors.creativeCommonsAttribution());
-
         // add evenSplitGroupPool to whitelist of group pools
         groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
     }

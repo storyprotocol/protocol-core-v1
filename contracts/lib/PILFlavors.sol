@@ -101,7 +101,10 @@ library PILFlavors {
     /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
     /// @param currencyToken The token to be used to pay the minting fee
     /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
-    function creativeCommonsAttribution(address royaltyPolicy, address currencyToken) internal pure returns (PILTerms memory) {
+    function creativeCommonsAttribution(
+        address royaltyPolicy,
+        address currencyToken
+    ) internal pure returns (PILTerms memory) {
         return _creativeCommonsAttributionPIL(royaltyPolicy, currencyToken);
     }
 
@@ -224,9 +227,12 @@ library PILFlavors {
     }
 
     /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
-    function _creativeCommonsAttributionPIL(address royaltyPolicy, address currencyToken) private pure returns (PILTerms memory) {
+    function _creativeCommonsAttributionPIL(
+        address royaltyPolicy,
+        address currencyToken
+    ) private pure returns (PILTerms memory) {
         return
-          PILTerms({
+            PILTerms({
                 transferable: true,
                 royaltyPolicy: royaltyPolicy,
                 defaultMintingFee: 0,
@@ -244,6 +250,6 @@ library PILFlavors {
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
                 uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/CC-BY.json"
-          });
+            });
     }
 }

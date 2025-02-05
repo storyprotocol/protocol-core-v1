@@ -80,7 +80,9 @@ contract LicensingIntegrationTest is BaseIntegration {
             2
         );
 
-        uint256 lcId3 = pilTemplate.registerLicenseTerms(PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20)));
+        uint256 lcId3 = pilTemplate.registerLicenseTerms(
+            PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20))
+        );
         assertEq(lcId3, 3);
         assertEq(
             pilTemplate.getLicenseTermsId(

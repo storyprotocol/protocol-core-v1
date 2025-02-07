@@ -764,7 +764,7 @@ contract LicensingModule is
             licensingConfig.licensingHook != address(0) &&
             mintingFeeByHook < royaltyInfo.mintingFeeByLicense * amount
         ) {
-            uint256 mintingFeePerTokenByHook = mintingFeeByHook < amount ? 0 : mintingFeeByHook / amount;
+            uint256 mintingFeePerTokenByHook = amount == 0 ? mintingFeeByHook : mintingFeeByHook / amount;
             revert Errors.LicensingModule__LicensingHookMintingFeeBelowLicenseTerms(
                 mintingFeePerTokenByHook,
                 royaltyInfo.mintingFeeByLicense

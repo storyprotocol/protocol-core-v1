@@ -759,6 +759,18 @@ contract LicensingModule is
         uint256 mintingFeeByHook
     ) private returns (address royaltyPolicy, uint32 royaltyPercent, uint256 tmf) {
         RoyaltyPolicyInfo memory royaltyInfo = _getRoyaltyPolicyInfo(licenseTemplate, licenseTermsId);
+        if (
+            licensingConfig.isSet &&
+            licensingConfig.licensingHook != address(0) &&
+            mintingFeeByHook < royaltyInfo.mintingFeeByLicense * amount
+        ) {
+            uint256 mintingFeePerTokenByHook = amount == 0 ? mintingFeeByHook : mintingFeeByHook / amount;
+            revert Errors.LicensingModule__LicensingHookMintingFeeBelowLicenseTerms(
+                mintingFeePerTokenByHook,
+                royaltyInfo.mintingFeeByLicense
+            );
+        }
+
         royaltyPolicy = royaltyInfo.royaltyPolicy;
         royaltyPercent = royaltyInfo.royaltyPercent;
         // override royalty percent if it is set in licensing config

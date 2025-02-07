@@ -2951,7 +2951,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_calculatingMintingFee_withMintingFeeFromHook() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
-                mintingFee: 999,
+                mintingFee: 100,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
@@ -3130,7 +3130,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_mintLicenseTokens_withMintingFeeFromHook() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
-                mintingFee: 999,
+                mintingFee: 100,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
@@ -3186,7 +3186,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_registerDerivative_withMintingFeeFromHook() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
-                mintingFee: 999,
+                mintingFee: 100,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
@@ -3242,7 +3242,7 @@ contract LicensingModuleTest is BaseTest {
     function test_LicensingModule_registerDerivative_resetToDefaultMintingFee() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
-                mintingFee: 300,
+                mintingFee: 100,
                 commercialRevShare: 10,
                 currencyToken: address(erc20),
                 royaltyPolicy: address(royaltyPolicyLAP)
@@ -3321,7 +3321,7 @@ contract LicensingModuleTest is BaseTest {
             maxRevenueShare: 0
         });
         vm.stopPrank();
-        assertEq(erc20.balanceOf(ipOwner2), 900 - 300);
+        assertEq(erc20.balanceOf(ipOwner2), 900 - 100);
         assertEq(licenseToken.ownerOf(licenseTokenId), ipOwner2);
     }
 
@@ -3541,6 +3541,142 @@ contract LicensingModuleTest is BaseTest {
         vm.expectRevert(Errors.LicensingModule__ZeroLicenseTemplate.selector);
         vm.prank(ipOwner1);
         licensingModule.setLicensingConfig(ipId1, address(0), 1, licensingConfig);
+    }
+
+    function test_LicensingModule_mintLicenseTokens_revert_LicensingHookMintingFeeBelowLicenseTerms() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 300,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 400,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0)),
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commRemixTermsId, licensingConfig);
+
+        vm.prank(ipOwner2);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicensingHookMintingFeeBelowLicenseTerms.selector, 100, 300)
+        );
+        licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: commRemixTermsId,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+    }
+
+    function test_LicensingModule_registerDerivative_revert_LicensingHookMintingFeeBelowLicenseTerms() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 300,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 400,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0)),
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commRemixTermsId, licensingConfig);
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = ipId1;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = commRemixTermsId;
+        vm.prank(ipOwner2);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.LicensingModule__LicensingHookMintingFeeBelowLicenseTerms.selector, 100, 300)
+        );
+        licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+    }
+
+    function test_LicensingModule_predictMintingLicenseFee_LicensingHookMintingFeeBelowLicenseTerms() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 300,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        MockLicensingHook licensingHook = new MockLicensingHook();
+        vm.prank(admin);
+        moduleRegistry.registerModule("MockLicensingHook", address(licensingHook));
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 400,
+            licensingHook: address(licensingHook),
+            hookData: abi.encode(address(0)),
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+
+        vm.prank(ipOwner1);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), commRemixTermsId, licensingConfig);
+
+        vm.prank(ipOwner2);
+        (address currencyToken, uint256 amount) = licensingModule.predictMintingLicenseFee(
+            ipId1,
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            ipOwner2,
+            ""
+        );
+        assertEq(currencyToken, address(erc20));
+        assertEq(
+            amount,
+            100 // the minting fee from licensing hook
+        );
     }
 
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {

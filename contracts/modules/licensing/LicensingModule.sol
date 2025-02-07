@@ -28,6 +28,7 @@ import { ILicenseToken } from "../../interfaces/ILicenseToken.sol";
 import { ProtocolPausableUpgradeable } from "../../pause/ProtocolPausableUpgradeable.sol";
 import { ILicensingHook } from "../..//interfaces/modules/licensing/ILicensingHook.sol";
 import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
+import { IPGraphACL } from "../../access/IPGraphACL.sol";
 
 /// @title Licensing Module
 /// @notice Licensing module is the main entry point for the licensing system. It is responsible for:
@@ -59,6 +60,8 @@ contract LicensingModule is
     /// @inheritdoc IModule
     string public constant override name = LICENSING_MODULE_KEY;
 
+    uint256 private constant MAX_ANCESTOR = 1024;
+
     /// @notice Returns the canonical protocol-wide RoyaltyModule
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     RoyaltyModule public immutable ROYALTY_MODULE;
@@ -79,6 +82,9 @@ contract LicensingModule is
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IModuleRegistry public immutable MODULE_REGISTRY;
 
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IPGraphACL public immutable IP_GRAPH_ACL;
+
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicensingModule")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant LicensingModuleStorageLocation =
         0x0f7178cb62e4803c52d40f70c08a6f88d6ee1af1838d58e0c83a222a6c3d3100;
@@ -97,18 +103,21 @@ contract LicensingModule is
         address royaltyModule,
         address licenseRegistry,
         address disputeModule,
-        address licenseToken
+        address licenseToken,
+        address ipGraphAcl
     ) AccessControlled(accessController, ipAccountRegistry) {
         if (royaltyModule == address(0)) revert Errors.LicensingModule__ZeroRoyaltyModule();
         if (licenseRegistry == address(0)) revert Errors.LicensingModule__ZeroLicenseRegistry();
         if (disputeModule == address(0)) revert Errors.LicensingModule__ZeroDisputeModule();
         if (licenseToken == address(0)) revert Errors.LicensingModule__ZeroLicenseToken();
         if (moduleRegistry == address(0)) revert Errors.LicensingModule__ZeroModuleRegistry();
+        if (ipGraphAcl == address(0)) revert Errors.LicensingModule__ZeroIPGraphACL();
         MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
         LICENSE_NFT = ILicenseToken(licenseToken);
+        IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         _disableInitializers();
     }
 
@@ -121,6 +130,13 @@ contract LicensingModule is
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         __ProtocolPausable_init(accessManager);
+    }
+
+    function attachDefaultLicenseTerms(address ipId) external {
+        _verifyIpNotDisputed(ipId);
+        (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
+        LICENSE_REGISTRY.attachLicenseTermsToIp(ipId, defaultLicenseTemplate, defaultLicenseTermsId);
+        emit LicenseTermsAttached(msg.sender, ipId, defaultLicenseTemplate, defaultLicenseTermsId);
     }
 
     /// @notice Attaches license terms to an IP.
@@ -179,7 +195,9 @@ contract LicensingModule is
             revert Errors.LicensingModule__LicensorIpNotRegistered();
         }
         _verifyIpNotDisputed(licensorIpId);
-        _verifyAndPayMintingFee(
+
+        IP_GRAPH_ACL.startInternalAccess();
+        uint256 paidMintingFee = _verifyAndPayMintingFee(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,
@@ -188,6 +206,11 @@ contract LicensingModule is
             royaltyContext,
             maxMintingFee
         );
+        IP_GRAPH_ACL.endInternalAccess();
+
+        if (maxMintingFee != 0 && paidMintingFee > maxMintingFee) {
+            revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(paidMintingFee, maxMintingFee);
+        }
 
         startLicenseTokenId = LICENSE_NFT.mintLicenseTokens(
             licensorIpId,
@@ -246,13 +269,12 @@ contract LicensingModule is
         // Check the compatibility of all license terms (specified by 'licenseTermsIds') across all parent IPs.
         // All license terms must be compatible with each other.
         // Verify that the derivative IP is permitted under all license terms from the parent IPs.
-        address childIpOwner = IIPAccount(payable(childIpId)).owner();
         if (
             !ILicenseTemplate(licenseTemplate).verifyRegisterDerivativeForAllParents(
                 childIpId,
                 parentIpIds,
                 licenseTermsIds,
-                childIpOwner
+                msg.sender
             )
         ) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(childIpId);
@@ -326,7 +348,7 @@ contract LicensingModule is
         // Verify that the derivative IP is permitted under all license terms from the parent IPs.
         // Check the compatibility of all licenses
         ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
-        if (!lct.verifyRegisterDerivativeForAllParents(childIpId, parentIpIds, licenseTermsIds, childIpOwner)) {
+        if (!lct.verifyRegisterDerivativeForAllParents(childIpId, parentIpIds, licenseTermsIds, msg.sender)) {
             revert Errors.LicensingModule__LicenseTokenNotCompatibleForDerivative(childIpId, licenseTokenIds);
         }
 
@@ -373,22 +395,24 @@ contract LicensingModule is
     /// @param licenseTermsId The ID of the license terms within the license template.
     /// If not specified, the configuration applies to all licenses.
     /// @param licensingConfig The licensing configuration for the license.
+    /* solhint-disable-next-line code-complexity */
     function setLicensingConfig(
         address ipId,
         address licenseTemplate,
         uint256 licenseTermsId,
         Licensing.LicensingConfig memory licensingConfig
     ) external verifyPermission(ipId) whenNotPaused {
-        if (licenseTemplate == address(0) && licensingConfig.commercialRevShare != 0) {
-            revert Errors.LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
+        if (licenseTemplate == address(0)) {
+            revert Errors.LicensingModule__ZeroLicenseTemplate();
         }
-
+        if (licenseTermsId == 0) {
+            revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
+        }
         if (IGroupIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegisteredGroup(ipId)) {
             _verifyGroupIpConfig(ipId, licenseTemplate, licenseTermsId, licensingConfig);
         }
-
+        ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
         if (licensingConfig.commercialRevShare != 0) {
-            ILicenseTemplate lct = ILicenseTemplate(licenseTemplate);
             if (!LICENSE_REGISTRY.isRegisteredLicenseTemplate(licenseTemplate)) {
                 revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
             }
@@ -400,7 +424,20 @@ contract LicensingModule is
                 );
             }
         }
-
+        (address royaltyPolicy, , uint256 defaultMintingFee, ) = lct.getRoyaltyPolicy(licenseTermsId);
+        if (licensingConfig.mintingFee < defaultMintingFee) {
+            revert Errors.LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
+                licenseTemplate,
+                licenseTermsId,
+                licensingConfig.mintingFee,
+                defaultMintingFee
+            );
+        }
+        if (licensingConfig.mintingFee > 0) {
+            if (royaltyPolicy == address(0)) {
+                revert Errors.LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+            }
+        }
         if (
             licensingConfig.licensingHook != address(0) &&
             (!licensingConfig.licensingHook.supportsInterface(type(ILicensingHook).interfaceId) ||
@@ -408,13 +445,7 @@ contract LicensingModule is
         ) {
             revert Errors.LicensingModule__InvalidLicensingHook(licensingConfig.licensingHook);
         }
-        if (licenseTemplate == address(0) && licenseTermsId == 0) {
-            LICENSE_REGISTRY.setLicensingConfigForIp(ipId, licensingConfig);
-        } else if (licenseTemplate != address(0) && licenseTermsId != 0) {
-            LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
-        } else {
-            revert Errors.LicensingModule__InvalidLicenseTermsId(licenseTemplate, licenseTermsId);
-        }
+        LICENSE_REGISTRY.setLicensingConfigForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
     }
 
     /// @notice pre-compute the minting license fee for the given IP and license terms.
@@ -495,18 +526,20 @@ contract LicensingModule is
             maxMintingFee
         );
 
+        uint32 allocatedRevenueShare;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             royaltyPercents[i] = LICENSE_REGISTRY.getRoyaltyPercent(
                 parentIpIds[i],
                 licenseTemplate,
                 licenseTermsIds[i]
             );
-            if (maxRevenueShare != 0 && royaltyPercents[i] > maxRevenueShare) {
+            allocatedRevenueShare += royaltyPercents[i];
+            if (maxRevenueShare != 0 && allocatedRevenueShare > maxRevenueShare) {
                 revert Errors.LicensingModule__ExceedMaxRevenueShare(
                     parentIpIds[i],
                     licenseTemplate,
                     licenseTermsIds[i],
-                    royaltyPercents[i],
+                    allocatedRevenueShare,
                     maxRevenueShare
                 );
             }
@@ -568,7 +601,8 @@ contract LicensingModule is
         royaltyPercents = new uint32[](licenseTermsIds.length);
         if (licenseTermsIds.length == 0) return (royaltyPolicies, royaltyPercents);
 
-        (address royaltyPolicy, uint32 royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+        uint256 totalPaidMintingFee;
+        (royaltyPolicies[0], royaltyPercents[0], totalPaidMintingFee) = _executeLicensingHookAndPayMintingFee(
             childIpId,
             parentIpIds[0],
             licenseTemplate,
@@ -576,12 +610,14 @@ contract LicensingModule is
             royaltyContext,
             maxMintingFee
         );
-        royaltyPolicies[0] = royaltyPolicy;
-        royaltyPercents[0] = royaltyPercent;
+        if (maxMintingFee != 0 && totalPaidMintingFee > maxMintingFee) {
+            revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(totalPaidMintingFee, maxMintingFee);
+        }
 
         // pay minting fee for all parent IPs
         for (uint256 i = 1; i < parentIpIds.length; i++) {
-            (royaltyPolicy, royaltyPercent) = _executeLicensingHookAndPayMintingFee(
+            uint256 paidMintingFee;
+            (royaltyPolicies[i], royaltyPercents[i], paidMintingFee) = _executeLicensingHookAndPayMintingFee(
                 childIpId,
                 parentIpIds[i],
                 licenseTemplate,
@@ -589,10 +625,12 @@ contract LicensingModule is
                 royaltyContext,
                 maxMintingFee
             );
-            royaltyPolicies[i] = royaltyPolicy;
-            royaltyPercents[i] = royaltyPercent;
             if (royaltyPolicies[i] != royaltyPolicies[0]) {
                 revert Errors.LicensingModule__RoyaltyPolicyMismatch(royaltyPolicies[0], royaltyPolicies[i]);
+            }
+            totalPaidMintingFee += paidMintingFee;
+            if (maxMintingFee != 0 && totalPaidMintingFee > maxMintingFee) {
+                revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(totalPaidMintingFee, maxMintingFee);
             }
         }
     }
@@ -604,7 +642,7 @@ contract LicensingModule is
         uint256 licenseTermsId,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
-    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent, uint256 paidMintingFee) {
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.getLicensingConfig(
             parentIpId,
             licenseTemplate,
@@ -625,15 +663,15 @@ contract LicensingModule is
                 lsc.hookData
             );
         }
-        (royaltyPolicy, royaltyPercent) = _payMintingFee(
+
+        (royaltyPolicy, royaltyPercent, paidMintingFee) = _payMintingFee(
             parentIpId,
             licenseTemplate,
             licenseTermsId,
             1,
             royaltyContext,
             lsc,
-            mintingFeeByHook,
-            maxMintingFee
+            mintingFeeByHook
         );
     }
 
@@ -646,13 +684,24 @@ contract LicensingModule is
         address receiver,
         bytes calldata royaltyContext,
         uint256 maxMintingFee
-    ) private {
+    ) private returns (uint256 paidMintingFee) {
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,
             _hasPermission(licensorIpId)
         );
+
+        if (ILicenseTemplate(licenseTemplate).allowDerivativeRegistration(licenseTermsId)) {
+            uint256 ancestors = LICENSE_REGISTRY.getAncestorsCount(licensorIpId);
+            if (ancestors >= MAX_ANCESTOR) {
+                revert Errors.LicensingModule__TooManyAncestorsForMintingLicenseTokenAllowRegisterDerivative(
+                    licensorIpId,
+                    ancestors,
+                    MAX_ANCESTOR
+                );
+            }
+        }
 
         if (lsc.isSet && lsc.disabled) {
             revert Errors.LicensingModule__LicenseDisabled(licensorIpId, licenseTemplate, licenseTermsId);
@@ -671,15 +720,14 @@ contract LicensingModule is
             );
         }
 
-        _payMintingFee(
+        (, , paidMintingFee) = _payMintingFee(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,
             amount,
             royaltyContext,
             lsc,
-            mintingFeeByHook,
-            maxMintingFee
+            mintingFeeByHook
         );
 
         if (!ILicenseTemplate(licenseTemplate).verifyMintLicenseToken(licenseTermsId, receiver, licensorIpId, amount)) {
@@ -698,9 +746,9 @@ contract LicensingModule is
     /// @param royaltyContext The context of the royalty.
     /// @param licensingConfig The minting license config
     /// @param mintingFeeByHook The minting fee set by the hook.
-    /// @param maxMintingFee The maximum minting fee that the caller is willing to pay.
     /// @return royaltyPolicy The address of the royalty policy.
     /// @return royaltyPercent The license royalty percentage
+    /// @return tmf The total minting paid
     function _payMintingFee(
         address parentIpId,
         address licenseTemplate,
@@ -708,9 +756,8 @@ contract LicensingModule is
         uint256 amount,
         bytes calldata royaltyContext,
         Licensing.LicensingConfig memory licensingConfig,
-        uint256 mintingFeeByHook,
-        uint256 maxMintingFee
-    ) private returns (address royaltyPolicy, uint32 royaltyPercent) {
+        uint256 mintingFeeByHook
+    ) private returns (address royaltyPolicy, uint32 royaltyPercent, uint256 tmf) {
         RoyaltyPolicyInfo memory royaltyInfo = _getRoyaltyPolicyInfo(licenseTemplate, licenseTermsId);
         royaltyPolicy = royaltyInfo.royaltyPolicy;
         royaltyPercent = royaltyInfo.royaltyPercent;
@@ -720,15 +767,8 @@ contract LicensingModule is
         }
         if (royaltyPolicy != address(0)) {
             ROYALTY_MODULE.onLicenseMinting(parentIpId, royaltyPolicy, royaltyPercent, royaltyContext);
-            uint256 tmf = _getTotalMintingFee(
-                licensingConfig,
-                mintingFeeByHook,
-                royaltyInfo.mintingFeeByLicense,
-                amount
-            );
-            if (maxMintingFee != 0 && tmf > maxMintingFee) {
-                revert Errors.LicensingModule__MintingFeeExceedMaxMintingFee(tmf, maxMintingFee);
-            }
+            tmf = _getTotalMintingFee(licensingConfig, mintingFeeByHook, royaltyInfo.mintingFeeByLicense, amount);
+
             // pay minting fee
             if (tmf > 0) {
                 ROYALTY_MODULE.payLicenseMintingFee(parentIpId, msg.sender, royaltyInfo.currencyToken, tmf);

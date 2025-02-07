@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+// solhint-disable quotes
+
 // external
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -12,12 +14,16 @@ import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPI
 // test
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
+import { MockTokenGatedHook } from "../../mocks/MockTokenGatedHook.sol";
 
 contract PILicenseTemplateTest is BaseTest {
     using Strings for *;
 
     MockERC721 internal gatedNftFoo = new MockERC721{ salt: bytes32(uint256(1)) }("GatedNftFoo");
     MockERC721 internal gatedNftBar = new MockERC721{ salt: bytes32(uint256(2)) }("GatedNftBar");
+
+    MockTokenGatedHook internal verifiedTokenGatedHook = new MockTokenGatedHook();
+    MockTokenGatedHook internal unverifiedTokenGatedHook = new MockTokenGatedHook();
 
     mapping(uint256 => address) internal ipAcct;
     mapping(uint256 => address) internal ipOwner;
@@ -48,10 +54,13 @@ contract PILicenseTemplateTest is BaseTest {
         vm.label(ipAcct[2], "IPAccount2");
         vm.label(ipAcct[3], "IPAccount3");
         vm.label(ipAcct[5], "IPAccount5");
+
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(verifiedTokenGatedHook));
     }
     // this contract is for testing for each PILicenseTemplate's functions
     // register license terms with PILTerms struct
-    function test_PILicenseTemplate_registerLicenseTerms() public {
+    function test_PILicenseTemplate_registerLicenseTerms__() public {
         uint256 socialRemixTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
         assertEq(socialRemixTermsId, 1);
         (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
@@ -132,6 +141,72 @@ contract PILicenseTemplateTest is BaseTest {
         assertEq(pilTemplate.getEarlierExpireTime(licenseTermsIds, block.timestamp), 0);
 
         assertEq(pilTemplate.toJson(defaultTermsId), _DefaultToJson());
+    }
+
+    function test_PILicenseTemplate_registerLicenseTerms_revert_MintingFeeRequiresRoyaltyPolicy() public {
+        PILTerms memory terms = PILTerms({
+            transferable: true,
+            royaltyPolicy: address(0),
+            defaultMintingFee: 100e6,
+            expiration: 0,
+            commercialUse: false,
+            commercialAttribution: false,
+            commercializerChecker: address(0),
+            commercializerCheckerData: "",
+            commercialRevShare: 0,
+            commercialRevCeiling: 0,
+            derivativesAllowed: true,
+            derivativesAttribution: true,
+            derivativesApproval: false,
+            derivativesReciprocal: false,
+            derivativeRevCeiling: 0,
+            currency: address(erc20),
+            uri: ""
+        });
+        vm.expectRevert(PILicenseTemplateErrors.PILicenseTemplate__MintingFeeRequiresRoyaltyPolicy.selector);
+        pilTemplate.registerLicenseTerms(terms);
+    }
+
+    function test_PILicenseTemplate_registerLicenseTerms_withCommercializerChecker() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.commercializerChecker = address(verifiedTokenGatedHook);
+        terms.commercializerCheckerData = abi.encode(address(gatedNftFoo));
+
+        uint256 termsIdBefore = pilTemplate.totalRegisteredLicenseTerms();
+        uint256 commUseTermsId = pilTemplate.registerLicenseTerms(terms);
+        assertEq(commUseTermsId, termsIdBefore + 1);
+        (address royaltyPolicy, uint32 royaltyPercent, uint256 mintingFee, address currency) = pilTemplate
+            .getRoyaltyPolicy(commUseTermsId);
+        assertEq(royaltyPolicy, address(royaltyPolicyLAP));
+        assertEq(royaltyPercent, 0);
+        assertEq(mintingFee, 100);
+        assertEq(currency, address(erc20));
+        assertEq(pilTemplate.getLicenseTerms(commUseTermsId).commercializerChecker, address(verifiedTokenGatedHook));
+        assertEq(
+            pilTemplate.getLicenseTerms(commUseTermsId).commercializerCheckerData,
+            abi.encode(address(gatedNftFoo))
+        );
+    }
+
+    function test_PILicenseTemplate_revert_registerLicenseTerms_CommercializerCheckerNotRegistered() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+        terms.commercializerChecker = address(unverifiedTokenGatedHook);
+        terms.commercializerCheckerData = abi.encode(address(gatedNftFoo));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerNotRegistered.selector,
+                address(unverifiedTokenGatedHook)
+            )
+        );
+        pilTemplate.registerLicenseTerms(terms);
     }
 
     function test_PILicenseTemplate_revert_registerRevCeiling() public {
@@ -219,7 +294,7 @@ contract PILicenseTemplateTest is BaseTest {
         pilTemplate.registerLicenseTerms(terms);
 
         terms = PILFlavors.commercialUse({
-            mintingFee: 100,
+            mintingFee: 0,
             currencyToken: address(erc20),
             royaltyPolicy: address(royaltyPolicyLAP)
         });
@@ -678,6 +753,105 @@ contract PILicenseTemplateTest is BaseTest {
         );
     }
 
+    function test_PILicenseTemplate_registerLicenseTerms_PILTermsURIContainsDoubleQuote() public {
+        string memory maliciousUri1 = string.concat(
+            '"}], ',
+            '"name" : "", ',
+            '"description" : "", ',
+            '"external_url" : "", ',
+            '"image" : "", ',
+            '"attributes" : [], ',
+            '"old_attributes" : [{"ok" : ""}'
+        );
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: false,
+                derivativesAttribution: false,
+                derivativesApproval: false,
+                derivativesReciprocal: false,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: maliciousUri1
+            })
+        );
+
+        string memory termsInJson = pilTemplate.toJson(termsId);
+
+        assertEq(
+            termsInJson,
+            string.concat(
+                '{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},',
+                '{"trait_type": "Default Minting Fee", "value": "0"},',
+                '{"trait_type": "Expiration", "value": "never"},',
+                '{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},',
+                // all special characters are escaped
+                string.concat(
+                    '{"trait_type": "URI", "value": "\\"}], ',
+                    '\\"name\\" : \\"\\", ',
+                    '\\"description\\" : \\"\\", ',
+                    '\\"external_url\\" : \\"\\", ',
+                    '\\"image\\" : \\"\\", ',
+                    '\\"attributes\\" : [], ',
+                    '\\"old_attributes\\" : [{\\"ok\\" : \\"\\"}"},'
+                ),
+                '{"trait_type": "Commercial Use", "value": "false"},',
+                '{"trait_type": "Commercial Attribution", "value": "false"},',
+                '{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},',
+                '{"trait_type": "Commercial Revenue Ceiling", "value": 0},',
+                '{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},',
+                '{"trait_type": "Derivatives Allowed", "value": "false"},',
+                '{"trait_type": "Derivatives Attribution", "value": "false"},',
+                '{"trait_type": "Derivatives Revenue Ceiling", "value": 0},',
+                '{"trait_type": "Derivatives Approval", "value": "false"},',
+                '{"trait_type": "Derivatives Reciprocal", "value": "false"},'
+            )
+        );
+    }
+
+    function test_PILicenseTemplate_canOverrideRoyaltyPercent() public {
+        // license terms id is 0
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(0, 100));
+
+        // terms is not commercial use
+        uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(termsId, 100));
+
+        // new royalty percent is 0
+        termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialUse({
+                mintingFee: 100,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+        assertTrue(pilTemplate.canOverrideRoyaltyPercent(termsId, 0));
+
+        // new royalty percent is greater than commercial rev share
+        termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 100,
+                commercialRevShare: 10,
+                royaltyPolicy: address(royaltyPolicyLAP),
+                currencyToken: address(erc20)
+            })
+        );
+        assertTrue(pilTemplate.canOverrideRoyaltyPercent(termsId, 100));
+
+        // new royalty percent is less than commercial rev share
+        assertFalse(pilTemplate.canOverrideRoyaltyPercent(termsId, 5));
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }
@@ -685,7 +859,7 @@ contract PILicenseTemplateTest is BaseTest {
     function _DefaultToJson() internal pure returns (string memory) {
         /* solhint-disable */
         return
-            '{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
+            '{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": "https://github.com/piplabs/pil-document/blob/ad67bb632a310d2557f8abcccd428e4c9c798db1/off-chain-terms/Default.json"},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "false"},{"trait_type": "Derivatives Attribution", "value": "false"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "false"},';
         /* solhint-enable */
     }
 }

@@ -6,9 +6,11 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
+import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
 import { IOOV3 } from "contracts/interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { Errors } from "contracts/lib/Errors.sol";
+import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
 import { MockIpAssetRegistry } from "test/foundry/mocks/dispute/MockIpAssetRegistry.sol";
@@ -20,36 +22,30 @@ contract ArbitrationPolicyUMATest is BaseTest {
     event OOV3Set(address oov3);
     event LivenessSet(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent);
     event MaxBondSet(address token, uint256 maxBond);
-    event DisputeRaisedUMA(
-        uint256 disputeId,
-        address caller,
-        bytes claim,
-        uint64 liveness,
-        address currency,
-        uint256 bond,
-        bytes32 identifier
-    );
+    event DisputeRaisedUMA(uint256 disputeId, address caller, uint64 liveness, address currency, uint256 bond);
     event AssertionDisputed(bytes32 assertionId, bytes32 counterEvidenceHash);
 
     MockIpAssetRegistry mockIpAssetRegistry;
     ArbitrationPolicyUMA newArbitrationPolicyUMA;
     DisputeModule newDisputeModule;
+    RoyaltyModule newRoyaltyModule;
     address internal newOOV3;
     AccessManager newAccessManager;
+    IPGraphACL newIPGraphACL;
     address internal newAdmin;
-    address internal susd;
+    address internal wip;
     address internal mockAncillary;
     bytes32 internal disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
 
     function setUp() public virtual override {
         // Fork the desired network where UMA contracts are deployed
-        uint256 forkId = vm.createFork("https://odyssey.storyrpc.io/");
+        uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
-        // Odyssey testnet
-        newOOV3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
-        mockAncillary = 0x3baD7AD0728f9917d1Bf08af5782dCbD516cDd96;
-        susd = 0xC0F6E387aC0B324Ec18EAcf22EE7271207dCE3d5;
+        // Aeneid
+        newOOV3 = 0xABac6a158431edED06EE6cba37eDE8779F599eE4;
+        mockAncillary = 0xE71bf0858B0D1deC83a5068F5332ba5B7e8239Dd;
+        wip = 0x1514000000000000000000000000000000000000; // WIP address
 
         // deploy mock ip asset registry
         mockIpAssetRegistry = new MockIpAssetRegistry();
@@ -58,11 +54,18 @@ contract ArbitrationPolicyUMATest is BaseTest {
         newAdmin = address(100);
         newAccessManager = new AccessManager(newAdmin);
 
+        newIPGraphACL = new IPGraphACL(address(newAccessManager));
+
         vm.startPrank(newAdmin);
 
         // deploy dispute module
         address newDisputeModuleImpl = address(
-            new DisputeModule(address(newAccessManager), address(mockIpAssetRegistry), address(2))
+            new DisputeModule(
+                address(newAccessManager),
+                address(mockIpAssetRegistry),
+                address(2),
+                address(newIPGraphACL)
+            )
         );
         newDisputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
@@ -71,8 +74,22 @@ contract ArbitrationPolicyUMATest is BaseTest {
             )
         );
 
+        // deploy royalty module
+        address newRoyaltyModuleImpl = address(
+            new RoyaltyModule(address(1), address(1), address(1), address(1), address(1))
+        );
+        newRoyaltyModule = RoyaltyModule(
+            TestProxyHelper.deployUUPSProxy(
+                newRoyaltyModuleImpl,
+                abi.encodeCall(RoyaltyModule.initialize, (address(newAccessManager), uint256(15)))
+            )
+        );
+        newRoyaltyModule.whitelistRoyaltyToken(wip, true);
+
         // deploy arbitration policy UMA
-        address newArbitrationPolicyUMAImpl = address(new ArbitrationPolicyUMA(address(newDisputeModule)));
+        address newArbitrationPolicyUMAImpl = address(
+            new ArbitrationPolicyUMA(address(newDisputeModule), address(newRoyaltyModule))
+        );
         newArbitrationPolicyUMA = ArbitrationPolicyUMA(
             TestProxyHelper.deployUUPSProxy(
                 newArbitrationPolicyUMAImpl,
@@ -83,7 +100,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         // setup UMA parameters
         newArbitrationPolicyUMA.setOOV3(newOOV3);
         newArbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
-        newArbitrationPolicyUMA.setMaxBond(susd, 25000e18); // 25k USD max bond
+        newArbitrationPolicyUMA.setMaxBond(wip, 100e18);
 
         // whitelist dispute tag, arbitration policy and arbitration relayer
         newDisputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
@@ -93,14 +110,19 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         vm.label(newOOV3, "newOOV3");
         vm.label(mockAncillary, "mockAncillary");
-        vm.label(susd, "susd");
+        vm.label(wip, "wip");
         vm.label(address(newArbitrationPolicyUMA), "newArbitrationPolicyUMA");
         vm.label(address(newDisputeModule), "newDisputeModule");
     }
 
     function test_ArbitrationPolicyUMA_constructor_revert_ZeroDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroDisputeModule.selector);
-        new ArbitrationPolicyUMA(address(0));
+        new ArbitrationPolicyUMA(address(0), address(1));
+    }
+
+    function test_ArbitrationPolicyUMA_constructor_revert_ZeroRoyaltyModule() public {
+        vm.expectRevert(Errors.ArbitrationPolicyUMA__ZeroRoyaltyModule.selector);
+        new ArbitrationPolicyUMA(address(1), address(0));
     }
 
     function test_ArbitrationPolicyUMA_setOOV3_revert_ZeroOOV3() public {
@@ -152,39 +174,33 @@ contract ArbitrationPolicyUMATest is BaseTest {
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_paused() public {
         newArbitrationPolicyUMA.pause();
 
-        bytes memory claim = "test claim";
         uint64 liveness = 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessBelowMin() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__LivenessBelowMin.selector);
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_LivenessAboveMax() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 365 days + 1;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__LivenessAboveMax.selector);
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
@@ -192,68 +208,63 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_setMaxBond() public {
         vm.expectEmit(true, true, true, true);
-        emit MaxBondSet(susd, 1);
+        emit MaxBondSet(wip, 1);
 
-        newArbitrationPolicyUMA.setMaxBond(susd, 1);
+        newArbitrationPolicyUMA.setMaxBond(wip, 1);
 
-        assertEq(newArbitrationPolicyUMA.maxBonds(susd), 1);
+        assertEq(newArbitrationPolicyUMA.maxBonds(wip), 1);
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_NotDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__NotDisputeModule.selector);
-        newArbitrationPolicyUMA.onRaiseDispute(address(1), bytes(""));
+        newArbitrationPolicyUMA.onRaiseDispute(address(1), address(1), bytes32(0), bytes32(0), 1, bytes(""));
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_BondAboveMax() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 25000e18 + 1;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.expectRevert(Errors.ArbitrationPolicyUMA__BondAboveMax.selector);
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
-    function test_ArbitrationPolicyUMA_onRaiseDispute_revert_UnsupportedCurrency() public {
-        bytes memory claim = "test claim";
+    function test_ArbitrationPolicyUMA_onRaiseDispute_revert_CurrencyNotWhitelisted() public {
         uint64 liveness = 3600 * 24 * 30;
         IERC20 currency = IERC20(address(new MockERC20()));
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        newRoyaltyModule.whitelistRoyaltyToken(address(currency), false);
+
+        vm.expectRevert(Errors.ArbitrationPolicyUMA__CurrencyNotWhitelisted.selector);
+        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
+    }
+
+    function test_ArbitrationPolicyUMA_onRaiseDispute_revert_UnsupportedCurrency() public {
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(address(new MockERC20()));
+        uint256 bond = 0;
+
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        newRoyaltyModule.whitelistRoyaltyToken(address(currency), true);
 
         vm.expectRevert("Unsupported currency");
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
     }
 
-    function test_ArbitrationPolicyUMA_onRaiseDispute_revert_UnsupportedIdentifier() public {
-        bytes memory claim = "test claim";
-        uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
-        uint256 bond = 0;
-        bytes32 identifier = bytes32("RANDOM_IDENTIFIER");
-
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
-
-        vm.expectRevert("Unsupported identifier");
-        newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
-    }
-
     function test_ArbitrationPolicyUMA_onRaiseDispute() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.expectEmit(true, true, true, true);
-        emit DisputeRaisedUMA(1, address(2), claim, liveness, address(currency), bond, identifier);
+        emit DisputeRaisedUMA(1, address(2), liveness, address(currency), bond);
 
         vm.startPrank(address(2));
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
@@ -266,19 +277,15 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_WithBond() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
-
-        /* vm.expectEmit(true, true, true, true);
-        emit DisputeRaisedUMA(1, address(2), claim, liveness, address(currency), bond, identifier); */
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         uint256 raiserBalBefore = currency.balanceOf(address(2));
@@ -300,13 +307,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onDisputeCancel_revert_CannotCancel() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         newDisputeModule.raiseDispute(address(1), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
@@ -315,13 +320,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_revert_AssertionNotExpired() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -338,13 +341,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDispute() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -369,18 +370,17 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDisputeWithBond() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address disputer = address(2);
 
         vm.startPrank(disputer);
-        MockERC20(susd).mint(disputer, bond);
+        vm.deal(disputer, bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -410,13 +410,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithDispute() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
 
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
 
@@ -440,8 +438,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
         uint64 assertionTimestamp = assertion.assertionTime;
         bytes memory ancillaryData = AuxiliaryOOV3Interface(newOOV3).stampAssertion(assertionId);
-        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
-        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 1e18);
+        IMockAncillary(mockAncillary).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData, 1e18);
         oov3.settleAssertion(assertionId);
 
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
@@ -450,40 +448,11 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
     }
 
-    function test_ArbitrationPolicyUMA_disputeAssertion_revert_paused() public {
-        bytes memory claim = "test claim";
-        uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
-        uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
-
-        address targetIpId = address(1);
-        uint256 disputeId = newDisputeModule.raiseDispute(
-            targetIpId,
-            disputeEvidenceHashExample,
-            "IMPROPER_REGISTRATION",
-            data
-        );
-
-        newArbitrationPolicyUMA.pause();
-
-        // dispute the assertion
-        vm.startPrank(targetIpId);
-        bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
-        bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
-
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
-    }
-
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_CannotDisputeAssertionTwice() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -504,12 +473,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_NoCounterEvidence() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -528,12 +495,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_DisputeNotFound() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -548,12 +513,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_revert_OnlyTargetIpIdCanDispute() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -578,12 +541,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_IPA() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -610,8 +571,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
         uint64 assertionTimestamp = assertion.assertionTime;
         bytes memory ancillaryData = AuxiliaryOOV3Interface(newOOV3).stampAssertion(assertionId);
-        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
-        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 0);
+        IMockAncillary(mockAncillary).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData, 0);
         oov3.settleAssertion(assertionId);
 
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
@@ -621,12 +582,10 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_NotIPA() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 0;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         address targetIpId = address(1);
         uint256 disputeId = newDisputeModule.raiseDispute(
@@ -655,8 +614,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
         uint64 assertionTimestamp = assertion.assertionTime;
         bytes memory ancillaryData = AuxiliaryOOV3Interface(newOOV3).stampAssertion(assertionId);
-        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
-        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 0);
+        IMockAncillary(mockAncillary).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData, 0);
         oov3.settleAssertion(assertionId);
 
         (, , , , , , bytes32 currentTagAfter, ) = newDisputeModule.disputes(disputeId);
@@ -666,19 +625,18 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_WithBondAndIpTagged() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         //address defenderIpIdOwner = address(1);
         //address disputeInitiator = address(2);
 
         // raise dispute
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -690,7 +648,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // dispute the assertion
         vm.startPrank(address(1));
-        MockERC20(susd).mint(address(1), bond);
+        vm.deal(address(1), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -705,8 +664,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
         uint64 assertionTimestamp = assertion.assertionTime;
         bytes memory ancillaryData = AuxiliaryOOV3Interface(newOOV3).stampAssertion(assertionId);
-        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
-        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 1e18);
+        IMockAncillary(mockAncillary).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData, 1e18);
 
         (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
 
@@ -730,19 +689,18 @@ contract ArbitrationPolicyUMATest is BaseTest {
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_WithBondAndIpNotTagged() public {
-        bytes memory claim = "test claim";
         uint64 liveness = 3600 * 24 * 30;
-        IERC20 currency = IERC20(susd);
+        IERC20 currency = IERC20(wip);
         uint256 bond = 1000;
-        bytes32 identifier = bytes32("ASSERT_TRUTH");
-        bytes memory data = abi.encode(claim, liveness, currency, bond, identifier);
+        bytes memory data = abi.encode(liveness, currency, bond);
 
         //address defenderIpIdOwner = address(1);
         //address disputeInitiator = address(2);
 
         // raise dispute
         vm.startPrank(address(2));
-        MockERC20(susd).mint(address(2), bond);
+        vm.deal(address(2), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
         uint256 disputeId = newDisputeModule.raiseDispute(
             address(1),
@@ -754,7 +712,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // dispute the assertion
         vm.startPrank(address(1));
-        MockERC20(susd).mint(address(1), bond);
+        vm.deal(address(1), bond);
+        IWIP(wip).deposit{ value: bond }();
         currency.approve(address(newArbitrationPolicyUMA), bond);
 
         bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
@@ -769,8 +728,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
         uint64 assertionTimestamp = assertion.assertionTime;
         bytes memory ancillaryData = AuxiliaryOOV3Interface(newOOV3).stampAssertion(assertionId);
-        IMockAncillary(mockAncillary).requestPrice(identifier, assertionTimestamp, ancillaryData);
-        IMockAncillary(mockAncillary).pushPrice(identifier, assertionTimestamp, ancillaryData, 0);
+        IMockAncillary(mockAncillary).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
+        IMockAncillary(mockAncillary).pushPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData, 0);
 
         (, , , , , , bytes32 currentTagBefore, ) = newDisputeModule.disputes(disputeId);
 
@@ -793,11 +752,39 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(defenderIpIdOwnerBalAfter - defenderIpIdOwnerBalBefore, bondRecipientAmount);
     }
 
-    function test_ArbitrationPolicyUMA_assertionResolvedCallback_revert_paused() public {
-        newArbitrationPolicyUMA.pause();
+    function test_ArbitrationPolicyUMA_disputeAssertion_WithIpOwnerTimePercentChange() public {
+        // liveness set to 30 days
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(wip);
+        uint256 bond = 0;
 
-        vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
-        newArbitrationPolicyUMA.assertionResolvedCallback(bytes32(0), false);
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        address targetIpId = address(1);
+
+        uint256 disputeId = newDisputeModule.raiseDispute(
+            targetIpId,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            data
+        );
+        // warp
+        vm.warp(block.timestamp + 4 days);
+        // set the IpOwnerTimePercent to 0%
+        newArbitrationPolicyUMA.setLiveness(10, 100, 0);
+
+        bytes32 assertionId = newArbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+        bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
+        vm.startPrank(address(2));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.ArbitrationPolicyUMA__OnlyTargetIpIdCanDisputeWithinTimeWindow.selector,
+                4 days,
+                liveness,
+                address(2)
+            )
+        );
+        newArbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
     }
 
     function test_ArbitrationPolicyUMA_assertionDisputedCallback_revert_NotOOV3() public {
@@ -815,4 +802,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
 interface AuxiliaryOOV3Interface {
     function stampAssertion(bytes32 assertionId) external view returns (bytes memory);
+}
+
+interface IWIP is IERC20 {
+    function deposit() external payable;
 }

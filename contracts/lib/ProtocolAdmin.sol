@@ -16,4 +16,7 @@ library ProtocolAdmin {
     /// @notice Pause admin role. Grants ability to pause and unpause contracts.
     uint64 public constant PAUSE_ADMIN_ROLE = 2;
     string public constant PAUSE_ADMIN_ROLE_LABEL = "PAUSE_ADMIN_ROLE";
+    /// @notice Guardian role. Grants ability to configure roles.
+    uint64 public constant GUARDIAN_ROLE = 3;
+    string public constant GUARDIAN_ROLE_LABEL = "GUARDIAN_ROLE";
 }

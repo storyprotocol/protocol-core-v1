@@ -31,11 +31,11 @@ const USE_TENDERLY = process.env.USE_TENDERLY === "true"
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
 
-const DEVNET_URL = process.env.DEVNET_URL || "http://"
-const DEVNET_CHAINID = Number(process.env.DEVNET_CHAINID) || 1513
-const DEVNET_PRIVATEKEY = process.env.DEVNET_PRIVATEKEY || "0xkey"
-const DEVNET_USER1 = process.env.DEVNET_USER1 || "0xkey"
-const DEVNET_USER2 = process.env.DEVNET_USER2 || "0xkey"
+const STORY_URL = process.env.STORY_URL || "http://"
+const STORY_CHAINID = Number(process.env.STORY_CHAINID) || 1513
+const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || "0xkey"
+const STORY_USER1 = process.env.STORY_USER1 || "0xkey"
+const STORY_USER2 = process.env.STORY_USER2 || "0xkey"
 
 if (USE_TENDERLY) {
   tdly.setup({
@@ -49,14 +49,15 @@ const config: HardhatUserConfig = {
     compilers: [
       {
         version: "0.8.26",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2000,
+          },
+          evmVersion: "cancun",
+        },
       },
     ],
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 2000,
-      },
-    },
   },
   paths: {
     sources: "./contracts",
@@ -70,9 +71,9 @@ const config: HardhatUserConfig = {
       chainId: 31337,
     },
     odyssey: {
-      chainId: DEVNET_CHAINID,
-      url: DEVNET_URL,
-      accounts: [DEVNET_PRIVATEKEY, DEVNET_USER1, DEVNET_USER2],
+      chainId: STORY_CHAINID,
+      url: STORY_URL,
+      accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
     localhost: {
       chainId: 31337,
@@ -113,7 +114,7 @@ const config: HardhatUserConfig = {
     coinmarketcap: COINMARKETCAP_API_KEY,
   },
   mocha: {
-    timeout: 120_000,
+    timeout: 200_000,
     reporter: "mochawesome",
   },
   etherscan: {

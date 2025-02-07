@@ -6,7 +6,7 @@ import { terms } from "../licenseTermsTemplate";
 
 export const LicensingConfig = ({
   isSet: true,
-  mintingFee: 20,
+  mintingFee: 0,
   licensingHook: hre.ethers.ZeroAddress,
   hookData: "0x",
   commercialRevShare: 10 * 10 ** 6,
@@ -15,21 +15,27 @@ export const LicensingConfig = ({
   expectGroupRewardPool: EvenSplitGroupPool,
 });
 
-export async function registerPILTerms(
+export async function registerPILTerms
+(
   commercialUse: boolean = false,
   mintingFee: number = 0,
   commercialRevShare: number = 0,
   royaltyPolicy: string = hre.ethers.ZeroAddress,
-  currencyToken: string = MockERC20): Promise<number> {
+  expiration: number = 0,
+  currencyToken: string = MockERC20,
+  derivativesReciprocal: boolean = true,
+): Promise<number> {
   
   const licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
 
-  const testTerms = terms;
+  const testTerms = { ...terms };
   testTerms.royaltyPolicy = royaltyPolicy;
   testTerms.defaultMintingFee = mintingFee;
   testTerms.commercialUse = commercialUse;
   testTerms.commercialRevShare = commercialRevShare;
   testTerms.currency = currencyToken;
+  testTerms.expiration = expiration;
+  testTerms.derivativesReciprocal = derivativesReciprocal;
 
   await licenseTemplate.registerLicenseTerms(testTerms).then((tx) => tx.wait());
   const licenseTermsId = await licenseTemplate.getLicenseTermsId(testTerms);

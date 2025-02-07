@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+/*solhint-disable max-line-length*/
 import { IPILicenseTemplate, PILTerms } from "../interfaces/modules/licensing/IPILicenseTemplate.sol";
 
 /// @title PILFlavors Library
@@ -96,6 +97,30 @@ library PILFlavors {
             );
     }
 
+    /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @param currencyToken The token to be used to pay the minting fee
+    /// @return The input struct for PILicenseTemplate.registerLicenseTerms()
+    function creativeCommonsAttribution(
+        address royaltyPolicy,
+        address currencyToken
+    ) internal pure returns (PILTerms memory) {
+        return _creativeCommonsAttributionPIL(royaltyPolicy, currencyToken);
+    }
+
+    /// @notice Helper method to get the licenseTermsId for the creativeCommonsAttribution() configuration
+    /// @param pilTemplate The address of the PILicenseTemplate
+    /// @param royaltyPolicy The address of the royalty policy to be used by the license template.
+    /// @param currencyToken The token to be used to pay the minting fee
+    /// @return The licenseTermsId for the creativeCommonsAttribution() configuration, 0 if not registered
+    function getCreativeCommonsAttributionId(
+        IPILicenseTemplate pilTemplate,
+        address royaltyPolicy,
+        address currencyToken
+    ) internal view returns (uint256) {
+        return pilTemplate.getLicenseTermsId(_creativeCommonsAttributionPIL(royaltyPolicy, currencyToken));
+    }
+
     /// @notice Gets the default values of PIL terms
     function _defaultPIL() private pure returns (PILTerms memory) {
         return
@@ -116,7 +141,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: ""
+                uri: "https://github.com/piplabs/pil-document/blob/ad67bb632a310d2557f8abcccd428e4c9c798db1/off-chain-terms/Default.json"
             });
     }
 
@@ -140,7 +165,7 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: address(0),
-                uri: ""
+                uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/NCSR.json"
             });
     }
 
@@ -168,7 +193,7 @@ library PILFlavors {
                 derivativesReciprocal: false,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: ""
+                uri: "https://github.com/piplabs/pil-document/blob/9a1f803fcf8101a8a78f1dcc929e6014e144ab56/off-chain-terms/CommercialUse.json"
             });
     }
 
@@ -197,7 +222,34 @@ library PILFlavors {
                 derivativesReciprocal: true,
                 derivativeRevCeiling: 0,
                 currency: currencyToken,
-                uri: ""
+                uri: "https://github.com/piplabs/pil-document/blob/ad67bb632a310d2557f8abcccd428e4c9c798db1/off-chain-terms/CommercialRemix.json"
+            });
+    }
+
+    /// @notice Gets the values to create a Creative Commons Attribution (CC-BY) licenseTerms flavor
+    function _creativeCommonsAttributionPIL(
+        address royaltyPolicy,
+        address currencyToken
+    ) private pure returns (PILTerms memory) {
+        return
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: royaltyPolicy,
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: true,
+                commercialAttribution: true,
+                commercializerChecker: address(0),
+                commercializerCheckerData: EMPTY_BYTES,
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: false,
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: currencyToken,
+                uri: "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/CC-BY.json"
             });
     }
 }

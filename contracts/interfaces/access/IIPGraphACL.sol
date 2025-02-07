@@ -10,14 +10,14 @@ interface IIPGraphACL {
     /// @param addr The address that was revoked.
     event RevokedWhitelistedAddress(address addr);
 
-    /// @notice Allow access to the IPGraph contract.
-    function allow() external;
+    /// @notice Start access to the IPGraph contract from internal contracts.
+    function startInternalAccess() external;
 
-    /// @notice Disallow access to the IPGraph contract.
-    function disallow() external;
+    /// @notice End internal access to the IPGraph contract.
+    function endInternalAccess() external;
 
-    /// @notice Check if access to the IPGraph contract is allowed.
-    function isAllowed() external view returns (bool);
+    /// @notice Check if access to the IPGraph contract is from internal contract.
+    function isInternalAccess() external view returns (bool);
 
     /// @notice Whitelist an address that can allow or disallow access to the IPGraph contract.
     /// @param addr The address to whitelist.

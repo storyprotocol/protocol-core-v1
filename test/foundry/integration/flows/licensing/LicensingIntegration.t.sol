@@ -44,7 +44,8 @@ contract LicensingIntegrationTest is BaseIntegration {
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(moduleRegistry)
             )
         );
 
@@ -78,41 +79,58 @@ contract LicensingIntegrationTest is BaseIntegration {
             ),
             2
         );
-        assertTrue(pilTemplate.exists(2));
 
+        uint256 lcId3 = pilTemplate.registerLicenseTerms(
+            PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20))
+        );
+        assertEq(lcId3, 3);
+        assertEq(
+            pilTemplate.getLicenseTermsId(
+                PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(erc20))
+            ),
+            3
+        );
+
+        assertTrue(pilTemplate.exists(lcId1));
         assertTrue(pilTemplate.exists(lcId2));
+        assertTrue(pilTemplate.exists(lcId3));
 
         // attach licenses
         vm.startPrank(u.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                1
-            )
-        );
-        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), 1);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), lcId1);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), 1), true);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), lcId1), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 1);
 
         (address attachedTemplate, uint256 attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
         assertEq(attachedTemplate, address(pilTemplate));
-        assertEq(attachedId, 1);
+        assertEq(attachedId, lcId1);
 
         (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = licenseRegistry.getDefaultLicenseTerms();
         assertEq(defaultLicenseTemplate, address(pilTemplate));
-        assertEq(defaultLicenseTermsId, 1);
+        assertEq(defaultLicenseTermsId, lcId1);
 
-        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), 2);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), lcId2);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), 2), true);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), lcId2), true);
         assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 2);
+
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), lcId3);
+
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[1], address(pilTemplate), lcId3), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[1]), 3);
 
         (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 0);
         assertEq(attachedTemplate, address(pilTemplate));
-        assertEq(attachedId, 2);
+        assertEq(attachedId, lcId1);
+
+        (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 1);
+        assertEq(attachedTemplate, address(pilTemplate));
+        assertEq(attachedId, lcId2);
+
+        (attachedTemplate, attachedId) = licenseRegistry.getAttachedLicenseTerms(ipAcct[1], 2);
+        assertEq(attachedTemplate, address(pilTemplate));
+        assertEq(attachedId, lcId3);
         vm.stopPrank();
 
         // register derivative directly
@@ -120,7 +138,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         address[] memory parentIpIds = new address[](1);
         uint256[] memory licenseTermsIds = new uint256[](1);
         parentIpIds[0] = ipAcct[1];
-        licenseTermsIds[0] = 1;
+        licenseTermsIds[0] = lcId1;
 
         licensingModule.registerDerivative(
             ipAcct[2],
@@ -133,8 +151,8 @@ contract LicensingIntegrationTest is BaseIntegration {
             0
         );
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[2], address(pilTemplate), 1), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[2]), 2);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[2], address(pilTemplate), lcId1), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[2]), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipAcct[2]), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[2]), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
@@ -151,7 +169,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         uint256 lcTokenId = licensingModule.mintLicenseTokens(
             ipAcct[1],
             address(pilTemplate),
-            1,
+            lcId1,
             1,
             address(u.carl),
             "",
@@ -159,7 +177,7 @@ contract LicensingIntegrationTest is BaseIntegration {
             0
         );
         assertEq(licenseToken.ownerOf(lcTokenId), u.carl);
-        assertEq(licenseToken.getLicenseTermsId(lcTokenId), 1);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), lcId1);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
         assertEq(licenseToken.totalMintedTokens(), 1);
@@ -170,8 +188,8 @@ contract LicensingIntegrationTest is BaseIntegration {
 
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[3], licenseTokens, "", 100e6);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[3], address(pilTemplate), 1), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[3]), 2);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[3], address(pilTemplate), lcId1), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[3]), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipAcct[3]), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[3]), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
@@ -193,10 +211,19 @@ contract LicensingIntegrationTest is BaseIntegration {
         erc20.mint(u.dan, 1000);
         erc20.approve(address(royaltyModule), 100);
 
-        lcTokenId = licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), 2, 1, address(u.dan), "", 0, 0);
+        lcTokenId = licensingModule.mintLicenseTokens(
+            ipAcct[1],
+            address(pilTemplate),
+            lcId2,
+            1,
+            address(u.dan),
+            "",
+            0,
+            0
+        );
 
         assertEq(licenseToken.ownerOf(lcTokenId), u.dan);
-        assertEq(licenseToken.getLicenseTermsId(lcTokenId), 2);
+        assertEq(licenseToken.getLicenseTermsId(lcTokenId), lcId2);
         assertEq(licenseToken.getLicenseTemplate(lcTokenId), address(pilTemplate));
         assertEq(licenseToken.getLicensorIpId(lcTokenId), ipAcct[1]);
         assertEq(licenseToken.totalMintedTokens(), 2);
@@ -208,8 +235,8 @@ contract LicensingIntegrationTest is BaseIntegration {
 
         licensingModule.registerDerivativeWithLicenseTokens(ipAcct[6], licenseTokens, "", 100e6);
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[6], address(pilTemplate), 2), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[6]), 2);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[6], address(pilTemplate), lcId2), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[6]), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipAcct[6]), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[6]), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
@@ -234,7 +261,7 @@ contract LicensingIntegrationTest is BaseIntegration {
         parentIpIds = new address[](1);
         licenseTermsIds = new uint256[](1);
         parentIpIds[0] = ipAcct[1];
-        licenseTermsIds[0] = 2;
+        licenseTermsIds[0] = lcId2;
 
         licensingModule.registerDerivative(
             ipAcct[7],
@@ -247,8 +274,8 @@ contract LicensingIntegrationTest is BaseIntegration {
             0
         );
 
-        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[7], address(pilTemplate), 2), true);
-        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[7]), 2);
+        assertEq(licenseRegistry.hasIpAttachedLicenseTerms(ipAcct[7], address(pilTemplate), lcId2), true);
+        assertEq(licenseRegistry.getAttachedLicenseTermsCount(ipAcct[7]), 1);
         assertEq(licenseRegistry.isDerivativeIp(ipAcct[7]), true);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[7]), false);
         assertEq(licenseRegistry.hasDerivativeIps(ipAcct[1]), true);
@@ -312,14 +339,6 @@ contract LicensingIntegrationTest is BaseIntegration {
         );
 
         vm.prank(u.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
 
         address[] memory parentIpIds = new address[](1);

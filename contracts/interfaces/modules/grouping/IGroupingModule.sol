@@ -56,7 +56,8 @@ interface IGroupingModule is IModule {
     /// the function must be called by the Group IP owner or an authorized operator.
     /// @param groupIpId The address of the group IP.
     /// @param ipIds The IP IDs.
-    function addIp(address groupIpId, address[] calldata ipIds) external;
+    /// @param maxAllowedRewardShare The maximum reward share percentage that can be allocated to each member IP.
+    function addIp(address groupIpId, address[] calldata ipIds, uint256 maxAllowedRewardShare) external;
 
     /// @notice Removes IP from group.
     /// the function must be called by the Group IP owner or an authorized operator.

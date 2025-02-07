@@ -11,7 +11,7 @@ interface IDisputeModule {
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param currentTag The current tag of the dispute
-    /// @param parentDisputeId The parent dispute id
+    /// @param infringerDisputeId The infringer dispute id
     struct Dispute {
         address targetIpId;
         address disputeInitiator;
@@ -20,7 +20,7 @@ interface IDisputeModule {
         bytes32 disputeEvidenceHash;
         bytes32 targetTag;
         bytes32 currentTag;
-        uint256 parentDisputeId;
+        uint256 infringerDisputeId;
     }
 
     /// @notice Event emitted when a dispute tag whitelist status is updated
@@ -83,16 +83,17 @@ interface IDisputeModule {
     /// @param data Custom data adjusted to each policy
     event DisputeCancelled(uint256 disputeId, bytes data);
 
-    /// @notice Event emitted when a derivative is tagged on a parent infringement
-    /// @param parentIpId The parent ipId which infringed
-    /// @param derivativeIpId The derivative ipId which was tagged
-    /// @param parentDisputeId The parent dispute id in which infringement was found
-    /// @param tag The tag of the dispute applied to the derivative
+    /// @notice Event emitted when a derivative is tagged if a parent infringed
+    /// or a group ip is taggedif a group member infringed
+    /// @param infringingIpId The ipId which infringed
+    /// @param ipIdToTag The ipId which was tagged
+    /// @param infringerDisputeId The dispute id in which infringement was found
+    /// @param tag The tag of the dispute applied to the ipIdToTag
     /// @param disputeTimestamp The timestamp of the dispute
-    event DerivativeTaggedOnParentInfringement(
-        address parentIpId,
-        address derivativeIpId,
-        uint256 parentDisputeId,
+    event IpTaggedOnRelatedIpInfringement(
+        address infringingIpId,
+        address ipIdToTag,
+        uint256 infringerDisputeId,
         bytes32 tag,
         uint256 disputeTimestamp
     );
@@ -117,7 +118,7 @@ interface IDisputeModule {
     /// @return disputeEvidenceHash The link of the dispute summary
     /// @return targetTag The target tag of the dispute
     /// @return currentTag The current tag of the dispute
-    /// @return parentDisputeId The parent dispute id
+    /// @return infringerDisputeId The infringer dispute id
     function disputes(
         uint256 disputeId
     )
@@ -131,7 +132,7 @@ interface IDisputeModule {
             bytes32 disputeEvidenceHash,
             bytes32 targetTag,
             bytes32 currentTag,
-            uint256 parentDisputeId
+            uint256 infringerDisputeId
         );
 
     /// @notice Indicates if a dispute tag is whitelisted
@@ -207,14 +208,10 @@ interface IDisputeModule {
     function cancelDispute(uint256 disputeId, bytes calldata data) external;
 
     /// @notice Tags a derivative if a parent has been tagged with an infringement tag
-    /// @param parentIpId The infringing parent ipId
-    /// @param derivativeIpId The derivative ipId
-    /// @param parentDisputeId The dispute id that tagged the parent ipId as infringing
-    function tagDerivativeIfParentInfringed(
-        address parentIpId,
-        address derivativeIpId,
-        uint256 parentDisputeId
-    ) external;
+    /// or a group ip if a group member has been tagged with an infringement tag
+    /// @param ipIdToTag The ipId to tag
+    /// @param infringerDisputeId The dispute id that tagged the related infringing ipId
+    function tagIfRelatedIpInfringed(address ipIdToTag, uint256 infringerDisputeId) external;
 
     /// @notice Resolves a dispute after it has been judged
     /// @param disputeId The dispute

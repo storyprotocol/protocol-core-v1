@@ -3,6 +3,8 @@ pragma solidity 0.8.26;
 
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+
 // contract
 import { Errors } from "../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
@@ -54,6 +56,11 @@ contract LicenseTokenTest is BaseTest {
         vm.expectEmit(address(licenseToken));
         emit LicenseToken.BatchMetadataUpdate(1, 0);
         licenseToken.setLicensingImageUrl("new_url");
+    }
+
+    function test_LicenseToken_revert_TokenURI_NonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 100));
+        licenseToken.tokenURI(100);
     }
 
     function test_LicenseToken_isLicenseTokenRevoked() public {
@@ -173,7 +180,7 @@ contract LicenseTokenTest is BaseTest {
         );
         expectedURI = abi.encodePacked(
             expectedURI,
-            ',"attributes": [{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
+            ',"attributes": [{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/NCSR.json"},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
         );
         expectedURI = abi.encodePacked(
             expectedURI,

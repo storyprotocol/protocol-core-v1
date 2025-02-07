@@ -50,23 +50,13 @@ contract BaseTest is Test, DeployHelper, LicensingHelper {
     MockERC721 internal mockNFT;
 
     uint256 internal constant ARBITRATION_PRICE = 1000 * 10 ** 6; // 1000 MockToken (6 decimals)
-    uint256 internal constant MAX_ROYALTY_APPROVAL = 10000 ether;
     address internal constant TREASURY_ADDRESS = address(200);
 
     address internal lrHarnessImpl;
     MockIPGraph ipGraph = MockIPGraph(address(0x0101));
     MockArbitrationPolicy mockArbitrationPolicy;
 
-    constructor()
-        DeployHelper(
-            address(ERC6551_REGISTRY),
-            address(erc20),
-            ARBITRATION_PRICE,
-            MAX_ROYALTY_APPROVAL,
-            TREASURY_ADDRESS,
-            address(0)
-        )
-    {}
+    constructor() DeployHelper(address(ERC6551_REGISTRY), address(erc20), address(0)) {}
 
     /// @notice Sets up the base test contract.
     function setUp() public virtual {

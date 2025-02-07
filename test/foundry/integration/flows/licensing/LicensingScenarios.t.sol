@@ -74,6 +74,15 @@ contract Licensing_Scenarios is BaseIntegration {
                 royaltyPolicy: address(royaltyPolicyLAP)
             })
         );
+
+        uint256 ccByTermsId = registerSelectedPILicenseTerms(
+            "creative_commons_attribution",
+            PILFlavors.creativeCommonsAttribution(address(royaltyPolicyLAP), address(USDC))
+        );
+        assertEq(
+            ccByTermsId,
+            PILFlavors.getCreativeCommonsAttributionId(pilTemplate, address(royaltyPolicyLAP), address(USDC))
+        );
     }
 
     // solhint-disable-next-line max-line-length
@@ -112,14 +121,6 @@ contract Licensing_Scenarios is BaseIntegration {
         // Add policies to IP account
         vm.startPrank(u.alice);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commRemixTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commTermsId);
         vm.stopPrank();

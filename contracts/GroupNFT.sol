@@ -74,7 +74,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     function mintGroupNft(address minter, address receiver) external onlyGroupingModule returns (uint256 groupNftId) {
         GroupNFTStorage storage $ = _getGroupNFTStorage();
         groupNftId = $.totalSupply++;
-        _safeMint(receiver, groupNftId);
+        _mint(receiver, groupNftId);
         emit GroupNFTMinted(minter, receiver, groupNftId);
     }
 
@@ -88,6 +88,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        _requireOwned(id);
         GroupNFTStorage storage $ = _getGroupNFTStorage();
 
         /* solhint-disable */

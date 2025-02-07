@@ -26,9 +26,14 @@ library Errors {
     /// @notice Execute operation type is not supported.
     error IPAccount__InvalidOperation();
 
+    /// @notice UUPS is disabled for IP Account.
+    error IPAccount__UUPSUpgradeDisabled();
+
     ////////////////////////////////////////////////////////////////////////////
     //                          CoreMetadataModule                            //
     ////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Zero address provided for Access Manager.
     error CoreMetadataModule__ZeroAccessManager();
 
     ////////////////////////////////////////////////////////////////////////////
@@ -60,6 +65,9 @@ library Errors {
     /// @notice Zero address provided for ERC6551 Registry.
     error IPAccountRegistry_ZeroERC6551Registry();
 
+    /// @notice Zero address provided for IP Account implementation upgradeable beacon.
+    error IPAccountRegistry_ZeroIpAccountImplBeacon();
+
     ////////////////////////////////////////////////////////////////////////////
     //                        Group IP Asset Registry                         //
     ////////////////////////////////////////////////////////////////////////////
@@ -75,6 +83,9 @@ library Errors {
 
     /// @notice Zero address provided for Group Reward Pool.
     error GroupIPAssetRegistry__InvalidGroupRewardPool(address rewardPool);
+
+    /// @notice page size exceeds the limit.
+    error GroupIPAssetRegistry__PageSizeExceedsLimit(uint256 pageSize, uint256 limit);
 
     /// @notice Zero address provided for Group Reward Pool.
     error GroupingModule__ZeroGroupRewardPool();
@@ -103,6 +114,9 @@ library Errors {
     /// @notice Group Pool is not registered.
     error GroupIPAssetRegistry__GroupRewardPoolNotRegistered(address groupPool);
 
+    /// @notice The group size exceeds the limit.
+    error GroupIPAssetRegistry__GroupSizeExceedsLimit(uint256 groupSize, uint256 limit);
+
     /// @notice The group ip has derivative IPs.
     error GroupingModule__GroupFrozenDueToHasDerivativeIps(address groupId);
 
@@ -112,17 +126,11 @@ library Errors {
     /// @notice The Royalty Vault has not been created.
     error GroupingModule__GroupRoyaltyVaultNotCreated(address groupId);
 
-    /// @notice The Group IP's license terms should not have minting fee.
-    error GroupingModule__GroupIPHasMintingFee(address groupId, address licenseTemplate, uint256 licenseTermsId);
-
     /// @notice Cannot add group to group.
     error GroupingModule__CannotAddGroupToGroup(address groupId, address childGroupId);
 
     /// @notice The Group IP has been frozen due to already mint license tokens.
     error GroupingModule__GroupFrozenDueToAlreadyMintLicenseTokens(address groupId);
-
-    /// @notice Group IP should attach non default license terms.
-    error GroupingModule__GroupIPShouldHasNonDefaultLicenseTerms(address groupId);
 
     /// @notice The total group reward share exceeds 100% when adding IP to the group.
     /// means the IP is not allowed to be added to the group.
@@ -133,11 +141,40 @@ library Errors {
         uint256 expectGroupRewardShare
     );
 
+    /// @notice The maximum allowed reward share exceeds 100%.
+    error GroupingModule__MaxAllowedRewardShareExceeds100Percent(address groupId, uint256 maxAllowedRewardShare);
+
+    /// @notice The IP expected reward share exceeds the maximum allowed reward share.
+    error GroupingModule__IpExpectedShareExceedsMaxAllowedShare(
+        address groupId,
+        address ipId,
+        uint256 maxAllowedRewardShare,
+        uint256 expectGroupRewardShare
+    );
+
     /// @notice The disputed IP is not allowed to be added to the group.
     error GroupingModule__CannotAddDisputedIpToGroup(address ipId);
 
     /// @notice The group reward pool is not whitelisted.
     error GroupingModule__GroupRewardPoolNotWhitelisted(address groupId, address groupRewardPool);
+
+    /// @notice The group not yet attached a license terms which specify the revenue token
+    error GroupingModule__GroupIPLicenseHasNotSpecifyRevenueToken(address groupId);
+
+    /// @notice The given token is not match with the group revenue token.
+    error GroupingModule__TokenNotMatchGroupRevenueToken(address groupId, address groupCurrentToken, address token);
+
+    /// @notice The given token is not whitelisted as valid revenue token.
+    error GroupingModule__RoyaltyTokenNotWhitelisted(address groupId, address royaltyToken);
+
+    /// @notice The disputed group cannot collect royalties.
+    error GroupingModule__DisputedGroupCannotCollectRoyalties(address groupId);
+
+    /// @notice The disputed group cannot claim reward.
+    error GroupingModule__DisputedGroupCannotClaimReward(address groupId);
+
+    /// @notice The disputed group cannot add IP.
+    error GroupingModule__DisputedGroupCannotAddIp(address groupId);
 
     ////////////////////////////////////////////////////////////////////////////
     //                            IP Asset Registry                           //
@@ -297,6 +334,22 @@ library Errors {
         uint32 groupCommercialRevShare
     );
 
+    /// @notice The provided parent IP ID is not registered.
+    error LicenseRegistry__ParentIpNotRegistered(address parentIpId);
+
+    /// @notice parents is above the maximum parents limit.
+    error LicenseRegistry__TooManyParents(address ipId, uint256 parents, uint256 maxParents);
+
+    /// @notice ancestors is above the maximum ancestors limit.
+    error LicenseRegistry__TooManyAncestors(address ipId, uint256 ancestors, uint256 maxAncestors);
+
+    /// @notice The license terms does not support to be attached to Group IP.
+    /// for example, the license terms using LAP Royalty Policy which does not support group.
+    error LicenseRegistry__LicenseTermsCannotAttachToGroupIp(address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice if a child IP is a derivative of a group IP, the child IP cannot have other parent IPs.
+    error LicenseRegistry__GroupMustBeSoleParent(address childIpId, address groupId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -376,6 +429,9 @@ library Errors {
     /// @notice Zero address provided for Module Registry.
     error LicensingModule__ZeroModuleRegistry();
 
+    /// @notice Zero address provided for IPGraph ACL.
+    error LicensingModule__ZeroIPGraphACL();
+
     /// @notice minting a license for non-registered IP.
     error LicensingModule__LicensorIpNotRegistered();
 
@@ -428,9 +484,6 @@ library Errors {
     /// @notice license terms disabled.
     error LicensingModule__LicenseDisabled(address ipId, address licenseTemplate, uint256 licenseTermsId);
 
-    /// @notice When Set LicenseConfig the license template cannot be Zero address if royalty percentage is not Zero.
-    error LicensingModule__LicenseTemplateCannotBeZeroAddressToOverrideRoyaltyPercent();
-
     /// @notice Current License does not allow to override royalty percentage.
     error LicensingModule__CurrentLicenseNotAllowOverrideRoyaltyPercent(
         address licenseTemplate,
@@ -472,6 +525,29 @@ library Errors {
         uint32 maxRevenueShare
     );
 
+    /// @notice Minting fee requires a royalty policy.
+    error LicensingModule__MintingFeeRequiresRoyaltyPolicy();
+
+    /// @notice the licensor IP has too many ancestors that above or equal to maximum ancestor limit for
+    /// minting license token.
+    error LicensingModule__TooManyAncestorsForMintingLicenseTokenAllowRegisterDerivative(
+        address licensorIpId,
+        uint256 ancestors,
+        uint256 maxAncestors
+    );
+
+    /// @notice Minting fee specified in the licensing config is below the default minting fee specified
+    /// in the license terms.
+    error LicensingModule__LicensingConfigMintingFeeBelowLicenseTerms(
+        address licenseTemplate,
+        uint256 licenseTermsId,
+        uint256 licensingConfigMintingFee,
+        uint256 licenseTermsMintingFee
+    );
+
+    /// @notice When setting licensing config, the license template cannot be zero address.
+    error LicensingModule__ZeroLicenseTemplate();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////
@@ -488,6 +564,9 @@ library Errors {
     /// @notice Zero address provided for Access Controller.
     error DisputeModule__ZeroAccessController();
 
+    /// @notice Zero address provided for IP Graph ACL.
+    error DisputeModule__ZeroIPGraphACL();
+
     /// @notice Zero address provided for Arbitration Policy.
     error DisputeModule__ZeroArbitrationPolicy();
 
@@ -502,6 +581,9 @@ library Errors {
 
     /// @notice Not a whitelisted arbitration policy.
     error DisputeModule__NotWhitelistedArbitrationPolicy();
+
+    /// @notice Cannot blacklist the base arbitration policy.
+    error DisputeModule__CannotBlacklistBaseArbitrationPolicy();
 
     /// @notice Not the arbitration relayer.
     error DisputeModule__NotArbitrationRelayer();
@@ -521,20 +603,23 @@ library Errors {
     /// @notice Not a registered IP.
     error DisputeModule__NotRegisteredIpId();
 
-    /// @notice Provided parent IP and the parent dispute's target IP is different.
-    error DisputeModule__ParentIpIdMismatch();
+    /// @notice The dispute does not have infringement tag.
+    error DisputeModule__DisputeWithoutInfringementTag();
 
-    /// @notice Provided parent dispute's target IP is not dispute tagged.
-    error DisputeModule__ParentNotTagged();
+    /// @notice Provided target IP is not the derivative or group ip related to the infringing IP.
+    error DisputeModule__NotDerivativeOrGroupIp();
 
-    /// @notice Provided parent dispute's target IP is not the derivative IP's parent.
-    error DisputeModule__NotDerivative();
+    /// @notice Provided parent dispute has already been propagated to the derivative IP.
+    error DisputeModule__DisputeAlreadyPropagated();
 
-    /// @notice Provided parent dispute has not been resolved.
-    error DisputeModule__ParentDisputeNotResolved();
+    /// @notice Provided related dispute has not been resolved.
+    error DisputeModule__RelatedDisputeNotResolved();
 
     /// @notice Zero arbitration policy cooldown provided.
     error DisputeModule__ZeroArbitrationPolicyCooldown();
+
+    /// @notice Evidence hash already used.
+    error DisputeModule__EvidenceHashAlreadyUsed();
 
     ////////////////////////////////////////////////////////////////////////////
     //                             Arbitration Policy UMA                     //
@@ -545,6 +630,9 @@ library Errors {
 
     /// @notice Zero address provided for Dispute Module.
     error ArbitrationPolicyUMA__ZeroDisputeModule();
+
+    /// @notice Zero address provided for Royalty Module.
+    error ArbitrationPolicyUMA__ZeroRoyaltyModule();
 
     /// @notice Zero address provided for OOV3.
     error ArbitrationPolicyUMA__ZeroOOV3();
@@ -567,11 +655,17 @@ library Errors {
     /// @notice Min liveness is above max liveness.
     error ArbitrationPolicyUMA__MinLivenessAboveMax();
 
+    /// @notice Max bond is below minimum bond.
+    error ArbitrationPolicyUMA__MaxBondBelowMinimumBond();
+
     /// @notice IP owner time percent is above max.
     error ArbitrationPolicyUMA__IpOwnerTimePercentAboveMax();
 
     /// @notice Bond size is above max.
     error ArbitrationPolicyUMA__BondAboveMax();
+
+    /// @notice Currency is not whitelisted.
+    error ArbitrationPolicyUMA__CurrencyNotWhitelisted();
 
     /// @notice Cannot cancel.
     error ArbitrationPolicyUMA__CannotCancel();
@@ -623,12 +717,6 @@ library Errors {
     /// @notice Zero address provided for Royalty Token.
     error RoyaltyModule__ZeroRoyaltyToken();
 
-    /// @notice Zero maximum parents provided.
-    error RoyaltyModule__ZeroMaxParents();
-
-    /// @notice Zero maximum ancestors provided.
-    error RoyaltyModule__ZeroMaxAncestors();
-
     /// @notice Zero address provided for parent ipId.
     error RoyaltyModule__ZeroParentIpId();
 
@@ -647,17 +735,11 @@ library Errors {
     /// @notice IP is dispute tagged.
     error RoyaltyModule__IpIsTagged();
 
-    /// @notice Last position IP is not able to mint more licenses.
-    error RoyaltyModule__LastPositionNotAbleToMintLicense();
-
     /// @notice The IP is not allowed to link to parents.
     error RoyaltyModule__UnlinkableToParents();
 
-    /// @notice Size of parent IP list is above limit.
-    error RoyaltyModule__AboveParentLimit();
-
-    /// @notice Amount of ancestors for derivative IP is above the limit.
-    error RoyaltyModule__AboveAncestorsLimit();
+    /// @notice Royalty policy is already registered as external royalty policy.
+    error RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy();
 
     /// @notice Royalty policy is already whitelisted or registered.
     error RoyaltyModule__PolicyAlreadyWhitelistedOrRegistered();
@@ -680,11 +762,17 @@ library Errors {
     /// @notice Zero address for ip asset registry.
     error RoyaltyModule__ZeroIpAssetRegistry();
 
+    /// @notice Zero address for ipgraph access control.
+    error RoyaltyModule__ZeroIpGraphAcl();
+
     /// @notice Not a whitelisted royalty token.
     error RoyaltyModule__NotWhitelistedRoyaltyToken();
 
     /// @notice IP is expired.
     error RoyaltyModule__IpExpired();
+
+    /// @notice Payment amount is too low.
+    error RoyaltyModule__PaymentAmountIsTooLow();
 
     /// @notice Invalid external royalty policy.
     error RoyaltyModule__InvalidExternalRoyaltyPolicy();
@@ -914,6 +1002,9 @@ library Errors {
     //                          Protocol Pause Admin                          //
     ////////////////////////////////////////////////////////////////////////////
 
+    /// @notice Zero address provided for Access Manager in initializer.
+    error ProtocolPauseAdmin__ZeroAccessManager();
+
     /// @notice Zero address passed.
     error ProtocolPauseAdmin__ZeroAddress();
 
@@ -958,4 +1049,10 @@ library Errors {
 
     /// @notice Caller is not the GroupingModule.
     error EvenSplitGroupPool__CallerIsNotGroupingModule(address caller);
+
+    /// @notice Deposit token into pool but the token address is zero.
+    error EvenSplitGroupPool__DepositWithZeroTokenAddress(address groupId);
+
+    /// @notice The maximum group size has been reached.
+    error EvenSplitGroupPool__MaxGroupSizeReached(address groupId, uint32 groupSize, uint256 maxGroupSize);
 }

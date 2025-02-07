@@ -133,7 +133,6 @@ contract RoyaltyPolicyLRP is
         uint32[] calldata licensesPercent,
         bytes calldata
     ) external nonReentrant onlyRoyaltyModule returns (uint32 newRoyaltyStackLRP) {
-        IP_GRAPH_ACL.allow();
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             // when a parent is linking through a different royalty policy, the royalty amount is zero
             if (licenseRoyaltyPolicies[i] == address(this)) {
@@ -141,7 +140,6 @@ contract RoyaltyPolicyLRP is
                 _setRoyaltyLRP(ipId, parentIpIds[i], licensesPercent[i]);
             }
         }
-        IP_GRAPH_ACL.disallow();
 
         // calculate new royalty stack
         newRoyaltyStackLRP = _getRoyaltyStackLRP(ipId);
@@ -170,8 +168,10 @@ contract RoyaltyPolicyLRP is
 
         // calculate the amount to transfer
         IRoyaltyModule royaltyModule = ROYALTY_MODULE;
-        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensReceived(ipId, token);
+        uint256 totalRevenueTokens = royaltyModule.totalRevenueTokensAccounted(ipId, token, address(this));
         uint256 maxAmount = (totalRevenueTokens * ancestorPercent) / royaltyModule.maxPercent();
+        maxAmount -= (maxAmount * $.royaltyStackLRP[ancestorIpId]) / royaltyModule.maxPercent();
+
         uint256 transferredAmount = $.transferredTokenLRP[ipId][ancestorIpId][token];
         uint256 amountToTransfer = Math.min(maxAmount - transferredAmount, IERC20(token).balanceOf(address(this)));
 
@@ -215,6 +215,12 @@ contract RoyaltyPolicyLRP is
     /// @return The total lifetime revenue tokens transferred to a vault from a descendant IP via LRP
     function getTransferredTokens(address ipId, address ancestorIpId, address token) external view returns (uint256) {
         return _getRoyaltyPolicyLRPStorage().transferredTokenLRP[ipId][ancestorIpId][token];
+    }
+
+    /// @notice Returns the royalty policy support working with group
+    /// @return True if the royalty policy support working with group otherwise false
+    function isSupportGroup() external view returns (bool) {
+        return true;
     }
 
     /// @notice Returns the royalty stack for a given IP asset for LRP royalty policy

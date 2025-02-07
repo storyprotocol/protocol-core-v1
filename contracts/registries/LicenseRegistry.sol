@@ -20,6 +20,7 @@ import { IPAccountStorageOps } from "../lib/IPAccountStorageOps.sol";
 import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { IPGraphACL } from "../access/IPGraphACL.sol";
 import { IGroupIPAssetRegistry } from "../interfaces/registries/IGroupIPAssetRegistry.sol";
+import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
 
 /// @title LicenseRegistry aka LNFT
 /// @notice Registry of License NFTs, which represent licenses granted by IP ID licensors to create derivative IPs.
@@ -30,6 +31,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     using EnumerableSet for EnumerableSet.AddressSet;
     using IPAccountStorageOps for IIPAccount;
 
+    /// @notice A derivative IP can have 16 parent IPs at most.
+    uint256 public constant MAX_PARENTS = 16;
+
+    /// @notice A derivative IP can have 1024 ancestor IPs at most.
+    uint256 public constant MAX_ANCESTORS = 1024;
     address public constant IP_GRAPH = address(0x0101);
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupIPAssetRegistry public immutable GROUP_IP_ASSET_REGISTRY;
@@ -53,8 +59,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplates Mapping of license templates to IP IDs
     /// @param expireTimes Mapping of IP IDs to expire times
     /// @param licensingConfigs Mapping of minting license configs to a licenseTerms of an IP
-    /// @param licensingConfigsForIp Mapping of minting license configs to an IP,
-    /// the config will apply to all licenses under the IP
     /// @dev Storage structure for the LicenseRegistry
     /// @custom:storage-location erc7201:story-protocol.LicenseRegistry
     struct LicenseRegistryStorage {
@@ -67,7 +71,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         mapping(address ipId => EnumerableSet.UintSet licenseTermsIds) attachedLicenseTerms;
         mapping(address ipId => address licenseTemplate) licenseTemplates;
         mapping(bytes32 ipLicenseHash => Licensing.LicensingConfig licensingConfig) licensingConfigs;
-        mapping(address ipId => Licensing.LicensingConfig licensingConfig) licensingConfigsForIp;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.LicenseRegistry")) - 1)) & ~bytes32(uint256(0xff));
@@ -162,29 +165,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         emit LicensingConfigSetForLicense(ipId, licenseTemplate, licenseTermsId, licensingConfig);
     }
 
-    /// @notice Sets the LicensingConfig for an IP and applies it to all licenses attached to the IP.
-    /// @dev This function will set a global configuration for all licenses under a specific IP.
-    /// However, this global configuration can be overridden by a configuration set at a specific license level.
-    /// @param ipId The IP ID for which the configuration is being set.
-    /// @param licensingConfig The LicensingConfig to be set for all licenses under the given IP.
-    function setLicensingConfigForIp(
-        address ipId,
-        Licensing.LicensingConfig calldata licensingConfig
-    ) external onlyLicensingModule {
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        $.licensingConfigsForIp[ipId] = Licensing.LicensingConfig({
-            isSet: licensingConfig.isSet,
-            mintingFee: licensingConfig.mintingFee,
-            licensingHook: licensingConfig.licensingHook,
-            hookData: licensingConfig.hookData,
-            commercialRevShare: licensingConfig.commercialRevShare,
-            disabled: licensingConfig.disabled,
-            expectMinimumGroupRewardShare: licensingConfig.expectMinimumGroupRewardShare,
-            expectGroupRewardPool: licensingConfig.expectGroupRewardPool
-        });
-        emit LicensingConfigSetForIP(ipId, licensingConfig);
-    }
-
     /// @notice Attaches license terms to an IP.
     /// @param ipId The address of the IP to which the license terms are attached.
     /// @param licenseTemplate The address of the license template.
@@ -198,11 +178,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicensingModule__LicenseTermsNotFound(licenseTemplate, licenseTermsId);
         }
         // The group can only attach one license terms which is common for all members.
-        if (
-            GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId) &&
-            _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0
-        ) {
-            revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+        if (GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+            if (_getLicenseRegistryStorage().attachedLicenseTerms[ipId].length() > 0) {
+                revert Errors.LicenseRegistry__GroupIpAlreadyHasLicenseTerms(ipId);
+            }
+            if (!ILicenseTemplate(licenseTemplate).canAttachToGroupIp(licenseTermsId)) {
+                revert Errors.LicenseRegistry__LicenseTermsCannotAttachToGroupIp(licenseTemplate, licenseTermsId);
+            }
         }
 
         if (_isExpiredNow(ipId)) {
@@ -213,9 +195,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             revert Errors.LicenseRegistry__LicenseTermsAlreadyAttached(ipId, licenseTemplate, licenseTermsId);
         }
 
+        IP_GRAPH_ACL.startInternalAccess();
         if (_isDerivativeIp(ipId)) {
             revert Errors.LicensingModule__DerivativesCannotAddLicenseTerms();
         }
+        IP_GRAPH_ACL.endInternalAccess();
 
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if ($.licenseTemplates[ipId] != address(0) && $.licenseTemplates[ipId] != licenseTemplate) {
@@ -232,6 +216,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param licenseTemplate The address of the license template used.
     /// @param licenseTermsIds An array of IDs of the license terms.
     /// @param isUsingLicenseToken Whether the derivative IP is registered with license tokens.
+    // solhint-disable code-complexity
     function registerDerivativeIp(
         address childIpId,
         address[] calldata parentIpIds,
@@ -239,10 +224,18 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256[] calldata licenseTermsIds,
         bool isUsingLicenseToken
     ) external onlyLicensingModule {
+        if (parentIpIds.length > MAX_PARENTS) {
+            revert Errors.LicenseRegistry__TooManyParents(childIpId, parentIpIds.length, MAX_PARENTS);
+        }
+
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+
+        IP_GRAPH_ACL.startInternalAccess();
         if (_isDerivativeIp(childIpId)) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);
         }
+        IP_GRAPH_ACL.endInternalAccess();
+
         if ($.childIps[childIpId].length() > 0) {
             revert Errors.LicenseRegistry__DerivativeIpAlreadyHasChild(childIpId);
         }
@@ -252,6 +245,15 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         // earliest expiration time
         uint256 earliestExp = 0;
         for (uint256 i = 0; i < parentIpIds.length; i++) {
+            bool isRegisteredGroup = GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(parentIpIds[i]);
+            if (isRegisteredGroup && parentIpIds.length > 1) {
+                revert Errors.LicenseRegistry__GroupMustBeSoleParent(childIpId, parentIpIds[i]);
+            }
+            if (
+                !isRegisteredGroup && !IIPAssetRegistry(address(GROUP_IP_ASSET_REGISTRY)).isRegistered(parentIpIds[i])
+            ) {
+                revert Errors.LicenseRegistry__ParentIpNotRegistered(parentIpIds[i]);
+            }
             earliestExp = ExpiringOps.getEarliestExpirationTime(earliestExp, _getExpireTime(parentIpIds[i]));
             _verifyDerivativeFromParent(
                 parentIpIds[i],
@@ -271,20 +273,29 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             $.parentLicenseTerms[childIpId][parentIpIds[i]] = licenseTermsIds[i];
         }
 
-        IP_GRAPH_ACL.allow();
         // Note: The IPGraph does not validate the parent-child relationship.
         // It only adds the parent IP to the child IP.
         // All the validation is done in the LicensingModule:
         // 1. Should be no duplicate parent IP.
         // 2. Should not addParentIp again to the same child IP.
+        // 3. Should over max parents limitation.
+        // 4. Should over max ancestors limitation.
         (bool success, ) = IP_GRAPH.call(
             abi.encodeWithSignature("addParentIp(address,address[])", childIpId, parentIpIds)
         );
-        IP_GRAPH_ACL.disallow();
 
         if (!success) {
             revert Errors.LicenseRegistry__AddParentIpToIPGraphFailed(childIpId, parentIpIds);
         }
+
+        IP_GRAPH_ACL.startInternalAccess();
+        uint256 ancestors = _getAncestorIpsCount(childIpId);
+        IP_GRAPH_ACL.endInternalAccess();
+
+        if (ancestors > MAX_ANCESTORS) {
+            revert Errors.LicenseRegistry__TooManyAncestors(childIpId, ancestors, MAX_ANCESTORS);
+        }
+
         $.licenseTemplates[childIpId] = licenseTemplate;
         // calculate the earliest expiration time of child IP with both parent IPs and license terms
         earliestExp = _calculateEarliestExpireTime(earliestExp, licenseTemplate, licenseTermsIds);
@@ -370,6 +381,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             groupLicenseTemplate,
             groupLicenseTermsId
         );
+
         // minting fee must be the same
         if (lct.mintingFee != groupLct.mintingFee) {
             revert Errors.LicenseRegistry__IpMintingFeeNotMatchWithGroup(ipId, lct.mintingFee, groupLct.mintingFee);
@@ -442,7 +454,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         return _hasIpAttachedLicenseTerms(ipId, licenseTemplate, licenseTermsId);
     }
 
-    /// @notice Gets the attached license terms of an IP by its index. default license terms will be the last one.
+    /// @notice Gets the attached license terms of an IP by its index.
     /// @param ipId The address of the IP.
     /// @param index The index of the attached license terms within the array of all attached license terms of the IP.
     /// @return licenseTemplate The address of the license template where the license terms are defined.
@@ -452,27 +464,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 index
     ) external view returns (address licenseTemplate, uint256 licenseTermsId) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        // consider the default license terms is attached to IP as the last one
         uint256 length = $.attachedLicenseTerms[ipId].length();
-        if (index < length) {
-            licenseTemplate = $.licenseTemplates[ipId];
-            licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
-            // consider the default license terms is attached to IP as the last one
-        } else if (index == length && $.defaultLicenseTemplate != address(0)) {
-            licenseTemplate = $.defaultLicenseTemplate;
-            licenseTermsId = $.defaultLicenseTermsId;
-        } else {
-            length += ($.defaultLicenseTemplate == address(0) ? 0 : 1);
+        if (index >= length) {
             revert Errors.LicenseRegistry__IndexOutOfBounds(ipId, index, length);
         }
+        licenseTemplate = $.licenseTemplates[ipId];
+        licenseTermsId = $.attachedLicenseTerms[ipId].at(index);
     }
 
-    /// @notice Gets the count of attached license terms of an IP. the default license terms will be counted.
+    /// @notice Gets the count of attached license terms of an IP.
     /// @param ipId The address of the IP.
     /// @return The count of attached license terms.
     function getAttachedLicenseTermsCount(address ipId) external view returns (uint256) {
-        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        return $.attachedLicenseTerms[ipId].length() + ($.defaultLicenseTemplate == address(0) ? 0 : 1);
+        return _getLicenseRegistryStorage().attachedLicenseTerms[ipId].length();
     }
 
     /// @notice Gets the derivative IP of an IP by its index.
@@ -499,9 +503,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param index The index of the parent IP within the array of all parent IPs of the IP.
     /// @return parentIpId The address of the parent IP.
     function getParentIp(address childIpId, uint256 index) external view returns (address parentIpId) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("getParentIps(address)", childIpId)
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
+            abi.encodeWithSignature("getParentIps(address)", childIpId),
+            abi.encodeWithSignature("getParentIpsExt(address)", childIpId)
         );
+
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         address[] memory parentIps = abi.decode(returnData, (address[]));
         if (index >= parentIps.length) {
@@ -511,9 +517,11 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     function isParentIp(address parentIpId, address childIpId) external view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId)
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
+            abi.encodeWithSignature("hasParentIp(address,address)", childIpId, parentIpId),
+            abi.encodeWithSignature("hasParentIpExt(address,address)", childIpId, parentIpId)
         );
+
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return (abi.decode(returnData, (bool)));
     }
@@ -522,11 +530,19 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param childIpId The address of the childIP.
     /// @return The count o parent IPs.
     function getParentIpCount(address childIpId) external view returns (uint256) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
+            abi.encodeWithSignature("getParentIpsCount(address)", childIpId),
+            abi.encodeWithSignature("getParentIpsCountExt(address)", childIpId)
         );
+
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256));
+    }
+
+    /// @notice Gets the count of ancestors IPs
+    /// @param ipId The ID of IP asset
+    function getAncestorsCount(address ipId) external returns (uint256) {
+        return _getAncestorIpsCount(ipId);
     }
 
     /// @notice Retrieves the minting license configuration for a given license terms of the IP.
@@ -635,28 +651,22 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (_isExpiredNow(parentIpId)) {
             revert Errors.LicenseRegistry__ParentIpExpired(parentIpId);
         }
-        // childIp can only register with default license terms or the license terms attached to the parent IP
-        if ($.defaultLicenseTemplate != licenseTemplate || $.defaultLicenseTermsId != licenseTermsId) {
-            address pLicenseTemplate = _getLicenseTemplate(parentIpId);
-            if (
-                (isUsingLicenseToken && pLicenseTemplate != address(0) && pLicenseTemplate != licenseTemplate) ||
-                (!isUsingLicenseToken && pLicenseTemplate != licenseTemplate)
-            ) {
-                revert Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate(parentIpId, licenseTemplate);
-            }
-            if (!isUsingLicenseToken && !$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
-                revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
-            }
+        // childIp can only register with the license terms attached to the parent IP
+        address pLicenseTemplate = _getLicenseTemplate(parentIpId);
+        if (
+            (isUsingLicenseToken && pLicenseTemplate != address(0) && pLicenseTemplate != licenseTemplate) ||
+            (!isUsingLicenseToken && pLicenseTemplate != licenseTemplate)
+        ) {
+            revert Errors.LicenseRegistry__ParentIpUnmatchedLicenseTemplate(parentIpId, licenseTemplate);
+        }
+        if (!isUsingLicenseToken && !$.attachedLicenseTerms[parentIpId].contains(licenseTermsId)) {
+            revert Errors.LicenseRegistry__ParentIpHasNoLicenseTerms(parentIpId, licenseTermsId);
         }
     }
 
     /// @dev return the license template attached an IP,
-    /// return the default license template if the IP has no license template attached
     function _getLicenseTemplate(address ipId) internal view returns (address licenseTemplate) {
         licenseTemplate = _getLicenseRegistryStorage().licenseTemplates[ipId];
-        if (licenseTemplate == address(0)) {
-            licenseTemplate = _getLicenseRegistryStorage().defaultLicenseTemplate;
-        }
     }
 
     /// @dev Calculate the earliest expiration time of the child IP with both parent IPs and license terms
@@ -670,6 +680,31 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     ) internal view returns (uint256 earliestExp) {
         uint256 licenseExp = ILicenseTemplate(licenseTemplate).getEarlierExpireTime(licenseTermsIds, block.timestamp);
         earliestExp = ExpiringOps.getEarliestExpirationTime(earliestParentIpExp, licenseExp);
+    }
+
+    function _staticcallIpGraph(
+        bytes memory internalFunc,
+        bytes memory externalFunc
+    ) internal view returns (bool, bytes memory) {
+        bytes memory callData = IP_GRAPH_ACL.isInternalAccess() ? internalFunc : externalFunc;
+        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(callData);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+        return (success, returnData);
+    }
+
+    function _callIpGraph(bytes memory internalFunc, bytes memory externalFunc) internal returns (bool, bytes memory) {
+        bytes memory callData = IP_GRAPH_ACL.isInternalAccess() ? internalFunc : externalFunc;
+        (bool success, bytes memory returnData) = IP_GRAPH.call(callData);
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+        return (success, returnData);
     }
 
     /// @dev Get the expiration time of an IP
@@ -696,15 +731,28 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @dev Check if an IP is a derivative/child IP
     /// @param childIpId The address of the IP
     function _isDerivativeIp(address childIpId) internal view returns (bool) {
-        (bool success, bytes memory returnData) = IP_GRAPH.staticcall(
-            abi.encodeWithSignature("getParentIpsCount(address)", childIpId)
+        (bool success, bytes memory returnData) = _staticcallIpGraph(
+            abi.encodeWithSignature("getParentIpsCount(address)", childIpId),
+            abi.encodeWithSignature("getParentIpsCountExt(address)", childIpId)
         );
+
         if (!success) revert Errors.LicenseRegistry__CallFailed();
         return abi.decode(returnData, (uint256)) > 0;
     }
 
+    /// @dev Returns the count of ancestors for the given IP asset
+    /// @param ipId The ID of the IP asset
+    /// @return The number of ancestors
+    function _getAncestorIpsCount(address ipId) internal returns (uint256) {
+        (bool success, bytes memory returnData) = _callIpGraph(
+            abi.encodeWithSignature("getAncestorIpsCount(address)", ipId),
+            abi.encodeWithSignature("getAncestorIpsCountExt(address)", ipId)
+        );
+        if (!success) revert Errors.RoyaltyModule__CallFailed();
+        return abi.decode(returnData, (uint256));
+    }
+
     /// @dev Retrieves the minting license configuration for a given license terms of the IP.
-    /// Will return the configuration for the license terms of the IP if configuration is not set for the license terms.
     /// @param ipId The address of the IP.
     /// @param licenseTemplate The address of the license template where the license terms are defined.
     /// @param licenseTermsId The ID of the license terms.
@@ -720,7 +768,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if ($.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)].isSet) {
             return $.licensingConfigs[_getIpLicenseHash(ipId, licenseTemplate, licenseTermsId)];
         }
-        return $.licensingConfigsForIp[ipId];
+        return
+            Licensing.LicensingConfig({
+                isSet: false,
+                mintingFee: 0,
+                licensingHook: address(0),
+                hookData: "",
+                commercialRevShare: 0,
+                disabled: false,
+                expectMinimumGroupRewardShare: 0,
+                expectGroupRewardPool: address(0)
+            });
     }
 
     /// @dev Get the hash of the IP ID, license template, and license terms ID
@@ -745,7 +803,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         uint256 licenseTermsId
     ) internal view returns (bool) {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
-        if ($.defaultLicenseTemplate == licenseTemplate && $.defaultLicenseTermsId == licenseTermsId) return true;
         return $.licenseTemplates[ipId] == licenseTemplate && $.attachedLicenseTerms[ipId].contains(licenseTermsId);
     }
 

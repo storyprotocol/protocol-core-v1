@@ -16,6 +16,8 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     using IPAccountStorageOps for IIPAccount;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    uint256 public constant MAX_GROUP_SIZE = 1000;
+
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IGroupingModule public immutable GROUPING_MODULE;
 
@@ -23,7 +25,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
     /// @custom:storage-location erc7201:story-protocol.GroupIPAssetRegistry
     struct GroupIPAssetRegistryStorage {
         mapping(address groupIpId => EnumerableSet.AddressSet memberIpIds) groups;
-        mapping(address ipId => address rewardPool) rewardPools;
+        mapping(address groupIpId => address rewardPool) rewardPools;
         // whitelisted group reward pools
         mapping(address rewardPool => bool isWhitelisted) whitelistedGroupRewardPools;
     }
@@ -95,6 +97,9 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
             if (!_isRegistered(ipIds[i])) revert Errors.GroupIPAssetRegistry__NotRegisteredIP(ipIds[i]);
             allMemberIpIds.add(ipIds[i]);
         }
+        if (allMemberIpIds.length() > MAX_GROUP_SIZE) {
+            revert Errors.GroupIPAssetRegistry__GroupSizeExceedsLimit(allMemberIpIds.length(), MAX_GROUP_SIZE);
+        }
     }
 
     /// @notice Removes a member from a Group IPA
@@ -143,6 +148,7 @@ abstract contract GroupIPAssetRegistry is IGroupIPAssetRegistry, ProtocolPausabl
         uint256 startIndex,
         uint256 size
     ) external view returns (address[] memory results) {
+        if (size > 100) revert Errors.GroupIPAssetRegistry__PageSizeExceedsLimit(size, 100);
         EnumerableSet.AddressSet storage allMemberIpIds = _getGroupIPAssetRegistryStorage().groups[groupId];
         uint256 totalSize = allMemberIpIds.length();
         if (startIndex >= totalSize) return new address[](0);

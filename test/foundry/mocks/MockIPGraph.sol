@@ -30,12 +30,27 @@ contract MockIPGraph {
     function hasParentIp(address ipId, address parent) external view returns (bool) {
         return parentIps[ipId].contains(parent);
     }
+
+    function hasParentIpExt(address ipId, address parent) external view returns (bool) {
+        return parentIps[ipId].contains(parent);
+    }
+
     function getParentIps(address ipId) external view returns (address[] memory) {
         return parentIps[ipId].values();
     }
+
+    function getParentIpsExt(address ipId) external view returns (address[] memory) {
+        return parentIps[ipId].values();
+    }
+
     function getParentIpsCount(address ipId) external view returns (uint256) {
         return parentIps[ipId].length();
     }
+
+    function getParentIpsCountExt(address ipId) external view returns (uint256) {
+        return parentIps[ipId].length();
+    }
+
     function hasAncestorIp(address ipId, address ancestor) external returns (bool) {
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));
@@ -54,7 +69,27 @@ contract MockIPGraph {
         }
         return false;
     }
-    function getAncestorIpsCount(address ipId) external returns (uint256) {
+
+    function hasAncestorIpExt(address ipId, address ancestor) external returns (bool) {
+        _cleanAncestorIps();
+        queue.pushFront(_toBytes32(ipId));
+        while (queue.length() > 0) {
+            address currentIpId = _toAddress(queue.popFront());
+            for (uint256 i = 0; i < parentIps[currentIpId].length(); i++) {
+                address parentIpId = parentIps[currentIpId].at(i);
+                if (parentIpId == ancestor) {
+                    return true;
+                }
+                if (!ancestorIps.contains(parentIpId)) {
+                    ancestorIps.add(parentIpId);
+                    queue.pushFront(_toBytes32(parentIpId));
+                }
+            }
+        }
+        return false;
+    }
+
+    function getAncestorIpsCount(address ipId) external virtual returns (uint256) {
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));
         while (queue.length() > 0) {
@@ -69,7 +104,32 @@ contract MockIPGraph {
         }
         return ancestorIps.length();
     }
+
+    function getAncestorIpsCountExt(address ipId) external returns (uint256) {
+        _cleanAncestorIps();
+        queue.pushFront(_toBytes32(ipId));
+        while (queue.length() > 0) {
+            address currentIpId = _toAddress(queue.popFront());
+            for (uint256 i = 0; i < parentIps[currentIpId].length(); i++) {
+                address parentIpId = parentIps[currentIpId].at(i);
+                if (!ancestorIps.contains(parentIpId)) {
+                    ancestorIps.add(parentIpId);
+                    queue.pushFront(_toBytes32(parentIpId));
+                }
+            }
+        }
+        return ancestorIps.length();
+    }
+
     function getAncestorIps(
+        address ipId,
+        uint256 startIndex,
+        uint256 pageSize
+    ) external view returns (address[] memory) {
+        return new address[](0);
+    }
+
+    function getAncestorIpsExt(
         address ipId,
         uint256 startIndex,
         uint256 pageSize
@@ -85,7 +145,15 @@ contract MockIPGraph {
         return _getRoyalty(ipId, ancestorIpId, policyKind);
     }
 
+    function getRoyaltyExt(address ipId, address ancestorIpId, uint256 policyKind) external returns (uint256) {
+        return _getRoyalty(ipId, ancestorIpId, policyKind);
+    }
+
     function getRoyaltyStack(address ipId, uint256 policyKind) external returns (uint256) {
+        return _getRoyaltyStack(ipId, policyKind);
+    }
+
+    function getRoyaltyStackExt(address ipId, uint256 policyKind) external returns (uint256) {
         return _getRoyaltyStack(ipId, policyKind);
     }
 
@@ -107,7 +175,7 @@ contract MockIPGraph {
     }
 
     // solhint-disable-next-line code-complexity
-    function _getRoyaltyLrp(address ipId, address ancestorIpId) internal returns (uint256 result) {
+    function _getRoyaltyLrp(address ipId, address ancestorIpId) internal virtual returns (uint256 result) {
         result = 0;
         _cleanAncestorIps();
         queue.pushFront(_toBytes32(ipId));

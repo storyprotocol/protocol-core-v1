@@ -2,10 +2,11 @@
 
 import "../setup"
 import { expect } from "chai"
-import { EvenSplitGroupPool, MockERC20, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants"
+import { EvenSplitGroupPool, MockERC20, PILicenseTemplate, RoyaltyPolicyLRP } from "../constants"
 import { LicensingConfig, registerPILTerms } from "../utils/licenseHelper";
-import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "../utils/mintNFTAndRegisterIPA";
+import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms, registerGroupIPA } from "../utils/mintNFTAndRegisterIPA";
 import { getErc20Balance } from "../utils/erc20Helper";
+import hre from "hardhat";
 
 describe("Group IP Asset Royalty Distribution", function () {
   let groupId: any;
@@ -18,17 +19,12 @@ describe("Group IP Asset Royalty Distribution", function () {
   let ip2BalanceBefore: any;
 
   before(async function () {
+    // Register group
     console.log("============ Register Group ============");
-    groupId = await expect(
-      this.groupingModule.registerGroup(EvenSplitGroupPool)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
-    console.log("groupId", groupId);
-
-    console.log("============ Register Lisence Terms ============");
-    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
-    await expect(
-      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, commRemixTermsId)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
+    const groupLicensingConfig = { ...LicensingConfig };
+    groupLicensingConfig.expectGroupRewardPool = hre.ethers.ZeroAddress;
+    groupId = await registerGroupIPA(EvenSplitGroupPool, commRemixTermsId, groupLicensingConfig);
 
     // Register IP
     console.log("============ Register IP1 ============");
@@ -46,7 +42,7 @@ describe("Group IP Asset Royalty Distribution", function () {
     // Add IP to the group
     console.log("============ Add IPs to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1, ipId2])
+      this.groupingModule.addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     expect(
@@ -59,7 +55,7 @@ describe("Group IP Asset Royalty Distribution", function () {
     console.log("============ Register Derivative IP3 ============");
     const {ipId: ipId3} = await mintNFTAndRegisterIPA();
     await expect(
-      this.licensingModule.registerDerivative(ipId3, [groupId], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6)
+      this.licensingModule.registerDerivative(ipId3, [groupId], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     rewardPoolBalanceBefore = await getErc20Balance(EvenSplitGroupPool);
@@ -72,7 +68,7 @@ describe("Group IP Asset Royalty Distribution", function () {
 
     // console.log("============ Transfer to vault ============");
     await expect(
-      this.royaltyPolicyLAP.transferToVault(ipId3, groupId, MockERC20)
+      this.royaltyPolicyLRP.transferToVault(ipId3, groupId, MockERC20)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     // Collect royalty 
@@ -100,10 +96,10 @@ describe("Group IP Asset Royalty Distribution", function () {
     // Mint license token to trigger vault creation 
     console.log("============ Mint license token ============");
     await expect(
-      this.licensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+      this.licensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.licensingModule.mintLicenseTokens(ipId2, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+      this.licensingModule.mintLicenseTokens(ipId2, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     const vaultIp1 = await this.royaltyModule.ipRoyaltyVaults(ipId1);
     console.log("vaultIp1", vaultIp1);
@@ -140,17 +136,12 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
   let ipId2: any;
 
   before(async function () {
+    // Register group
     console.log("============ Register Group ============");
-    groupId = await expect(
-      this.groupingModule.registerGroup(EvenSplitGroupPool)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
-    console.log("groupId", groupId);
-
-    console.log("============ Register Lisence Terms ============");
-    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLAP);
-    await expect(
-      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, commRemixTermsId)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
+    const groupLicensingConfig = { ...LicensingConfig };
+    groupLicensingConfig.expectGroupRewardPool = hre.ethers.ZeroAddress;
+    groupId = await registerGroupIPA(EvenSplitGroupPool, commRemixTermsId, groupLicensingConfig);
 
     // Register IP
     console.log("============ Register IP1 ============");
@@ -168,7 +159,7 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
     // Add IP to the group
     console.log("============ Add IPs to group ============");
     await expect(
-      this.groupingModule.addIp(groupId, [ipId1, ipId2])
+      this.groupingModule.addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     expect(
@@ -178,13 +169,13 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
     // Mint license token
     console.log("============ Mint license token ============");
     await expect(
-      this.licensingModule.mintLicenseTokens(groupId, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+      this.licensingModule.mintLicenseTokens(groupId, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.licensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+      this.licensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
-      this.licensingModule.mintLicenseTokens(ipId2, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0)
+      this.licensingModule.mintLicenseTokens(ipId2, PILicenseTemplate, commRemixTermsId, 1, this.owner.address, "0x", 0, 0)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
   });
 

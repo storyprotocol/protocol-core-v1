@@ -60,8 +60,9 @@ contract IPAssetRegistry is
     constructor(
         address erc6551Registry,
         address ipAccountImpl,
-        address groupingModule
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) GroupIPAssetRegistry(groupingModule) {
+        address groupingModule,
+        address ipAccountImplBeacon
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl, ipAccountImplBeacon) GroupIPAssetRegistry(groupingModule) {
         _disableInitializers();
     }
 
@@ -144,6 +145,12 @@ contract IPAssetRegistry is
         $.feeAmount = feeAmount;
         $.treasury = treasury;
         emit RegistrationFeeSet(treasury, feeToken, feeAmount);
+    }
+
+    /// @notice Upgrades the IP account implementation.
+    /// @param newIpAccountImpl The address of the new IP account implementation.
+    function upgradeIPAccountImpl(address newIpAccountImpl) external restricted {
+        _upgradeIPAccountImpl(newIpAccountImpl);
     }
 
     /// @notice Gets the canonical IP identifier associated with an IP NFT.

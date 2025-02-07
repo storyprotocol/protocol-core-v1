@@ -37,7 +37,6 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-
       user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommercialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 0, 50 * 10 ** 6)
     ).not.to.be.rejectedWith(Error);
     await registerDerivativeTx.wait();
@@ -54,7 +53,6 @@ describe("LicensingModule - registerDerivative", function () {
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule= this.licensingModule.connect(signers[1]);
     const registerDerivativeTx = await expect(
-
       user1ConnectedLicensingModule.registerDerivative(ipId2, [ipId1], [this.nonCommercialLicenseId], PILicenseTemplate, hre.ethers.ZeroAddress, 0, 10, 50 * 10 ** 6)
     ).to.be.rejectedWith(`execution reverted`);
   });

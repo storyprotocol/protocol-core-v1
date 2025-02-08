@@ -23,9 +23,6 @@ interface ILicenseRegistry {
     /// @notice Emitted when set new default license terms.
     event DefaultLicenseTermsSet(address licenseTemplate, uint256 licenseTermsId);
 
-    /// @notice Emitted when a minting license configuration is set for all licenses of an IP.
-    event LicensingConfigSetForIP(address indexed ipId, Licensing.LicensingConfig licensingConfig);
-
     /// @notice Emitted when an expiration time is set for an IP.
     event ExpirationTimeSet(address indexed ipId, uint256 expireTime);
 
@@ -36,6 +33,9 @@ interface ILicenseRegistry {
 
     /// @notice Returns the default license terms.
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice Checks if the license terms are the default license terms.
+    function isDefaultLicense(address licenseTemplate, uint256 licenseTermsId) external view returns (bool);
 
     /// @notice Registers a new license template in the Story Protocol.
     /// @param licenseTemplate The address of the license template to register.
@@ -69,6 +69,11 @@ interface ILicenseRegistry {
     /// @param ipId The address of the IP to check.
     /// @return Whether the IP has derivative IPs.
     function hasDerivativeIps(address ipId) external view returns (bool);
+
+    /// @notice Gets the count of ancestors IPs
+    /// @param ipId The ID of IP asset
+    /// @return The count of ancestors IPs
+    function getAncestorsCount(address ipId) external returns (uint256);
 
     /// @notice Verifies the minting of a license token.
     /// @param licensorIpId The address of the licensor IP.
@@ -191,13 +196,6 @@ interface ILicenseRegistry {
         Licensing.LicensingConfig calldata licensingConfig
     ) external;
 
-    /// @notice Sets the MintingLicenseConfig for an IP and applies it to all licenses attached to the IP.
-    /// @dev This function will set a global configuration for all licenses under a specific IP.
-    /// However, this global configuration can be overridden by a configuration set at a specific license level.
-    /// @param ipId The IP ID for which the configuration is being set.
-    /// @param licensingConfig The MintingLicenseConfig to be set for all licenses under the given IP.
-    function setLicensingConfigForIp(address ipId, Licensing.LicensingConfig calldata licensingConfig) external;
-
     /// @notice Gets the expiration time for an IP.
     /// @param ipId The address of the IP.
     /// @return The expiration time, 0 means never expired.
@@ -217,4 +215,17 @@ interface ILicenseRegistry {
         address childIpId,
         address parentIpId
     ) external view returns (address licenseTemplate, uint256 licenseTermsId);
+
+    /// @notice Return the Royalty percentage of the license terms of the IP.
+    /// There are 2 places to get the royalty percentage: license terms, LicenseConfig
+    /// The order of priority is LicenseConfig  > license terms
+    /// @param ipId The address of the IP.
+    /// @param licenseTemplate The address of the license template where the license terms are defined.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return royaltyPercent The Royalty percentage 100% is 100_000_000.
+    function getRoyaltyPercent(
+        address ipId,
+        address licenseTemplate,
+        uint256 licenseTermsId
+    ) external view returns (uint32 royaltyPercent);
 }

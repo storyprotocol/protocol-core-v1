@@ -76,6 +76,7 @@ contract LicensingModuleHarness is Test {
             amount,
             receiver,
             royaltyContext,
+            0,
             0
         );
 
@@ -110,7 +111,8 @@ contract LicensingModuleHarness is Test {
             licenseTemplate,
             royaltyContext,
             0,
-            100e6
+            100e6,
+            0
         );
 
         mintedOrRegisterDerivative = true;
@@ -258,7 +260,8 @@ contract LicensingModuleBaseInvariant is BaseTest {
             address(accessController),
             address(ipAccountRegistry),
             address(licenseRegistry),
-            address(royaltyModule)
+            address(royaltyModule),
+            address(moduleRegistry)
         );
         p = address(
             TestProxyHelper.deployUUPSProxy(

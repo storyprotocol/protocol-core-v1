@@ -3,6 +3,7 @@
 pragma solidity 0.8.26;
 
 // external
+import { LibString } from "@solady/src/utils/LibString.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IERC165 } from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import { ERC165Checker } from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
@@ -13,8 +14,10 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 
 // contracts
 import { IHookModule } from "../../interfaces/modules/base/IHookModule.sol";
+import { IModuleRegistry } from "../../interfaces/registries/IModuleRegistry.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { IRoyaltyModule } from "../../interfaces/modules/royalty/IRoyaltyModule.sol";
+import { IRoyaltyPolicy } from "../../interfaces/modules/royalty/policies/IRoyaltyPolicy.sol";
 import { PILicenseTemplateErrors } from "../../lib/PILicenseTemplateErrors.sol";
 import { ExpiringOps } from "../../lib/ExpiringOps.sol";
 import { IPILicenseTemplate, PILTerms } from "../../interfaces/modules/licensing/IPILicenseTemplate.sol";
@@ -48,6 +51,8 @@ contract PILicenseTemplate is
     IRoyaltyModule public immutable ROYALTY_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     PILTermsRenderer public immutable TERMS_RENDERER;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    IModuleRegistry public immutable MODULE_REGISTRY;
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.PILicenseTemplate")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant PILicenseTemplateStorageLocation =
@@ -58,13 +63,15 @@ contract PILicenseTemplate is
         address accessController,
         address ipAccountRegistry,
         address licenseRegistry,
-        address royaltyModule
+        address royaltyModule,
+        address moduleRegistry
     ) LicensorApprovalChecker(accessController, ipAccountRegistry) {
         if (licenseRegistry == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroLicenseRegistry();
         if (royaltyModule == address(0)) revert PILicenseTemplateErrors.PILicenseTemplate__ZeroRoyaltyModule();
         LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         TERMS_RENDERER = new PILTermsRenderer();
+        MODULE_REGISTRY = IModuleRegistry(moduleRegistry);
         _disableInitializers();
     }
 
@@ -104,10 +111,17 @@ contract PILicenseTemplate is
             revert PILicenseTemplateErrors.PILicenseTemplate__RoyaltyPolicyRequiresCurrencyToken();
         }
 
-        _verifyCommercialUse(terms);
-        _verifyDerivatives(terms);
+        if (terms.defaultMintingFee > 0 && terms.royaltyPolicy == address(0)) {
+            revert PILicenseTemplateErrors.PILicenseTemplate__MintingFeeRequiresRoyaltyPolicy();
+        }
 
-        bytes32 hashedLicense = keccak256(abi.encode(terms));
+        PILTerms memory termsEscaped = terms;
+        termsEscaped.uri = LibString.escapeJSON(terms.uri);
+
+        _verifyCommercialUse(termsEscaped);
+        _verifyDerivatives(termsEscaped);
+
+        bytes32 hashedLicense = keccak256(abi.encode(termsEscaped));
         PILicenseTemplateStorage storage $ = _getPILicenseTemplateStorage();
         id = $.hashedLicenseTerms[hashedLicense];
         // license id start from 1
@@ -115,10 +129,10 @@ contract PILicenseTemplate is
             return id;
         }
         id = ++$.licenseTermsCounter;
-        $.licenseTerms[id] = terms;
+        $.licenseTerms[id] = termsEscaped;
         $.hashedLicenseTerms[hashedLicense] = id;
 
-        emit LicenseTermsRegistered(id, address(this), abi.encode(terms));
+        emit LicenseTermsRegistered(id, address(this), abi.encode(termsEscaped));
     }
 
     /// @notice Checks if a license terms exists.
@@ -157,7 +171,13 @@ contract PILicenseTemplate is
         if (terms.commercializerChecker != address(0)) {
             // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
             // when the policy was registered.
-            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
+            if (
+                !IHookModule(terms.commercializerChecker).verify(
+                    licensorIpId,
+                    licensee,
+                    terms.commercializerCheckerData
+                )
+            ) {
                 return false;
             }
         }
@@ -201,19 +221,19 @@ contract PILicenseTemplate is
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpIds The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param childIpOwner The address of the derivative IP owner.
+    /// @param caller The address initiating the derivative registration.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpIds,
         uint256[] calldata licenseTermsIds,
-        address childIpOwner
+        address caller
     ) external override returns (bool) {
         if (!_verifyCompatibleLicenseTerms(licenseTermsIds)) {
             return false;
         }
         for (uint256 i = 0; i < licenseTermsIds.length; i++) {
-            if (!_verifyRegisterDerivative(childIpId, parentIpIds[i], licenseTermsIds[i], childIpOwner)) {
+            if (!_verifyRegisterDerivative(childIpId, parentIpIds[i], licenseTermsIds[i], caller)) {
                 return false;
             }
         }
@@ -300,9 +320,32 @@ contract PILicenseTemplate is
     /// @param newRoyaltyPercent The new royalty percentage.
     /// @return True if the royalty percentage can be overridden, false otherwise.
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
-        if (licenseTermsId == 0 || newRoyaltyPercent == 0) return false;
+        if (licenseTermsId == 0) return false;
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
-        return terms.commercialUse && newRoyaltyPercent >= terms.commercialRevShare;
+        return terms.commercialUse && (newRoyaltyPercent == 0 || newRoyaltyPercent >= terms.commercialRevShare);
+    }
+
+    /// @notice queries if the derivative registration is allowed under the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the derivative registration is allowed, false otherwise.
+    function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool) {
+        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        return terms.derivativesAllowed;
+    }
+
+    /// @notice check if the license terms support associate with group IP assets
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the license terms support associate with group IP assets, false otherwise.
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool) {
+        PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        address royaltyPolicy = terms.royaltyPolicy;
+        if (royaltyPolicy == address(0)) {
+            return true;
+        }
+        if (ROYALTY_MODULE.isWhitelistedRoyaltyPolicy(royaltyPolicy)) {
+            return IRoyaltyPolicy(royaltyPolicy).isSupportGroup();
+        }
+        return false;
     }
 
     /// @notice checks the contract whether supports the given interface.
@@ -323,7 +366,7 @@ contract PILicenseTemplate is
 
     /// @dev Checks the configuration of commercial use and throws if the policy is not compliant
     // solhint-disable-next-line code-complexity
-    function _verifyCommercialUse(PILTerms calldata terms) internal view {
+    function _verifyCommercialUse(PILTerms memory terms) internal view {
         if (!terms.commercialUse) {
             if (terms.commercialAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__CommercialDisabled_CantAddAttribution();
@@ -353,13 +396,18 @@ contract PILicenseTemplate is
                         terms.commercializerChecker
                     );
                 }
+                if (!MODULE_REGISTRY.isRegistered(terms.commercializerChecker)) {
+                    revert PILicenseTemplateErrors.PILicenseTemplate__CommercializerCheckerNotRegistered(
+                        terms.commercializerChecker
+                    );
+                }
                 IHookModule(terms.commercializerChecker).validateConfig(terms.commercializerCheckerData);
             }
         }
     }
 
     /// @dev notice Checks the configuration of derivative parameters and throws if the policy is not compliant
-    function _verifyDerivatives(PILTerms calldata terms) internal pure {
+    function _verifyDerivatives(PILTerms memory terms) internal pure {
         if (!terms.derivativesAllowed) {
             if (terms.derivativesAttribution) {
                 revert PILicenseTemplateErrors.PILicenseTemplate__DerivativesDisabled_CantAddAttribution();
@@ -405,7 +453,9 @@ contract PILicenseTemplate is
         if (terms.commercializerChecker != address(0)) {
             // No need to check if the commercializerChecker supports the IHookModule interface, as it was checked
             // when the policy was registered.
-            if (!IHookModule(terms.commercializerChecker).verify(licensee, terms.commercializerCheckerData)) {
+            if (
+                !IHookModule(terms.commercializerChecker).verify(parentIpId, licensee, terms.commercializerCheckerData)
+            ) {
                 return false;
             }
         }
@@ -439,6 +489,7 @@ contract PILicenseTemplate is
     function _exists(uint256 licenseTermsId) internal view returns (bool) {
         return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
     }
+
     ////////////////////////////////////////////////////////////////////////////
     //                         Upgrades related                               //
     ////////////////////////////////////////////////////////////////////////////

@@ -57,11 +57,9 @@ interface IRoyaltyModule is IModule {
     /// @param externalRoyaltyPolicy The address of the external royalty policy
     event ExternalRoyaltyPolicyRegistered(address externalRoyaltyPolicy);
 
-    /// @notice Event emitted when the IP graph limits are updated
-    /// @param maxParents The maximum number of parents an IP asset can have
-    /// @param maxAncestors The maximum number of ancestors an IP asset can have
+    /// @notice Event emitted when the Royalty limits are updated
     /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
-    event IpGraphLimitsUpdated(uint256 maxParents, uint256 maxAncestors, uint256 accumulatedRoyaltyPoliciesLimit);
+    event RoyaltyLimitsUpdated(uint256 accumulatedRoyaltyPoliciesLimit);
 
     /// @notice Event emitted when a license is minted
     /// @param ipId The ipId whose license is being minted (licensor)
@@ -99,16 +97,10 @@ interface IRoyaltyModule is IModule {
     /// @param royaltyFeePercent The royalty fee percentage
     function setRoyaltyFeePercent(uint32 royaltyFeePercent) external;
 
-    /// @notice Sets the ip graph limits
+    /// @notice Sets the royalty limits
     /// @dev Enforced to be only callable by the protocol admin
-    /// @param parentLimit The maximum number of parents an IP asset can have
-    /// @param ancestorLimit The maximum number of ancestors an IP asset can have
     /// @param accumulatedRoyaltyPoliciesLimit The maximum number of accumulated royalty policies an IP asset can have
-    function setIpGraphLimits(
-        uint256 parentLimit,
-        uint256 ancestorLimit,
-        uint256 accumulatedRoyaltyPoliciesLimit
-    ) external;
+    function setRoyaltyLimits(uint256 accumulatedRoyaltyPoliciesLimit) external;
 
     /// @notice Whitelist a royalty policy
     /// @dev Enforced to be only callable by the protocol admin
@@ -169,10 +161,6 @@ interface IRoyaltyModule is IModule {
     /// @param amount The amount to pay
     function payLicenseMintingFee(address receiverIpId, address payerAddress, address token, uint256 amount) external;
 
-    /// @notice Returns the number of ancestors for a given IP asset
-    /// @param ipId The ID of IP asset
-    function getAncestorsCount(address ipId) external returns (uint256);
-
     /// @notice Indicates if an IP asset has a specific ancestor IP asset
     /// @param ipId The ID of IP asset
     /// @param ancestorIpId The ID of the ancestor IP asset
@@ -232,4 +220,17 @@ interface IRoyaltyModule is IModule {
     /// @param ipId The ID of IP asset
     /// @param token The token address
     function totalRevenueTokensReceived(address ipId, address token) external view returns (uint256);
+
+    /// @notice Returns the total revenue tokens received by a given IP asset while a given royalty
+    /// policy is whitelisted. If a royalty policy is whitelisted since the beginning then the value will be equal
+    /// to the total revenue tokens received over the lifetime of the IP asset. But whenever a payment is made to an
+    /// IP asset while a royalty policy is blacklisted then that payment will not be accounted for that royalty policy.
+    /// @param ipId The ID of IP asset
+    /// @param token The token address
+    /// @param royaltyPolicy The royalty policy address
+    function totalRevenueTokensAccounted(
+        address ipId,
+        address token,
+        address royaltyPolicy
+    ) external view returns (uint256);
 }

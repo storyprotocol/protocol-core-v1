@@ -5,6 +5,7 @@ import { IERC165 } from "@openzeppelin/contracts/utils/introspection/ERC165.sol"
 import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { SignatureChecker } from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { MessageHashUtils } from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import { IERC6551Account } from "erc6551/interfaces/IERC6551Account.sol";
 import { IERC6551Executable } from "erc6551/interfaces/IERC6551Executable.sol";
@@ -248,9 +249,46 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         return isValidSigner(signer, address(uint160(uint256(extraData))), context);
     }
 
+    /// @dev Returns whether the `signature` is valid for the `hash.
+    function _erc1271IsValidSignature(bytes32 hash, bytes calldata signature) internal view override returns (bool) {
+        uint8 v = uint8(signature[64]);
+        address signer;
+
+        // Smart contract signature
+        if (v == 0) {
+            // Signer address encoded in r
+            // prevent from signature malleability
+            if ((bytes32(signature[:32]) >> 160) != 0) {
+                revert Errors.IPAccount__InvalidSigner();
+            }
+            signer = address(uint160(uint256(bytes32(signature[:32]))));
+
+            // Allow recursive signature verification
+            if (!this.isValidSigner(signer, address(0), "") && signer != address(this)) {
+                return false;
+            }
+
+            // Signature offset encoded in s
+            bytes calldata _signature = signature[uint256(bytes32(signature[32:64])):];
+
+            return SignatureChecker.isValidERC1271SignatureNow(signer, hash, _signature);
+        }
+
+        ECDSA.RecoverError _error;
+        (signer, _error, ) = ECDSA.tryRecover(hash, signature);
+
+        if (_error != ECDSA.RecoverError.NoError) return false;
+
+        return this.isValidSigner(signer, address(0), "");
+    }
+
     /// @dev Override Solady EIP712 function and return EIP712 domain name for IPAccount.
     function _domainNameAndVersion() internal view override returns (string memory name, string memory version) {
         name = "Story Protocol IP Account";
         version = "1";
+    }
+
+    function _authorizeUpgrade(address) internal virtual override {
+        revert Errors.IPAccount__UUPSUpgradeDisabled();
     }
 }

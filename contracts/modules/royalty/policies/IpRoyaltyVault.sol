@@ -26,23 +26,13 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
 
     /// @dev Storage structure for the IpRoyaltyVault
     /// @param ipId The ip id to whom this royalty vault belongs to
-    /// @param lastSnapshotTimestamp [DEPRECATED] The last snapshotted timestamp
-    /// @param pendingVaultAmount [DEPRECATED] Amount of revenue token pending to be snapshotted
-    /// @param claimVaultAmount [DEPRECATED] Amount of revenue token in the claim vault
-    /// @param claimableAtSnapshot [DEPRECATED] Amount of revenue token claimable at a given snapshot
-    /// @param isClaimedAtSnapshot [DEPRECATED] Indicates whether the claimer has claimed the token at a given snapshot
     /// @param tokens The list of revenue tokens in the vault
-    /// @param revenueAccBalances The accumulated balance of revenue tokens in the vault
+    /// @param vaultAccBalances The accumulated balance of revenue tokens in the vault
     /// @param claimerRevenueDebt The revenue debt of the claimer, used to calculate the claimable revenue,
     /// positive value means claimed need to deducted, negative value means claimable from vault
     /// @custom:storage-location erc7201:story-protocol.IpRoyaltyVault
     struct IpRoyaltyVaultStorage {
         address ipId;
-        uint40 lastSnapshotTimestamp;
-        mapping(address token => uint256 amount) pendingVaultAmount;
-        mapping(address token => uint256 amount) claimVaultAmount;
-        mapping(uint256 snapshotId => mapping(address token => uint256 amount)) claimableAtSnapshot;
-        mapping(uint256 snapshotId => mapping(address claimer => mapping(address token => bool))) isClaimedAtSnapshot;
         EnumerableSet.AddressSet tokens;
         mapping(address token => uint256 accBalance) vaultAccBalances;
         mapping(address token => mapping(address claimer => int256 revenueDebt)) claimerRevenueDebt;
@@ -187,7 +177,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     function claimableRevenue(address claimer, address token) external view whenNotPaused returns (uint256) {
         // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
         if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
-        return _claimableRevenue(claimer, token);
+        return _claimableRevenueWithExtraDecimal(claimer, token) / totalSupply();
     }
 
     /// @notice The ip id to whom this royalty vault belongs to
@@ -250,15 +240,18 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         address[] memory tokenList = $.tokens.values();
         uint256 totalSupply = totalSupply();
         for (uint256 i = 0; i < tokenList.length; i++) {
-            uint256 pendingFrom = _claimableRevenue(from, tokenList[i]);
-            uint256 pendingTo = _claimableRevenue(to, tokenList[i]);
+            uint256 pendingFrom = _claimableRevenueWithExtraDecimal(from, tokenList[i]);
+            uint256 pendingTo = _claimableRevenueWithExtraDecimal(to, tokenList[i]);
             uint256 accBalance = $.vaultAccBalances[tokenList[i]];
-            $.claimerRevenueDebt[tokenList[i]][to] =
-                int256((accBalance * (balanceOf(to) + amount)) / totalSupply) -
-                int256(pendingTo);
-            $.claimerRevenueDebt[tokenList[i]][from] =
-                int256((accBalance * (balanceOfFrom - amount)) / totalSupply) -
-                int256(pendingFrom);
+
+            int256 revenueDebtTo = int256((accBalance * (balanceOf(to) + amount))) - int256(pendingTo);
+            $.claimerRevenueDebt[tokenList[i]][to] = revenueDebtTo;
+
+            int256 revenueDebtFrom = int256((accBalance * (balanceOfFrom - amount))) - int256(pendingFrom);
+            $.claimerRevenueDebt[tokenList[i]][from] = revenueDebtFrom;
+
+            emit RevenueDebtUpdated(to, tokenList[i], revenueDebtTo);
+            emit RevenueDebtUpdated(from, tokenList[i], revenueDebtFrom);
         }
 
         super._update(from, to, amount);
@@ -270,7 +263,7 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
     function _claimPendingRevenue(address claimer, address token) internal returns (uint256 pending) {
         // if the ip is tagged, then the unclaimed royalties are unavailable until the dispute is resolved
         if (DISPUTE_MODULE.isIpTagged(_getIpRoyaltyVaultStorage().ipId)) return 0;
-        pending = _claimableRevenue(claimer, token);
+        pending = _claimableRevenueWithExtraDecimal(claimer, token) / totalSupply();
         if (pending > 0) {
             emit RevenueTokenClaimed(claimer, token, pending);
             IERC20(token).safeTransfer(claimer, pending);
@@ -293,27 +286,31 @@ contract IpRoyaltyVault is IIpRoyaltyVault, ERC20Upgradeable, ReentrancyGuardUpg
         for (uint256 i = 0; i < tokenList.length; i++) {
             claimedAmounts[i] = _claimPendingRevenue(claimer, tokenList[i]);
             if (claimedAmounts[i] == 0) revert Errors.IpRoyaltyVault__NoClaimableTokens();
-            $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]);
+            $.claimerRevenueDebt[tokenList[i]][claimer] += int256(claimedAmounts[i]) * int256(totalSupply());
+            emit RevenueDebtUpdated(claimer, tokenList[i], $.claimerRevenueDebt[tokenList[i]][claimer]);
         }
 
         return claimedAmounts;
     }
 
-    /// @dev Returns the claimable revenue for a claimer of a given token
+    /// @dev Returns the claimable revenue for a claimer of a given token with extra decimal by multiplying totalSupply
     /// @param claimer The address of the claimer
     /// @param token The revenue token to claim
-    function _claimableRevenue(address claimer, address token) internal view returns (uint256) {
+    function _claimableRevenueWithExtraDecimal(address claimer, address token) internal view returns (uint256) {
         // accBalance - accumulated revenue tokens in the vault
         // totalSupply = totalSupply() - totalSupply of RoyaltyTokens of the vault (IpRoyaltyVault)
         // accBalancePerShare = accBalance / totalSupply
         // userAmount = balanceOf(user) - user amount of RoyaltyTokens (IpRoyaltyVault)
         // means how much share the user has
         // pending = (accBalancePerShare * userAmount) - rewardDebt
+        // pendingWithExtraDecimal = pending * totalSupply
         IpRoyaltyVaultStorage storage $ = _getIpRoyaltyVaultStorage();
         uint256 accBalance = $.vaultAccBalances[token];
         uint256 userAmount = balanceOf(claimer);
         int256 rewardDebt = $.claimerRevenueDebt[token][claimer];
-        return uint256(int256((accBalance * userAmount) / totalSupply()) - rewardDebt);
+        int256 pendingWithExtraDecimal = int256((accBalance * userAmount)) - rewardDebt;
+        if (pendingWithExtraDecimal < 0) revert Errors.IpRoyaltyVault__NegativeValueUnsafeCastingToUint256();
+        return uint256(pendingWithExtraDecimal);
     }
 
     /// @dev Returns the storage struct of IpRoyaltyVault

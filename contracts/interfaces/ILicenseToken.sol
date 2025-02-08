@@ -24,6 +24,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         address licenseTemplate;
         uint256 licenseTermsId;
         bool transferable;
+        uint32 commercialRevShare;
     }
 
     /// @notice Emitted when a License Token is minted.
@@ -40,6 +41,7 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @param amount The amount of License Tokens to mint.
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted License Tokens.
+    /// @param maxRevenueShare The maximum revenue share percentage allowed for minting the License Tokens.
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
     function mintLicenseTokens(
         address licensorIpId,
@@ -47,7 +49,8 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
         uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
-        address receiver
+        address receiver,
+        uint32 maxRevenueShare
     ) external returns (uint256 startLicenseTokenId);
 
     /// @notice Burns specified License Tokens.
@@ -98,9 +101,18 @@ interface ILicenseToken is IERC721Metadata, IERC721Enumerable {
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
     /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
+    /// @return commercialRevShares An array of commercial revenue share percentages associated with each License Token.
     function validateLicenseTokensForDerivative(
         address caller,
         address childIpId,
         uint256[] calldata tokenIds
-    ) external view returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds);
+    )
+        external
+        view
+        returns (
+            address licenseTemplate,
+            address[] memory licensorIpIds,
+            uint256[] memory licenseTermsIds,
+            uint32[] memory commercialRevShares
+        );
 }

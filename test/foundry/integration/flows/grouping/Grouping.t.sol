@@ -12,11 +12,12 @@ import { PILFlavors } from "../../../../../contracts/lib/PILFlavors.sol";
 import { Licensing } from "../../../../../contracts/lib/Licensing.sol";
 import { IGroupingModule } from "../../../../../contracts/interfaces/modules/grouping/IGroupingModule.sol";
 import { IGroupIPAssetRegistry } from "../../../../../contracts/interfaces/registries/IGroupIPAssetRegistry.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // test
 import { BaseIntegration } from "../../BaseIntegration.t.sol";
 
-contract Flows_Integration_Grouping is BaseIntegration {
+contract Flows_Integration_Grouping is BaseIntegration, ERC721Holder {
     using EnumerableSet for EnumerableSet.UintSet;
     using Strings for *;
 
@@ -43,7 +44,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             PILFlavors.commercialRemix({
                 mintingFee: 0,
                 commercialRevShare: defaultCommRevShare,
-                royaltyPolicy: address(royaltyPolicyLAP),
+                royaltyPolicy: address(royaltyPolicyLRP),
                 currencyToken: address(erc20)
             })
         );
@@ -68,13 +69,18 @@ contract Flows_Integration_Grouping is BaseIntegration {
             expectGroupRewardPool: address(evenSplitGroupPool)
         });
 
+        licensingConfig.expectGroupRewardPool = address(0);
+
         {
             vm.startPrank(groupOwner);
             groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
             vm.label(groupId, "Group1");
             licensingModule.attachLicenseTerms(groupId, address(pilTemplate), commRemixTermsId);
+            licensingModule.setLicensingConfig(groupId, address(pilTemplate), commRemixTermsId, licensingConfig);
             vm.stopPrank();
         }
+
+        licensingConfig.expectGroupRewardPool = address(evenSplitGroupPool);
         {
             vm.startPrank(u.alice);
             ipAcct[1] = registerIpAccount(mockNFT, 1, u.alice);
@@ -93,14 +99,32 @@ contract Flows_Integration_Grouping is BaseIntegration {
             vm.stopPrank();
         }
 
-        licensingModule.mintLicenseTokens(ipAcct[1], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
-        licensingModule.mintLicenseTokens(ipAcct[2], address(pilTemplate), commRemixTermsId, 1, address(this), "", 0);
+        licensingModule.mintLicenseTokens(
+            ipAcct[1],
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            address(this),
+            "",
+            0,
+            0
+        );
+        licensingModule.mintLicenseTokens(
+            ipAcct[2],
+            address(pilTemplate),
+            commRemixTermsId,
+            1,
+            address(this),
+            "",
+            0,
+            0
+        );
         {
             address[] memory ipIds = new address[](2);
             ipIds[0] = ipAcct[1];
             ipIds[1] = ipAcct[2];
             vm.startPrank(groupOwner);
-            groupingModule.addIp(groupId, ipIds);
+            groupingModule.addIp(groupId, ipIds, 100e6);
             vm.stopPrank();
         }
 
@@ -111,7 +135,16 @@ contract Flows_Integration_Grouping is BaseIntegration {
             parentIpIds[0] = groupId;
             uint256[] memory licenseIds = new uint256[](1);
             licenseIds[0] = commRemixTermsId;
-            licensingModule.registerDerivative(ipAcct[3], parentIpIds, licenseIds, address(pilTemplate), "", 0, 100e6);
+            licensingModule.registerDerivative(
+                ipAcct[3],
+                parentIpIds,
+                licenseIds,
+                address(pilTemplate),
+                "",
+                0,
+                100e6,
+                0
+            );
             vm.stopPrank();
         }
 
@@ -142,7 +175,7 @@ contract Flows_Integration_Grouping is BaseIntegration {
             ERC20[] memory tokens = new ERC20[](1);
             tokens[0] = mockToken;
 
-            royaltyPolicyLAP.transferToVault(ipAcct[3], groupId, address(mockToken));
+            royaltyPolicyLRP.transferToVault(ipAcct[3], groupId, address(mockToken));
 
             vm.warp(block.timestamp + 7 days + 1);
 

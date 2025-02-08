@@ -88,6 +88,7 @@ contract GroupNFT is IGroupNFT, ERC721Upgradeable, AccessManagedUpgradeable, UUP
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        _requireOwned(id);
         GroupNFTStorage storage $ = _getGroupNFTStorage();
 
         /* solhint-disable */

@@ -12,58 +12,51 @@ contract BroadcastManager is Script {
     address public multisig;
     address public deployer;
     address public relayer;
-    uint32 public upgraderExecDelay;
+    address public guardian;
 
     function _beginBroadcast() internal {
         uint256 deployerPrivateKey;
-        if (block.chainid == 1) { // Tenderly mainnet fork
-            deployerPrivateKey = vm.envUint("MAINNET_PRIVATEKEY");
-            deployer = vm.addr(deployerPrivateKey);
-            multisig = vm.envAddress("MAINNET_MULTISIG_ADDRESS");
-            upgraderExecDelay = uint32(vm.envUint("MAINNET_UPGRADER_EXEC_DELAY"));
-            relayer = vm.envAddress("MAINNET_RELAYER_ADDRESS");
-            vm.startBroadcast(deployerPrivateKey);
-        } else if (block.chainid == 11155111) {
-            deployerPrivateKey = vm.envUint("SEPOLIA_PRIVATEKEY");
-            deployer = vm.addr(deployerPrivateKey);
-            multisig = vm.envAddress("SEPOLIA_MULTISIG_ADDRESS");
-            relayer = vm.envAddress("SEPOLIA_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
-            vm.startBroadcast(deployerPrivateKey);
-        } else if (block.chainid == 1512) {
+        if (block.chainid == 1512) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 1513) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 1516) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 1315) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
-            upgraderExecDelay = 1 minutes;
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 1337) {
             deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
             deployer = vm.addr(deployerPrivateKey);
             multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
             relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
-            upgraderExecDelay = 10 minutes;
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
+            vm.startBroadcast(deployerPrivateKey);
+        } else if (block.chainid == 1514) {
+            deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
+            deployer = vm.addr(deployerPrivateKey);
+            multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
+            relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
+            guardian = vm.envAddress("STORY_GUARDIAN_ADDRESS");
             vm.startBroadcast(deployerPrivateKey);
         } else if (block.chainid == 31337) {
             Users memory u = UsersLib.createMockUsers(vm);
@@ -72,8 +65,13 @@ contract BroadcastManager is Script {
             multisig = u.admin;
             deployer = u.alice;
             relayer = u.relayer;
-            upgraderExecDelay = 10 minutes;
             vm.startPrank(deployer);
+        } else if (block.chainid == 1399) {
+            deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
+            deployer = vm.addr(deployerPrivateKey);
+            multisig = vm.envAddress("STORY_MULTISIG_ADDRESS");
+            relayer = vm.envAddress("STORY_RELAYER_ADDRESS");
+            vm.startBroadcast(deployerPrivateKey);
         } else {
             console2.log("Unsupported chain", block.chainid);
             revert("Unsupported chain");

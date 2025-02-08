@@ -3,17 +3,19 @@ pragma solidity 0.8.26;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 // solhint-disable-next-line max-line-length
 import { IIpRoyaltyVault } from "../../../../contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
+import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 
-contract TestIpRoyaltyVault is BaseTest {
+contract TestIpRoyaltyVault is BaseTest, ERC721Holder {
     function setUp() public override {
         super.setUp();
 
@@ -320,8 +322,18 @@ contract TestIpRoyaltyVault is BaseTest {
         address groupId = groupingModule.registerGroup(address(evenSplitGroupPool));
         address rewardPool = ipAssetRegistry.getGroupRewardPool(groupId);
 
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+
         vm.startPrank(address(licensingModule));
-        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLAP), uint32(10 * 10 ** 6), "");
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLRP), uint32(10 * 10 ** 6), "");
         IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(groupId));
         vm.stopPrank();
 
@@ -500,6 +512,7 @@ contract TestIpRoyaltyVault is BaseTest {
 
         vm.expectEmit(address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(USDC), (royaltyAmount * 30e6) / 100e6);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(alice, address(USDC), 30e17);
         uint256 aliceClaimedUsdc = ipRoyaltyVault.claimRevenueOnBehalf(alice, address(USDC));
 
         assertEq(aliceClaimedUsdc, (royaltyAmount * 30e6) / 100e6);
@@ -507,14 +520,19 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(USDC.balanceOf(address(ipRoyaltyVault)), (royaltyAmount * 70e6) / 100e6);
         assertEq(LINK.balanceOf(alice), aliceLinkBalanceBefore);
         assertEq(LINK.balanceOf(address(ipRoyaltyVault)), royaltyAmount);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(USDC)), 30e17);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(LINK)), 0);
 
         vm.expectEmit(address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(alice, address(LINK), (royaltyAmount * 30e6) / 100e6);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(alice, address(LINK), 30e17);
         uint256 aliceClaimedLink = ipRoyaltyVault.claimRevenueOnBehalf(alice, address(LINK));
 
         assertEq(aliceClaimedLink, (royaltyAmount * 30e6) / 100e6);
         assertEq(LINK.balanceOf(alice), aliceLinkBalanceBefore + (royaltyAmount * 30e6) / 100e6);
         assertEq(LINK.balanceOf(address(ipRoyaltyVault)), (royaltyAmount * 70e6) / 100e6);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(USDC)), 30e17);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(LINK)), 30e17);
 
         vm.expectEmit(address(ipRoyaltyVault));
         emit IIpRoyaltyVault.RevenueTokenClaimed(address(2), address(USDC), (royaltyAmount * 70e6) / 100e6);
@@ -552,8 +570,12 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.prank(address(2));
         vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(address(2), alice, 30e6);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(alice, address(USDC), 30e17);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(address(2), address(USDC), -30e17);
         IERC20(address(ipRoyaltyVault)).transfer(alice, 30e6);
 
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(USDC)), 30e17);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(address(2), address(USDC)), -30e17);
         assertEq(ipRoyaltyVault.balanceOf(alice), 30e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 70e6);
         assertEq(USDC.balanceOf(alice), aliceUsdcBalanceBefore);
@@ -586,8 +608,12 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.prank(address(2));
         vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(address(2), alice, 20e6);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(alice, address(USDC), 70e17);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(address(2), address(USDC), 30e17);
         IERC20(address(ipRoyaltyVault)).transfer(alice, 20e6);
 
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(USDC)), 70e17);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(address(2), address(USDC)), 30e17);
         assertEq(ipRoyaltyVault.balanceOf(alice), 50e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 50e6);
         assertEq(USDC.balanceOf(alice), aliceUsdcBalanceBefore);
@@ -631,8 +657,12 @@ contract TestIpRoyaltyVault is BaseTest {
         vm.prank(alice);
         vm.expectEmit(address(ipRoyaltyVault));
         emit IERC20.Transfer(alice, bob, 20e6);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(bob, address(USDC), 60e17);
+        emit IIpRoyaltyVault.RevenueDebtUpdated(alice, address(USDC), 40e17);
         IERC20(address(ipRoyaltyVault)).transfer(bob, 20e6);
 
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(alice, address(USDC)), 40e17);
+        assertEq(ipRoyaltyVault.claimerRevenueDebt(bob, address(USDC)), 60e17);
         assertEq(ipRoyaltyVault.balanceOf(alice), 30e6);
         assertEq(ipRoyaltyVault.balanceOf(bob), 20e6);
         assertEq(ipRoyaltyVault.balanceOf(address(2)), 50e6);
@@ -750,5 +780,39 @@ contract TestIpRoyaltyVault is BaseTest {
         assertEq(USDC.balanceOf(address(2)), (royaltyAmount * 100e6) / 100e6);
         assertEq(ipRoyaltyVault.claimableRevenue(address(2), address(USDC)), 0);
         assertEq(ipRoyaltyVault.claimableRevenue(alice, address(USDC)), 0);
+    }
+
+    function test_IpRoyaltyVault_rounding() public {
+        address ipId = address(2);
+        address attacker = makeAddr("attacker");
+
+        USDC.mint(attacker, 100_000_000);
+        vm.prank(attacker);
+        USDC.approve(address(royaltyModule), 100_000_000);
+
+        vm.prank(address(licensingModule));
+        royaltyModule.onLicenseMinting(ipId, address(royaltyPolicyLAP), uint32(10e6), "");
+        IpRoyaltyVault ipRoyaltyVault = IpRoyaltyVault(royaltyModule.ipRoyaltyVaults(ipId));
+
+        vm.prank(ipId);
+        ipRoyaltyVault.transfer(attacker, 1e8);
+
+        vm.startPrank(attacker);
+        royaltyModule.payRoyaltyOnBehalf(ipId, ipId, address(USDC), 99_999_999);
+        uint numRuns = 1e4;
+        for (uint i; i < numRuns; i++) {
+            address receiver = address(uint160(100 + i));
+            ipRoyaltyVault.transfer(receiver, 1);
+            assertEq(ipRoyaltyVault.claimableRevenue(receiver, address(USDC)), 0);
+        }
+
+        assertEq(ipRoyaltyVault.claimableRevenue(attacker, address(USDC)), 99_999_999);
+
+        royaltyModule.payRoyaltyOnBehalf(ipId, ipId, address(USDC), 1);
+
+        for (uint i; i < numRuns; i++) {
+            address receiver = address(uint160(100 + i));
+            assertEq(ipRoyaltyVault.claimableRevenue(receiver, address(USDC)), 0);
+        }
     }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.23;
 
 // external
 import { UpgradeableBeacon } from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { BeaconProxy } from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
 import { console2 } from "forge-std/console2.sol";
 import { Script } from "forge-std/Script.sol";
@@ -18,11 +18,7 @@ import { ProtocolPauseAdmin } from "contracts/pause/ProtocolPauseAdmin.sol";
 import { ProtocolPausableUpgradeable } from "contracts/pause/ProtocolPausableUpgradeable.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { IPAccountImpl } from "contracts/IPAccountImpl.sol";
-import { IIPAccount } from "contracts/interfaces/IIPAccount.sol";
-import { IGraphAwareRoyaltyPolicy } from "contracts/interfaces/modules/royalty/policies/IGraphAwareRoyaltyPolicy.sol";
-import { AccessPermission } from "contracts/lib/AccessPermission.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-import { Errors } from "contracts/lib/Errors.sol";
 import { PILFlavors } from "contracts/lib/PILFlavors.sol";
 // solhint-disable-next-line max-line-length
 import { DISPUTE_MODULE_KEY, ROYALTY_MODULE_KEY, LICENSING_MODULE_KEY, TOKEN_WITHDRAWAL_MODULE_KEY, CORE_METADATA_MODULE_KEY, CORE_METADATA_VIEW_MODULE_KEY, GROUPING_MODULE_KEY } from "contracts/lib/modules/Module.sol";
@@ -37,13 +33,10 @@ import { RoyaltyPolicyLRP } from "contracts/modules/royalty/policies/LRP/Royalty
 import { VaultController } from "contracts/modules/royalty/policies/VaultController.sol";
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
-import { MODULE_TYPE_HOOK } from "contracts/lib/modules/Module.sol";
-import { IModule } from "contracts/interfaces/modules/base/IModule.sol";
-import { IHookModule } from "contracts/interfaces/modules/base/IHookModule.sol";
 import { IpRoyaltyVault } from "contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { CoreMetadataModule } from "contracts/modules/metadata/CoreMetadataModule.sol";
 import { CoreMetadataViewModule } from "contracts/modules/metadata/CoreMetadataViewModule.sol";
-import { PILicenseTemplate, PILTerms } from "contracts/modules/licensing/PILicenseTemplate.sol";
+import { PILicenseTemplate } from "contracts/modules/licensing/PILicenseTemplate.sol";
 import { LicenseToken } from "contracts/LicenseToken.sol";
 import { GroupNFT } from "contracts/GroupNFT.sol";
 import { GroupingModule } from "contracts/modules/grouping/GroupingModule.sol";
@@ -59,7 +52,7 @@ import { JsonDeploymentHandler } from "./JsonDeploymentHandler.s.sol";
 
 // test
 import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "./ICreate3Deployer.sol";
 
 contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, StorageLayoutChecker {
     using StringUtil for uint256;
@@ -67,7 +60,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     // PROXY 1967 IMPLEMENTATION STORAGE SLOTS
     bytes32 internal constant IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-    address internal constant WIP = address(0x1516000000000000000000000000000000000000);
 
     error RoleConfigError(string message);
 
@@ -75,7 +67,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     ICreate3Deployer internal create3Deployer;
     // seed for CREATE3 salt
     uint256 internal create3SaltSeed;
-    IPAccountImpl internal ipAccountImpl;
+
+    IPAccountImpl internal ipAccountImplCode;
+    UpgradeableBeacon internal ipAccountImplBeacon;
+    BeaconProxy internal ipAccountImpl;
+    string internal constant IP_ACCOUNT_IMPL_CODE = "IPAccountImplCode";
+    string internal constant IP_ACCOUNT_IMPL_BEACON = "IPAccountImplBeacon";
+    string internal constant IP_ACCOUNT_IMPL_BEACON_PROXY = "IPAccountImplBeaconProxy";
 
     // Registry
     IPAssetRegistry internal ipAssetRegistry;
@@ -93,7 +91,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     // Policy
     ArbitrationPolicyUMA internal arbitrationPolicyUMA;
-    address internal oov3;
     RoyaltyPolicyLAP internal royaltyPolicyLAP;
     RoyaltyPolicyLRP internal royaltyPolicyLRP;
     UpgradeableBeacon internal ipRoyaltyVaultBeacon;
@@ -118,47 +115,52 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
     EvenSplitGroupPool internal evenSplitGroupPool;
 
     // Token
-    ERC20 private erc20; // keep private to avoid conflict with inheriting contracts
-
-    // keep private to avoid conflict with inheriting contracts
-    uint256 private immutable ARBITRATION_PRICE;
-    uint256 private immutable MAX_ROYALTY_APPROVAL;
-    address private immutable TREASURY_ADDRESS;
+    address private revenueToken;
 
     // DeployHelper variable
     bool private writeDeploys;
 
     string private version;
 
+    // Timelocks
+    uint32 internal upgraderExecDelay;
+    uint32 internal grantRoleDelay;
+    uint32 internal adminActionDelay;
+
     constructor(
         address erc6551Registry_,
-        address erc20_,
-        uint256 arbitrationPrice_,
-        uint256 maxRoyaltyApproval_,
-        address treasury_,
+        address revenueToken_,
         address ipGraphACL_
     ) JsonDeploymentHandler("main") {
         erc6551Registry = ERC6551Registry(erc6551Registry_);
-        erc20 = ERC20(erc20_);
-        MAX_ROYALTY_APPROVAL = maxRoyaltyApproval_;
-        TREASURY_ADDRESS = treasury_;
+        revenueToken = revenueToken_;
         ipGraphACL = IPGraphACL(ipGraphACL_);
-        oov3 = address(1000); // mock address replaced below depending on chainid
-        /// @dev USDC addresses are fetched from
-        /// (mainnet) https://developers.circle.com/stablecoins/docs/usdc-on-main-networks
-        /// (testnet) https://developers.circle.com/stablecoins/docs/usdc-on-test-networks
-        if (block.chainid == 1) erc20 = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        else if (block.chainid == 11155111) erc20 = ERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-        else if (block.chainid == 1513) {
-            erc20 = ERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
-            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
+        if (block.chainid == 1514) {
+            revenueToken = 0x1514000000000000000000000000000000000000; // WIP
+            upgraderExecDelay = 1 days;
+            grantRoleDelay = 5 days;
+            adminActionDelay = 5 days;
         } else if (block.chainid == 1516) {
-            oov3 = 0x3CA11702f7c0F28e0b4e03C31F7492969862C569;
+            revenueToken = 0x1516000000000000000000000000000000000000; // WIP
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 10 minutes;
+            adminActionDelay = 10 minutes;
+        } else if (block.chainid == 31337) {
+            // For local testing
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 0;
+            adminActionDelay = 0;
+        } else {
+            upgraderExecDelay = 10 minutes;
+            grantRoleDelay = 10 minutes;
+            adminActionDelay = 10 minutes;
         }
     }
 
-    /// @dev To use, run the following command (e.g. for Sepolia):
-    /// forge script script/foundry/deployment/Main.s.sol:Main --rpc-url $RPC_URL --broadcast --verify -vvvv
+    /// @dev To use, run the following command (e.g. for Story Odyssey Testnet):
+    /// forge script script/foundry/deployment/Main.s.sol:Main <CREATE3_SEED> \
+    /// --sig "run(uint256)" --fork-url ${STORY_RPC}  --broadcast --sender=<SENDER_ADDRESS> \
+    /// --priority-gas-price 1 --legacy --verify --verifier=<VERIFIER_NAME> --verifier-url=<VERIFIER_URL>
 
     function run(address create3Deployer_, uint256 create3SaltSeed_, bool runStorageLayoutCheck, bool writeDeploys_, string memory version_) public virtual {
         create3Deployer = ICreate3Deployer(create3Deployer_);
@@ -179,7 +181,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         // This will run OZ storage layout check for all contracts. Requires --ffi flag.
         //if (runStorageLayoutCheck) _validate();
-        
+
         _beginBroadcast(); // BroadcastManager.s.sol
 
         _deployProtocolContracts();
@@ -194,6 +196,10 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         (bool multisigAdmin, ) = protocolAccessManager.hasRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig);
         (bool multisigUpgrader, ) = protocolAccessManager.hasRole(ProtocolAdmin.UPGRADER_ROLE, multisig);
 
+        if (address(ipAssetRegistry) != ipAccountImplBeacon.owner()) {
+            revert RoleConfigError("IPAssetRegistry is not owner of ipAccountImplBeacon");
+        }
+
         if (address(royaltyModule) != ipRoyaltyVaultBeacon.owner()) {
             revert RoleConfigError("RoyaltyModule is not owner of ipRoyaltyVaultBeacon");
         }
@@ -205,35 +211,47 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             revert RoleConfigError("Multisig upgrader role not granted");
         }
 
+        (bool hasGuardianRole, ) = protocolAccessManager.hasRole(ProtocolAdmin.GUARDIAN_ROLE, guardian);
+        if (!hasGuardianRole) {
+            revert RoleConfigError("Guardian role not granted");
+        }
+
+        (uint64 upgraderRoleGuardian) = protocolAccessManager.getRoleGuardian(ProtocolAdmin.UPGRADER_ROLE);
+        if (upgraderRoleGuardian != ProtocolAdmin.GUARDIAN_ROLE) {
+            revert RoleConfigError("Upgrader role guardian not set");
+        }
+
         if (writeDeploys) _writeDeployment(version);
         _endBroadcast(); // BroadcastManager.s.sol
     }
 
     function _deployProtocolContracts() private {
         string memory contractKey;
-        if (address(erc20) == address(0)) {
+        if (address(revenueToken) == address(0)) {
             contractKey = "MockERC20";
             _predeploy(contractKey);
-            erc20 = MockERC20(
-                create3Deployer.deploy(
-                    _getSalt(type(MockERC20).name),
-                    abi.encodePacked(type(MockERC20).creationCode, abi.encode(deployer))
+            revenueToken = address(
+                MockERC20(
+                    create3Deployer.deployDeterministic(
+                        abi.encodePacked(type(MockERC20).creationCode, abi.encode(deployer)),
+                        _getSalt(type(MockERC20).name)
+                    )
                 )
             );
             require(
-                _getDeployedAddress(type(MockERC20).name) == address(erc20),
+                _getDeployedAddress(type(MockERC20).name) == address(revenueToken),
                 "Deploy: MockERC20 Address Mismatch"
             );
-            _postdeploy(contractKey, address(erc20));
+            _postdeploy(contractKey, address(revenueToken));
         }
 
         // Core Protocol Contracts
         contractKey = "ProtocolAccessManager";
         _predeploy(contractKey);
         protocolAccessManager = AccessManager(
-            create3Deployer.deploy(
-                _getSalt(type(AccessManager).name),
-                abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer))
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(type(AccessManager).creationCode, abi.encode(deployer)),
+                _getSalt(type(AccessManager).name)
             )
         );
         require(
@@ -244,10 +262,13 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ProtocolPauseAdmin";
         _predeploy(contractKey);
+        address impl = address(new ProtocolPauseAdmin());
         protocolPauser = ProtocolPauseAdmin(
-            create3Deployer.deploy(
+            TestProxyHelper.deployUUPSProxy(
+                create3Deployer,
                 _getSalt(type(ProtocolPauseAdmin).name),
-                abi.encodePacked(type(ProtocolPauseAdmin).creationCode, abi.encode(address(protocolAccessManager)))
+                impl,
+                abi.encodeCall(ProtocolPauseAdmin.initialize, address(protocolAccessManager))
             )
         );
         require(
@@ -258,7 +279,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "ModuleRegistry";
         _predeploy(contractKey);
-        address impl = address(new ModuleRegistry());
+        impl = address(new ModuleRegistry());
         moduleRegistry = ModuleRegistry(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -280,8 +301,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(
             new IPAssetRegistry(
                 address(erc6551Registry),
-                _getDeployedAddress(type(IPAccountImpl).name),
-                _getDeployedAddress(type(GroupingModule).name)
+                _getDeployedAddress(IP_ACCOUNT_IMPL_BEACON_PROXY),
+                _getDeployedAddress(type(GroupingModule).name),
+                _getDeployedAddress(IP_ACCOUNT_IMPL_BEACON)
             )
         );
         ipAssetRegistry = IPAssetRegistry(
@@ -325,6 +347,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         _predeploy(contractKey);
         impl = address(
             new LicenseRegistry(
+                address(ipAssetRegistry),
                 _getDeployedAddress(type(LicensingModule).name),
                 _getDeployedAddress(type(DisputeModule).name),
                 newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
@@ -346,8 +369,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         impl = address(0); // Make sure we don't deploy wrong impl
         _postdeploy(contractKey, address(licenseRegistry));
 
-        contractKey = "IPAccountImpl";
-        bytes memory ipAccountImplCode = abi.encodePacked(
+        contractKey = IP_ACCOUNT_IMPL_CODE;
+        bytes memory ipAccountImplCodeBytes = abi.encodePacked(
             type(IPAccountImpl).creationCode,
             abi.encode(
                 address(accessController),
@@ -357,19 +380,47 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             )
         );
         _predeploy(contractKey);
-        ipAccountImpl = IPAccountImpl(
-            payable(create3Deployer.deploy(_getSalt(type(IPAccountImpl).name), ipAccountImplCode))
+        ipAccountImplCode = IPAccountImpl(
+            payable(create3Deployer.deployDeterministic(ipAccountImplCodeBytes, _getSalt(IP_ACCOUNT_IMPL_CODE)))
         );
-        _postdeploy(contractKey, address(ipAccountImpl));
+        _postdeploy(contractKey, address(ipAccountImplCode));
         require(
-            _getDeployedAddress(type(IPAccountImpl).name) == address(ipAccountImpl),
-            "Deploy: IP Account Impl Address Mismatch"
+            _getDeployedAddress(IP_ACCOUNT_IMPL_CODE) == address(ipAccountImplCode),
+            "Deploy: IP Account Impl Code Address Mismatch"
         );
+
+        _predeploy(IP_ACCOUNT_IMPL_BEACON);
+        ipAccountImplBeacon = UpgradeableBeacon(
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(
+                    type(UpgradeableBeacon).creationCode,
+                    abi.encode(address(ipAccountImplCode), deployer)
+                ),
+                _getSalt(IP_ACCOUNT_IMPL_BEACON)
+            )
+        );
+        _postdeploy(IP_ACCOUNT_IMPL_BEACON, address(ipAccountImplBeacon));
+
+        _predeploy(IP_ACCOUNT_IMPL_BEACON_PROXY);
+        ipAccountImpl = BeaconProxy(payable(
+            create3Deployer.deployDeterministic(
+                abi.encodePacked(
+                    type(BeaconProxy).creationCode,
+                    abi.encode(address(ipAccountImplBeacon), "")
+                ),
+                _getSalt(IP_ACCOUNT_IMPL_BEACON_PROXY)
+            ))
+        );
+        _postdeploy(IP_ACCOUNT_IMPL_BEACON_PROXY, address(ipAccountImpl));
 
         contractKey = "DisputeModule";
         _predeploy(contractKey);
         impl = address(
-            new DisputeModule(address(accessController), address(ipAssetRegistry), address(licenseRegistry))
+            new DisputeModule(
+                address(accessController),
+                address(ipAssetRegistry),
+                address(licenseRegistry),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL))
         );
         disputeModule = DisputeModule(
             TestProxyHelper.deployUUPSProxy(
@@ -394,7 +445,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 _getDeployedAddress(type(LicensingModule).name),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
             )
         );
         royaltyModule = RoyaltyModule(
@@ -402,7 +454,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 create3Deployer,
                 _getSalt(type(RoyaltyModule).name),
                 impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(8), uint256(1024), uint256(15)))
+                abi.encodeCall(RoyaltyModule.initialize, (address(protocolAccessManager), uint256(15)))
             )
         );
         require(
@@ -444,7 +496,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(licenseRegistry),
                 _getDeployedAddress(type(LicenseToken).name),
                 address(groupNft),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(disputeModule)
             )
         );
         groupingModule = GroupingModule(
@@ -473,7 +526,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(royaltyModule),
                 address(licenseRegistry),
                 address(disputeModule),
-                _getDeployedAddress(type(LicenseToken).name)
+                _getDeployedAddress(type(LicenseToken).name),
+                newDeployedIpGraphACL ? _getDeployedAddress(type(IPGraphACL).name) : address(ipGraphACL)
             )
         );
         licensingModule = LicensingModule(
@@ -494,7 +548,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         contractKey = "LicenseToken";
         _predeploy(contractKey);
-        impl = address(new LicenseToken(address(licensingModule), address(disputeModule)));
+        impl = address(new LicenseToken(address(licensingModule), address(disputeModule), address(licenseRegistry)));
         licenseToken = LicenseToken(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -522,7 +576,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         //
 
         _predeploy("ArbitrationPolicyUMA");
-        impl = address(new ArbitrationPolicyUMA(address(disputeModule)));
+        impl = address(new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule)));
         arbitrationPolicyUMA = ArbitrationPolicyUMA(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
@@ -591,7 +645,8 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
                 address(accessController),
                 address(ipAccountRegistry),
                 address(licenseRegistry),
-                address(royaltyModule)
+                address(royaltyModule),
+                address(moduleRegistry)
             )
         );
         pilTemplate = PILicenseTemplate(
@@ -619,24 +674,29 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         _predeploy("IpRoyaltyVaultImpl");
         ipRoyaltyVaultImpl = IpRoyaltyVault(
-            create3Deployer.deploy(
-                _getSalt(type(IpRoyaltyVault).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(IpRoyaltyVault).creationCode,
-                    abi.encode(address(disputeModule), address(royaltyModule), address(ipAssetRegistry), address(groupingModule))
-                )
+                    abi.encode(
+                        address(disputeModule),
+                        address(royaltyModule),
+                        address(ipAssetRegistry),
+                        address(groupingModule)
+                    )
+                ),
+                _getSalt(type(IpRoyaltyVault).name)
             )
         );
         _postdeploy("IpRoyaltyVaultImpl", address(ipRoyaltyVaultImpl));
 
         _predeploy("IpRoyaltyVaultBeacon");
         ipRoyaltyVaultBeacon = UpgradeableBeacon(
-            create3Deployer.deploy(
-                _getSalt(type(UpgradeableBeacon).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(UpgradeableBeacon).creationCode,
                     abi.encode(address(ipRoyaltyVaultImpl), deployer)
-                )
+                ),
+                _getSalt(type(UpgradeableBeacon).name)
             )
         );
         _postdeploy("IpRoyaltyVaultBeacon", address(ipRoyaltyVaultBeacon));
@@ -663,12 +723,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         _predeploy("CoreMetadataViewModule");
         coreMetadataViewModule = CoreMetadataViewModule(
-            create3Deployer.deploy(
-                _getSalt(type(CoreMetadataViewModule).name),
+            create3Deployer.deployDeterministic(
                 abi.encodePacked(
                     type(CoreMetadataViewModule).creationCode,
                     abi.encode(address(ipAssetRegistry), address(moduleRegistry))
-                )
+                ),
+                _getSalt(type(CoreMetadataViewModule).name)
             )
         );
         _postdeploy("CoreMetadataViewModule", address(coreMetadataViewModule));
@@ -677,9 +737,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         if (newDeployedIpGraphACL) {
             _predeploy("IPGraphACL");
             ipGraphACL = IPGraphACL(
-                create3Deployer.deploy(
-                    _getSalt(type(IPGraphACL).name),
-                    abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager)))
+                create3Deployer.deployDeterministic(
+                    abi.encodePacked(type(IPGraphACL).creationCode, abi.encode(address(protocolAccessManager))),
+                    _getSalt(type(IPGraphACL).name)
                 )
             );
         } else {
@@ -734,6 +794,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolPauser.addPausable(address(ipAssetRegistry));
         protocolPauser.addPausable(address(groupingModule));
         protocolPauser.addPausable(address(evenSplitGroupPool));
+        protocolPauser.addPausable(address(arbitrationPolicyUMA));
 
         // Module Registry
         moduleRegistry.registerModule(DISPUTE_MODULE_KEY, address(disputeModule));
@@ -746,10 +807,12 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         // Royalty Module and SP Royalty Policy
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), true);
         royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLRP), true);
-        royaltyModule.whitelistRoyaltyToken(address(erc20), true);
-        royaltyModule.whitelistRoyaltyToken(WIP, true);
+        royaltyModule.whitelistRoyaltyToken(address(revenueToken), true);
         royaltyModule.setIpRoyaltyVaultBeacon(address(ipRoyaltyVaultBeacon));
         ipRoyaltyVaultBeacon.transferOwnership(address(royaltyModule));
+
+        // IP Asset Registry
+        ipAccountImplBeacon.transferOwnership(address(ipAssetRegistry));
 
         // Dispute Module and Dispute Policy
         disputeModule.whitelistDisputeTag("IMPROPER_REGISTRATION", true);
@@ -757,11 +820,9 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         disputeModule.whitelistDisputeTag("IMPROPER_PAYMENT", true);
         disputeModule.whitelistDisputeTag("CONTENT_STANDARDS_VIOLATION", true);
         disputeModule.whitelistArbitrationPolicy(address(arbitrationPolicyUMA), true);
-        disputeModule.whitelistArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA), true);
+        disputeModule.setArbitrationRelayer(address(arbitrationPolicyUMA), address(arbitrationPolicyUMA));
         disputeModule.setBaseArbitrationPolicy(address(arbitrationPolicyUMA));
-        arbitrationPolicyUMA.setOOV3(address(oov3));
         arbitrationPolicyUMA.setLiveness(30 days, 365 days, 66_666_666);
-        arbitrationPolicyUMA.setMaxBond(address(erc20), 25000e18); // 25k USD max bond
         disputeModule.setArbitrationPolicyCooldown(7 days);
 
         // Core Metadata Module
@@ -776,11 +837,14 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             ipGraphACL.whitelistAddress(address(licenseRegistry));
             ipGraphACL.whitelistAddress(address(royaltyPolicyLAP));
             ipGraphACL.whitelistAddress(address(royaltyPolicyLRP));
+            ipGraphACL.whitelistAddress(address(royaltyModule));
+            ipGraphACL.whitelistAddress(address(disputeModule));
+            ipGraphACL.whitelistAddress(address(licensingModule));
         }
 
         // set default license to non-commercial social remixing
-        uint256 licenseId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), licenseId);
+        uint256 nonCommercialSocialRemixingTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
+        licenseRegistry.setDefaultLicenseTerms(address(pilTemplate), nonCommercialSocialRemixingTermsId);
 
         // add evenSplitGroupPool to whitelist of group pools
         groupingModule.whitelistGroupRewardPool(address(evenSplitGroupPool), true);
@@ -807,7 +871,6 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
         protocolAccessManager.setTargetFunctionRole(address(royaltyPolicyLRP), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(licenseRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(moduleRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
-        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(pilTemplate), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(address(evenSplitGroupPool), selectors, ProtocolAdmin.UPGRADER_ROLE);
         protocolAccessManager.setTargetFunctionRole(
@@ -825,7 +888,23 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             selectors,
             ProtocolAdmin.UPGRADER_ROLE
         );
+        protocolAccessManager.setTargetFunctionRole(
+            address(protocolPauser),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicyUMA),
+            selectors,
+            ProtocolAdmin.UPGRADER_ROLE
+        );
 
+        // IPAsset and Upgrade Beacon
+        // Owner of the beacon is the IPAssetRegistry
+        selectors = new bytes4[](2);
+        selectors[0] = IPAssetRegistry.upgradeIPAccountImpl.selector;
+        selectors[1] = UUPSUpgradeable.upgradeToAndCall.selector;
+        protocolAccessManager.setTargetFunctionRole(address(ipAssetRegistry), selectors, ProtocolAdmin.UPGRADER_ROLE);
 
         // Royalty and Upgrade Beacon
         // Owner of the beacon is the RoyaltyModule
@@ -882,12 +961,25 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             selectors,
             ProtocolAdmin.PAUSE_ADMIN_ROLE
         );
+        protocolAccessManager.setTargetFunctionRole(
+            address(arbitrationPolicyUMA),
+            selectors,
+            ProtocolAdmin.PAUSE_ADMIN_ROLE
+        );
         protocolAccessManager.setTargetFunctionRole(address(protocolPauser), selectors, ProtocolAdmin.PAUSE_ADMIN_ROLE);
         ///////// Role Granting /////////
         protocolAccessManager.grantRole(ProtocolAdmin.UPGRADER_ROLE, multisig, upgraderExecDelay);
         protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, multisig, 0);
         protocolAccessManager.grantRole(ProtocolAdmin.PAUSE_ADMIN_ROLE, address(protocolPauser), 0);
-        protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, 0);
+        protocolAccessManager.grantRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, multisig, adminActionDelay);
+
+        ///////// Guardian Role /////////
+        protocolAccessManager.setRoleGuardian(ProtocolAdmin.UPGRADER_ROLE, ProtocolAdmin.GUARDIAN_ROLE);
+        protocolAccessManager.grantRole(ProtocolAdmin.GUARDIAN_ROLE, guardian, 0);
+
+        // Set grant delay to 5 days, for both guardian and protocol admin roles
+        protocolAccessManager.setGrantDelay(ProtocolAdmin.GUARDIAN_ROLE, grantRoleDelay);
+        protocolAccessManager.setGrantDelay(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, grantRoleDelay);
 
         ///////// Renounce admin role /////////
         protocolAccessManager.renounceRole(ProtocolAdmin.PROTOCOL_ADMIN_ROLE, deployer);
@@ -900,7 +992,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
     /// @dev Get the deterministic deployed address of a contract with CREATE3
     function _getDeployedAddress(string memory name) private view returns (address) {
-        return create3Deployer.getDeployed(_getSalt(name));
+        return create3Deployer.predictDeterministicAddress(_getSalt(name));
     }
 
     /// @dev Load the implementation address from the proxy contract

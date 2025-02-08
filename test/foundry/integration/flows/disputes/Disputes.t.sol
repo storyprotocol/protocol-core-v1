@@ -33,14 +33,6 @@ contract Flows_Integration_Disputes is BaseIntegration {
         ipAcct[3] = registerIpAccount(mockNFT, 3, u.carl);
 
         vm.startPrank(u.alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[1],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), ncSocialRemixTermsId);
         vm.stopPrank();
     }
@@ -56,7 +48,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -71,7 +64,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
     }
 
@@ -86,7 +80,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -118,7 +113,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             licenseTemplate: address(pilTemplate),
             royaltyContext: "",
             maxMintingFee: 0,
-            maxRts: 100e6
+            maxRts: 100e6,
+            maxRevenueShare: 0
         });
     }
 
@@ -133,7 +129,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
 
@@ -161,7 +158,8 @@ contract Flows_Integration_Disputes is BaseIntegration {
             amount: 1,
             receiver: u.carl,
             royaltyContext: "",
-            maxMintingFee: 0
+            maxMintingFee: 0,
+            maxRevenueShare: 0
         });
         assertEq(licenseToken.balanceOf(u.carl), 1);
     }

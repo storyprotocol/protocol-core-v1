@@ -9,7 +9,7 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
 import { AccessController } from "contracts/access/AccessController.sol";
 import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-
+import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
 import { IVaultController } from "contracts/interfaces/modules/royalty/policies/IVaultController.sol";
 
 // script
@@ -17,7 +17,7 @@ import { BroadcastManager } from "../BroadcastManager.s.sol";
 import { JsonDeploymentHandler } from "../JsonDeploymentHandler.s.sol";
 import { JsonBatchTxHelper } from "../JsonBatchTxHelper.s.sol";
 import { StringUtil } from "../StringUtil.sol";
-import { ICreate3Deployer } from "@create3-deployer/contracts/ICreate3Deployer.sol";
+import { ICreate3Deployer } from "../ICreate3Deployer.sol";
 import { UpgradedImplHelper } from "./UpgradedImplHelper.sol";
 import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
 
@@ -27,7 +27,7 @@ import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
  * @dev This script will read a deployment file and upgrade proposals file to schedule, execute, or cancel upgrades
  */
 abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHandler, JsonBatchTxHelper {
-    address internal CREATE3_DEPLOYER = 0x384a891dFDE8180b054f04D66379f16B7a678Ad6;
+    address internal CREATE3_DEPLOYER = 0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf;
     uint256 internal CREATE3_DEFAULT_SEED = 0;
 
     /// @notice Upgrade modes
@@ -55,16 +55,19 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     string fromVersion;
     /// @notice The version to upgrade to
     string toVersion;
-    /// @notice action acumulator for batch txs
+    /// @notice action accumulator for batch txs
     bytes[] multicallData;
 
     /// @dev check if the proxy's authority is the accessManager in the file
     /// @param proxy The proxy address
-    modifier onlyMatchingAccessManager(address proxy) {
-        require(
-            AccessManaged(proxy).authority() == address(accessManager),
-            "Proxy's Authority must equal accessManager"
-        );
+    modifier onlyMatchingAccessManager(string memory contractKey, address proxy) {
+        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault")) &&
+            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccountImplCode"))) {
+            require(
+                AccessManaged(proxy).authority() == address(accessManager),
+                "Proxy's Authority must equal accessManager"
+            );
+        }
         _;
     }
 
@@ -153,7 +156,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _scheduleUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) onlyUpgraderRole {
+    ) private onlyMatchingAccessManager(key, p.proxy) onlyUpgraderRole {
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");
@@ -196,7 +199,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _executeUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) {
+    ) private onlyMatchingAccessManager(key,p.proxy) {
         bytes memory data = _getExecutionData(key, p);
         uint48 schedule = accessManager.getSchedule(accessManager.hashOperation(deployer, p.proxy, data));
         console2.log("schedule", schedule);
@@ -233,7 +236,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _cancelScheduledUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(p.proxy) {
+    ) private onlyMatchingAccessManager(key, p.proxy) {
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");
@@ -273,6 +276,9 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
         if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IpRoyaltyVault"))) {
             console2.log("encoding upgradeVaults");
             data = abi.encodeCall(IVaultController.upgradeVaults, (p.newImpl));
+        } else if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IPAccountImplCode"))) {
+            console2.log("encoding upgradeIPAccount");
+            data = abi.encodeCall(IIPAssetRegistry.upgradeIPAccountImpl, (p.newImpl));
         } else {
             console2.log("encoding upgradeUUPS");
             data = abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (p.newImpl, ""));

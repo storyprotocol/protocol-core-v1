@@ -8,7 +8,11 @@ import { Errors } from "contracts/lib/Errors.sol";
 import { BaseTest } from "../utils/BaseTest.t.sol";
 
 contract MockIPAccountRegistry is IPAccountRegistry {
-    constructor(address erc6551Registry, address ipAccountImpl) IPAccountRegistry(erc6551Registry, ipAccountImpl) {}
+    constructor(
+        address erc6551Registry,
+        address ipAccountImpl,
+        address ipAccountImplBeacon
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl, ipAccountImplBeacon) {}
 }
 
 contract IPAccountRegistryTest is BaseTest {
@@ -38,8 +42,10 @@ contract IPAccountRegistryTest is BaseTest {
 
     function test_IPAccountRegistry_constructor_revert() public {
         vm.expectRevert(Errors.IPAccountRegistry_ZeroERC6551Registry.selector);
-        new MockIPAccountRegistry(address(0), address(123));
+        new MockIPAccountRegistry(address(0), address(123), address(456));
         vm.expectRevert(Errors.IPAccountRegistry_ZeroIpAccountImpl.selector);
-        new MockIPAccountRegistry(address(123), address(0));
+        new MockIPAccountRegistry(address(123), address(0), address(456));
+        vm.expectRevert(Errors.IPAccountRegistry_ZeroIpAccountImplBeacon.selector);
+        new MockIPAccountRegistry(address(123), address(456), address(0));
     }
 }

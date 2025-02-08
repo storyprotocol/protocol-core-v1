@@ -3,12 +3,15 @@ pragma solidity 0.8.26;
 
 import { Base64 } from "@openzeppelin/contracts/utils/Base64.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC721Errors } from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
+
 // contract
 import { Errors } from "../../contracts/lib/Errors.sol";
 import { PILFlavors } from "../../contracts/lib/PILFlavors.sol";
 import { PILTerms } from "../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { LicenseToken } from "../../contracts/LicenseToken.sol";
 import { ILicenseToken } from "../../contracts/interfaces/ILicenseToken.sol";
+import { Licensing } from "../../contracts/lib/Licensing.sol";
 
 // test
 import { BaseTest } from "./utils/BaseTest.t.sol";
@@ -55,6 +58,11 @@ contract LicenseTokenTest is BaseTest {
         licenseToken.setLicensingImageUrl("new_url");
     }
 
+    function test_LicenseToken_revert_TokenURI_NonexistentToken() public {
+        vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, 100));
+        licenseToken.tokenURI(100);
+    }
+
     function test_LicenseToken_isLicenseTokenRevoked() public {
         uint256 mintAmount = 10;
 
@@ -65,7 +73,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: commTermsId,
             amount: mintAmount,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         for (uint256 i = 0; i < mintAmount; i++) {
@@ -88,7 +97,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: commTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         vm.prank(ipOwner[1]);
@@ -136,7 +146,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         vm.expectRevert(Errors.LicenseToken__NotTransferable.selector);
@@ -148,7 +159,7 @@ contract LicenseTokenTest is BaseTest {
 
     function test_LicenseToken_TokenURI() public {
         uint256 licenseTermsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());
-
+        uint256 commercialRevShare = 10_000_000;
         vm.prank(address(licensingModule));
         uint256 licenseTokenId = licenseToken.mintLicenseTokens({
             licensorIpId: ipAcct[1],
@@ -156,7 +167,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         string memory tokenURI = licenseToken.tokenURI(licenseTokenId);
@@ -168,7 +180,7 @@ contract LicenseTokenTest is BaseTest {
         );
         expectedURI = abi.encodePacked(
             expectedURI,
-            ',"attributes": [{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": ""},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
+            ',"attributes": [{"trait_type": "Royalty Policy", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Default Minting Fee", "value": "0"},{"trait_type": "Expiration", "value": "never"},{"trait_type": "Currency", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "URI", "value": "https://github.com/piplabs/pil-document/blob/998c13e6ee1d04eb817aefd1fe16dfe8be3cd7a2/off-chain-terms/NCSR.json"},{"trait_type": "Commercial Use", "value": "false"},{"trait_type": "Commercial Attribution", "value": "false"},{"trait_type": "Commercial Revenue Share", "max_value": 1000, "value": 0},{"trait_type": "Commercial Revenue Ceiling", "value": 0},{"trait_type": "Commercializer Checker", "value": "0x0000000000000000000000000000000000000000"},{"trait_type": "Derivatives Allowed", "value": "true"},{"trait_type": "Derivatives Attribution", "value": "true"},{"trait_type": "Derivatives Revenue Ceiling", "value": 0},{"trait_type": "Derivatives Approval", "value": "false"},{"trait_type": "Derivatives Reciprocal", "value": "true"}'
         );
         expectedURI = abi.encodePacked(
             expectedURI,
@@ -195,7 +207,8 @@ contract LicenseTokenTest is BaseTest {
             licenseTermsId: licenseTermsId,
             amount: 1,
             minter: ipOwner[1],
-            receiver: ipOwner[1]
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
         });
 
         ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
@@ -203,5 +216,85 @@ contract LicenseTokenTest is BaseTest {
         assertEq(lmt.licenseTemplate, address(pilTemplate));
         assertEq(lmt.licenseTermsId, licenseTermsId);
         assertEq(lmt.transferable, true);
+    }
+
+    function test_LicenseToken_getLicenseTokenMetadata_commercialRevShare() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 10_000_000, address(royaltyPolicyLAP), address(USDC))
+        );
+
+        // attach license terms to the ipAcct
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 20_000_000,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+        vm.startPrank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), licenseTermsId);
+        licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), licenseTermsId, licensingConfig);
+        vm.stopPrank();
+        vm.prank(address(licensingModule));
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
+        });
+
+        ILicenseToken.LicenseTokenMetadata memory lmt = licenseToken.getLicenseTokenMetadata(licenseTokenId);
+        assertEq(lmt.licensorIpId, ipAcct[1]);
+        assertEq(lmt.licenseTemplate, address(pilTemplate));
+        assertEq(lmt.licenseTermsId, licenseTermsId);
+        assertEq(lmt.commercialRevShare, 20_000_000);
+        assertEq(lmt.transferable, true);
+    }
+
+    function test_LicenseToken_mintLicenseToken_revert_InvalidRoyaltyPercentage() public {
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix(0, 100_000_000, address(royaltyPolicyLAP), address(USDC))
+        );
+
+        // attach license terms to the ipAcct
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 200_000_000,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(0)
+        });
+        vm.startPrank(ipOwner[1]);
+        licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), licenseTermsId);
+        licensingModule.setLicensingConfig(ipAcct[1], address(pilTemplate), licenseTermsId, licensingConfig);
+        vm.stopPrank();
+        vm.prank(address(licensingModule));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseToken__InvalidRoyaltyPercent.selector,
+                200_000_000,
+                ipAcct[1],
+                address(pilTemplate),
+                licenseTermsId
+            )
+        );
+        uint256 licenseTokenId = licenseToken.mintLicenseTokens({
+            licensorIpId: ipAcct[1],
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: licenseTermsId,
+            amount: 1,
+            minter: ipOwner[1],
+            receiver: ipOwner[1],
+            maxRevenueShare: 0
+        });
     }
 }

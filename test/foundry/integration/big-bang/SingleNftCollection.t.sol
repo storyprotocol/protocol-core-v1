@@ -38,6 +38,9 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
         ncSocialRemixTermsId = registerSelectedPILicenseTerms_NonCommercialSocialRemixing();
 
+        vm.prank(u.admin);
+        moduleRegistry.registerModule("MockTokenGatedHook", address(mockTokenGatedHook));
+
         commDerivTermsId = registerSelectedPILicenseTerms(
             "commercial_flexible",
             PILTerms({
@@ -93,14 +96,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
 
         vm.startPrank(u.alice);
         licensingModule.attachLicenseTerms(ipAcct[1], address(pilTemplate), commDerivTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[100],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         licensingModule.attachLicenseTerms(ipAcct[100], address(pilTemplate), ncSocialRemixTermsId);
 
         vm.startPrank(u.bob);
@@ -110,14 +105,6 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
         vm.startPrank(u.bob);
         // NOTE: the two calls below achieve the same functionality
         // licensingModule.attachLicenseTerms(ipAcct[3], address(pilTemplate), ncSocialRemixTermsId);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.LicenseRegistry__LicenseTermsAlreadyAttached.selector,
-                ipAcct[3],
-                address(pilTemplate),
-                ncSocialRemixTermsId
-            )
-        );
         IIPAccount(payable(ipAcct[3])).execute(
             address(licensingModule),
             0,
@@ -154,7 +141,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[6] = registerIpAccount(mockNFT, 6, u.carl);
@@ -180,7 +168,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -210,7 +199,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 2,
                 receiver: u.alice,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             }); // ID 0 (first license)
 
             ipAcct[2] = registerIpAccount(mockNFT, 2, u.alice);
@@ -247,7 +237,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: license0_mintAmount,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             // NC Social Remix license
@@ -258,7 +249,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: 1,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
 
             ipAcct[tokenId] = registerIpAccount(address(mockNFT), tokenId, u.carl);
@@ -284,7 +276,8 @@ contract BigBang_Integration_SingleNftCollection is BaseIntegration {
                 amount: license1_mintAmount,
                 receiver: u.carl,
                 royaltyContext: "",
-                maxMintingFee: 0
+                maxMintingFee: 0,
+                maxRevenueShare: 0
             });
             carl_licenses[1] = carl_licenses[1] + license1_mintAmount - 1; // use last license ID minted from above
 

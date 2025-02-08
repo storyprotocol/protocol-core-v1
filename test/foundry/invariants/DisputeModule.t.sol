@@ -78,18 +78,8 @@ contract DisputeHarness is Test {
     }
 
     /// @notice Function to tag derivative if parent infringed
-    function tagDerivativeIfParentInfringed(
-        uint256 parentIpIdIdx,
-        uint256 derivativeIpIdIdx,
-        uint256 parentDisputeId
-    ) public {
-        try
-            disputeModule.tagDerivativeIfParentInfringed(
-                ipAccounts[parentIpIdIdx % ipAccounts.length],
-                ipAccounts[derivativeIpIdIdx % ipAccounts.length],
-                parentDisputeId
-            )
-        {
+    function tagIfRelatedIpInfringed(uint256 ipIdToTagIdx, uint256 infringerDisputeId) public {
+        try disputeModule.tagIfRelatedIpInfringed(ipAccounts[ipIdToTagIdx % ipAccounts.length], infringerDisputeId) {
             counter++;
         } catch {}
     }
@@ -182,7 +172,8 @@ contract DisputeInvariants is BaseTest {
             licenseTemplate: address(pilTemplate),
             royaltyContext: "",
             maxMintingFee: 0,
-            maxRts: 100e6
+            maxRts: 100e6,
+            maxRevenueShare: 0
         });
 
         /*         targetContract(address(harness));

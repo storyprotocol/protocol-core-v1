@@ -1,0 +1,255 @@
+name: HardHat E2E Test
+
+on:
+  # push:
+  #   branches:
+  #     - update-e2e-test
+
+  workflow_dispatch:
+    inputs:
+      devnet_version:
+        description: 'devnet; mainnet;'
+        required: true
+        default: 'devnet'
+        type: choice
+        options:
+          - devnet
+          - mainnet
+      erc721_address:
+        description: 'ERC721 contract address'
+        required: false
+        default: ''
+        type: string
+      deploy_oov3:
+        description: 'Deploy Optimistic Oracle V3'
+        required: false
+        default: false
+        type: boolean
+
+  workflow_call:
+    inputs:
+      devnet_version:
+        description: 'devnet; mainnet;'
+        required: false
+        default: 'devnet'
+        type: string
+      erc721_address:
+        description: 'ERC721 contract address'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  print-config:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print Inputs
+        run: |
+          echo "Inputs:"
+          echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}"
+          echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
+
+  set-devnet-constants:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Devnet Version
+        id: devnet_version
+        run: |
+          declare -A devnet_config=(
+            ["devnet"]="1315 http://r1-d.odyssey-devnet.storyrpc.io:8545"
+            ["mainnet"]="1514 https://public.storyrpc.io"
+          )
+
+          devnet_version="${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}"
+
+          if [[ -n "${devnet_config[$devnet_version]}" ]]; then
+            read -r chainid rpcurl <<< "${devnet_config[$devnet_version]}"
+            
+            echo "CHAINID=$chainid" >> $GITHUB_OUTPUT
+            echo "RPCURL='$rpcurl'" >> $GITHUB_OUTPUT
+          else
+            echo "Unknown devnet version: $devnet_version"
+            exit 1
+          fi
+
+      - name: Mock ERC20 Address
+        id: mock_erc20_address
+        run: |
+          echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
+
+    outputs:
+      CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}
+      RPCURL: ${{ steps.devnet_version.outputs.RPCURL }}
+      MOCK_ERC20_ADDRESS: ${{ steps.mock_erc20_address.outputs.MOCK_ERC20_ADDRESS }}
+
+  deploy-erc721:
+    name: Deploy ERC721
+    needs: set-devnet-constants
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - name: Check Out Repository Code
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+
+      - name: Install Dependencies
+        run: |
+          forge compile
+
+      - name: Deploy MockERC721 Contract
+        id: deploy-mock-erc721
+        run: |
+          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
+          if [[ -n "$erc721_address" ]]; then
+            echo "ERC721 address provided: $erc721_address"
+            erc721=$erc721_address
+          else
+            echo "Deploying MockERC721 contract"
+            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+            echo $result
+            erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
+            echo "Deployed to: $erc721"
+          fi
+
+          echo "STORY_ERC721=$erc721" >> $GITHUB_OUTPUT
+    outputs:
+      STORY_ERC721: ${{ steps.deploy-mock-erc721.outputs.STORY_ERC721 }}
+
+  deploy-oov3-sandbox:
+    name: Deploy UMA Optimistic Oracle V3
+    if: ${{ inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true }}
+    needs: set-devnet-constants
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - name: Check Out Repository Code
+        uses: actions/checkout@v4
+
+      - name: Checkout dev-quickstart-oov3 repository
+        uses: actions/checkout@v4
+        with:
+          repository: UMAprotocol/dev-quickstart-oov3
+          path: dev-quickstart-oov3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Dependencies
+        run: |
+          cd dev-quickstart-oov3
+          forge install
+    
+      - name: Deploy UMA Optimistic Oracle V3
+        id: deploy-oov3-sandbox
+        run: |
+          cd dev-quickstart-oov3
+          echo "DEFAULT_CURRENCY=${{ needs.set-devnet-constants.outputs.MOCK_ERC20_ADDRESS }}" >> .env
+          echo "DEFAULT_LIVENESS=600" >> .env
+          echo "MINIMUM_BOND=0" >> .env
+          source .env
+
+          output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --priority-gas-price 1 --legacy)
+          echo "$output"
+
+          oov3_address=$(echo "$output" | grep '^  Deployed Optimistic Oracle V3' | awk '{print $NF}')
+          echo "OOV3_ADDRESS: $oov3_address"
+          echo "OOV3_ADDRESS=$oov3_address" >> $GITHUB_OUTPUT
+    outputs:
+      OOV3_ADDRESS: ${{ steps.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}
+
+  run-hardhat-test:
+    name: Run E2E Test
+    runs-on: ubuntu-latest
+    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox ]
+    if: always() && !failure() && !cancelled()
+
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - name: Check Out Repository Code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: 'Create env file'
+        run: |
+          touch .env
+          echo "MAINNET_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "SEPOLIA_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "STORY_USER1=${{ secrets.STORY_USER1 }}" >> .env
+          echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
+          echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
+          echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
+          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 }}" >> .env
+          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}" >> .env
+
+          # add one more blank line to .env
+          echo "" >> .env
+
+      - name: Run test
+        run: |
+          npx hardhat test --network odyssey
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: poc-test-report
+          path: |
+            ./mochawesome-report
+        if: always()
+
+      - name: Copy report to date folder
+        id: create_folder
+        run: |
+          folder_name=$(date +%Y%m%d)
+          echo "Folder name: $folder_name"
+
+          # Determine version_name based on devnet_version
+          env_name=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}
+          
+          mkdir -p ./tmp/$folder_name/$env_name
+          cp -R ./mochawesome-report/* ./tmp/$folder_name/$env_name
+
+      - name: Deploy report to GitHub Pages
+        if: ${{ inputs.deploy_report == 'true' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./tmp
+          publish_branch: gh-pages
+          keep_files: true

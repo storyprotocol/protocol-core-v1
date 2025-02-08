@@ -144,17 +144,10 @@ make format
 
 [See our contribution guidelines](./GUIDELINES.md)
 
+
 # 🛡️ Security
 
-We use slither, a popular security framework from [Trail of Bits](https://www.trailofbits.com/). To use slither, you'll first need to [install python](https://www.python.org/downloads/) and [install slither](https://github.com/crytic/slither#how-to-install).
-
-Then, you can run:
-
-```
-make slither
-```
-
-And get your slither output.
+We welcome responsible disclosure of vulnerabilities. Please see our [security policy](SECURITY.md) for more information.
 
 # 📜 Licensing
 

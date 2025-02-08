@@ -10,7 +10,7 @@ import { IERC165 } from "@openzeppelin/contracts/interfaces/IERC165.sol";
 /// The License Template contract is also responsible for registering, storing, verifying,
 /// and displaying license terms registered with the License Template.
 /// Anyone can implement a License Template and register it into the Story Protocol.
-/// @dev The License Template should assign an unique ID to each license terms registered.
+/// @dev The License Template should assign a unique ID to each license terms registered.
 interface ILicenseTemplate is IERC165 {
     /// @notice Emitted when a new license terms is registered.
     /// @param licenseTermsId The ID of the license terms.
@@ -129,13 +129,13 @@ interface ILicenseTemplate is IERC165 {
     /// @param childIpId The IP ID of the derivative.
     /// @param parentIpId The IP IDs of the parents.
     /// @param licenseTermsIds The IDs of the license terms.
-    /// @param childIpOwner The address of the derivative IP owner.
+    /// @param caller The address initiating the derivative registration.
     /// @return True if the registration is verified, false otherwise.
     function verifyRegisterDerivativeForAllParents(
         address childIpId,
         address[] calldata parentIpId,
         uint256[] calldata licenseTermsIds,
-        address childIpOwner
+        address caller
     ) external returns (bool);
 
     /// @notice Verifies if the royalty percentage defined in the licenseTermsId can be overridden with
@@ -144,4 +144,14 @@ interface ILicenseTemplate is IERC165 {
     /// @param newRoyaltyPercent The new royalty percentage.
     /// @return True if the royalty percentage can be overridden, false otherwise.
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool);
+
+    /// @notice queries if the derivative registration is allowed under the license terms.
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the derivative registration is allowed, false otherwise.
+    function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool);
+
+    /// @notice check if the license terms support associate with group IP assets
+    /// @param licenseTermsId The ID of the license terms.
+    /// @return True if the license terms support associate with group IP assets, false otherwise.
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool);
 }

@@ -10,6 +10,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
 
 import { ILicenseToken } from "./interfaces/ILicenseToken.sol";
+import { ILicenseRegistry } from "./interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "./interfaces/modules/licensing/ILicensingModule.sol";
 import { IDisputeModule } from "./interfaces/modules/dispute/IDisputeModule.sol";
 import { Errors } from "./lib/Errors.sol";
@@ -20,9 +21,14 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     using Strings for *;
 
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    ILicenseRegistry public immutable LICENSE_REGISTRY;
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ILicensingModule public immutable LICENSING_MODULE;
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IDisputeModule public immutable DISPUTE_MODULE;
+
+    /// @notice Max Royalty percentage is 100_000_000 means 100%.
+    uint32 public constant MAX_COMMERCIAL_REVENUE_SHARE = 100_000_000;
 
     /// @notice Emitted for metadata updates, per EIP-4906
     event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
@@ -48,9 +54,10 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(address licensingModule, address disputeModule) {
+    constructor(address licensingModule, address disputeModule, address licenseRegistry) {
         LICENSING_MODULE = ILicensingModule(licensingModule);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
+        LICENSE_REGISTRY = ILicenseRegistry(licenseRegistry);
         _disableInitializers();
     }
 
@@ -81,6 +88,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @param amount The amount of License Tokens to mint.
     /// @param minter The address of the minter.
     /// @param receiver The address of the receiver of the minted License Tokens.
+    /// @param maxRevenueShare The maximum revenue share percentage allowed for minting the License Tokens.
     /// @return startLicenseTokenId The start ID of the minted License Tokens.
     function mintLicenseTokens(
         address licensorIpId,
@@ -88,23 +96,43 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
         uint256 licenseTermsId,
         uint256 amount, // mint amount
         address minter,
-        address receiver
+        address receiver,
+        uint32 maxRevenueShare
     ) external onlyLicensingModule returns (uint256 startLicenseTokenId) {
         LicenseTokenMetadata memory ltm = LicenseTokenMetadata({
             licensorIpId: licensorIpId,
             licenseTemplate: licenseTemplate,
             licenseTermsId: licenseTermsId,
-            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId)
+            transferable: ILicenseTemplate(licenseTemplate).isLicenseTransferable(licenseTermsId),
+            commercialRevShare: LICENSE_REGISTRY.getRoyaltyPercent(licensorIpId, licenseTemplate, licenseTermsId)
         });
-
+        if (maxRevenueShare != 0 && ltm.commercialRevShare > maxRevenueShare) {
+            revert Errors.LicenseToken__CommercialRevenueShareExceedMaxRevenueShare(
+                ltm.commercialRevShare,
+                maxRevenueShare,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId
+            );
+        }
+        if (ltm.commercialRevShare > MAX_COMMERCIAL_REVENUE_SHARE) {
+            revert Errors.LicenseToken__InvalidRoyaltyPercent(
+                ltm.commercialRevShare,
+                licensorIpId,
+                licenseTemplate,
+                licenseTermsId
+            );
+        }
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
         startLicenseTokenId = $.totalMintedTokens;
         $.totalMintedTokens += amount;
+
         $.licensorIpTotalTokens[licensorIpId] += amount;
+
         for (uint256 i = 0; i < amount; i++) {
             uint256 tokenId = startLicenseTokenId + i;
             $.licenseTokenMetadatas[tokenId] = ltm;
-            _mint(receiver, tokenId);
+            _safeMint(receiver, tokenId);
             emit LicenseTokenMinted(minter, receiver, tokenId);
         }
     }
@@ -128,6 +156,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     /// @return licenseTemplate The address of the License Template associated with the License Tokens.
     /// @return licensorIpIds An array of licensor IPs associated with each License Token.
     /// @return licenseTermsIds An array of License Terms associated with each validated License Token.
+    /// @return commercialRevShares An array of commercial revenue share percentages associated with each License Token.
     function validateLicenseTokensForDerivative(
         address caller,
         address childIpId,
@@ -135,12 +164,23 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     )
         external
         view
-        returns (address licenseTemplate, address[] memory licensorIpIds, uint256[] memory licenseTermsIds)
+        returns (
+            address licenseTemplate,
+            address[] memory licensorIpIds,
+            uint256[] memory licenseTermsIds,
+            uint32[] memory commercialRevShares
+        )
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
+
+        if ($.licensorIpTotalTokens[childIpId] != 0) {
+            revert Errors.LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(childIpId);
+        }
+
         licenseTemplate = $.licenseTokenMetadatas[tokenIds[0]].licenseTemplate;
         licensorIpIds = new address[](tokenIds.length);
         licenseTermsIds = new uint256[](tokenIds.length);
+        commercialRevShares = new uint32[](tokenIds.length);
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[tokenIds[i]];
@@ -160,6 +200,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
 
             licensorIpIds[i] = ltm.licensorIpId;
             licenseTermsIds[i] = ltm.licenseTermsId;
+            commercialRevShares[i] = ltm.commercialRevShare;
         }
     }
 
@@ -215,6 +256,7 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     function tokenURI(
         uint256 id
     ) public view virtual override(ERC721Upgradeable, IERC721Metadata) returns (string memory) {
+        _requireOwned(id);
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
 
         LicenseTokenMetadata memory ltm = $.licenseTokenMetadatas[id];

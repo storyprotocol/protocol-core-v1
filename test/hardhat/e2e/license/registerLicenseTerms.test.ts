@@ -97,4 +97,18 @@ describe("PILicenseTemplate - registerLicenseTerms", function () {
 
     expect(licenseTermsId).and.to.be.a("bigint");
   });
+
+  it("Register license terms without mandatory fields", async function () {
+    const testTerms: Partial<typeof terms> = { ...terms };
+
+    delete testTerms.commercialUse;
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(testTerms)
+    ).to.be.rejectedWith("missing value for component commercialUse");
+
+    delete testTerms.expiration;
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(testTerms)
+    ).to.be.rejectedWith("missing value for component expiration");
+  });
 });

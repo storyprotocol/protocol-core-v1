@@ -2,23 +2,27 @@
 pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { ERC6551AccountLib } from "erc6551/lib/ERC6551AccountLib.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 // contracts
 import { Errors } from "../../../../contracts/lib/Errors.sol";
 import { RoyaltyModule } from "../../../../contracts/modules/royalty/RoyaltyModule.sol";
+import { IpRoyaltyVault } from "../../../../contracts/modules/royalty/policies/IpRoyaltyVault.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
+import { PILFlavors } from "../../../../contracts/lib/PILFlavors.sol";
+import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
 // tests
 import { BaseTest } from "../../utils/BaseTest.t.sol";
 import { TestProxyHelper } from "../../utils/TestProxyHelper.sol";
 import { MockExternalRoyaltyPolicy1 } from "../../mocks/policy/MockExternalRoyaltyPolicy1.sol";
 import { MockExternalRoyaltyPolicy2 } from "../../mocks/policy/MockExternalRoyaltyPolicy2.sol";
+import { MockExternalRoyaltyPolicy3 } from "../../mocks/policy/MockExternalRoyaltyPolicy3.sol";
 import { MockERC721 } from "../../mocks/token/MockERC721.sol";
-import { EvenSplitGroupPool } from "../../../../contracts/modules/grouping/EvenSplitGroupPool.sol";
 
-contract TestRoyaltyModule is BaseTest {
+contract TestRoyaltyModule is BaseTest, ERC721Holder {
     event RoyaltyPolicyWhitelistUpdated(address royaltyPolicy, bool allowed);
     event RoyaltyTokenWhitelistUpdated(address token, bool allowed);
     event RoyaltyPolicySet(address ipId, address royaltyPolicy, bytes data);
@@ -58,6 +62,7 @@ contract TestRoyaltyModule is BaseTest {
     address internal arbitrationRelayer;
     address internal mockExternalRoyaltyPolicy1;
     address internal mockExternalRoyaltyPolicy2;
+    address internal mockExternalRoyaltyPolicy3;
 
     // grouping
     MockERC721 internal mockNft = new MockERC721("MockERC721");
@@ -77,8 +82,10 @@ contract TestRoyaltyModule is BaseTest {
         // register external royalty policies
         mockExternalRoyaltyPolicy1 = address(new MockExternalRoyaltyPolicy1());
         mockExternalRoyaltyPolicy2 = address(new MockExternalRoyaltyPolicy2());
+        mockExternalRoyaltyPolicy3 = address(new MockExternalRoyaltyPolicy3());
         royaltyModule.registerExternalRoyaltyPolicy(mockExternalRoyaltyPolicy1);
         royaltyModule.registerExternalRoyaltyPolicy(mockExternalRoyaltyPolicy2);
+        royaltyModule.registerExternalRoyaltyPolicy(mockExternalRoyaltyPolicy3);
 
         vm.startPrank(address(licensingModule));
         _setupTree();
@@ -94,16 +101,6 @@ contract TestRoyaltyModule is BaseTest {
         });
 
         mockNFT.mintId(u.alice, 0);
-
-        address expectedAddr = ERC6551AccountLib.computeAddress(
-            address(erc6551Registry),
-            address(ipAccountImpl),
-            ipAccountRegistry.IP_ACCOUNT_SALT(),
-            block.chainid,
-            address(mockNFT),
-            0
-        );
-        vm.label(expectedAddr, "IPAccount0");
 
         vm.startPrank(u.alice);
         ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 0);
@@ -194,51 +191,13 @@ contract TestRoyaltyModule is BaseTest {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccessManager.selector);
         RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(0), uint256(8), uint256(1024), uint256(15)))
-            )
-        );
-    }
-
-    function test_RoyaltyModule_initialize_revert_ZeroMaxParents() public {
-        address impl = address(
-            new RoyaltyModule(
-                address(licensingModule),
-                address(disputeModule),
-                address(licenseRegistry),
-                address(ipAssetRegistry)
-            )
-        );
-        vm.expectRevert(Errors.RoyaltyModule__ZeroMaxParents.selector);
-        RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(1), uint256(0), uint256(1024), uint256(15)))
-            )
-        );
-    }
-
-    function test_RoyaltyModule_initialize_revert_ZeroMaxAncestors() public {
-        address impl = address(
-            new RoyaltyModule(
-                address(licensingModule),
-                address(disputeModule),
-                address(licenseRegistry),
-                address(ipAssetRegistry)
-            )
-        );
-        vm.expectRevert(Errors.RoyaltyModule__ZeroMaxAncestors.selector);
-        RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(1), uint256(8), uint256(0), uint256(15)))
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(0), uint256(15))))
         );
     }
 
@@ -248,15 +207,13 @@ contract TestRoyaltyModule is BaseTest {
                 address(licensingModule),
                 address(disputeModule),
                 address(licenseRegistry),
-                address(ipAssetRegistry)
+                address(ipAssetRegistry),
+                address(ipGraphACL)
             )
         );
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit.selector);
         RoyaltyModule(
-            TestProxyHelper.deployUUPSProxy(
-                impl,
-                abi.encodeCall(RoyaltyModule.initialize, (address(1), uint256(8), uint256(1024), uint256(0)))
-            )
+            TestProxyHelper.deployUUPSProxy(impl, abi.encodeCall(RoyaltyModule.initialize, (address(1), uint256(0))))
         );
     }
 
@@ -302,38 +259,20 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(royaltyModule.royaltyFeePercent(), 100);
     }
 
-    function test_RoyaltyModule_setIpGraphLimits_revert_ZeroMaxParents() public {
-        vm.startPrank(u.admin);
-        vm.expectRevert(Errors.RoyaltyModule__ZeroMaxParents.selector);
-
-        royaltyModule.setIpGraphLimits(0, 1, 10);
-    }
-
-    function test_RoyaltyModule_setIpGraphLimits_revert_ZeroMaxAncestors() public {
-        vm.startPrank(u.admin);
-        vm.expectRevert(Errors.RoyaltyModule__ZeroMaxAncestors.selector);
-
-        royaltyModule.setIpGraphLimits(1, 0, 10);
-    }
-
-    function test_RoyaltyModule_setIpGraphLimits_revert_ZeroAccumulatedRoyaltyPoliciesLimit() public {
+    function test_RoyaltyModule_setRoyaltyLimits_revert_ZeroAccumulatedRoyaltyPoliciesLimit() public {
         vm.startPrank(u.admin);
         vm.expectRevert(Errors.RoyaltyModule__ZeroAccumulatedRoyaltyPoliciesLimit.selector);
 
-        royaltyModule.setIpGraphLimits(1, 1, 0);
+        royaltyModule.setRoyaltyLimits(0);
     }
 
-    function test_RoyaltyModule_setIpGraphLimits() public {
-        assertEq(royaltyModule.maxParents(), 8);
-        assertEq(royaltyModule.maxAncestors(), 1024);
+    function test_RoyaltyModule_setRoyaltyLimits() public {
         assertEq(royaltyModule.maxAccumulatedRoyaltyPolicies(), 15);
 
         vm.startPrank(u.admin);
-        royaltyModule.setIpGraphLimits(1, 1, 1);
+        royaltyModule.setRoyaltyLimits(1);
         vm.stopPrank();
 
-        assertEq(royaltyModule.maxParents(), 1);
-        assertEq(royaltyModule.maxAncestors(), 1);
         assertEq(royaltyModule.maxAccumulatedRoyaltyPolicies(), 1);
     }
 
@@ -342,6 +281,12 @@ contract TestRoyaltyModule is BaseTest {
         vm.expectRevert(Errors.RoyaltyModule__ZeroRoyaltyToken.selector);
 
         royaltyModule.whitelistRoyaltyToken(address(0), true);
+    }
+
+    function test_RoyaltyModule_whitelistRoyaltyPolicy_revert_PolicyAlreadyRegistered() public {
+        vm.startPrank(u.admin);
+        vm.expectRevert(Errors.RoyaltyModule__PolicyAlreadyRegisteredAsExternalRoyaltyPolicy.selector);
+        royaltyModule.whitelistRoyaltyPolicy(address(mockExternalRoyaltyPolicy1), true);
     }
 
     function test_RoyaltyModule_whitelistRoyaltyPolicy() public {
@@ -417,17 +362,6 @@ contract TestRoyaltyModule is BaseTest {
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__ZeroRoyaltyPolicy.selector);
         royaltyModule.onLicenseMinting(licensor, address(0), licensePercent, "");
-    }
-
-    function test_RoyaltyModule_onLicenseMinting_revert_LastPositionNotAbleToMintLicense() public {
-        vm.startPrank(u.admin);
-        royaltyModule.setIpGraphLimits(1, 1, 15);
-        vm.stopPrank();
-
-        address licensor = address(50);
-        vm.startPrank(address(licensingModule));
-        vm.expectRevert(Errors.RoyaltyModule__LastPositionNotAbleToMintLicense.selector);
-        royaltyModule.onLicenseMinting(licensor, address(royaltyPolicyLAP), uint32(15), "");
     }
 
     function test_RoyaltyModule_onLicenseMinting_revert_AboveMaxPercent() public {
@@ -589,59 +523,6 @@ contract TestRoyaltyModule is BaseTest {
         );
     }
 
-    function test_RoyaltyModule_onLinkToParents_revert_RoyaltyModule_AboveParentLimit() public {
-        address[] memory parents = new address[](3);
-        address[] memory licenseRoyaltyPolicies = new address[](3);
-        uint32[] memory parentRoyalties = new uint32[](3);
-
-        // link 80 to 10 + 60 + 70
-        parents = new address[](10);
-        licenseRoyaltyPolicies = new address[](3);
-        parentRoyalties = new uint32[](3);
-        parents[0] = address(10);
-        parents[1] = address(60);
-        parents[2] = address(70);
-        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
-        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
-        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy2);
-        parentRoyalties[0] = uint32(5 * 10 ** 6);
-        parentRoyalties[1] = uint32(17 * 10 ** 6);
-        parentRoyalties[2] = uint32(24 * 10 ** 6);
-
-        vm.startPrank(address(licensingModule));
-        vm.expectRevert(Errors.RoyaltyModule__AboveParentLimit.selector);
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
-    }
-
-    function test_RoyaltyModule_onLinkToParents_revert_AboveAncestorsLimit() public {
-        address[] memory parents = new address[](3);
-        address[] memory licenseRoyaltyPolicies = new address[](3);
-        uint32[] memory parentRoyalties = new uint32[](3);
-
-        vm.startPrank(u.admin);
-        royaltyModule.setIpGraphLimits(3, 2, 15);
-        vm.stopPrank();
-
-        // link 80 to 10 + 60 + 70
-        parents = new address[](3);
-        licenseRoyaltyPolicies = new address[](3);
-        parentRoyalties = new uint32[](3);
-        parents[0] = address(10);
-        parents[1] = address(60);
-        parents[2] = address(70);
-        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
-        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
-        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy2);
-        parentRoyalties[0] = uint32(5 * 10 ** 6);
-        parentRoyalties[1] = uint32(17 * 10 ** 6);
-        parentRoyalties[2] = uint32(24 * 10 ** 6);
-
-        vm.startPrank(address(licensingModule));
-        ipGraph.addParentIp(address(80), parents);
-        vm.expectRevert(Errors.RoyaltyModule__AboveAncestorsLimit.selector);
-        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
-    }
-
     function test_RoyaltyModule_onLinkToParents_revert_RoyaltyModule_NotWhitelistedOrRegisteredRoyaltyPolicy() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);
@@ -672,7 +553,7 @@ contract TestRoyaltyModule is BaseTest {
 
     function test_RoyaltyModule_onLinkToParents_revert_AboveAccumulatedRoyaltyPoliciesLimit() public {
         vm.startPrank(u.admin);
-        royaltyModule.setIpGraphLimits(8, 1024, 3);
+        royaltyModule.setRoyaltyLimits(3);
         vm.stopPrank();
 
         address[] memory parents = new address[](3);
@@ -797,6 +678,73 @@ contract TestRoyaltyModule is BaseTest {
         assertEq(accRoyaltyPolicies70After.length, 3);
     }
 
+    function test_RoyaltyModule_onLinkToParents_ZeroRemainingRts() public {
+        address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+
+        // link 80 to 10 + 60 + 70
+        parents = new address[](3);
+        licenseRoyaltyPolicies = new address[](3);
+        parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(60);
+        parents[2] = address(70);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
+        licenseRoyaltyPolicies[2] = address(mockExternalRoyaltyPolicy3);
+        parentRoyalties[0] = uint32(5 * 10 ** 6);
+        parentRoyalties[1] = uint32(17 * 10 ** 6);
+        parentRoyalties[2] = uint32(24 * 10 ** 6);
+
+        vm.startPrank(address(licensingModule));
+        ipGraph.addParentIp(address(80), parents);
+
+        assertEq(royaltyModule.ipRoyaltyVaults(address(80)), address(0));
+
+        vm.expectEmit(true, true, true, true, address(royaltyModule));
+        emit LinkedToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "");
+
+        royaltyModule.onLinkToParents(address(80), parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
+
+        address ipRoyaltyVault80 = royaltyModule.ipRoyaltyVaults(address(80));
+        uint256 ipId80RtLAPBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(royaltyPolicyLAP));
+        uint256 ipId80RtLRPBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(royaltyPolicyLRP));
+        uint256 ipId80RtLRPParentVaultBalAfter = IERC20(ipRoyaltyVault80).balanceOf(
+            royaltyModule.ipRoyaltyVaults(address(60))
+        );
+        uint256 ipId80RtExternal3BalAfter = IERC20(ipRoyaltyVault80).balanceOf(mockExternalRoyaltyPolicy3);
+        uint256 ipId80IpIdRtBalAfter = IERC20(ipRoyaltyVault80).balanceOf(address(80));
+
+        assertFalse(royaltyModule.ipRoyaltyVaults(address(80)) == address(0));
+        assertEq(royaltyModule.isIpRoyaltyVault(royaltyModule.ipRoyaltyVaults(address(80))), true);
+        assertEq(ipId80RtLAPBalAfter, 0);
+        assertEq(ipId80RtLRPBalAfter, 0);
+        assertEq(ipId80RtLRPParentVaultBalAfter, 0);
+        assertEq(ipId80RtExternal3BalAfter, 100 * 10 ** 6);
+        assertEq(ipId80IpIdRtBalAfter, 0);
+
+        address[] memory accRoyaltyPolicies80After = royaltyModule.accumulatedRoyaltyPolicies(address(80));
+        assertEq(accRoyaltyPolicies80After[0], address(royaltyPolicyLAP));
+        assertEq(accRoyaltyPolicies80After[1], address(royaltyPolicyLRP));
+        assertEq(accRoyaltyPolicies80After[2], address(mockExternalRoyaltyPolicy3));
+        assertEq(accRoyaltyPolicies80After[3], address(mockExternalRoyaltyPolicy1));
+
+        address[] memory accRoyaltyPolicies10After = royaltyModule.accumulatedRoyaltyPolicies(address(10));
+        assertEq(accRoyaltyPolicies10After.length, 0);
+
+        address[] memory accRoyaltyPolicies60After = royaltyModule.accumulatedRoyaltyPolicies(address(60));
+        assertEq(accRoyaltyPolicies60After[0], address(royaltyPolicyLAP));
+        assertEq(accRoyaltyPolicies60After[1], address(royaltyPolicyLRP));
+        assertEq(accRoyaltyPolicies60After.length, 2);
+
+        address[] memory accRoyaltyPolicies70After = royaltyModule.accumulatedRoyaltyPolicies(address(70));
+        assertEq(accRoyaltyPolicies70After[0], address(mockExternalRoyaltyPolicy1));
+        assertEq(accRoyaltyPolicies70After[1], address(royaltyPolicyLAP));
+        assertEq(accRoyaltyPolicies70After[2], address(royaltyPolicyLRP));
+        assertEq(accRoyaltyPolicies70After.length, 3);
+    }
+
     function test_RoyaltyModule_onLinkToParents_group() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);
@@ -816,12 +764,12 @@ contract TestRoyaltyModule is BaseTest {
         parentRoyalties[1] = uint32(17 * 10 ** 6);
         parentRoyalties[2] = uint32(24 * 10 ** 6);
 
-        vm.startPrank(address(licensingModule));
         address groupId = groupingModule.registerGroup(address(rewardPool));
         ipGraph.addParentIp(groupId, parents);
 
         assertEq(royaltyModule.ipRoyaltyVaults(groupId), address(0));
 
+        vm.startPrank(address(licensingModule));
         royaltyModule.onLinkToParents(groupId, parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
 
         address ipRoyaltyVault80 = royaltyModule.ipRoyaltyVaults(groupId);
@@ -899,7 +847,8 @@ contract TestRoyaltyModule is BaseTest {
             amount: 1,
             receiver: ipAcct2,
             royaltyContext: "",
-            maxMintingFee: 1e30
+            maxMintingFee: 1e30,
+            maxRevenueShare: 0
         });
         // register derivative
         vm.startPrank(address(2));
@@ -929,6 +878,20 @@ contract TestRoyaltyModule is BaseTest {
         royaltyModule.pause();
 
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_revert_PaymentAmountIsTooLow() public {
+        uint256 royaltyAmount = 1999; // 0.01999 USDC
+        address receiverIpId = address(2);
+        address payerIpId = address(3);
+
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(5 * 10 ** 4)); // 0.05%
+        vm.stopPrank();
+
+        vm.expectRevert(Errors.RoyaltyModule__PaymentAmountIsTooLow.selector);
         royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
     }
 
@@ -1024,6 +987,171 @@ contract TestRoyaltyModule is BaseTest {
         );
     }
 
+    function test_RoyaltyModule_payRoyaltyOnBehalf_WithWhitelistedRoyaltyPolicy() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address payerIpId = address(3);
+        USDC.mint(payerIpId, royaltyAmount * 2);
+
+        mockNFT.mintId(u.alice, 1);
+        vm.startPrank(u.alice);
+        address receiverIpId = ipAssetRegistry.register(block.chainid, address(mockNFT), 1);
+        vm.stopPrank();
+
+        address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(20);
+        parents[2] = address(30);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLAP);
+        licenseRoyaltyPolicies[2] = address(royaltyPolicyLRP);
+        parentRoyalties[0] = uint32(10 * 10 ** 6);
+        parentRoyalties[1] = uint32(10 * 10 ** 6);
+        parentRoyalties[2] = uint32(20 * 10 ** 6);
+        ipGraph.addParentIp(receiverIpId, parents);
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLinkToParents(receiverIpId, parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
+        vm.stopPrank();
+
+        address ipRoyaltyVault = royaltyModule.ipRoyaltyVaults(receiverIpId);
+
+        vm.startPrank(payerIpId);
+        USDC.mint(address(1), royaltyAmount * 2);
+        USDC.approve(address(royaltyModule), royaltyAmount * 2);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 ipRoyaltyVaultUSDCBalBefore = USDC.balanceOf(ipRoyaltyVault);
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(address(100));
+        assertEq(royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)), 0);
+        assertEq(royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)), 0);
+
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        assertEq(payerIpIdUSDCBalBefore - USDC.balanceOf(payerIpId), royaltyAmount);
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 60e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)),
+            royaltyAmount
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)),
+            royaltyAmount
+        );
+
+        // now LAP is blacklisted while LRP is not
+        vm.startPrank(u.admin);
+        royaltyModule.whitelistRoyaltyPolicy(address(royaltyPolicyLAP), false);
+        vm.stopPrank();
+
+        vm.startPrank(payerIpId);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+
+        assertEq(
+            USDC.balanceOf(ipRoyaltyVault) - ipRoyaltyVaultUSDCBalBefore,
+            (royaltyAmount * 60e6 + royaltyAmount * 80e6) / royaltyModule.maxPercent()
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLAP)),
+            royaltyAmount
+        );
+        assertEq(
+            royaltyModule.totalRevenueTokensAccounted(receiverIpId, address(USDC), address(royaltyPolicyLRP)),
+            royaltyAmount * 2
+        );
+    }
+
+    function test_RoyaltyModule_payRoyaltyOnBehalf_IpIsGroup() public {
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address payerIpId = address(3);
+
+        // set fee and treasury
+        vm.startPrank(u.admin);
+        address treasury = address(100);
+        royaltyModule.setTreasury(treasury);
+        royaltyModule.setRoyaltyFeePercent(uint32(10 * 10 ** 6)); // 10%
+        vm.stopPrank();
+
+        // register group + add ip
+        vm.warp(100);
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingConfig.expectGroupRewardPool = address(0);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory groupMembers = new address[](1);
+        groupMembers[0] = ipId1;
+        groupingModule.addIp(groupId, groupMembers, 100e6);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLicenseMinting(ipId1, address(royaltyPolicyLRP), uint32(15e6), "");
+        royaltyModule.onLicenseMinting(groupId, address(royaltyPolicyLRP), uint32(15e6), "");
+        address groupVault = royaltyModule.ipRoyaltyVaults(groupId);
+        vm.stopPrank();
+
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, 1000e18);
+        USDC.approve(address(royaltyModule), 1000e18);
+
+        uint256 payerIpIdUSDCBalBefore = USDC.balanceOf(payerIpId);
+        uint256 groupVaultUSDCBalBefore = USDC.balanceOf(groupVault);
+        uint256 usdcTreasuryAmountBefore = USDC.balanceOf(treasury);
+
+        royaltyModule.payRoyaltyOnBehalf(groupId, payerIpId, address(USDC), 1000e18);
+
+        uint256 payerIpIdUSDCBalAfter = USDC.balanceOf(payerIpId);
+        uint256 groupVaultUSDCBalAfter = USDC.balanceOf(groupVault);
+        uint256 usdcTreasuryAmountAfter = USDC.balanceOf(treasury);
+
+        assertEq(payerIpIdUSDCBalBefore - payerIpIdUSDCBalAfter, 1000e18);
+        assertEq(groupVaultUSDCBalAfter - groupVaultUSDCBalBefore, 900e18);
+        assertEq(usdcTreasuryAmountAfter - usdcTreasuryAmountBefore, 100e18);
+
+        groupingModule.collectRoyalties(groupId, address(erc20));
+
+        assertEq(USDC.balanceOf(address(evenSplitGroupPool)), 900e18);
+        assertEq(groupVaultUSDCBalAfter - USDC.balanceOf(groupVault), 900e18);
+
+        groupingModule.claimReward(groupId, address(erc20), groupMembers);
+
+        address ipRoyaltyVault1 = royaltyModule.ipRoyaltyVaults(ipId1);
+
+        assertEq(USDC.balanceOf(address(evenSplitGroupPool)), 0);
+        assertEq(USDC.balanceOf(groupVault), 0);
+        assertEq(USDC.balanceOf(ipRoyaltyVault1), 900e18);
+
+        IpRoyaltyVault(ipRoyaltyVault1).claimRevenueOnBehalf(ipId1, address(USDC));
+
+        assertEq(USDC.balanceOf(ipId1), 900e18);
+        assertEq(USDC.balanceOf(treasury), 100e18);
+    }
+
     function test_RoyaltyModule_payLicenseMintingFee_revert_ZeroAmount() public {
         vm.startPrank(address(licensingModule));
         vm.expectRevert(Errors.RoyaltyModule__ZeroAmount.selector);
@@ -1051,6 +1179,23 @@ contract TestRoyaltyModule is BaseTest {
 
         vm.expectRevert(Errors.RoyaltyModule__IpIsTagged.selector);
         royaltyModule.payLicenseMintingFee(ipAddr, ipAccount1, address(USDC), 100);
+    }
+
+    function test_RoyaltyModule_payLicenseMintingFee_revert_PaymentAmountIsTooLow() public {
+        uint256 royaltyAmount = 1999; // 0.01999 USDC
+        address receiverIpId = address(2);
+        address payerAddress = address(3);
+        address token = address(USDC);
+
+        vm.startPrank(u.admin);
+        royaltyModule.setTreasury(address(100));
+        royaltyModule.setRoyaltyFeePercent(uint32(5 * 10 ** 4)); // 0.05%
+        vm.stopPrank();
+
+        vm.startPrank(address(licensingModule));
+
+        vm.expectRevert(Errors.RoyaltyModule__PaymentAmountIsTooLow.selector);
+        royaltyModule.payLicenseMintingFee(receiverIpId, payerAddress, token, royaltyAmount);
     }
 
     function test_RoyaltyModule_payLicenseMintingFee() public {

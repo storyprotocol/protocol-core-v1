@@ -49,4 +49,6 @@ interface IOOV3 {
     function stampAssertion(bytes32 assertionId) external view returns (bytes memory);
 
     function burnedBondPercentage() external view returns (uint256);
+
+    function getMinimumBond(address currency) external view returns (uint256);
 }

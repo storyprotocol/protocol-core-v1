@@ -60,8 +60,9 @@ contract IPAssetRegistry is
     constructor(
         address erc6551Registry,
         address ipAccountImpl,
-        address groupingModule
-    ) IPAccountRegistry(erc6551Registry, ipAccountImpl) GroupIPAssetRegistry(groupingModule) {
+        address groupingModule,
+        address ipAccountImplBeacon
+    ) IPAccountRegistry(erc6551Registry, ipAccountImpl, ipAccountImplBeacon) GroupIPAssetRegistry(groupingModule) {
         _disableInitializers();
     }
 
@@ -101,8 +102,15 @@ contract IPAssetRegistry is
         uint256 tokenId,
         address registerFeePayer
     ) internal override returns (address id) {
-        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
+        id = _registerIpAccount(chainid, tokenContract, tokenId);
+        IIPAccount ipAccount = IIPAccount(payable(id));
 
+        // return if the IP was already registered
+        if (bytes(ipAccount.getString("NAME")).length != 0) {
+            return id;
+        }
+
+        IPAssetRegistryStorage storage $ = _getIPAssetRegistryStorage();
         // Pay registration fee
         uint96 feeAmount = $.feeAmount;
         if (feeAmount > 0) {
@@ -110,14 +118,6 @@ contract IPAssetRegistry is
             address treasury = $.treasury;
             IERC20(feeToken).safeTransferFrom(registerFeePayer, treasury, uint256(feeAmount));
             emit IPRegistrationFeePaid(registerFeePayer, treasury, feeToken, feeAmount);
-        }
-
-        id = _registerIpAccount(chainid, tokenContract, tokenId);
-        IIPAccount ipAccount = IIPAccount(payable(id));
-
-        // return if the IP was already registered
-        if (bytes(ipAccount.getString("NAME")).length != 0) {
-            return id;
         }
 
         (string memory name, string memory uri) = _getNameAndUri(chainid, tokenContract, tokenId);
@@ -145,6 +145,12 @@ contract IPAssetRegistry is
         $.feeAmount = feeAmount;
         $.treasury = treasury;
         emit RegistrationFeeSet(treasury, feeToken, feeAmount);
+    }
+
+    /// @notice Upgrades the IP account implementation.
+    /// @param newIpAccountImpl The address of the new IP account implementation.
+    function upgradeIPAccountImpl(address newIpAccountImpl) external restricted {
+        _upgradeIPAccountImpl(newIpAccountImpl);
     }
 
     /// @notice Gets the canonical IP identifier associated with an IP NFT.

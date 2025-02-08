@@ -19,10 +19,32 @@ interface IAccessController {
         uint8 permission
     );
 
+    /// @notice Emitted when a transient permission is set.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address that can call `to` on behalf of the IP account
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @param permission The permission level
+    event TransientPermissionSet(
+        address ipAccountOwner,
+        address indexed ipAccount,
+        address indexed signer,
+        address indexed to,
+        bytes4 func,
+        uint8 permission
+    );
+
     /// @notice Sets a batch of permissions in a single transaction.
     /// @dev This function allows setting multiple permissions at once. Pausable.
     /// @param permissions An array of `Permission` structs, each representing the permission to be set.
     function setBatchPermissions(AccessPermission.Permission[] memory permissions) external;
+
+    /// @notice Sets a batch of transient permissions in a single transaction.
+    /// This functions similarly to setBatchPermissions, but the transient permission only applies
+    /// to the current transaction.
+    /// @dev This function allows setting multiple permissions at once. Pausable via setPermission.
+    /// @param permissions An array of `Permission` structs, each representing the permission to be set.
+    function setBatchTransientPermissions(AccessPermission.Permission[] memory permissions) external;
 
     /// @notice Sets the permission for a specific function call
     /// @dev Each policy is represented as a mapping from an IP account address to a signer address to a recipient
@@ -40,11 +62,34 @@ interface IAccessController {
     /// @param permission The new permission level
     function setPermission(address ipAccount, address signer, address to, bytes4 func, uint8 permission) external;
 
+    /// @notice Sets the transient permission for a specific function call.
+    /// This functions similarly to setPermission, but the transient permission only applies to the current transaction.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @param permission The new permission level
+    function setTransientPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func,
+        uint8 permission
+    ) external;
+
     /// @notice Sets permission to a signer for all functions across all modules.
     /// @param ipAccount The address of the IP account that grants the permission for `signer`.
     /// @param signer The address of the signer receiving the permissions.
     /// @param permission The new permission.
     function setAllPermissions(address ipAccount, address signer, uint8 permission) external;
+
+    /// @notice Sets transient permission to a signer for all functions across all modules.
+    /// This functions similarly to setAllPermissions, but the transient permission only applies to the
+    /// current transaction.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`.
+    /// @param signer The address of the signer receiving the permissions.
+    /// @param permission The new permission.
+    function setAllTransientPermissions(address ipAccount, address signer, uint8 permission) external;
 
     /// @notice Checks the permission level for a specific function call. Reverts if permission is not granted.
     /// Otherwise, the function is a noop.
@@ -64,4 +109,32 @@ interface IAccessController {
     /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
     /// @return permission The current permission level for the function call on `to` by the `signer` for `ipAccount`
     function getPermission(address ipAccount, address signer, address to, bytes4 func) external view returns (uint8);
+
+    /// @notice Returns the permanent permission level for a specific function call.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address that can call `to` on behalf of the `ipAccount`
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @return permission The current permanent permission level for the function call on `to` by the `signer`
+    /// for `ipAccount`
+    function getPermanentPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func
+    ) external view returns (uint8);
+
+    /// @notice Returns the transient permission level for a specific function call.
+    /// @param ipAccount The address of the IP account that grants the permission for `signer`
+    /// @param signer The address that can call `to` on behalf of the `ipAccount`
+    /// @param to The address that can be called by the `signer` (currently only modules can be `to`)
+    /// @param func The function selector of `to` that can be called by the `signer` on behalf of the `ipAccount`
+    /// @return permission The current transient permission level for the function call on `to` by the `signer`
+    /// for `ipAccount`
+    function getTransientPermission(
+        address ipAccount,
+        address signer,
+        address to,
+        bytes4 func
+    ) external view returns (uint8);
 }

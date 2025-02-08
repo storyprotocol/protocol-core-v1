@@ -2,7 +2,7 @@
 
 # Plagiarism
 Bob owns IP1 
-Bob sets P1 in IP1 (he can, since he clains IP1 is original)
+Bob sets P1 in IP1 (he can, since he claims IP1 is original)
 Alice owns IP2
 Alice mints L1 from IP1-P1
 Alice links IP2 to IP1 with L1

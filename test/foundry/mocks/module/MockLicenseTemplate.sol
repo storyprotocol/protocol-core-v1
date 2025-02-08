@@ -153,4 +153,12 @@ contract MockLicenseTemplate is BaseLicenseTemplateUpgradeable {
     function canOverrideRoyaltyPercent(uint256 licenseTermsId, uint32 newRoyaltyPercent) external view returns (bool) {
         return true;
     }
+
+    function allowDerivativeRegistration(uint256 licenseTermsId) external view returns (bool) {
+        return true;
+    }
+
+    function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool) {
+        return true;
+    }
 }

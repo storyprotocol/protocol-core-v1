@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
@@ -10,12 +9,9 @@ import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
 import { IOOV3 } from "contracts/interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { Errors } from "contracts/lib/Errors.sol";
-import { IPGraphACL } from "contracts/access/IPGraphACL.sol";
 
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
-import { MockIpAssetRegistry } from "test/foundry/mocks/dispute/MockIpAssetRegistry.sol";
 import { MockERC20 } from "test/foundry/mocks/token/MockERC20.sol";
-import { TestProxyHelper } from "test/foundry/utils/TestProxyHelper.sol";
 
 contract ArbitrationPolicyUMATest is BaseTest {
     event OOV3Set(address oov3);
@@ -431,7 +427,12 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOracleSpoke(oracleSpoke).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
         vm.stopPrank();
         vm.startPrank(childMessenger);
-        bytes memory message = abi.encode(bytes32("ASSERT_TRUTH"), assertionTimestamp, IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData), 1e18);
+        bytes memory message = abi.encode(
+            bytes32("ASSERT_TRUTH"),
+            assertionTimestamp,
+            IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData),
+            1e18
+        );
         IOracleSpoke(oracleSpoke).processMessageFromParent(message);
         vm.stopPrank();
         oov3.settleAssertion(assertionId);
@@ -569,7 +570,12 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOracleSpoke(oracleSpoke).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
         vm.stopPrank();
         vm.startPrank(childMessenger);
-        bytes memory message = abi.encode(bytes32("ASSERT_TRUTH"), assertionTimestamp, IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData), 0);
+        bytes memory message = abi.encode(
+            bytes32("ASSERT_TRUTH"),
+            assertionTimestamp,
+            IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData),
+            0
+        );
         IOracleSpoke(oracleSpoke).processMessageFromParent(message);
         vm.stopPrank();
         oov3.settleAssertion(assertionId);
@@ -594,7 +600,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
             data
         );
 
-        vm.warp(block.timestamp + (liveness * 66_666_666 / 100_000_000) + 1);
+        vm.warp(block.timestamp + ((liveness * 66_666_666) / 100_000_000) + 1);
 
         // dispute the assertion
         vm.startPrank(counterDisputer);
@@ -617,7 +623,12 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOracleSpoke(oracleSpoke).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
         vm.stopPrank();
         vm.startPrank(childMessenger);
-        bytes memory message = abi.encode(bytes32("ASSERT_TRUTH"), assertionTimestamp, IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData), 0);
+        bytes memory message = abi.encode(
+            bytes32("ASSERT_TRUTH"),
+            assertionTimestamp,
+            IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData),
+            0
+        );
         IOracleSpoke(oracleSpoke).processMessageFromParent(message);
         vm.stopPrank();
         oov3.settleAssertion(assertionId);
@@ -663,7 +674,12 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOracleSpoke(oracleSpoke).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
         vm.stopPrank();
         vm.startPrank(childMessenger);
-        bytes memory message = abi.encode(bytes32("ASSERT_TRUTH"), assertionTimestamp, IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData), 1e18);
+        bytes memory message = abi.encode(
+            bytes32("ASSERT_TRUTH"),
+            assertionTimestamp,
+            IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData),
+            1e18
+        );
         IOracleSpoke(oracleSpoke).processMessageFromParent(message);
         vm.stopPrank();
 
@@ -723,7 +739,12 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IOracleSpoke(oracleSpoke).requestPrice(bytes32("ASSERT_TRUTH"), assertionTimestamp, ancillaryData);
         vm.stopPrank();
         vm.startPrank(childMessenger);
-        bytes memory message = abi.encode(bytes32("ASSERT_TRUTH"), assertionTimestamp, IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData), 0);
+        bytes memory message = abi.encode(
+            bytes32("ASSERT_TRUTH"),
+            assertionTimestamp,
+            IOracleSpoke(oracleSpoke).stampAncillaryData(ancillaryData),
+            0
+        );
         IOracleSpoke(oracleSpoke).processMessageFromParent(message);
         vm.stopPrank();
 

@@ -25,10 +25,10 @@ describe("LicensingModule - attachLicenseTerms", function () {
     expect(ipId).to.not.be.empty.and.to.be.a("HexString");
 
     const connectedLicensingModule = this.licensingModule.connect(signers[0]);
-    console.log(this.nonCommericialLicenseId);
+    console.log(this.nonCommercialLicenseId);
 
     const attachLicenseTx = await expect(
-      connectedLicensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commericialUseLicenseId)
+      connectedLicensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commercialUseLicenseId)
     ).not.to.be.rejectedWith(Error);
     await attachLicenseTx.wait();
     console.log(attachLicenseTx.hash);

@@ -31,7 +31,7 @@ describe("RoyaltyModule", function () {
     // Get the signers
     signers = await hre.ethers.getSigners(); 
 
-    // Register a commericial remix license with royalty policy LAP
+    // Register a commercial remix license with royalty policy LAP
     testTerms.royaltyPolicy = RoyaltyPolicyLAP;
     testTerms.defaultMintingFee = 100;
     testTerms.commercialUse = true;

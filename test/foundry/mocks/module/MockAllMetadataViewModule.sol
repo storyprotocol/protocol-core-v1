@@ -52,7 +52,7 @@ contract MockAllMetadataViewModule is BaseModule, IViewModule {
             /* solhint-disable */
             abi.encodePacked(
                 '{"name": "IP Asset #',
-                Strings.toHexString(ipId),
+                Strings.toHexString(uint160(ipId)),
                 '", "description": "',
                 description(ipId),
                 '", "attributes": ['
@@ -70,7 +70,7 @@ contract MockAllMetadataViewModule is BaseModule, IViewModule {
                 ipType(ipId),
                 '"},'
                 '{"trait_type": "Owner", "value": "',
-                Strings.toHexString(owner(ipId)),
+                Strings.toHexString(uint160(owner(ipId))),
                 '"},'
                 '{"trait_type": "Registration Date", "value": "',
                 Strings.toString(registrationDate(ipId)),

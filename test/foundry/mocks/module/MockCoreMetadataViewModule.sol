@@ -30,9 +30,9 @@ contract MockCoreMetadataViewModule is BaseModule, IViewModule {
             string.concat(
                 getName(ipId),
                 ", IP #",
-                Strings.toHexString(ipId),
+                Strings.toHexString(uint160(ipId)),
                 ", is currently owned by",
-                Strings.toHexString(owner(ipId)),
+                Strings.toHexString(uint160(owner(ipId))),
                 ". To learn more about this IP, visit ",
                 uri(ipId)
             );
@@ -55,7 +55,7 @@ contract MockCoreMetadataViewModule is BaseModule, IViewModule {
             /* solhint-disable */
             abi.encodePacked(
                 '{"name": "IP Asset #',
-                Strings.toHexString(ipId),
+                Strings.toHexString(uint160(ipId)),
                 '", "description": "',
                 description(ipId),
                 '", "attributes": ['
@@ -70,7 +70,7 @@ contract MockCoreMetadataViewModule is BaseModule, IViewModule {
                 getName(ipId),
                 '"},'
                 '{"trait_type": "Owner", "value": "',
-                Strings.toHexString(owner(ipId)),
+                Strings.toHexString(uint160(owner(ipId))),
                 '"},'
                 '{"trait_type": "Registration Date", "value": "',
                 Strings.toString(registrationDate(ipId)),

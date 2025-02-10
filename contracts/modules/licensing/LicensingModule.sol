@@ -861,7 +861,7 @@ contract LicensingModule is
         if (oldLicensingConfig.licensingHook != licensingConfig.licensingHook) {
             revert Errors.LicensingModule__GroupIpCannotChangeLicensingHook(groupId);
         }
-        // check hood data are the same
+        // check hook data are the same
         if (
             oldLicensingConfig.hookData.length != licensingConfig.hookData.length ||
             keccak256(oldLicensingConfig.hookData) != keccak256(licensingConfig.hookData)

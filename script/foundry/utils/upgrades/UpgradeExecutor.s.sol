@@ -117,7 +117,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
         } else {
             revert("Invalid mode");
         }
-        // If output is JSON, write the batch txx to file
+        // If output is JSON, write the batch txs to file
         if (outputType == Output.BATCH_TX_JSON) {
             string memory action;
             if (mode == UpgradeModes.SCHEDULE) {

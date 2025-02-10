@@ -1128,7 +1128,7 @@ contract AccessControllerTest is BaseTest {
         );
     }
 
-    function test_AccessController_revert_setBatchPermissionsButCallerisNotIPAccount() public {
+    function test_AccessController_revert_setBatchPermissionsButCallerIsNotIPAccount() public {
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);

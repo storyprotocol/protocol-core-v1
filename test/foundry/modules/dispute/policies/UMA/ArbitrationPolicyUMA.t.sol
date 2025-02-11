@@ -3,6 +3,8 @@ pragma solidity 0.8.26;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
@@ -52,12 +54,17 @@ contract ArbitrationPolicyUMATest is BaseTest {
         arbitrationPolicyUMA = ArbitrationPolicyUMA(0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936);
         protocolAdmin = 0x623Cb5A594dAD5cc1Ea1bDb0b084bf8F1fE4B2e4;
         protocolPauseAdmin = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
+        address upgrader = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
+        address accessController = 0xcCF37d0a503Ee1D4C11208672e622ed3DFB2275a;
+        address ipAssetRegistry = 0x77319B4031e6eF1250907aa00018B8B1c67a244b;
+        address licenseRegistry = 0x529a750E02d8E2f15649c13D69a465286a780e24;
+        address ipGraphACL = 0x1640A22a8A086747cD377b73954545e2Dfcc9Cad;
+        address accessManager = 0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53; // protocol access manager
         randomIpId = 0x452E6787A18a15e1A645DEd3dF519017D7E60b62;
 
-        // setup UMA parameters
         vm.startPrank(protocolAdmin);
         arbitrationPolicyUMA.setOOV3(newOOV3);
-        arbitrationPolicyUMA.setMaxBond(wip, 200e18);
+        arbitrationPolicyUMA.setMaxBond(wip, 350e18);
         vm.stopPrank();
 
         // fund addresses
@@ -83,6 +90,34 @@ contract ArbitrationPolicyUMATest is BaseTest {
         IWIP(wip).deposit{ value: disputeBond * 2 }();
         IERC20(wip).approve(address(arbitrationPolicyUMA), disputeBond * 2);
         vm.stopPrank();
+
+        // upgrade dispute module
+        address newDisputeModuleImpl = address(
+            new DisputeModule(
+                accessController,
+                ipAssetRegistry,
+                licenseRegistry,
+                ipGraphACL
+            )
+        );
+        vm.startPrank(upgrader);
+        AccessManager(accessManager).schedule(
+            address(disputeModule),
+            abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (newDisputeModuleImpl, "")),
+            0 // earliest time possible
+        );
+        vm.warp(block.timestamp + 1 days);
+        UUPSUpgradeable(disputeModule).upgradeToAndCall(newDisputeModuleImpl, "");
+
+        // upgrade arbitration policy UMA
+        address newArbitrationPolicyUMAImpl = address(new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule)));
+        AccessManager(accessManager).schedule(
+            address(arbitrationPolicyUMA),
+            abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (newArbitrationPolicyUMAImpl, "")),
+            0 // earliest time possible
+        );
+        vm.warp(block.timestamp + 1 days);
+        UUPSUpgradeable(arbitrationPolicyUMA).upgradeToAndCall(newArbitrationPolicyUMAImpl, "");
     }
 
     function test_ArbitrationPolicyUMA_constructor_revert_ZeroDisputeModule() public {

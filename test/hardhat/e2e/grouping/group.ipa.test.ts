@@ -152,7 +152,7 @@ describe("Add/Remove IP from Group IPA", function () {
 
     // IP has different license term attached
     await expect(
-      this.licensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commericialUseLicenseId)
+      this.licensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commercialUseLicenseId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     await expect(
       this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)

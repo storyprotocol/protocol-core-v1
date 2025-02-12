@@ -548,6 +548,12 @@ library Errors {
     /// @notice When setting licensing config, the license template cannot be zero address.
     error LicensingModule__ZeroLicenseTemplate();
 
+    /// @notice The minting fee set by the licensing hook is less than the minting fee set by the license terms.
+    error LicensingModule__LicensingHookMintingFeeBelowLicenseTerms(
+        uint256 licensingHookMintingFee,
+        uint256 licenseTermsMintingFee
+    );
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Dispute Module                             //
     ////////////////////////////////////////////////////////////////////////////

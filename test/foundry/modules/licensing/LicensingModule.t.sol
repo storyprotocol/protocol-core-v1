@@ -1357,9 +1357,7 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
     }
-    // test mint private license token will revert if the license template is different from existing license template attached to the ip
-    // test attaching license terms to the ip will revert if the license template is different from existing license template attached to the ip, set during minting of the private license token
-    // test attaching license terms will success if the license template is the same as existing license template attached to the ip, set during minting of the private license token
+
     function test_LicensingModule_mintLicenseToken_revert_privateLicenseTemplateIsDifferentFromExisting() public {
         uint256 termsId1 = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
@@ -1503,7 +1501,6 @@ contract LicensingModuleTest is BaseTest {
             maxMintingFee: 0,
             maxRevenueShare: 0
         });
-
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {

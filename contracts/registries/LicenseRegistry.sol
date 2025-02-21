@@ -303,6 +303,20 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (earliestExp != 0) _setExpirationTime(childIpId, earliestExp);
     }
 
+    /// @notice set license template for an IP, if the IP has no license template set.
+    /// @param ipId The address of the IP to which the license template is attached.
+    /// @param licenseTemplate The address of the license template.
+    /// @dev This function can only be called by the LicensingModule.
+    function initializeLicenseTemplate(address ipId, address licenseTemplate) external onlyLicensingModule {
+        LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
+        if (licenseTemplate == address(0)) revert Errors.LicenseRegistry__ZeroLicenseTemplate();
+        // check if registered license template
+        if (!$.registeredLicenseTemplates[licenseTemplate]) {
+            revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
+        }
+        if ($.licenseTemplates[ipId] == address(0)) $.licenseTemplates[ipId] = licenseTemplate;
+    }
+
     /// @notice Verifies the minting of a license token.
     /// @param licensorIpId The address of the licensor IP.
     /// @param licenseTemplate The address of the license template where the license terms are defined.
@@ -328,6 +342,14 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (isMintedByIpOwner) {
             if (!_exists(licenseTemplate, licenseTermsId)) {
                 revert Errors.LicenseRegistry__LicenseTermsNotExists(licenseTemplate, licenseTermsId);
+            }
+
+            if ($.licenseTemplates[licensorIpId] != address(0) && licenseTemplate != $.licenseTemplates[licensorIpId]) {
+                revert Errors.LicenseRegistry__UnmatchedLicenseTemplate(
+                    licensorIpId,
+                    $.licenseTemplates[licensorIpId],
+                    licenseTemplate
+                );
             }
         } else if (!_hasIpAttachedLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId)) {
             revert Errors.LicenseRegistry__LicensorIpHasNoLicenseTerms(licensorIpId, licenseTemplate, licenseTermsId);

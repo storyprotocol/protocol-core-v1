@@ -1357,6 +1357,154 @@ contract LicensingModuleTest is BaseTest {
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
     }
+    // test mint private license token will revert if the license template is different from existing license template attached to the ip
+    // test attaching license terms to the ip will revert if the license template is different from existing license template attached to the ip, set during minting of the private license token
+    // test attaching license terms will success if the license template is the same as existing license template attached to the ip, set during minting of the private license token
+    function test_LicensingModule_mintLicenseToken_revert_privateLicenseTemplateIsDifferentFromExisting() public {
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId1);
+
+        MockLicenseTemplate pilTemplate2 = new MockLicenseTemplate();
+        vm.prank(admin);
+        licenseRegistry.registerLicenseTemplate(address(pilTemplate2));
+        uint256 termsId2 = pilTemplate2.registerLicenseTerms();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__UnmatchedLicenseTemplate.selector,
+                ipId1,
+                address(pilTemplate),
+                address(pilTemplate2)
+            )
+        );
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate2),
+            licenseTermsId: termsId2,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+    }
+
+    function test_LicensingModule_attachLicenseTerms_revert_templateDifferentFromPrivateLicenseTemplate() public {
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId1,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+        MockLicenseTemplate pilTemplate2 = new MockLicenseTemplate();
+        vm.prank(admin);
+        licenseRegistry.registerLicenseTemplate(address(pilTemplate2));
+        uint256 termsId2 = pilTemplate2.registerLicenseTerms();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__UnmatchedLicenseTemplate.selector,
+                ipId1,
+                address(pilTemplate),
+                address(pilTemplate2)
+            )
+        );
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate2), termsId2);
+    }
+
+    function test_LicensingModule_attachLicenseTerms_templateSameWithPrivateLicenseTemplate() public {
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId1,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId2);
+    }
+
+    function test_LicensingModule_mintLicenseToken_PrivateLicenseTemplateSameWithExisting() public {
+        uint256 termsId1 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        uint256 termsId2 = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId1);
+
+        vm.prank(ipOwner1);
+        uint256 lcTokenId = licensingModule.mintLicenseTokens({
+            licensorIpId: ipId1,
+            licenseTemplate: address(pilTemplate),
+            licenseTermsId: termsId2,
+            amount: 1,
+            receiver: ipOwner2,
+            royaltyContext: "",
+            maxMintingFee: 0,
+            maxRevenueShare: 0
+        });
+
+    }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.nonCommercialSocialRemixing());

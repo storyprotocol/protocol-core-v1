@@ -685,12 +685,15 @@ contract LicensingModule is
         bytes calldata royaltyContext,
         uint256 maxMintingFee
     ) private returns (uint256 paidMintingFee) {
+        bool isMintedByOwner =  _hasPermission(licensorIpId);
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,
             licenseTermsId,
-            _hasPermission(licensorIpId)
+            isMintedByOwner
         );
+
+        if (isMintedByOwner) LICENSE_REGISTRY.initializeLicenseTemplate(licensorIpId, licenseTemplate);
 
         if (ILicenseTemplate(licenseTemplate).allowDerivativeRegistration(licenseTermsId)) {
             uint256 ancestors = LICENSE_REGISTRY.getAncestorsCount(licensorIpId);

@@ -32,10 +32,10 @@ interface ILicenseRegistry {
     function setDefaultLicenseTerms(address newLicenseTemplate, uint256 newLicenseTermsId) external;
 
     /// @notice set license template for an IP, if the IP has no license template.
-    /// @param ipdI The address of the IP to which the license template is attached.
+    /// @param ipId The address of the IP to which the license template is attached.
     /// @param licenseTemplate The address of the license template.
     /// @dev This function can only be called by the LicensingModule.
-    function initializeLicenseTemplate(address ipdI, address licenseTemplate) external;
+    function initializeLicenseTemplate(address ipId, address licenseTemplate) external;
 
     /// @notice Returns the default license terms.
     function getDefaultLicenseTerms() external view returns (address licenseTemplate, uint256 licenseTermsId);

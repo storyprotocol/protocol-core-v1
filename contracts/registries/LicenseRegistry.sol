@@ -304,17 +304,17 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     }
 
     /// @notice set license template for an IP, if the IP has no license template set.
-    /// @param ipdI The address of the IP to which the license template is attached.
+    /// @param ipId The address of the IP to which the license template is attached.
     /// @param licenseTemplate The address of the license template.
     /// @dev This function can only be called by the LicensingModule.
-    function initializeLicenseTemplate(address ipdI, address licenseTemplate) external onlyLicensingModule {
+    function initializeLicenseTemplate(address ipId, address licenseTemplate) external onlyLicensingModule {
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
         if (licenseTemplate == address(0)) revert Errors.LicenseRegistry__ZeroLicenseTemplate();
         // check if registered license template
         if (!$.registeredLicenseTemplates[licenseTemplate]) {
             revert Errors.LicenseRegistry__UnregisteredLicenseTemplate(licenseTemplate);
         }
-        if ($.licenseTemplates[ipdI] == address(0)) $.licenseTemplates[ipdI] = licenseTemplate;
+        if ($.licenseTemplates[ipId] == address(0)) $.licenseTemplates[ipId] = licenseTemplate;
     }
 
     /// @notice Verifies the minting of a license token.

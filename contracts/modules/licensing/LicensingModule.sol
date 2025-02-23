@@ -685,7 +685,7 @@ contract LicensingModule is
         bytes calldata royaltyContext,
         uint256 maxMintingFee
     ) private returns (uint256 paidMintingFee) {
-        bool isMintedByOwner = _hasPermission(licensorIpId);
+        bool isMintedByOwner = _hasPermissionUpdateState(licensorIpId);
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,

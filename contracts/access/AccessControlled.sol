@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import { IAccessController } from "../interfaces/access/IAccessController.sol";
 import { IPAccountChecker } from "../lib/registries/IPAccountChecker.sol";
 import { IIPAssetRegistry } from "../interfaces/registries/IIPAssetRegistry.sol";
+import { IIPAccount } from "../interfaces/IIPAccount.sol";
 import { Errors } from "../lib/Errors.sol";
 
 /// @title AccessControlled
@@ -57,14 +58,14 @@ abstract contract AccessControlled {
     /// @dev Internal function to verify if the caller (msg.sender) has the required permission to execute
     /// the function on provided ipAccount.
     /// @param ipAccount The address of the IP account to verify.
-    function _verifyPermission(address ipAccount) internal view {
+    function _verifyPermission(address ipAccount) internal {
         if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
             revert Errors.AccessControlled__NotIpAccount(ipAccount);
         }
 
         if (msg.sender != ipAccount) {
             // revert if the msg.sender does not have permission
-            ACCESS_CONTROLLER.checkPermission(ipAccount, msg.sender, address(this), msg.sig);
+            IIPAccount(payable(ipAccount)).updateStateForValidSigner(msg.sender, address(this), msg.data);
         }
     }
 
@@ -82,6 +83,27 @@ abstract contract AccessControlled {
         }
 
         try ACCESS_CONTROLLER.checkPermission(ipAccount, msg.sender, address(this), msg.sig) {
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    /// @dev Internal function to check if the msg.sender is valid signer has the required permission to execute
+    /// the function on provided ipAccount, and update the state of the IP account if the msg.sender is valid signer.
+    /// @param ipAccount The address of the IP account to check.
+    /// @return bool Returns true if the caller has permission, false otherwise.
+    function _hasPermissionUpdateState(address ipAccount) internal returns (bool) {
+        if (!IP_ASSET_REGISTRY.isIpAccount(ipAccount)) {
+            return false;
+        }
+
+        if (msg.sender == ipAccount) {
+            return true;
+        }
+
+        // update the state of the IP account if the msg.sender is valid signer
+        try IIPAccount(payable(ipAccount)).updateStateForValidSigner(msg.sender, address(this), msg.data) {
             return true;
         } catch {
             return false;

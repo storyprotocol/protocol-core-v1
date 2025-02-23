@@ -48,6 +48,7 @@ contract AccessControlledTest is BaseTest {
     // call customized function with fail (call _hasPermission)
 
     function test_AccessControlled_callOnlyIpAccountFunction_withIpAccount() public {
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         bytes memory result = ipAccount.execute(
             address(mockModule),
@@ -55,6 +56,7 @@ contract AccessControlledTest is BaseTest {
             abi.encodeWithSignature("onlyIpAccountFunction(string,bool)", "test", true)
         );
         assertEq("test", abi.decode(result, (string)));
+        assertNotEq(ipState, ipAccount.state(), "ipAccount state should change after execution");
     }
 
     function test_AccessControlled_revert_callOnlyIpAccountFunction_withNonIpAccount() public {
@@ -75,6 +77,7 @@ contract AccessControlledTest is BaseTest {
     }
 
     function test_AccessControlled_callIpAccountOrPermissionFunction_withIpAccount() public {
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         bytes memory result = ipAccount.execute(
             address(mockModule),
@@ -87,16 +90,20 @@ contract AccessControlledTest is BaseTest {
             )
         );
         assertEq("test", abi.decode(result, (string)));
+        assertNotEq(ipState, ipAccount.state(), "ipAccount state should change after execution");
     }
 
     function test_AccessControlled_callIpAccountOrPermissionFunction_withIpAccountOwner() public {
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         string memory result = mockModule.ipAccountOrPermissionFunction(address(ipAccount), "test", true);
         assertEq("test", result);
+        assertNotEq(ipState, ipAccount.state(), "ipAccount state should change after verifyPermission");
     }
 
     function test_AccessControlled_callIpAccountOrPermissionFunction_withDelegatedSigner() public {
         address signer = vm.addr(2);
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         ipAccount.execute(
             address(accessController),
@@ -110,15 +117,19 @@ contract AccessControlledTest is BaseTest {
                 AccessPermission.ALLOW
             )
         );
+        assertNotEq(ipState, ipAccount.state(), "ipAccount state should change after executeWithSig");
+        ipState = ipAccount.state();
         vm.prank(signer);
         string memory result = mockModule.ipAccountOrPermissionFunction(address(ipAccount), "test", true);
         assertEq("test", result);
+        assertNotEq(ipState, ipAccount.state(), "ipAccount state should change after verifyPermission");
     }
 
     function test_AccessControlled_revert_callIpAccountOrPermissionFunction_withOtherIpAccount() public {
         mockNFT.mintId(owner, 101);
         address otherIpAccountAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 101);
         IIPAccount otherIpAccount = IIPAccount(payable(otherIpAccountAddr));
+        bytes32 ipState = ipAccount.state();
         vm.expectRevert(
             abi.encodeWithSelector(
                 Errors.AccessController__PermissionDenied.selector,
@@ -139,6 +150,7 @@ contract AccessControlledTest is BaseTest {
                 true
             )
         );
+        assertEq(ipState, ipAccount.state(), "ipAccount state should not change if execute revert");
     }
 
     function test_AccessControlled_revert_callIpAccountOrPermissionFunction_withNonIpAccountOwner() public {
@@ -173,11 +185,7 @@ contract AccessControlledTest is BaseTest {
             AccessPermission.ALLOW
         );
         vm.expectRevert(
-            abi.encodeWithSelector(
-                Errors.AccessController__BothCallerAndRecipientAreNotRegisteredModule.selector,
-                signer,
-                address(nonRegisteredModule)
-            )
+            abi.encodeWithSelector(Errors.IPAccountStorage__NotRegisteredModule.selector, address(nonRegisteredModule))
         );
         vm.prank(signer);
         nonRegisteredModule.ipAccountOrPermissionFunction(address(ipAccount), "test", true);
@@ -197,6 +205,7 @@ contract AccessControlledTest is BaseTest {
     }
 
     function test_AccessControlled_customizedFunctionUsingHasPermission_withIpAccount() public {
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         bytes memory result = ipAccount.execute(
             address(mockModule),
@@ -204,12 +213,52 @@ contract AccessControlledTest is BaseTest {
             abi.encodeWithSignature("customizedFunction(address,string,bool)", address(ipAccount), "test", true)
         );
         assertEq("test", abi.decode(result, (string)));
+        assertNotEq(
+            ipState,
+            ipAccount.state(),
+            "ipAccount state should not change after hasPermission when calling from ipAccount execute"
+        );
     }
 
     function test_AccessControlled_customizedFunctionUsingHasPermission_withIpAccountOwner() public {
+        bytes32 ipState = ipAccount.state();
         vm.prank(owner);
         string memory result = mockModule.customizedFunction(address(ipAccount), "test", true);
         assertEq("test", result);
+        assertEq(ipState, ipAccount.state(), "ipAccount state should not change after hasPermission");
+    }
+
+    function test_AccessControlled_customizedFunctionUsingHasPermissionUpdateState_withIpAccount() public {
+        bytes32 ipState = ipAccount.state();
+        vm.prank(owner);
+        bytes memory result = ipAccount.execute(
+            address(mockModule),
+            0,
+            abi.encodeWithSignature(
+                "customizedFunctionUpdateState(address,string,bool)",
+                address(ipAccount),
+                "test",
+                true
+            )
+        );
+        assertEq("test", abi.decode(result, (string)));
+        assertNotEq(
+            ipState,
+            ipAccount.state(),
+            "ipAccount state should change after hasPermissionUpdateState when calling from ipAccount execute"
+        );
+    }
+
+    function test_AccessControlled_customizedFunctionUsingHasPermissionUpdateState_withIpAccountOwner() public {
+        bytes32 ipState = ipAccount.state();
+        vm.prank(owner);
+        string memory result = mockModule.customizedFunctionUpdateState(address(ipAccount), "test", true);
+        assertEq("test", result);
+        assertNotEq(
+            ipState,
+            ipAccount.state(),
+            "ipAccount state should change after hasPermissionUpdateState when calling from owner"
+        );
     }
 
     function test_AccessControlled_revert_customizedFunctionUsingHasPermission_passInNonIpAccount() public {

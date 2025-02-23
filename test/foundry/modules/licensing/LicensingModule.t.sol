@@ -15,6 +15,7 @@ import { MockLicenseTemplate } from "../../mocks/module/MockLicenseTemplate.sol"
 import { MockLicensingHook } from "../../mocks/module/MockLicensingHook.sol";
 import { PILTerms } from "../../../../contracts/interfaces/modules/licensing/IPILicenseTemplate.sol";
 import { Licensing } from "../../../../contracts/lib/Licensing.sol";
+import { IIPAccount } from "../../../../contracts/interfaces/IIPAccount.sol";
 import { AccessPermission } from "../../../../contracts/lib/AccessPermission.sol";
 
 // test
@@ -100,8 +101,10 @@ contract LicensingModuleTest is BaseTest {
         uint256 termsId = pilTemplate.registerLicenseTerms(PILFlavors.defaultValuesLicenseTerms());
         vm.expectEmit();
         emit ILicensingModule.LicenseTermsAttached(ipOwner1, ipId1, address(pilTemplate), termsId);
+        bytes32 ipId1State = IIPAccount(payable(ipId1)).state();
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        assertNotEq(ipId1State, IIPAccount(payable(ipId1)).state());
         (address licenseTemplate, uint256 licenseTermsId) = licenseRegistry.getAttachedLicenseTerms(ipId1, 0);
         assertEq(licenseTemplate, address(pilTemplate));
         assertEq(licenseTermsId, termsId);
@@ -886,10 +889,10 @@ contract LicensingModuleTest is BaseTest {
         licenseTermsIds[1] = commRemixTermsId;
         licenseTermsIds[2] = commRemixTermsId;
 
+        bytes32 ipId5State = IIPAccount(payable(ipId5)).state();
         vm.startPrank(ipOwner5);
         erc20.mint(ipOwner5, 600);
         erc20.approve(address(royaltyModule), 600);
-
         licensingModule.registerDerivative({
             childIpId: ipId5,
             parentIpIds: parentIpIds,
@@ -901,6 +904,7 @@ contract LicensingModuleTest is BaseTest {
             maxRevenueShare: 30_000_000 // maxRevenueShare = 30_000_000 = commercialRevShare * 3
         });
         vm.stopPrank();
+        assertNotEq(ipId5State, IIPAccount(payable(ipId5)).state());
 
         assertEq(erc20.balanceOf(ipOwner5), 0);
         assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 200);
@@ -1490,6 +1494,7 @@ contract LicensingModuleTest is BaseTest {
         vm.prank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId1);
 
+        bytes32 ipId1State = IIPAccount(payable(ipId1)).state();
         vm.prank(ipOwner1);
         uint256 lcTokenId = licensingModule.mintLicenseTokens({
             licensorIpId: ipId1,
@@ -1501,6 +1506,11 @@ contract LicensingModuleTest is BaseTest {
             maxMintingFee: 0,
             maxRevenueShare: 0
         });
+        assertNotEq(
+            ipId1State,
+            IIPAccount(payable(ipId1)).state(),
+            "IP state should change after minting private license token"
+        );
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_pause() public {
@@ -2176,8 +2186,10 @@ contract LicensingModuleTest is BaseTest {
         uint256[] memory licenseTokens = new uint256[](1);
         licenseTokens[0] = lcTokenId;
 
+        bytes32 ipId3State = IIPAccount(payable(ipId3)).state();
         vm.prank(ipOwner3);
         licensingModule.registerDerivativeWithLicenseTokens(ipId3, licenseTokens, "", 100e6);
+        assertNotEq(ipId3State, IIPAccount(payable(ipId3)).state(), "Child IP state should be changed");
     }
 
     function test_LicensingModule_registerDerivativeWithLicenseTokens_revert_notLicensee() public {

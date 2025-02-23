@@ -117,6 +117,17 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         return true;
     }
 
+    /// @notice Updates the IP Account's state if the signer is valid for the given data and recipient.
+    /// @param signer The signer to check
+    /// @param to The recipient of the transaction
+    /// @param data The calldata to check against
+    /// @dev This function can only be called by a registered module.
+    function updateStateForValidSigner(address signer, address to, bytes calldata data) external onlyRegisteredModule {
+        if (isValidSigner(signer, to, data)) {
+            _updateState();
+        }
+    }
+
     /// @notice Executes a transaction from the IP Account on behalf of the signer.
     /// @param to The recipient of the transaction.
     /// @param value The amount of Ether to send.
@@ -202,6 +213,12 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
         for (uint256 i = 0; i < calls.length; i++) {
             results[i] = execute(calls[i].target, calls[i].value, calls[i].data, operation);
         }
+    }
+
+    /// @notice ERC1271 signature verification is disabled for the IP Account.
+    function isValidSignature(bytes32 hash, bytes calldata signature) public view override returns (bytes4 result) {
+        // disable ERC1271 signature validation
+        result = 0xffffffff;
     }
 
     /// @dev Executes a transaction from the IP Account.

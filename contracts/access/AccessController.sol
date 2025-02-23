@@ -313,8 +313,13 @@ contract AccessController is IAccessController, ProtocolPausableUpgradeable, UUP
         if (permission > 2) {
             revert Errors.AccessController__PermissionIsNotValid();
         }
-        if (ipAccount != msg.sender && IIPAccount(payable(ipAccount)).owner() != msg.sender) {
+        address owner = IIPAccount(payable(ipAccount)).owner();
+        if (ipAccount != msg.sender && owner != msg.sender) {
             revert Errors.AccessController__CallerIsNotIPAccountOrOwner();
+        }
+        // Do not support nested IPAccount setting permissions
+        if (IP_ASSET_REGISTRY.isIpAccount(owner)) {
+            revert Errors.AccessController__OwnerIsIPAccount(ipAccount, owner);
         }
         if (isTransient) {
             TRANSIENT_FLAG_SLOT.asBoolean().tstore(true);

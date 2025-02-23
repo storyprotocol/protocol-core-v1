@@ -984,6 +984,9 @@ library Errors {
     /// @notice Both recipient (to) and function selectors are zero address means delegate all permissions to signer.
     error AccessController__ToAndFuncAreZeroAddressShouldCallSetAllPermissions();
 
+    /// @notice The IP Account's owner is another IP Account.
+    error AccessController__OwnerIsIPAccount(address ipAccount, address owner);
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Access Controlled                           //
     ////////////////////////////////////////////////////////////////////////////

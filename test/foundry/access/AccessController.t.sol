@@ -102,6 +102,71 @@ contract AccessControllerTest is BaseTest {
         );
     }
 
+    function test_AccessController_revert_NestedIpAccountCannotSetPermission() public {
+        mockNFT.mintId(address(ipAccount), tokenId + 1);
+        IIPAccount nestedIpAccount = IIPAccount(
+            payable(ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId + 1))
+        );
+
+        address signer = vm.addr(2);
+        address nonOwner = vm.addr(3);
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__OwnerIsIPAccount.selector,
+                address(nestedIpAccount),
+                address(ipAccount)
+            )
+        );
+        ipAccount.execute(
+            address(nestedIpAccount),
+            0,
+            abi.encodeWithSignature(
+                "execute(address,uint256,bytes)",
+                address(accessController),
+                0,
+                abi.encodeWithSignature(
+                    "setPermission(address,address,address,bytes4,uint8)",
+                    address(nestedIpAccount),
+                    signer,
+                    address(mockModule),
+                    mockModule.executeSuccessfully.selector,
+                    AccessPermission.ALLOW
+                )
+            )
+        );
+    }
+
+    function test_AccessController_revert_IPAccountCannotSetPermissionForNestedIpAccount() public {
+        mockNFT.mintId(address(ipAccount), tokenId + 1);
+        IIPAccount nestedIpAccount = IIPAccount(
+            payable(ipAssetRegistry.register(block.chainid, address(mockNFT), tokenId + 1))
+        );
+
+        address signer = vm.addr(2);
+        address nonOwner = vm.addr(3);
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__OwnerIsIPAccount.selector,
+                address(nestedIpAccount),
+                address(ipAccount)
+            )
+        );
+        ipAccount.execute(
+            address(accessController),
+            0,
+            abi.encodeWithSignature(
+                "setPermission(address,address,address,bytes4,uint8)",
+                address(nestedIpAccount),
+                signer,
+                address(mockModule),
+                mockModule.executeSuccessfully.selector,
+                AccessPermission.ALLOW
+            )
+        );
+    }
+
     function test_AccessController_revert_directSetPermission() public {
         address signer = vm.addr(2);
 

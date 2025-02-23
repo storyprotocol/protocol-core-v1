@@ -81,4 +81,11 @@ interface IIPAccount is IIPAccountStorage {
     /// @param data The data to send along with the transaction.
     /// @return result The return data from the transaction.
     function execute(address to, uint256 value, bytes calldata data) external payable returns (bytes memory);
+
+    /// @notice Updates the IP Account's state if the signer is valid for the given data and recipient.
+    /// @param signer The signer to check
+    /// @param to The recipient of the transaction
+    /// @param data The calldata to check against
+    /// @dev This function can only be called by a registered module.
+    function updateStateForValidSigner(address signer, address to, bytes calldata data) external;
 }

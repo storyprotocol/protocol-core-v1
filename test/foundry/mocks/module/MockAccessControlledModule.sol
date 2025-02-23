@@ -59,7 +59,7 @@ contract MockAccessControlledModule is BaseModule, AccessControlled {
         address ipAccount,
         string memory param,
         bool success
-    ) external view verifyPermission(ipAccount) returns (string memory) {
+    ) external verifyPermission(ipAccount) returns (string memory) {
         if (!success) {
             revert("expected failure");
         }
@@ -80,6 +80,20 @@ contract MockAccessControlledModule is BaseModule, AccessControlled {
         bool success
     ) external view returns (string memory) {
         if (!_hasPermission(ipAccount)) {
+            revert("expected permission check failure");
+        }
+        if (!success) {
+            revert("expected failure");
+        }
+        return param;
+    }
+
+    function customizedFunctionUpdateState(
+        address ipAccount,
+        string memory param,
+        bool success
+    ) external returns (string memory) {
+        if (!_hasPermissionUpdateState(ipAccount)) {
             revert("expected permission check failure");
         }
         if (!success) {

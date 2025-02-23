@@ -473,9 +473,7 @@ contract LicensingModule is
         if (receiver == address(0)) {
             revert Errors.LicensingModule__ReceiverZeroAddress();
         }
-        if (!IP_ASSET_REGISTRY.isIpAccount(licensorIpId)) {
-            revert Errors.LicensingModule__LicensorIpNotRegistered();
-        }
+
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,
@@ -685,7 +683,7 @@ contract LicensingModule is
         bytes calldata royaltyContext,
         uint256 maxMintingFee
     ) private returns (uint256 paidMintingFee) {
-        bool isMintedByOwner = _hasPermission(licensorIpId);
+        bool isMintedByOwner = _hasPermissionUpdateState(licensorIpId);
         Licensing.LicensingConfig memory lsc = LICENSE_REGISTRY.verifyMintLicenseToken(
             licensorIpId,
             licenseTemplate,

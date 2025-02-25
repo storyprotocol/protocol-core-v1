@@ -8,7 +8,7 @@ library ExpiringOps {
     function getEarliestExpirationTime(
         uint256 currentEarliestExp,
         uint256 anotherExp
-    ) internal view returns (uint256 earliestExp) {
+    ) internal pure returns (uint256 earliestExp) {
         earliestExp = currentEarliestExp;
         if (anotherExp > 0 && (anotherExp < earliestExp || earliestExp == 0)) earliestExp = anotherExp;
     }

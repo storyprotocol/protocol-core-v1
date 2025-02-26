@@ -10,7 +10,7 @@ import { IIPAccountStorage } from "./IIPAccountStorage.sol";
 /// like ownership of other NFTs such as license NFT or Royalty NFT.
 /// IPAccount can interact with modules by making calls as a normal transaction sender.
 /// This allows for seamless operations on the state and data of IP.
-/// IPAccount is core identity for all actions.
+/// IPAccount is the core identity for all actions.
 interface IIPAccount is IIPAccountStorage {
     /// @notice Emitted when a transaction is executed.
     /// @param to The recipient of the transaction.

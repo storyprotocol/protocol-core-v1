@@ -7,7 +7,13 @@ import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 
 before(async function () {
-  console.log(`================= Load Contract =================`);
+  // Get the list of signers, the first signer is usually the default wallet
+  const [defaultSigner] = await hre.ethers.getSigners();
+
+  // Log the default signer address to confirm it's correct
+  console.log(`Default signer address: ${defaultSigner.address}`);
+
+  // Use the default signer to get the contract instances
   this.ipAssetRegistry = await hre.ethers.getContractAt("IPAssetRegistry", IPAssetRegistry);
   this.licenseRegistry = await hre.ethers.getContractAt("LicenseRegistry", LicenseRegistry);
   this.licenseToken = await hre.ethers.getContractAt("LicenseToken", LicenseToken);
@@ -38,18 +44,37 @@ before(async function () {
 
   console.log(`================= Register non-commercial PIL license terms =================`);
   await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
-  this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
-  console.log("Non-commercial licenseTermsId: ", this.nonCommercialLicenseId);
+  this.nonCommericialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
+  console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
   
   console.log(`================= Register commercial-use PIL license terms =================`);
   let testTerms = terms;
+
   testTerms.royaltyPolicy = RoyaltyPolicyLAP;
   testTerms.defaultMintingFee = 30;
   testTerms.commercialUse = true;
   testTerms.currency = MockERC20;
-  await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
-  this.commercialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
+
+  console.log("Registering License Terms...");
+  
+  try {
+    const tx = await this.licenseTemplate.registerLicenseTerms(testTerms);
+    await tx.wait();
+    const receipt = await tx.wait();
+  
+    console.log("Transaction Success: ", receipt);
+  } catch (error: any) {
+    console.error("❌ Transaction Reverted!");
+    console.error("🔴 Error Message:", error.message || "No error message");
+    console.error("📜 Error Data:", error.data || "No error data");
+  
+    if (error.transactionHash) {
+      console.log("🔍 Check Transaction on Explorer:", `https://devnet.storyscan.xyz/tx/${error.transactionHash}`);
+    }
+  }
+  
+  this.commericialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
 
   console.log(`================= Register commercial-remix PIL license terms =================`);
   testTerms = terms;
@@ -59,8 +84,8 @@ before(async function () {
   testTerms.commercialRevShare = 100;
   testTerms.currency = MockERC20;
   await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
-  this.commercialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-remix licenseTermsId: ", this.commercialRemixLicenseId);
+  this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
 
   console.log(`================= ERC20 approve spender =================`);
   const amountToCheck = BigInt(1 * 10 ** 18);
@@ -77,10 +102,38 @@ before(async function () {
 
   if (STORY_OOV3) {
     console.log(`================= Set UMA =================`)
-    await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait())
-    await this.disputeModule
-      .setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address)
-      .then((tx: any) => tx.wait())
-    await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait())
+    console.log(`================= STORY_OOV3: ${STORY_OOV3} =================`)
+
+    try {
+      await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait())
+      console.log(`✅ setOOV3 successfully! `)
+      
+    } catch (error: any) {
+      console.log(error);
+      console.error("❌ Transaction Reverted!");
+      console.error("🔴 Error Message:", error.message || "No error message");
+      console.error("📜 Error Data:", error.data || "No error data");
+    }
+
+    try {
+      console.log(`ArbitrationPolicyUMA: ${ArbitrationPolicyUMA}`);
+      console.log(`this.owner.address: ${this.owner.address}`);
+      
+      await this.disputeModule
+        .setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address)
+        .then((tx: any) => tx.wait())
+      console.log(`✅ setArbitrationRelayer successfully! `)
+      
+      await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait())
+      
+      console.log(`✅ setMaxBond successfully! `)
+
+    } catch (error: any) {
+      console.log(error);
+      console.error("❌ Transaction Reverted!");
+      console.error("🔴 Error Message:", error.message || "No error message");
+      console.error("📜 Error Data:", error.data || "No error data");
+    }
   }
+  
 });

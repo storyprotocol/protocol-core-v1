@@ -249,9 +249,9 @@ jobs:
       - name: 'Create env file'
         run: |
           touch .env
-          echo "MAINNET_PRIVATE_KEY=${{ secrets.STORY_PRIVATE_KEY }}" >> .env
-          echo "SEPOLIA_PRIVATE_KEY=${{ secrets.STORY_PRIVATE_KEY }}" >> .env
-          echo "STORY_PRIVATE_KEY=${{ secrets.STORY_PRIVATE_KEY }}" >> .env
+          echo "MAINNET_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "SEPOLIA_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
           echo "STORY_USER1=${{ secrets.STORY_USER1 }}" >> .env
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env

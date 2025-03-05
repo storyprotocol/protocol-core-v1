@@ -21,11 +21,11 @@ require("dotenv").config()
 // To load the correct .env, you must run this at the root folder (where hardhat.config is located)
 //
 const MAINNET_URL = process.env.MAINNET_URL || "https://eth-mainnet"
-const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || "0xkey"
+const MAINNET_PRIVATEKEY = process.env.MAINNET_PRIVATEKEY || "0xkey"
 const SEPOLIA_URL = process.env.SEPOLIA_URL || "https://eth-sepolia"
-const SEPOLIA_PRIVATE_KEY = process.env.SEPOLIA_PRIVATE_KEY || "0xkey"
+const SEPOLIA_PRIVATEKEY = process.env.SEPOLIA_PRIVATEKEY || "0xkey"
 const TENDERLY_URL = process.env.TENDERLY_URL || "https://eth-tenderly"
-const TENDERLY_PRIVATE_KEY = process.env.TENDERLY_PRIVATE_KEY || "0xkey"
+const TENDERLY_PRIVATEKEY = process.env.TENDERLY_PRIVATEKEY || "0xkey"
 const USE_TENDERLY = process.env.USE_TENDERLY === "true"
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
@@ -33,7 +33,7 @@ const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
 
 const STORY_URL = process.env.STORY_URL || "http://"
 const STORY_CHAINID = Number(process.env.STORY_CHAINID) || 1513
-const STORY_PRIVATE_KEY = process.env.STORY_PRIVATE_KEY || "0xkey"
+const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || "0xkey"
 const STORY_USER1 = process.env.STORY_USER1 || "0xkey"
 const STORY_USER2 = process.env.STORY_USER2 || "0xkey"
 
@@ -73,12 +73,12 @@ const config: HardhatUserConfig = {
     odyssey: {
       chainId: STORY_CHAINID,
       url: STORY_URL,
-      accounts: [STORY_PRIVATE_KEY, STORY_USER1, STORY_USER2],
+      accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
     internal_devnet: {
       chainId: STORY_CHAINID,
       url: STORY_URL,
-      accounts: [STORY_PRIVATE_KEY, STORY_USER1, STORY_USER2],
+      accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
     localhost: {
       chainId: 31337,
@@ -87,21 +87,21 @@ const config: HardhatUserConfig = {
     mainnet: {
       chainId: 1,
       url: MAINNET_URL || "",
-      accounts: [MAINNET_PRIVATE_KEY],
+      accounts: [MAINNET_PRIVATEKEY],
     },
     ...(USE_TENDERLY
       ? {
           tenderly: {
             chainId: 11155111,
             url: TENDERLY_URL || "",
-            accounts: [TENDERLY_PRIVATE_KEY],
+            accounts: [TENDERLY_PRIVATEKEY],
           },
         }
       : {
           sepolia: {
             chainId: 11155111,
             url: SEPOLIA_URL || "",
-            accounts: [SEPOLIA_PRIVATE_KEY],
+            accounts: [SEPOLIA_PRIVATEKEY],
           },
         }),
   },

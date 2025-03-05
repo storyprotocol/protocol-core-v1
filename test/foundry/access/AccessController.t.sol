@@ -37,7 +37,7 @@ contract AccessControllerTest is BaseTest {
     // test non owner cannot set specific permission
     // test permission overrides
     // test wildcard permission
-    // test whilelist permission
+    // test whitelist permission
     // test blacklist permission
     // module call ipAccount call module
     // ipAccount call module
@@ -1193,7 +1193,7 @@ contract AccessControllerTest is BaseTest {
         );
     }
 
-    function test_AccessController_revert_setBatchPermissionsButCallerisNotIPAccount() public {
+    function test_AccessController_revert_setBatchPermissionsButCallerIsNotIPAccount() public {
         address signer = vm.addr(2);
 
         AccessPermission.Permission[] memory permissionList = new AccessPermission.Permission[](3);

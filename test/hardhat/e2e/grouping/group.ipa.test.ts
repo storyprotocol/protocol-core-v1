@@ -150,10 +150,46 @@ describe("Add/Remove IP from Group IPA", function () {
       this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");
 
+    console.log(`IP has different license term attached START`);
+    console.log(`this.commercialUseLicenseId: ${this.commercialUseLicenseId}`);
     // IP has different license term attached
-    await expect(
-      this.licensingModule.attachLicenseTerms(ipId, PILicenseTemplate, this.commericialUseLicenseId)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    try {
+      const tx = await this.licensingModule.attachLicenseTerms(
+        ipId,
+        PILicenseTemplate,
+        this.commercialUseLicenseId
+      );
+      await tx.wait();
+    } catch (error) {
+      console.error("❌ Error attachLicenseTerms!");
+
+      // Log the transaction hash if available
+      if (error.transactionHash) {
+        console.error("🔗 Transaction Hash:", error.transactionHash);
+      }
+
+      // Log the transaction receipt if available
+      if (error.receipt) {
+        console.error("📜 Transaction Receipt:", error.receipt);
+        if (error.receipt.logs) {
+          console.error("📑 Transaction Logs:", error.receipt.logs);
+        }
+      }
+
+      // Extract and log the revert reason
+      if (error.data) {
+        console.error("📜 Error Data:", error.data);
+        // const revertReason = decodeRevertReason(error.data);
+        // console.error("🔴 Revert Reason:", revertReason);
+      }
+
+      // Log generic error message and stack trace
+      console.error("🔴 Error Message:", error.message);
+      console.error("📜 Error Stack:", error.stack);
+
+      throw error; // Ensure test failure
+    }
+
     await expect(
       this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__IpHasNoGroupLicenseTerms");

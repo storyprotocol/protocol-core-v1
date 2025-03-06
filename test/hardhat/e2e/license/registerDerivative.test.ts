@@ -25,14 +25,32 @@ describe("LicensingModule - registerDerivative", function () {
     const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
     ipId2 = mintAndRegisterResp2.ipId;
 
-    const connectedLicensingModule = this.licensingModule.connect(signers[0]);
-    // IP1 attach a non-commercial license
-    const attachLicenseTx = await expect(
-      connectedLicensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, this.nonCommericialLicenseId)
-    ).not.to.be.rejectedWith(Error);
-    await attachLicenseTx.wait();
-    console.log("Attach license transaction hash: ", attachLicenseTx.hash);
-    expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
+    try {
+      const connectedLicensingModule = this.licensingModule.connect(signers[0]);
+    
+      // IP1 attach a non-commercial license
+      const attachLicenseTx = await connectedLicensingModule.attachLicenseTerms(
+        ipId1,
+        PILicenseTemplate,
+        this.nonCommercialLicenseId
+      );
+    
+      await attachLicenseTx.wait();
+      console.log("Attach license transaction hash: ", attachLicenseTx.hash);
+    
+      expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
+    } catch (error) {
+      // Extract and log the revert reason
+      if (error.data) {
+        console.error("📜 Error Data:", error.data);
+        // const revertReason = decodeRevertReason(error.data);
+        // console.error("🔴 Revert Reason:", revertReason);
+      }
+     else {
+        console.error("Transaction failed, but no revert reason found.");
+      }
+      throw error;
+    }
        
     // IP2 is registered as IP1's derivative
     const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
@@ -155,13 +173,13 @@ describe("LicensingModule - registerDerivative", function () {
 
     console.log("============ Attach license to derivative ============")
     await expect(
-      this.licensingModule.connect(this.user1).attachLicenseTerms(childIpId, PILicenseTemplate, this.commericialUseLicenseId)
+      this.licensingModule.connect(this.user1).attachLicenseTerms(childIpId, PILicenseTemplate, this.commercialUseLicenseId)
     ).to.be.revertedWithCustomError(this.errors, "LicensingModule__DerivativesCannotAddLicenseTerms");
   });
 
   it("Register derivative with an incorrect license token", async function () {
     const { ipId: parentIpId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
-    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
     const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
 
     console.log("============ Register derivative ============")
@@ -210,12 +228,12 @@ describe("LicensingModule - registerDerivative", function () {
   it("Derivative IP Asset attach incompatible licenses", async function () {
     console.log("============ Register IPs ============")
     const { ipId: parentIpId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
-    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
     const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
 
     console.log("============ Register derivative ============")
     await expect(
-      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [this.commericialRemixLicenseId, this.commericialUseLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
+      this.licensingModule.connect(this.user1).registerDerivative(childIpId, [parentIpId1, parentIpId2], [this.commericialRemixLicenseId, this.commercialUseLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
     ).to.be.revertedWithCustomError(this.errors, "LicensingModule__RoyaltyPolicyMismatch");
   });
 

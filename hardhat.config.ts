@@ -75,6 +75,11 @@ const config: HardhatUserConfig = {
       url: STORY_URL,
       accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
+    internal_devnet: {
+      chainId: STORY_CHAINID,
+      url: STORY_URL,
+      accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
+    },
     localhost: {
       chainId: 31337,
       url: "http://127.0.0.1:8545/",

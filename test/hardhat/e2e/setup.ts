@@ -44,8 +44,8 @@ before(async function () {
 
   console.log(`================= Register non-commercial PIL license terms =================`);
   await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
-  this.nonCommericialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
-  console.log("Non-commercial licenseTermsId: ", this.nonCommericialLicenseId);
+  this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
+  console.log("Non-commercial licenseTermsId: ", this.nonCommercialLicenseId);
   
   console.log(`================= Register commercial-use PIL license terms =================`);
   let testTerms = terms;
@@ -73,8 +73,8 @@ before(async function () {
     }
   }
   
-  this.commericialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-use licenseTermsId: ", this.commericialUseLicenseId);
+  this.commercialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+  console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
 
   console.log(`================= Register commercial-remix PIL license terms =================`);
   testTerms = terms;

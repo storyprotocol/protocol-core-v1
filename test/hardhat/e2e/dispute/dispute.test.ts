@@ -276,12 +276,12 @@ describe("Dispute Flow", function () {
 
   it("Set tags to the derivative IP assets if the parent has not infringed", async function () {
     console.log("============ Register IP ============");
-    const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId);
+    const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
 
     console.log("============ Register derivative ============");
     const { ipId: childIpId } = await mintNFTAndRegisterIPA();
     await expect(
-      this.licensingModule.registerDerivative(childIpId, [ipId], [this.commericialUseLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
+      this.licensingModule.registerDerivative(childIpId, [ipId], [this.commercialUseLicenseId], PILicenseTemplate, "0x", 0, 100e6, 0)
     ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
     
     console.log("============ Raise Dispute ============");
@@ -309,7 +309,7 @@ describe("Dispute Flow", function () {
 
     before(async function () {
       console.log("============ Register IP ============");
-      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId));
+      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
 
       console.log("============ Raise Dispute ============");
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
@@ -396,7 +396,7 @@ describe("Dispute Flow", function () {
       console.log("🔁 Reusing the same evidence hash to raise a dispute (should revert)");
 
       console.log("============ Register IP ============");
-      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialUseLicenseId))
+      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId))
       console.log(`ipId: ${ipId}`)
 
       console.log("🚨 Expecting dispute to revert due to EvidenceHashAlreadyUsed")

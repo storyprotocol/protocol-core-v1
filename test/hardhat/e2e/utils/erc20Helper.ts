@@ -98,13 +98,15 @@ export async function getAllowance(owner: string, spender: string, singer: ether
 };
 
 export async function checkAndApproveSpender(owner: any, spender: any, amount: bigint) {
-  const currentAllowance = await getAllowance(owner.address, spender, owner);
-  if (currentAllowance < amount) {
-    //   await mintAmount(owner.address, amount, owner);
-      await deposit(( amount - currentAllowance), owner);
-      await approveSpender(spender, amount, owner);
-  }
-};
+    console.log(`owner.address: ${owner.address}`);
+    console.log(`spender.address: ${spender.address}`);
+    const currentAllowance = await getAllowance(owner.address, spender, owner);
+    if (currentAllowance < amount) {
+        await mintAmount(owner.address, amount, owner);
+      //   await deposit(( amount - currentAllowance), owner);
+        await approveSpender(spender, amount, owner);
+    }
+  };
 
 export async function getErc20Balance(address: string): Promise<bigint> {
   console.log("============ Get Erc20 Balance ============");

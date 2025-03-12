@@ -1309,6 +1309,61 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.stopPrank();
     }
 
+    function test_GroupingModule_mintLicenseToken_revert_groupIpHasNoLicenseTerms() public {
+        uint256 attachedTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 0,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), attachedTermsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), attachedTermsId, licensingConfig);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), attachedTermsId);
+        address[] memory ipIds = new address[](1);
+        ipIds[0] = ipId1;
+        groupingModule.addIp(groupId, ipIds, 100e6);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        uint256 notAttachedTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 50,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__LicensorIpHasNoLicenseTerms.selector,
+                groupId,
+                address(pilTemplate),
+                notAttachedTermsId
+            )
+        );
+        licensingModule.mintLicenseTokens(groupId, address(pilTemplate), notAttachedTermsId, 1, ipOwner1, "", 0, 0);
+        vm.stopPrank();
+    }
+
     function test_GroupingModule_registerDerivative_revert_registerGroupAsChild() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({

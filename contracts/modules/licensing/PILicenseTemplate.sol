@@ -338,6 +338,9 @@ contract PILicenseTemplate is
     /// @return True if the license terms support associate with group IP assets, false otherwise.
     function canAttachToGroupIp(uint256 licenseTermsId) external view returns (bool) {
         PILTerms memory terms = _getPILicenseTemplateStorage().licenseTerms[licenseTermsId];
+        if (terms.derivativesApproval) {
+            return false;
+        }
         address royaltyPolicy = terms.royaltyPolicy;
         if (royaltyPolicy == address(0)) {
             return true;

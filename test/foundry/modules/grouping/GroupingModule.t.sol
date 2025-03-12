@@ -823,6 +823,41 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.stopPrank();
     }
 
+    function test_GroupingModule_addIp_revert_derivativeApprovalRequired() public {
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILTerms({
+                transferable: true,
+                royaltyPolicy: address(0),
+                defaultMintingFee: 0,
+                expiration: 0,
+                commercialUse: false,
+                commercialAttribution: false,
+                commercializerChecker: address(0),
+                commercializerCheckerData: "",
+                commercialRevShare: 0,
+                commercialRevCeiling: 0,
+                derivativesAllowed: true,
+                derivativesAttribution: true,
+                derivativesApproval: true, // derivative approval required
+                derivativesReciprocal: true,
+                derivativeRevCeiling: 0,
+                currency: address(0),
+                uri: ""
+            })
+        );
+        vm.startPrank(alice);
+        address groupId1 = groupingModule.registerGroup(address(rewardPool));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.LicenseRegistry__LicenseTermsCannotAttachToGroupIp.selector,
+                address(pilTemplate),
+                termsId
+            )
+        );
+        licensingModule.attachLicenseTerms(groupId1, address(pilTemplate), termsId);
+        vm.stopPrank();
+    }
+
     function test_GroupingModule_addIp_revert_DisputedIp() public {
         bytes32 disputeEvidenceHashExample = 0xb7b94ecbd1f9f8cb209909e5785fb2858c9a8c4b220c017995a75346ad1b5db5;
         uint256 termsId = pilTemplate.registerLicenseTerms(

@@ -339,7 +339,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
         if (_isExpiredNow(licensorIpId)) {
             revert Errors.LicenseRegistry__ParentIpExpired(licensorIpId);
         }
-        if (isMintedByIpOwner) {
+        if (isMintedByIpOwner && !GROUP_IP_ASSET_REGISTRY.isRegisteredGroup(licensorIpId)) {
             if (!_exists(licenseTemplate, licenseTermsId)) {
                 revert Errors.LicenseRegistry__LicenseTermsNotExists(licenseTemplate, licenseTermsId);
             }

@@ -157,6 +157,7 @@ contract RoyaltyPolicyLRP is
         address token
     ) external whenNotPaused returns (uint256) {
         RoyaltyPolicyLRPStorage storage $ = _getRoyaltyPolicyLRPStorage();
+        if (ipId == ancestorIpId) revert Errors.RoyaltyPolicyLRP__SameIpTransfer();
 
         uint32 ancestorPercent = $.ancestorPercentLRP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {

@@ -130,6 +130,7 @@ contract RoyaltyPolicyLAP is
         address token
     ) external whenNotPaused returns (uint256) {
         RoyaltyPolicyLAPStorage storage $ = _getRoyaltyPolicyLAPStorage();
+        if (ipId == ancestorIpId) revert Errors.RoyaltyPolicyLAP__SameIpTransfer();
 
         uint32 ancestorPercent = $.ancestorPercentLAP[ipId][ancestorIpId];
         if (ancestorPercent == 0) {

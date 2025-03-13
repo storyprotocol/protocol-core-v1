@@ -189,6 +189,39 @@ contract TestRoyaltyPolicyLRP is BaseTest {
         assertEq(royaltyPolicyLRP.getPolicyRoyalty(address(80), address(30)), 20 * 10 ** 6);
     }
 
+    function test_RoyaltyPolicyLRP_transferToVault_revert_ZeroClaimableRoyalty() public {
+        address[] memory parents = new address[](3);
+        address[] memory licenseRoyaltyPolicies = new address[](3);
+        uint32[] memory parentRoyalties = new uint32[](3);
+        parents[0] = address(10);
+        parents[1] = address(20);
+        parents[2] = address(30);
+        licenseRoyaltyPolicies[0] = address(royaltyPolicyLRP);
+        licenseRoyaltyPolicies[1] = address(royaltyPolicyLRP);
+        licenseRoyaltyPolicies[2] = address(royaltyPolicyLRP);
+        parentRoyalties[0] = uint32(10 * 10 ** 6);
+        parentRoyalties[1] = uint32(15 * 10 ** 6);
+        parentRoyalties[2] = uint32(20 * 10 ** 6);
+        ipGraph.addParentIp(ipAccount1, parents);
+
+        vm.startPrank(address(licensingModule));
+        royaltyModule.onLinkToParents(ipAccount1, parents, licenseRoyaltyPolicies, parentRoyalties, "", 100e6);
+
+        // make payment to ip 80
+        uint256 royaltyAmount = 100 * 10 ** 6;
+        address receiverIpId = ipAccount1;
+        address payerIpId = address(3);
+        vm.startPrank(payerIpId);
+        USDC.mint(payerIpId, royaltyAmount);
+        USDC.approve(address(royaltyModule), royaltyAmount);
+        royaltyModule.payRoyaltyOnBehalf(receiverIpId, payerIpId, address(USDC), royaltyAmount);
+        vm.stopPrank();
+
+        // first transfer to vault
+        vm.expectRevert(); // throws out-of-gas instead of ZeroClaimableRoyalty due to using the mock ip graph
+        royaltyPolicyLRP.transferToVault(ipAccount1, address(2000), address(USDC));
+    }
+
     function test_RoyaltyPolicyLRP_transferToVault_revert_SameIpTransfer() public {
         address[] memory parents = new address[](3);
         address[] memory licenseRoyaltyPolicies = new address[](3);

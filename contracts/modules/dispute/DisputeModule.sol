@@ -219,7 +219,8 @@ contract DisputeModule is
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
         if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
         if ($.isUsedEvidenceHash[disputeEvidenceHash]) revert Errors.DisputeModule__EvidenceHashAlreadyUsed();
-        if (disputeInitiator == address(0) || disputeInitiator == targetIpId) revert Errors.DisputeModule__InvalidDisputeInitiator();
+        if (disputeInitiator == address(0) || disputeInitiator == targetIpId)
+            revert Errors.DisputeModule__InvalidDisputeInitiator();
 
         address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
         uint256 disputeId = ++$.disputeCounter;

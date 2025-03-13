@@ -202,21 +202,24 @@ contract DisputeModule is
 
     /// @notice Raises a dispute on a given ipId
     /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeInitiator The address of the dispute initiator
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param data The data to initialize the policy
     /// @return disputeId The id of the newly raised dispute
     function raiseDispute(
         address targetIpId,
+        address disputeInitiator,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes calldata data
     ) external nonReentrant whenNotPaused returns (uint256) {
-        if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
         DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
         if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
         if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
         if ($.isUsedEvidenceHash[disputeEvidenceHash]) revert Errors.DisputeModule__EvidenceHashAlreadyUsed();
+        if (disputeInitiator == address(0) || disputeInitiator == targetIpId) revert Errors.DisputeModule__InvalidDisputeInitiator();
 
         address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
         uint256 disputeId = ++$.disputeCounter;
@@ -224,7 +227,7 @@ contract DisputeModule is
 
         $.disputes[disputeId] = Dispute({
             targetIpId: targetIpId,
-            disputeInitiator: msg.sender,
+            disputeInitiator: disputeInitiator,
             disputeTimestamp: disputeTimestamp,
             arbitrationPolicy: arbitrationPolicy,
             disputeEvidenceHash: disputeEvidenceHash,
@@ -237,6 +240,7 @@ contract DisputeModule is
 
         IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(
             msg.sender,
+            disputeInitiator,
             targetIpId,
             disputeEvidenceHash,
             targetTag,
@@ -248,6 +252,7 @@ contract DisputeModule is
             disputeId,
             targetIpId,
             msg.sender,
+            disputeInitiator,
             disputeTimestamp,
             arbitrationPolicy,
             disputeEvidenceHash,
@@ -337,7 +342,7 @@ contract DisputeModule is
 
         $.disputes[disputeId] = Dispute({
             targetIpId: ipIdToTag,
-            disputeInitiator: msg.sender,
+            disputeInitiator: address(0),
             disputeTimestamp: disputeTimestamp,
             arbitrationPolicy: infringerDispute.arbitrationPolicy,
             disputeEvidenceHash: infringerDispute.disputeEvidenceHash,

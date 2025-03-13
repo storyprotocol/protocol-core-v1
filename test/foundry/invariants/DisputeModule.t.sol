@@ -51,6 +51,7 @@ contract DisputeHarness is Test {
     /// It increments the counter if the dispute is raised successfully
     function raiseDispute(
         uint256 targetIpIdIdx,
+        address disputeInitiator,
         bytes32 disputeEvidenceHash,
         uint256 targetTagIdx,
         bytes calldata data
@@ -58,6 +59,7 @@ contract DisputeHarness is Test {
         try
             disputeModule.raiseDispute(
                 ipAccounts[targetIpIdIdx % ipAccounts.length],
+                disputeInitiator,
                 disputeEvidenceHash,
                 tags[targetTagIdx % tags.length],
                 data

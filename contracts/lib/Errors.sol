@@ -814,6 +814,9 @@ library Errors {
     /// @notice Call failed.
     error RoyaltyPolicyLAP__CallFailed();
 
+    /// @notice Cannot transfer to the Same IP.
+    error RoyaltyPolicyLAP__SameIpTransfer();
+
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LRP                          //
     ////////////////////////////////////////////////////////////////////////////
@@ -841,6 +844,9 @@ library Errors {
 
     /// @notice Call failed.
     error RoyaltyPolicyLRP__CallFailed();
+
+    /// @notice Cannot transfer to the Same IP.
+    error RoyaltyPolicyLRP__SameIpTransfer();
 
     ////////////////////////////////////////////////////////////////////////////
     //                         IP Royalty Vault                               //

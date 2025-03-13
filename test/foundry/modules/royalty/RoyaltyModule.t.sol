@@ -794,7 +794,7 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        disputeModule.raiseDispute(ipAddr, ipAccount1, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
         // set dispute judgement
@@ -1168,7 +1168,7 @@ contract TestRoyaltyModule is BaseTest, ERC721Holder {
         // raise dispute
         vm.startPrank(ipAccount1);
         USDC.approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+        disputeModule.raiseDispute(ipAddr, ipAccount1, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
         // set dispute judgement

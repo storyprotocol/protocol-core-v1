@@ -1951,7 +1951,7 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         vm.startPrank(initiator);
         USDC.mint(initiator, 1000 * 10 ** 6);
         IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
-        disputeModule.raiseDispute(targetIp, disputeEvidenceHash, "IMPROPER_REGISTRATION", "");
+        disputeModule.raiseDispute(targetIp, initiator, disputeEvidenceHash, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
 
         vm.prank(u.relayer);

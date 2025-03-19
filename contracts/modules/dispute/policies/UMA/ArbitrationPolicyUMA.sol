@@ -177,7 +177,7 @@ contract ArbitrationPolicyUMA is
         $.assertionIdToDisputeId[assertionId] = disputeId;
         $.disputeIdToAssertionId[disputeId] = assertionId;
 
-        emit DisputeRaisedUMA(disputeId, caller, liveness, address(currencyToken), bond);
+        emit DisputeRaisedUMA(disputeId, assertionId, caller, liveness, address(currencyToken), bond);
     }
 
     /// @notice Executes custom logic on disputing judgement

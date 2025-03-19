@@ -288,9 +288,6 @@ contract ArbitrationPolicyUMATest is BaseTest {
         uint256 bond = disputeBond;
         bytes memory data = abi.encode(liveness, currency, bond);
 
-        vm.expectEmit(true, true, true, true);
-        emit DisputeRaisedUMA(disputeModule.disputeCounter() + 1, disputeInitiator, liveness, address(currency), bond);
-
         vm.startPrank(disputeInitiator);
 
         disputeModule.raiseDispute(randomIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);

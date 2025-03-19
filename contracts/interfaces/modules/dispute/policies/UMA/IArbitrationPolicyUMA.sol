@@ -28,7 +28,14 @@ interface IArbitrationPolicyUMA is IArbitrationPolicy, IOOV3Callbacks {
     /// @param liveness The liveness time
     /// @param currency The bond currency
     /// @param bond The bond size
-    event DisputeRaisedUMA(uint256 disputeId, bytes32 assertionId, address caller, uint64 liveness, address currency, uint256 bond);
+    event DisputeRaisedUMA(
+        uint256 disputeId,
+        bytes32 assertionId,
+        address caller,
+        uint64 liveness,
+        address currency,
+        uint256 bond
+    );
 
     /// @notice Emitted when an assertion is disputed
     /// @param assertionId The assertion id

@@ -9,6 +9,7 @@ import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessMana
 import { DisputeModule } from "contracts/modules/dispute/DisputeModule.sol";
 import { RoyaltyModule } from "contracts/modules/royalty/RoyaltyModule.sol";
 import { ArbitrationPolicyUMA } from "contracts/modules/dispute/policies/UMA/ArbitrationPolicyUMA.sol";
+import { IArbitrationPolicyUMA } from "contracts/interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
 import { IOOV3 } from "contracts/interfaces/modules/dispute/policies/UMA/IOOV3.sol";
 import { Errors } from "contracts/lib/Errors.sol";
 
@@ -20,7 +21,6 @@ contract ArbitrationPolicyUMATest is BaseTest {
     event LivenessSet(uint64 minLiveness, uint64 maxLiveness, uint32 ipOwnerTimePercent);
     event MaxBondSet(address token, uint256 maxBond);
     event DisputeRaisedUMA(uint256 disputeId, address caller, uint64 liveness, address currency, uint256 bond);
-    event AssertionDisputed(bytes32 assertionId, bytes32 counterEvidenceHash);
 
     address internal protocolAdmin;
     address internal protocolPauseAdmin;
@@ -584,7 +584,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
 
         vm.expectEmit(true, true, true, true);
-        emit AssertionDisputed(assertionId, counterEvidenceHash);
+        emit IArbitrationPolicyUMA.AssertionDisputed(disputeId, assertionId, counterEvidenceHash);
 
         arbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
 
@@ -637,7 +637,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 counterEvidenceHash = bytes32("COUNTER_EVIDENCE_HASH");
 
         vm.expectEmit(true, true, true, true);
-        emit AssertionDisputed(assertionId, counterEvidenceHash);
+        emit IArbitrationPolicyUMA.AssertionDisputed(disputeId, assertionId, counterEvidenceHash);
 
         arbitrationPolicyUMA.disputeAssertion(assertionId, counterEvidenceHash);
 
@@ -690,7 +690,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
 
         vm.expectEmit(true, true, true, true);
-        emit AssertionDisputed(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
+        emit IArbitrationPolicyUMA.AssertionDisputed(disputeId, assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
 
         arbitrationPolicyUMA.disputeAssertion(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
 
@@ -755,7 +755,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
 
         vm.expectEmit(true, true, true, true);
-        emit AssertionDisputed(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
+        emit IArbitrationPolicyUMA.AssertionDisputed(disputeId, assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
 
         arbitrationPolicyUMA.disputeAssertion(assertionId, bytes32("COUNTER_EVIDENCE_HASH"));
 

@@ -242,7 +242,7 @@ contract ArbitrationPolicyUMA is
 
         oov3.disputeAssertion(assertionId, msg.sender);
 
-        emit AssertionDisputed(assertionId, counterEvidenceHash);
+        emit AssertionDisputed(disputeId, assertionId, counterEvidenceHash);
     }
 
     /// @notice OOV3 callback function forwhen an assertion is resolved

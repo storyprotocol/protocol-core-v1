@@ -7,10 +7,11 @@ import { Script } from "forge-std/Script.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
-import { AccessController } from "contracts/access/AccessController.sol";
-import { ProtocolAdmin } from "contracts/lib/ProtocolAdmin.sol";
-import { IIPAssetRegistry } from "contracts/interfaces/registries/IIPAssetRegistry.sol";
-import { IVaultController } from "contracts/interfaces/modules/royalty/policies/IVaultController.sol";
+
+// contracts
+import { ProtocolAdmin } from "../../../../contracts/lib/ProtocolAdmin.sol";
+import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/IIPAssetRegistry.sol";
+import { IVaultController } from "../../../../contracts/interfaces/modules/royalty/policies/IVaultController.sol";
 
 // script
 import { BroadcastManager } from "../BroadcastManager.s.sol";
@@ -28,7 +29,6 @@ import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
  */
 abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHandler, JsonBatchTxHelper {
     address internal CREATE3_DEPLOYER = 0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf;
-    uint256 internal CREATE3_DEFAULT_SEED = 0;
 
     /// @notice Upgrade modes
     enum UpgradeModes {
@@ -57,19 +57,6 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     string toVersion;
     /// @notice action accumulator for batch txs
     bytes[] multicallData;
-
-    /// @dev check if the proxy's authority is the accessManager in the file
-    /// @param proxy The proxy address
-    modifier onlyMatchingAccessManager(string memory contractKey, address proxy) {
-        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault")) &&
-            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccountImplCode"))) {
-            require(
-                AccessManaged(proxy).authority() == address(accessManager),
-                "Proxy's Authority must equal accessManager"
-            );
-        }
-        _;
-    }
 
     /// @dev check if the caller has the Upgrader role
     modifier onlyUpgraderRole() {
@@ -156,7 +143,8 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _scheduleUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(key, p.proxy) onlyUpgraderRole {
+    ) private {
+        _checkMatchingAccessManager(key, p.proxy);
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");
@@ -199,7 +187,8 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _executeUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(key,p.proxy) {
+    ) private {
+        _checkMatchingAccessManager(key, p.proxy);
         bytes memory data = _getExecutionData(key, p);
         uint48 schedule = accessManager.getSchedule(accessManager.hashOperation(deployer, p.proxy, data));
         console2.log("schedule", schedule);
@@ -236,7 +225,8 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _cancelScheduledUpgrade(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) private onlyMatchingAccessManager(key, p.proxy) {
+    ) private {
+        _checkMatchingAccessManager(key, p.proxy);
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) {
             revert("No data to schedule");
@@ -272,7 +262,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     function _getExecutionData(
         string memory key,
         UpgradedImplHelper.UpgradeProposal memory p
-    ) internal returns (bytes memory data) {
+    ) internal virtual returns (bytes memory data) {
         if (keccak256(abi.encodePacked(key)) == keccak256(abi.encodePacked("IpRoyaltyVault"))) {
             console2.log("encoding upgradeVaults");
             data = abi.encodeCall(IVaultController.upgradeVaults, (p.newImpl));
@@ -284,5 +274,15 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
             data = abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (p.newImpl, ""));
         }
         return data;
+    }
+
+    function _checkMatchingAccessManager(string memory contractKey, address proxy) virtual internal {
+        if (keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IpRoyaltyVault")) &&
+            keccak256(abi.encodePacked(contractKey)) != keccak256(abi.encodePacked("IPAccountImplCode"))) {
+            require(
+                AccessManaged(proxy).authority() == address(accessManager),
+                "Proxy's Authority must equal accessManager"
+            );
+        }
     }
 }

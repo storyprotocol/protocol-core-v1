@@ -55,6 +55,7 @@ interface IDisputeModule {
     /// @notice Event emitted when a dispute is raised
     /// @param disputeId The dispute id
     /// @param targetIpId The ipId that is the target of the dispute
+    /// @param caller The address of the caller
     /// @param disputeInitiator The address of the dispute initiator
     /// @param disputeTimestamp The timestamp of the dispute
     /// @param arbitrationPolicy The address of the arbitration policy
@@ -64,6 +65,7 @@ interface IDisputeModule {
     event DisputeRaised(
         uint256 disputeId,
         address targetIpId,
+        address caller,
         address disputeInitiator,
         uint256 disputeTimestamp,
         address arbitrationPolicy,
@@ -185,12 +187,14 @@ interface IDisputeModule {
 
     /// @notice Raises a dispute on a given ipId
     /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeInitiator The address of the dispute initiator
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
     /// @param data The data to raise a dispute
     /// @return disputeId The id of the newly raised dispute
     function raiseDispute(
         address targetIpId,
+        address disputeInitiator,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         bytes calldata data

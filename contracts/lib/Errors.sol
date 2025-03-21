@@ -627,6 +627,9 @@ library Errors {
     /// @notice Evidence hash already used.
     error DisputeModule__EvidenceHashAlreadyUsed();
 
+    /// @notice Invalid dispute initiator.
+    error DisputeModule__InvalidDisputeInitiator();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Arbitration Policy UMA                     //
     ////////////////////////////////////////////////////////////////////////////

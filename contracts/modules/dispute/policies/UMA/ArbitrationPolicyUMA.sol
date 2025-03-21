@@ -177,7 +177,7 @@ contract ArbitrationPolicyUMA is
         $.assertionIdToDisputeId[assertionId] = disputeId;
         $.disputeIdToAssertionId[disputeId] = assertionId;
 
-        emit DisputeRaisedUMA(disputeId, caller, liveness, address(currencyToken), bond);
+        emit DisputeRaisedUMA(disputeId, assertionId, caller, liveness, address(currencyToken), bond);
     }
 
     /// @notice Executes custom logic on disputing judgement
@@ -242,7 +242,7 @@ contract ArbitrationPolicyUMA is
 
         oov3.disputeAssertion(assertionId, msg.sender);
 
-        emit AssertionDisputed(assertionId, counterEvidenceHash);
+        emit AssertionDisputed(disputeId, assertionId, counterEvidenceHash);
     }
 
     /// @notice OOV3 callback function forwhen an assertion is resolved

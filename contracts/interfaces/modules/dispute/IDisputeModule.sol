@@ -85,12 +85,14 @@ interface IDisputeModule {
 
     /// @notice Event emitted when a derivative is tagged if a parent infringed
     /// or a group ip is taggedif a group member infringed
+    /// @param disputeId The dispute id
     /// @param infringingIpId The ipId which infringed
     /// @param ipIdToTag The ipId which was tagged
     /// @param infringerDisputeId The dispute id in which infringement was found
     /// @param tag The tag of the dispute applied to the ipIdToTag
     /// @param disputeTimestamp The timestamp of the dispute
     event IpTaggedOnRelatedIpInfringement(
+        uint256 disputeId,
         address infringingIpId,
         address ipIdToTag,
         uint256 infringerDisputeId,

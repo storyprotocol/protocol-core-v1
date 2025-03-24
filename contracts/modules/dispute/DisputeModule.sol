@@ -350,6 +350,7 @@ contract DisputeModule is
         $.successfulDisputesPerIp[ipIdToTag]++;
 
         emit IpTaggedOnRelatedIpInfringement(
+            disputeId,
             infringerIpId,
             ipIdToTag,
             infringerDisputeId,

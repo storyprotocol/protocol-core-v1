@@ -646,6 +646,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
+            2,
             ipAddr,
             ipAddr2,
             1,
@@ -741,6 +742,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
+            2,
             ipIdGroupMember,
             groupId,
             1,
@@ -908,6 +910,7 @@ contract DisputeModuleTest is BaseTest {
         vm.startPrank(address(1));
         vm.expectEmit(true, true, true, true, address(disputeModule));
         emit IDisputeModule.IpTaggedOnRelatedIpInfringement(
+            2,
             ipIdGroupMember,
             groupId,
             1,

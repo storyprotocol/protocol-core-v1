@@ -93,12 +93,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         // upgrade dispute module
         address newDisputeModuleImpl = address(
-            new DisputeModule(
-                accessController,
-                ipAssetRegistry,
-                licenseRegistry,
-                ipGraphACL
-            )
+            new DisputeModule(accessController, ipAssetRegistry, licenseRegistry, ipGraphACL)
         );
         vm.startPrank(upgrader);
         AccessManager(accessManager).schedule(
@@ -110,7 +105,9 @@ contract ArbitrationPolicyUMATest is BaseTest {
         UUPSUpgradeable(disputeModule).upgradeToAndCall(newDisputeModuleImpl, "");
 
         // upgrade arbitration policy UMA
-        address newArbitrationPolicyUMAImpl = address(new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule)));
+        address newArbitrationPolicyUMAImpl = address(
+            new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule))
+        );
         AccessManager(accessManager).schedule(
             address(arbitrationPolicyUMA),
             abi.encodeCall(UUPSUpgradeable.upgradeToAndCall, (newArbitrationPolicyUMAImpl, "")),

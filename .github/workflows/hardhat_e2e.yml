@@ -24,7 +24,7 @@ on:
       deploy_erc721:
         description: 'Deploy MockERC721 (ignored if erc721_address is provided)'
         required: false
-        default: true
+        default: false
         type: boolean
       oov3_address:
         description: 'Optimistic Oracle V3 address (leave empty to deploy new one if deploy_oov3=true)'
@@ -33,11 +33,6 @@ on:
         type: string
       deploy_oov3:
         description: 'Deploy Optimistic Oracle V3 (ignored if oov3_address is provided)'
-        required: false
-        default: false
-        type: boolean
-      schedule:
-        description: 'Schedule first before the set opertion'
         required: false
         default: false
         type: boolean
@@ -58,7 +53,7 @@ on:
       deploy_erc721:
         description: 'Deploy MockERC721 (ignored if erc721_address is provided)'
         required: false
-        default: true
+        default: false
         type: boolean
       oov3_address:
         description: 'Optimistic Oracle V3 address (leave empty to deploy new one if deploy_oov3=true)'
@@ -67,11 +62,6 @@ on:
         type: string
       deploy_oov3:
         description: 'Deploy Optimistic Oracle V3 (ignored if oov3_address is provided)'
-        required: false
-        default: false
-        type: boolean
-      schedule:
-        description: 'Schedule first before the set opertion'
         required: false
         default: false
         type: boolean
@@ -87,8 +77,8 @@ jobs:
           echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
           echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
-          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
-          echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
+          echo "deploy_erc721: ${{ inputs.deploy_erc721 || github.event.inputs.deploy_erc721 || 'false' }}"
+          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || 'false' }}"
 
   set-devnet-constants:
     runs-on: ubuntu-latest

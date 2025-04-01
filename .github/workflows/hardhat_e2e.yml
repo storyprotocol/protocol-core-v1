@@ -17,24 +17,24 @@ on:
           - mainnet
           - internal-devnet
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new one)'
         required: false
         default: ''
         type: string
+      deploy_erc721:
+        description: 'Deploy MockERC721 (ignored if erc721_address is provided)'
+        required: false
+        default: false
+        type: boolean
       oov3_address:
-        description: 'must provide when running e2e tests'
+        description: 'Optimistic Oracle V3 address (leave empty to deploy new one if deploy_oov3=true)'
         required: false
         default: ''
         type: string
       deploy_oov3:
-        description: 'Deploy Optimistic Oracle V3'
+        description: 'Deploy Optimistic Oracle V3 (ignored if oov3_address is provided)'
         required: false
         default: false
-        type: boolean
-      schedule:
-        description: 'Schedule first before the set opertion'
-        required: false
-        default: true
         type: boolean
 
 
@@ -46,10 +46,25 @@ on:
         default: 'internal-devnet'
         type: string
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new one)'
         required: false
         default: ''
         type: string
+      deploy_erc721:
+        description: 'Deploy MockERC721 (ignored if erc721_address is provided)'
+        required: false
+        default: false
+        type: boolean
+      oov3_address:
+        description: 'Optimistic Oracle V3 address (leave empty to deploy new one if deploy_oov3=true)'
+        required: false
+        default: ''
+        type: string
+      deploy_oov3:
+        description: 'Deploy Optimistic Oracle V3 (ignored if oov3_address is provided)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   print-config:
@@ -62,8 +77,8 @@ jobs:
           echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
           echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
-          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
-          echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
+          echo "deploy_erc721: ${{ inputs.deploy_erc721 || github.event.inputs.deploy_erc721 || 'false' }}"
+          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || 'false' }}"
 
   set-devnet-constants:
     runs-on: ubuntu-latest
@@ -100,124 +115,128 @@ jobs:
       RPCURL: ${{ steps.devnet_version.outputs.RPCURL }}
       MOCK_ERC20_ADDRESS: ${{ steps.mock_erc20_address.outputs.MOCK_ERC20_ADDRESS }}
 
-  prepare-erc721:
-    name: prepare-erc721
-    needs: set-devnet-constants
-    if: ${{ inputs.erc721_address != '' && github.event.inputs.erc721_address != '' }}    
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [21.x]
-
-    steps:
-      - name: Echo 721 address
-        id: prepare
-        run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          echo "STORY_ERC721=$erc721_address" >> $GITHUB_ENV
-          echo "::set-output name=STORY_ERC721::$erc721_address"
-
-    outputs:
-      STORY_ERC721: ${{ steps.prepare.outputs.STORY_ERC721 }}
-
-  deploy-erc721:
-    name: Deploy ERC721
-    needs: set-devnet-constants
-    if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' }}    
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [21.x]
-
-    steps:
-      - name: Check Out Repository Code
-        uses: actions/checkout@v4
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Run install
-        uses: borales/actions-yarn@v4
-        with:
-          cmd: install # will run `yarn install` command
-
-      - name: Install Dependencies
-        run: |
-          forge compile
-
-      - name: Deploy MockERC721 Contract
-        id: deploy-mock-erc721
-        run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          if [[ -n "$erc721_address" ]]; then
-            echo "ERC721 address provided: $erc721_address"
-            erc721=$erc721_address
-          else
-            echo "Deploying MockERC721 contract"
-            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
-            echo $result
-            erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
-            echo "Deployed to: $erc721"
-          fi
-
-          echo "STORY_ERC721=$erc721" >> $GITHUB_OUTPUT
-    outputs:
-      STORY_ERC721: ${{ steps.deploy-mock-erc721.outputs.STORY_ERC721 }}
-
-  deploy-oov3-sandbox:
-    name: Deploy UMA Optimistic Oracle V3
-    if: ${{ inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true }}
+  handle-erc721:
+    name: Handle ERC721 Contract
     needs: set-devnet-constants
     runs-on: ubuntu-latest
     
     strategy:
       matrix:
         node-version: [21.x]
-
+        
     steps:
       - name: Check Out Repository Code
         uses: actions/checkout@v4
+        if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' && (inputs.deploy_erc721 == true || github.event.inputs.deploy_erc721 == true) }}
+        
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' && (inputs.deploy_erc721 == true || github.event.inputs.deploy_erc721 == true) }}
+        
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' && (inputs.deploy_erc721 == true || github.event.inputs.deploy_erc721 == true) }}
+        with:
+          cmd: install
+          
+      - name: Install Dependencies
+        if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' && (inputs.deploy_erc721 == true || github.event.inputs.deploy_erc721 == true) }}
+        run: |
+          forge compile
+          
+      - name: Set ERC721 Address
+        id: set-erc721-address
+        run: |
+          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
+          
+          if [[ -n "$erc721_address" ]]; then
+            echo "Using provided ERC721 address: $erc721_address"
+            echo "STORY_ERC721=$erc721_address" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.deploy_erc721 || github.event.inputs.deploy_erc721 }}" == "true" ]]; then
+            echo "Deploying MockERC721 contract"
+            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+            echo "$result"
+            erc721=$(echo "$result" | jq -r '.deployedTo')
+            if [ -z "$erc721" ]; then
+              erc721=$(echo "$result" | grep -o '"deployedTo": "[^"]*' | cut -d'"' -f4)
+            fi
+            echo "Deployed MockERC721 to: $erc721"
+            echo "STORY_ERC721=$erc721" >> $GITHUB_OUTPUT
+          else
+            echo "No ERC721 address provided and deploy_erc721 is false. Tests will fail if an ERC721 contract is required."
+            echo "STORY_ERC721=" >> $GITHUB_OUTPUT
+          fi
+          
+    outputs:
+      STORY_ERC721: ${{ steps.set-erc721-address.outputs.STORY_ERC721 }}
 
+  handle-oov3:
+    name: Handle Optimistic Oracle V3
+    needs: set-devnet-constants
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [21.x]
+        
+    steps:
+      - name: Check Out Repository Code
+        uses: actions/checkout@v4
+        if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' && (inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true) }}
+        
       - name: Checkout dev-quickstart-oov3 repository
         uses: actions/checkout@v4
+        if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' && (inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true) }}
         with:
           repository: UMAprotocol/dev-quickstart-oov3
           path: dev-quickstart-oov3
-
+          
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
+        if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' && (inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true) }}
+        
       - name: Install Dependencies
+        if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' && (inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true) }}
         run: |
           cd dev-quickstart-oov3
           forge install
     
-      - name: Deploy UMA Optimistic Oracle V3
-        id: deploy-oov3-sandbox
+      - name: Set OOV3 Address
+        id: set-oov3-address
         run: |
-          cd dev-quickstart-oov3
-          echo "DEFAULT_CURRENCY=${{ needs.set-devnet-constants.outputs.MOCK_ERC20_ADDRESS }}" >> .env
-          echo "DEFAULT_LIVENESS=600" >> .env
-          echo "MINIMUM_BOND=0" >> .env
-          source .env
+          oov3_address=${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}
+          
+          if [[ -n "$oov3_address" ]]; then
+            echo "Using provided OOV3 address: $oov3_address"
+            echo "OOV3_ADDRESS=$oov3_address" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 }}" == "true" ]]; then
+            echo "Deploying UMA Optimistic Oracle V3"
+            cd dev-quickstart-oov3
+            echo "DEFAULT_CURRENCY=${{ needs.set-devnet-constants.outputs.MOCK_ERC20_ADDRESS }}" >> .env
+            echo "DEFAULT_LIVENESS=600" >> .env
+            echo "MINIMUM_BOND=0" >> .env
+            source .env
 
-          output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} \
-                  --broadcast --private-key ${{ secrets.STORY_DEPLOYER_PRIVATEKEY }} --priority-gas-price 1 \
-                  --legacy --optimize)
-          echo "$output"
+            output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} \
+                    --broadcast --private-key ${{ secrets.STORY_DEPLOYER_PRIVATEKEY }} --priority-gas-price 1 \
+                    --legacy --optimize)
+            echo "$output"
 
-          oov3_address=$(echo "$output" | grep '^  Deployed Optimistic Oracle V3' | awk '{print $NF}')
-          echo "OOV3_ADDRESS: $oov3_address"
-          echo "OOV3_ADDRESS=$oov3_address" >> $GITHUB_OUTPUT
+            oov3_address=$(echo "$output" | grep '^  Deployed Optimistic Oracle V3' | awk '{print $NF}')
+            echo "Deployed OOV3 to: $oov3_address"
+            echo "OOV3_ADDRESS=$oov3_address" >> $GITHUB_OUTPUT
+          else
+            echo "No OOV3 address provided and deploy_oov3 is false. Tests will fail if an OOV3 contract is required."
+            echo "OOV3_ADDRESS=" >> $GITHUB_OUTPUT
+          fi
+          
     outputs:
-      OOV3_ADDRESS: ${{ steps.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}
+      OOV3_ADDRESS: ${{ steps.set-oov3-address.outputs.OOV3_ADDRESS }}
 
   run-hardhat-test:
     name: Run E2E Test
     runs-on: ubuntu-latest
-    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox,  prepare-erc721 ]
+    needs: [set-devnet-constants, handle-erc721, handle-oov3]
     if: always() && !failure() && !cancelled()
 
     strategy:
@@ -246,6 +265,23 @@ jobs:
         with:
           version: nightly
 
+      - name: Check Required Addresses
+        run: |
+          erc721_address="${{ needs.handle-erc721.outputs.STORY_ERC721 }}"
+          oov3_address="${{ needs.handle-oov3.outputs.OOV3_ADDRESS }}"
+          
+          if [[ -z "$erc721_address" ]]; then
+            echo "WARNING: No ERC721 address available. Tests requiring ERC721 will fail."
+          else
+            echo "Using ERC721 address: $erc721_address"
+          fi
+          
+          if [[ -z "$oov3_address" ]]; then
+            echo "WARNING: No OOV3 address available. Tests requiring OOV3 will fail."
+          else
+            echo "Using OOV3 address: $oov3_address"
+          fi
+
       - name: 'Create env file'
         run: |
           touch .env
@@ -256,8 +292,8 @@ jobs:
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
           echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
-          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
-          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}" >> .env
+          echo "STORY_ERC721=${{ needs.handle-erc721.outputs.STORY_ERC721 }}" >> .env
+          echo "STORY_OOV3=${{ needs.handle-oov3.outputs.OOV3_ADDRESS }}" >> .env
 
           # add one more blank line to .env
           echo "" >> .env

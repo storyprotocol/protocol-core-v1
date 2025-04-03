@@ -24,6 +24,7 @@ export async function registerPILTerms
   expiration: number = 0,
   currencyToken: string = MockERC20,
   derivativesReciprocal: boolean = true,
+  derivativesApproval: boolean = false,
 ): Promise<number> {
   
   const licenseTemplate = await hre.ethers.getContractAt("PILicenseTemplate", PILicenseTemplate);
@@ -36,7 +37,7 @@ export async function registerPILTerms
   testTerms.currency = currencyToken;
   testTerms.expiration = expiration;
   testTerms.derivativesReciprocal = derivativesReciprocal;
-
+  testTerms.derivativesApproval = derivativesApproval;
   await licenseTemplate.registerLicenseTerms(testTerms).then((tx) => tx.wait());
   const licenseTermsId = await licenseTemplate.getLicenseTermsId(testTerms);
   console.log("licenseTermsId", licenseTermsId);

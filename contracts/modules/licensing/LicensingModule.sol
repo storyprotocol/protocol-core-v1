@@ -132,7 +132,7 @@ contract LicensingModule is
         __ProtocolPausable_init(accessManager);
     }
 
-    function attachDefaultLicenseTerms(address ipId) external {
+    function attachDefaultLicenseTerms(address ipId) external verifyPermission(ipId) {
         _verifyIpNotDisputed(ipId);
         (address defaultLicenseTemplate, uint256 defaultLicenseTermsId) = LICENSE_REGISTRY.getDefaultLicenseTerms();
         LICENSE_REGISTRY.attachLicenseTermsToIp(ipId, defaultLicenseTemplate, defaultLicenseTermsId);

@@ -341,6 +341,42 @@ describe("RoyaltyModule", function () {
     console.log("IP1's claimableRevenue: ", ip1ClaimableRevenue);
     expect(ip1ClaimableRevenue).to.be.a("BigInt").and.equal(BigInt(mintingFee + payAmount));
   });
+
+  it("LAP Transfer of royalties to the same IP account's vault", async function () {
+    console.log("============ Register IP1 ============");
+    ({ ipId: ipId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(licenseTermsLAPId));
+    console.log("IP1: ", ipId1);
+
+    console.log("============ Register IP2 as IP1's derivative ============");
+    ({ ipId: ipId2 } = await mintNFTAndRegisterIPA());
+    await expect(
+      this.licensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLAPId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("IP2: ", ipId2);
+    
+    console.log("============ IP1 Transfer to same IP account's vault ============");
+    await expect(
+      this.royaltyPolicyLAP.transferToVault(ipId1, ipId1, MockERC20)
+    ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLAP__SameIpTransfer");
+  });
+
+  it("LRP Transfer of royalties to the same IP account's vault", async function () {
+    console.log("============ Register IP1 ============");
+    ({ ipId: ipId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(licenseTermsLRPId));
+    console.log("IP1: ", ipId1);
+
+    console.log("============ Register IP2 as IP1's derivative ============");
+    ({ ipId: ipId2 } = await mintNFTAndRegisterIPA());
+    await expect(
+      this.licensingModule.registerDerivative(ipId2, [ipId1], [licenseTermsLRPId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("IP2: ", ipId2);
+    
+    console.log("============ IP1 Transfer to  same IP account's vault ============");
+    await expect(
+      this.royaltyPolicyLRP.transferToVault(ipId1, ipId1, MockERC20)
+    ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
+  });
 });
 
 describe("LAP royalty policy payment over diamond shape", function () {

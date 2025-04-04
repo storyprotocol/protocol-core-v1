@@ -3836,6 +3836,53 @@ contract LicensingModuleTest is BaseTest {
         );
     }
 
+    function test_LicensingModule_attachDefaultLicenseTerms_revert_NoPermission() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipId1),
+                ipOwner2,
+                address(licensingModule),
+                ILicensingModule.attachDefaultLicenseTerms.selector
+            )
+        );
+        vm.prank(ipOwner2);
+        licensingModule.attachDefaultLicenseTerms(ipId1);
+
+        // Verify that the IP owner can attach default license terms
+        vm.prank(ipOwner1);
+        licensingModule.attachDefaultLicenseTerms(ipId1);
+    }
+
+    function test_LicensingModule_attachDefaultLicenseTerms_withPermission() public {
+        // Test that an unauthorized user cannot attach default license terms to ipId3
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.AccessController__PermissionDenied.selector,
+                address(ipId3),
+                ipOwner1,
+                address(licensingModule),
+                ILicensingModule.attachDefaultLicenseTerms.selector
+            )
+        );
+        vm.prank(ipOwner1);
+        licensingModule.attachDefaultLicenseTerms(ipId3);
+
+        // Grant permission to ipOwner1 to attach default license terms to ipId3
+        vm.prank(ipOwner3);
+        accessController.setPermission(
+            ipId3,
+            ipOwner1,
+            address(licensingModule),
+            ILicensingModule.attachDefaultLicenseTerms.selector,
+            AccessPermission.ALLOW
+        );
+
+        // Verify that an authorized operator can attach default license terms to ipId3
+        vm.prank(ipOwner1);
+        licensingModule.attachDefaultLicenseTerms(ipId3);
+    }
+
     function onERC721Received(address, address, uint256, bytes memory) public pure returns (bytes4) {
         return this.onERC721Received.selector;
     }

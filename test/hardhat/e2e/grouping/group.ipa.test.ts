@@ -2,7 +2,7 @@
 
 import "../setup"
 import { expect } from "chai"
-import { EvenSplitGroupPool, PILicenseTemplate, RoyaltyPolicyLRP } from "../constants"
+import { EvenSplitGroupPool, PILicenseTemplate, RoyaltyPolicyLRP, MockERC20 } from "../constants"
 import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms, registerGroupIPA } from "../utils/mintNFTAndRegisterIPA";
 import { LicensingConfig, registerPILTerms } from "../utils/licenseHelper";
 import hre from "hardhat";
@@ -286,6 +286,15 @@ describe("Group is locked due to minted license token", function () {
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
   });
 
+  it("Revert when mint license tokens for terms that aren't attached to it ", async function () {
+    // create a new license terms
+    const noAttachedlicenseTermsId = await registerPILTerms(true, 0, 20 * 10 ** 6, RoyaltyPolicyLRP, 0, MockERC20, true);
+
+    await expect(
+      this.licensingModule.mintLicenseTokens(groupId, PILicenseTemplate, noAttachedlicenseTermsId, 1, this.owner.address, "0x", 0, 0)
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__LicensorIpHasNoLicenseTerms");
+  });
+
   it("Add Ip to locked group", async function () {
     const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId);
     await expect(
@@ -361,5 +370,32 @@ describe("Add IP to group - negative tests", function () {
     await expect(
       this.groupingModule.addIp(groupId, [ipId], 20 * 10 ** 6)
     ).to.be.revertedWithCustomError(this.errors, "GroupIPAssetRegistry__NotRegisteredIP");
+  });
+});
+
+describe("Register Group and attach license terms", function () {
+  it("Register Group and attach license terms", async function () {
+    const groupId = await expect(
+      this.groupingModule.registerGroup(EvenSplitGroupPool)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+
+    console.log("groupId", groupId)
+    expect(groupId).to.be.properHex(40);
+
+    // register license terms
+    const trueLicenseTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP, 0, MockERC20, true, true);
+    console.log("licenseTermsId of derivativesApproval true:", trueLicenseTermsId);
+
+    const falseLicenseTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP, 0, MockERC20, true);
+    console.log("licenseTermsId of derivativesApproval false:", falseLicenseTermsId);
+
+    // attach license terms to group
+    await expect(
+      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, falseLicenseTermsId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    await expect(
+      this.licensingModule.attachLicenseTerms(groupId, PILicenseTemplate, trueLicenseTermsId)
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__GroupIpAlreadyHasLicenseTerms");
   });
 });

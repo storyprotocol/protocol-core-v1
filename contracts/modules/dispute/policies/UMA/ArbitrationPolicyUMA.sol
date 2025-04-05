@@ -134,7 +134,8 @@ contract ArbitrationPolicyUMA is
 
     /// @notice Executes custom logic on raising dispute
     /// @dev Enforced to be only callable by the DisputeModule
-    /// @param caller Address of the caller
+    /// @param caller Address of the caller which will cover the dispute bond amount
+    /// @param disputeInitiator Address of the dispute initiator which will receive the bond upon winning the dispute
     /// @param targetIpId The ipId that is the target of the dispute
     /// @param disputeEvidenceHash The hash pointing to the dispute evidence
     /// @param targetTag The target tag of the dispute
@@ -142,6 +143,7 @@ contract ArbitrationPolicyUMA is
     /// @param data The arbitrary data used to raise the dispute
     function onRaiseDispute(
         address caller,
+        address disputeInitiator,
         address targetIpId,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
@@ -163,7 +165,7 @@ contract ArbitrationPolicyUMA is
 
         bytes32 assertionId = oov3.assertTruth(
             _constructClaim(targetIpId, targetTag, disputeEvidenceHash, disputeId),
-            caller, // asserter
+            disputeInitiator, // asserter
             address(this), // callbackRecipient
             address(0), // escalationManager
             liveness,

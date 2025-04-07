@@ -5,7 +5,7 @@ import { expect } from "chai";
 import "../setup"
 import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "../utils/mintNFTAndRegisterIPA";
 import { ethers, encodeBytes32String } from "ethers";
-import { MockERC20, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants";
+import { MockERC20, MockERC721, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants";
 import { terms } from "../licenseTermsTemplate";
 
 const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
@@ -238,22 +238,52 @@ describe("Dispute Flow", function () {
     console.log("============ Tag Derivative 1 ============");
     let disputeCounter = await this.disputeModule.disputeCounter();
     console.log("disputeCount before", disputeCounter);
-    await expect(
+    const tx1 = await expect(
       this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(childIpId1, disputeId)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
-    expect(await this.disputeModule.isIpTagged(childIpId1)).to.be.true;
-    expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.false;
+    ).not.to.be.rejectedWith(Error);
+    console.log("Transaction sent! Hash:", tx1.hash);
+
+    const receipt1 = await tx1.wait();
     const disputeIp1 = await this.disputeModule.disputeCounter();
     console.log("disputeCount after", disputeIp1);
 
-    console.log("============ Tag Derivative 2 ============");
-    await expect(
-      this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(childIpId2, disputeIp1)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    // Get the event from the transaction receipt
+    const event1 = this.disputeModule.interface.parseLog(receipt1.logs[0]);
+    console.log("event1", event1);
+    expect(event1?.name).to.equal("IpTaggedOnRelatedIpInfringement");
+    expect(event1?.args?.disputeId).to.equal(disputeIp1);
+    expect(event1?.args?.infringingIpId).to.equal(rootIpId);
+    expect(event1?.args?.ipIdToTag).to.equal(childIpId1);
+    expect(event1?.args?.infringerDisputeId).to.equal(disputeId);
+    expect(event1?.args?.tag).to.equal(IMPROPER_REGISTRATION);
+
+    // Check if the derivative is tagged
     expect(await this.disputeModule.isIpTagged(childIpId1)).to.be.true;
-    expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.true;
+    expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.false;
+
+    console.log("============ Tag Derivative 2 ============");
+    const tx2 = await expect(
+      this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(childIpId2, disputeIp1)
+    ).not.to.be.rejectedWith(Error);
+    console.log("Transaction sent! Hash:", tx2.hash);
+
+    const receipt2 = await tx2.wait();
     const disputeIp2 = await this.disputeModule.disputeCounter();
     console.log("disputeCount after", disputeIp2);
+
+    // Get the event from the transaction receipt
+    const event2 = this.disputeModule.interface.parseLog(receipt2.logs[0]);
+    console.log("event2", event2);
+    expect(event2?.name).to.equal("IpTaggedOnRelatedIpInfringement");
+    expect(event2?.args?.disputeId).to.equal(disputeIp2);
+    expect(event2?.args?.infringingIpId).to.equal(childIpId1);
+    expect(event2?.args?.ipIdToTag).to.equal(childIpId2);
+    expect(event2?.args?.infringerDisputeId).to.equal(disputeIp1);
+    expect(event2?.args?.tag).to.equal(IMPROPER_REGISTRATION);
+
+    // Check if the derivative is tagged
+    expect(await this.disputeModule.isIpTagged(childIpId1)).to.be.true;
+    expect(await this.disputeModule.isIpTagged(childIpId2)).to.be.true;
 
     console.log("============ Resolve Dispute for root IP ============");
     await expect(
@@ -301,6 +331,58 @@ describe("Dispute Flow", function () {
       this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(ipId, disputeId)
     ).to.be.revertedWithCustomError(this.errors, "DisputeModule__DisputeWithoutInfringementTag");
     expect(await this.disputeModule.isIpTagged(childIpId)).to.be.false;
+  });
+
+  it("IPA dispute assertion", async function () {
+    console.log("============ Register IP ============");
+    const { tokenId, ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
+    
+    console.log("============ Construct UMA data ============");
+    const abiCoder = new ethers.AbiCoder();
+    const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, 0]);
+    console.log("data", data);
+    
+    console.log("============ Raise Dispute ============");
+    const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+    const txRaiseDispute = await expect(
+      this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
+    ).not.to.be.rejectedWith(Error);
+    console.log("Transaction sent! Hash:", txRaiseDispute.hash);
+    const receiptRaiseDispute = await txRaiseDispute.wait();
+    const disputeId = receiptRaiseDispute.logs[5].args[0];
+    console.log("disputeId", disputeId);
+    const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+    console.log("assertionId", assertionId);
+    
+    // Check the UMA event of raise dispute
+    const eventRaiseDispute = this.arbitrationPolicyUMA.interface.parseLog(receiptRaiseDispute.logs[4]);
+    console.log("eventRaiseDispute", eventRaiseDispute);
+    expect(eventRaiseDispute?.name).to.equal("DisputeRaisedUMA");
+    expect(eventRaiseDispute?.args?.disputeId).to.equal(disputeId);
+    expect(eventRaiseDispute?.args?.assertionId).to.equal(assertionId);
+
+    console.log("============ IPA Dispute Assertion ============");
+    const ipAccount = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId);
+    console.log("tokenId:", tokenId, "ipId:", ipId, "ipAccount:", ipAccount);
+
+    const ipAccountContract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount);
+    const assertionData = this.arbitrationPolicyUMA.interface.encodeFunctionData("disputeAssertion", [assertionId, encodeBytes32String("COUNTER_EVIDENCE_HASH")]);
+    console.log("assertionData", assertionData);
+    const toAddress = await this.arbitrationPolicyUMA.getAddress();
+    console.log("toAddress", toAddress);
+    const txAssertion =await expect(
+      ipAccountContract.execute(toAddress, 0, assertionData)
+    ).not.to.be.rejectedWith(Error);
+    console.log("Transaction sent! Hash:", txAssertion.hash);
+
+    // Check the UMA event of dispute assertion 
+    const receiptAssertion = await txAssertion.wait();
+    const eventAssertion = this.arbitrationPolicyUMA.interface.parseLog(receiptAssertion.logs[5]);
+    console.log("eventAssertion", eventAssertion);
+    expect(eventAssertion?.name).to.equal("AssertionDisputed");
+    expect(eventAssertion?.args?.disputeId).to.equal(disputeId);
+    expect(eventAssertion?.args?.assertionId).to.equal(assertionId);
   });
 
   describe("Dispute negative operations", function () {

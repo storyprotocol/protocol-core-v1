@@ -212,50 +212,26 @@ contract DisputeModule is
         bytes32 targetTag,
         bytes calldata data
     ) external nonReentrant whenNotPaused returns (uint256) {
-        if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
-        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
-        if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
-        if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
-        if ($.isUsedEvidenceHash[disputeEvidenceHash]) revert Errors.DisputeModule__EvidenceHashAlreadyUsed();
+        return _raiseDispute(targetIpId, msg.sender, disputeEvidenceHash, targetTag, data);
+    }
 
-        address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
-        uint256 disputeId = ++$.disputeCounter;
-        uint256 disputeTimestamp = block.timestamp;
-
-        $.disputes[disputeId] = Dispute({
-            targetIpId: targetIpId,
-            disputeInitiator: msg.sender,
-            disputeTimestamp: disputeTimestamp,
-            arbitrationPolicy: arbitrationPolicy,
-            disputeEvidenceHash: disputeEvidenceHash,
-            targetTag: targetTag,
-            currentTag: IN_DISPUTE,
-            infringerDisputeId: 0
-        });
-
-        $.isUsedEvidenceHash[disputeEvidenceHash] = true;
-
-        IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(
-            msg.sender,
-            targetIpId,
-            disputeEvidenceHash,
-            targetTag,
-            disputeId,
-            data
-        );
-
-        emit DisputeRaised(
-            disputeId,
-            targetIpId,
-            msg.sender,
-            disputeTimestamp,
-            arbitrationPolicy,
-            disputeEvidenceHash,
-            targetTag,
-            data
-        );
-
-        return disputeId;
+    /// @notice Raises a dispute on a given ipId on behalf of a given address
+    /// The dispute initiator address will receive the bond winnings in case of winning the dispute
+    /// and also has the right to resolve the dispute
+    /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
+    /// @param targetTag The target tag of the dispute
+    /// @param data The data to initialize the policy
+    /// @return disputeId The id of the newly raised dispute
+    function raiseDisputeOnBehalf(
+        address targetIpId,
+        address disputeInitiator,
+        bytes32 disputeEvidenceHash,
+        bytes32 targetTag,
+        bytes calldata data
+    ) external nonReentrant whenNotPaused returns (uint256) {
+        return _raiseDispute(targetIpId, disputeInitiator, disputeEvidenceHash, targetTag, data);
     }
 
     /// @notice Sets the dispute judgement on a given dispute. Only whitelisted arbitration relayers can call to judge.
@@ -488,6 +464,70 @@ contract DisputeModule is
     /// @param ipId The ipId
     function nextArbitrationUpdateTimestamps(address ipId) external view returns (uint256 timestamp) {
         return _getDisputeModuleStorage().nextArbitrationUpdateTimestamps[ipId];
+    }
+
+    /// @notice Raises a dispute on a given ipId
+    /// @param targetIpId The ipId that is the target of the dispute
+    /// @param disputeInitiator The address of the dispute initiator
+    /// @param disputeEvidenceHash The hash pointing to the dispute evidence
+    /// @param targetTag The target tag of the dispute
+    /// @param data The data to initialize the policy
+    /// @return disputeId The id of the newly raised dispute
+    function _raiseDispute(
+        address targetIpId,
+        address disputeInitiator,
+        bytes32 disputeEvidenceHash,
+        bytes32 targetTag,
+        bytes calldata data
+    ) internal returns (uint256) {
+        DisputeModuleStorage storage $ = _getDisputeModuleStorage();
+        if (!IP_ASSET_REGISTRY.isRegistered(targetIpId)) revert Errors.DisputeModule__NotRegisteredIpId();
+        if (!$.isWhitelistedDisputeTag[targetTag]) revert Errors.DisputeModule__NotWhitelistedDisputeTag();
+        if (disputeEvidenceHash == bytes32(0)) revert Errors.DisputeModule__ZeroDisputeEvidenceHash();
+        if ($.isUsedEvidenceHash[disputeEvidenceHash]) revert Errors.DisputeModule__EvidenceHashAlreadyUsed();
+        if (disputeInitiator == address(0) || disputeInitiator == targetIpId)
+            revert Errors.DisputeModule__InvalidDisputeInitiator();
+
+        address arbitrationPolicy = _updateActiveArbitrationPolicy(targetIpId);
+        uint256 disputeId = ++$.disputeCounter;
+        uint256 disputeTimestamp = block.timestamp;
+
+        $.disputes[disputeId] = Dispute({
+            targetIpId: targetIpId,
+            disputeInitiator: disputeInitiator,
+            disputeTimestamp: disputeTimestamp,
+            arbitrationPolicy: arbitrationPolicy,
+            disputeEvidenceHash: disputeEvidenceHash,
+            targetTag: targetTag,
+            currentTag: IN_DISPUTE,
+            infringerDisputeId: 0
+        });
+
+        $.isUsedEvidenceHash[disputeEvidenceHash] = true;
+
+        IArbitrationPolicy(arbitrationPolicy).onRaiseDispute(
+            msg.sender,
+            disputeInitiator,
+            targetIpId,
+            disputeEvidenceHash,
+            targetTag,
+            disputeId,
+            data
+        );
+
+        emit DisputeRaised(
+            disputeId,
+            targetIpId,
+            msg.sender,
+            disputeInitiator,
+            disputeTimestamp,
+            arbitrationPolicy,
+            disputeEvidenceHash,
+            targetTag,
+            data
+        );
+
+        return disputeId;
     }
 
     /// @notice Updates the active arbitration policy for a given ipId

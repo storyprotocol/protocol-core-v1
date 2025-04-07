@@ -142,4 +142,30 @@ describe("LicensingModule - License Template Tests", function () {
         this.licensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, termsId2)
     ).not.to.be.rejectedWith(Error);
   });
+
+  it("Should revert when minting license token and attach license terms with unregistered license template", async function () {
+    // Deploy license template
+    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("contracts/MockLicenseTemplate.sol:MockLicenseTemplate");
+    const pilTemplate2 = await MockLicenseTemplateFactory.deploy();
+    await pilTemplate2.waitForDeployment();
+    const pilTemplate2Address = await pilTemplate2.getAddress();
+    console.log("pilTemplate2", pilTemplate2Address);
+
+    // Register license terms
+    const tx = await pilTemplate2.registerLicenseTerms();
+    await tx.wait();
+    const termsCounter = await pilTemplate2.totalRegisteredLicenseTerms();
+    const termsId2 = termsCounter - BigInt(1);
+    console.log("termsId2", termsId2);
+
+    // Should revert when mint with unregistered license template
+    await expect(
+        this.licensingModule.mintLicenseTokens(ipId1, pilTemplate2Address, termsId2, 1, signers[1].address, hre.ethers.ZeroAddress, 0, 0)
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__LicenseTermsNotExists");
+
+    // Should revert when attach with unregistered license template
+    await expect(
+        this.licensingModule.attachLicenseTerms(ipId1, pilTemplate2Address, termsId2)
+    ).to.be.revertedWithCustomError(this.errors, "LicensingModule__LicenseTermsNotFound");
+  });
 }); 

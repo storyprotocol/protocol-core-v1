@@ -19,7 +19,8 @@
         "solhint": "solhint '{contracts,test}/**/*.sol'",
         "test": "npx hardhat test",
         "prepare": "husky install",
-        "docgen": "hardhat docgen"
+        "docgen": "hardhat docgen",
+        "prepare:test": "ts-node script/hardhat/prepare-test.ts && npx hardhat compile"
     },
     "devDependencies": {
         "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",

@@ -20,7 +20,7 @@ describe("LicensingModule - License Template Tests", function () {
     ipId1 = result1.ipId;
   });
 
-  it.only("Should revert when minting license token with different template from existing", async function () {
+  it("Should revert when minting license token with different template from existing", async function () {
     // Register first license terms
     const termsId1 = await registerPILTerms(true, 0, 10, RoyaltyPolicyLRP);
     console.log("termsId1", termsId1);

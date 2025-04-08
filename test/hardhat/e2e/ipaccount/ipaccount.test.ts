@@ -12,7 +12,7 @@ import { mintNFT } from "../utils/nftHelper";
  * 1. State updates when IP assets are modified
  * 2. ERC1271 signature validation functionality
  */
-describe.only("IPAccount", function () {
+describe("IPAccount", function () {
   /**
    * This test verifies that the IPAccount's state (nonce) is properly updated
    * when various operations are performed on the IP asset, including:

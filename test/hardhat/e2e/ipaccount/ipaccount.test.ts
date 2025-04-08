@@ -5,7 +5,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
 import { AccessController, LicensingModule, MockERC721, PILicenseTemplate } from "../constants";
-import { mintNFT } from "../utils/nftHelper";
+import { mintNFT, sleep } from "../utils/nftHelper";
 
 /**
  * This test suite verifies the behavior of IPAccount contract, specifically focusing on:
@@ -261,6 +261,8 @@ describe("IPAccount", function () {
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
+    await sleep(20);
+
     await expect(
       ipAccount1Contract.execute(
         AccessController, 
@@ -294,6 +296,8 @@ describe("IPAccount", function () {
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
+
+    await sleep(20);
 
     await expect(
       ipAccount1Contract.execute(

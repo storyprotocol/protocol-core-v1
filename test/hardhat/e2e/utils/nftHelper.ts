@@ -33,3 +33,7 @@ export async function mintNFT(singer?: ethers.Wallet, toAddress?: string, nonce?
 
   return tokenId
 }
+
+export function sleep(s: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, s * 1000));
+}

@@ -254,8 +254,8 @@ describe("IPAccount", function () {
 
     console.log("============ Register IP Account 2 (Nested IP Account) ============");
     const signers = await hre.ethers.getSigners(); 
-    const tokenId2 = await mintNFT(this.user1, ipId1);
-    const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
+    const tokenId2 = await mintNFT(this.user1, ipAccount1);
+    const connectedRegistry = await this.ipAssetRegistry.connect(signers[1]);
     const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
@@ -289,7 +289,7 @@ describe("IPAccount", function () {
     console.log("============ Register IP Account 2 (Nested IP Account) ============");
     const signers = await hre.ethers.getSigners(); 
     const tokenId2 = await mintNFT(this.user1, ipAccount1);
-    const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
+    const connectedRegistry = await this.ipAssetRegistry.connect(signers[1]);
     const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
@@ -308,7 +308,7 @@ describe("IPAccount", function () {
               "setPermission",
               [
                 ipAccount2,
-                ipId1,
+                ipAccount1,
                 LicensingModule,
                 this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
                 1

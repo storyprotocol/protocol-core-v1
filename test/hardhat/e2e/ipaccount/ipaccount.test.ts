@@ -245,7 +245,7 @@ describe("IPAccount", function () {
     ).to.be.revertedWithCustomError(this.errors, "AccessController__CallerIsNotIPAccountOrOwner");
   });
 
-  it.only("Set permission fail as OwnerIsIPAccount - IPAccountCannotSetPermissionForNestedIpAccount", async function () {
+  it("Set permission fail as OwnerIsIPAccount - IPAccountCannotSetPermissionForNestedIpAccount", async function () {
     console.log("============ Register IP Account 1 ============");
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.owner);
@@ -260,8 +260,6 @@ describe("IPAccount", function () {
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
-
-    // await sleep(20);
 
     await expect(
       ipAccount1Contract.execute(
@@ -281,7 +279,7 @@ describe("IPAccount", function () {
     ).to.be.revertedWithCustomError(this.errors, "AccessController__OwnerIsIPAccount");
   });
 
-  it.only("Set permission fail as OwnerIsIPAccount - NestedIpAccountCannotSetPermission", async function () {
+  it("Set permission fail as OwnerIsIPAccount - NestedIpAccountCannotSetPermission", async function () {
     console.log("============ Register IP Account 1 ============");
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1);
@@ -296,8 +294,6 @@ describe("IPAccount", function () {
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
-
-    // await sleep(20);
 
     await expect(
       ipAccount1Contract.execute(

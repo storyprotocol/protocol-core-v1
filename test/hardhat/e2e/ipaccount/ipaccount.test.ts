@@ -5,6 +5,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
 import { AccessController, LicensingModule, MockERC721, PILicenseTemplate } from "../constants";
+import { mintNFT } from "../utils/nftHelper";
 
 describe("IPAccount", function () {
   it("Update nonce state of IPAsset on asset changes", async function () {
@@ -56,14 +57,43 @@ describe("IPAccount", function () {
     expect(stateAfterMint).to.not.equal(stateAfterLicense);
   });
 
-  it("Set permission fail as CallerIsNotIPAccountOrOwner", async function () {
-    console.log("============ Register IP Account 1 ============");
-    const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.owner);
+  it("IP Owner execute AccessController module", async function () {
+    console.log("============ Register IP Account ============");
+    const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
+    console.log("IPAccount1: ", ipAccount1);
+    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
 
-    console.log("============ Register IP Account 2 ============");
-    const { tokenId: tokenId2, ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
-    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId2, this.user1);
+    await expect(
+      this.ipAccount1Contract.execute(
+        AccessController, 
+        0,
+        this.accessController.interface.encodeFunctionData(
+          "setPermission",
+          [
+            ipAccount1,
+            ipAccount1,
+            LicensingModule,
+            this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
+            1
+          ]
+        )
+      )
+    ).not.to.be.rejectedWith(Error);
+  });
+
+  it("Non-IP Owner execute AccessController module", async function () {
+    console.log("============ Register IP Account1 ============");
+    const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
+    console.log("IPAccount1: ", ipAccount1);
+    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
+
+    console.log("============ Register IP Account1 ============");
+    const { tokenId: tokenId2, ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user2, this.user2);
+    const ipAccount2 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId2, this.user2);
+    console.log("IPAccount2: ", ipAccount1);
+    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user2);
 
     await expect(
       this.ipAccount2Contract.execute(
@@ -72,8 +102,8 @@ describe("IPAccount", function () {
         this.accessController.interface.encodeFunctionData(
           "setPermission",
           [
-            ipId1,
-            ipId2,
+            ipAccount1,
+            ipAccount1,
             LicensingModule,
             this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
             1
@@ -83,18 +113,59 @@ describe("IPAccount", function () {
     ).to.be.revertedWithCustomError(this.errors, "AccessController__CallerIsNotIPAccountOrOwner");
   });
 
-  it("Set permission fail as OwnerIsIPAccount", async function () {
+  it("Set permission fail as OwnerIsIPAccount - IPAccountCannotSetPermissionForNestedIpAccount", async function () {
     console.log("============ Register IP Account 1 ============");
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.owner);
+    const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.owner);
+    console.log("IPAccount1: ", ipAccount1);
+    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
 
-    console.log("============ Register IP Account 2 ============");
-    const { tokenId: tokenId2, ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
-    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId2, this.user1);
+    console.log("============ Register IP Account 2 (Nested IP Account) ============");
+    const signers = await hre.ethers.getSigners(); 
+    const tokenId2 = await mintNFT(this.user1, ipId1);
+    const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
+    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
+    const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
+    console.log("IPAccount2: ", ipAccount2);
+    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
     await expect(
-      this.ipAccount2Contract.execute(
-        ipId1, 
+      this.ipAccount1Contract.execute(
+        AccessController, 
+        0,
+        this.accessController.interface.encodeFunctionData(
+          "setPermission",
+          [
+            ipAccount2,
+            ipAccount1,
+            LicensingModule,
+            this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
+            1
+          ]
+        )
+      )
+    ).to.be.revertedWithCustomError(this.errors, "AccessController__OwnerIsIPAccount");
+  });
+
+  it("Set permission fail as OwnerIsIPAccount - NestedIpAccountCannotSetPermission", async function () {
+    console.log("============ Register IP Account 1 ============");
+    const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
+    const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1);
+    console.log("IPAccount1: ", ipAccount1);
+    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
+
+    console.log("============ Register IP Account 2 (Nested IP Account) ============");
+    const signers = await hre.ethers.getSigners(); 
+    const tokenId2 = await mintNFT(this.user1, ipAccount1);
+    const connectedRegistry = this.ipAssetRegistry.connect(signers[1]);
+    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
+    const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
+    console.log("IPAccount2: ", ipAccount2);
+    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
+
+    await expect(
+      this.ipAccount1Contract.execute(
+        ipAccount2, 
         0,
         this.ipAccount1Contract.interface.encodeFunctionData(
           "execute(address,uint256,bytes)",
@@ -104,8 +175,8 @@ describe("IPAccount", function () {
             this.accessController.interface.encodeFunctionData(
               "setPermission",
               [
+                ipAccount2,
                 ipId1,
-                ipId2,
                 LicensingModule,
                 this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
                 1

@@ -264,6 +264,8 @@ jobs:
 
       - name: Run test
         run: |
+          yarn prepare:test
+          # run test
           npx hardhat test test/hardhat/e2e/**/*.ts --network internal_devnet
 
       - name: Upload Test Report

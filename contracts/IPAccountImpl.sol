@@ -255,7 +255,7 @@ contract IPAccountImpl is ERC6551, IPAccountStorage, IIPAccount {
 
     /// @dev Override Solady 6551 _isValidSigner function.
     /// @param signer The signer to check
-    /// @param extraData The extra data to check against, it should bethe address of the recipient for IPAccount
+    /// @param extraData The extra data to check against, it should be the address of the recipient for IPAccount
     /// @param context The context for validating the signer
     /// @return bool is true if the signer is valid, false otherwise
     function _isValidSigner(

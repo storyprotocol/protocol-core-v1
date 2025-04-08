@@ -256,12 +256,12 @@ describe("IPAccount", function () {
     const signers = await hre.ethers.getSigners(); 
     const tokenId2 = await mintNFT(this.user1, ipAccount1);
     const connectedRegistry = await this.ipAssetRegistry.connect(signers[1]);
-    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
+    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1).then((tx: any) => tx.wait());
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
-    await sleep(20);
+    // await sleep(20);
 
     await expect(
       ipAccount1Contract.execute(
@@ -292,12 +292,12 @@ describe("IPAccount", function () {
     const signers = await hre.ethers.getSigners(); 
     const tokenId2 = await mintNFT(this.user1, ipAccount1);
     const connectedRegistry = await this.ipAssetRegistry.connect(signers[1]);
-    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
+    const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1).then((tx: any) => tx.wait());
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
     const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
-    await sleep(20);
+    // await sleep(20);
 
     await expect(
       ipAccount1Contract.execute(

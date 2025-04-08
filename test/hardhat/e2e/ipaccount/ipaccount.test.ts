@@ -5,7 +5,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
 import { AccessController, LicensingModule, MockERC721, PILicenseTemplate } from "../constants";
-import { mintNFT, sleep } from "../utils/nftHelper";
+import { mintNFT } from "../utils/nftHelper";
 
 /**
  * This test suite verifies the behavior of IPAccount contract, specifically focusing on:

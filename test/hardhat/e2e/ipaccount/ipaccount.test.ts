@@ -12,7 +12,7 @@ import { mintNFT } from "../utils/nftHelper";
  * 1. State updates when IP assets are modified
  * 2. ERC1271 signature validation functionality
  */
-describe("IPAccount", function () {
+describe.only("IPAccount", function () {
   /**
    * This test verifies that the IPAccount's state (nonce) is properly updated
    * when various operations are performed on the IP asset, including:
@@ -194,10 +194,10 @@ describe("IPAccount", function () {
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
     console.log("IPAccount1: ", ipAccount1);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
+    const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
 
     await expect(
-      this.ipAccount1Contract.execute(
+      ipAccount1Contract.execute(
         AccessController, 
         0,
         this.accessController.interface.encodeFunctionData(
@@ -219,16 +219,16 @@ describe("IPAccount", function () {
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
     console.log("IPAccount1: ", ipAccount1);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
+    const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
 
     console.log("============ Register IP Account1 ============");
     const { tokenId: tokenId2, ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user2, this.user2);
     const ipAccount2 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId2, this.user2);
     console.log("IPAccount2: ", ipAccount1);
-    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user2);
+    const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user2);
 
     await expect(
-      this.ipAccount2Contract.execute(
+      ipAccount2Contract.execute(
         AccessController, 
         0,
         this.accessController.interface.encodeFunctionData(
@@ -250,7 +250,7 @@ describe("IPAccount", function () {
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.owner);
     console.log("IPAccount1: ", ipAccount1);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
+    const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
 
     console.log("============ Register IP Account 2 (Nested IP Account) ============");
     const signers = await hre.ethers.getSigners(); 
@@ -259,10 +259,10 @@ describe("IPAccount", function () {
     const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
-    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
+    const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
     await expect(
-      this.ipAccount1Contract.execute(
+      ipAccount1Contract.execute(
         AccessController, 
         0,
         this.accessController.interface.encodeFunctionData(
@@ -284,7 +284,7 @@ describe("IPAccount", function () {
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.owner, this.owner);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1);
     console.log("IPAccount1: ", ipAccount1);
-    this.ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
+    const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount1, this.owner);
 
     console.log("============ Register IP Account 2 (Nested IP Account) ============");
     const signers = await hre.ethers.getSigners(); 
@@ -293,13 +293,13 @@ describe("IPAccount", function () {
     const ipId2 = await connectedRegistry.register(this.chainId, MockERC721, tokenId2, this.user1);
     const ipAccount2 = await connectedRegistry.ipAccount(this.chainId, MockERC721, tokenId2);
     console.log("IPAccount2: ", ipAccount2);
-    this.ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
+    const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user1);
 
     await expect(
-      this.ipAccount1Contract.execute(
+      ipAccount1Contract.execute(
         ipAccount2, 
         0,
-        this.ipAccount1Contract.interface.encodeFunctionData(
+        ipAccount1Contract.interface.encodeFunctionData(
           "execute(address,uint256,bytes)",
           [
             AccessController,

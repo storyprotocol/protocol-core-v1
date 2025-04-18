@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  pull-requests: read
+  contents: read
+
+env:
+  SENDER_ADDRESS: ${{ secrets.SENDER_ADDRESS }}
+  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+
+  # Add a timestamp to the build
+  Timestamp:
+    uses: storyprotocol/gha-workflows/.github/workflows/reusable-timestamp.yml@main
+
+  foundry-test:
+    strategy:
+      fail-fast: true
+    name: Foundry Run Script
+    runs-on: ubuntu-latest
+    needs: [Timestamp]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      
+      - name: Debug Labels
+        run: |
+          echo "PR Labels: ${{ toJSON(github.event.pull_request.labels.*.name) }}"
+      
+      - name: Extract script name
+        id: script
+        run: |
+          SCRIPT_NAME=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'script:\s*\K[^\s]+' || echo "")
+          if [ -z "$SCRIPT_NAME" ]; then
+            echo "No script name found in PR description. Please add 'script: YourScript.s.sol:ScriptContract' to the PR description."
+            exit 1
+          fi
+          echo "name=$SCRIPT_NAME" >> $GITHUB_OUTPUT
+
+      - name: Run Forge build
+        run: |
+          forge build --force --sizes --skip test
+        id: build
+
+      - name: Run Script (Aeneid)
+        if: contains(github.event.pull_request.labels.*.name, 'aeneid')
+        run: |
+          forge script ${{ steps.script.outputs.name }} --rpc-url https://aeneid.storyrpc.io --broadcast --sender ${SENDER_ADDRESS} --private-key ${PRIVATE_KEY} --priority-gas-price 1 --legacy -vvvv
+      
+      - name: Run Script (Mainnet)
+        if: contains(github.event.pull_request.labels.*.name, 'mainnet')
+        run: |
+          forge script ${{ steps.script.outputs.name }} --rpc-url https://mainnet.storyrpc.io --broadcast --sender ${SENDER_ADDRESS} --private-key ${PRIVATE_KEY} --priority-gas-price 1 --legacy -vvvv

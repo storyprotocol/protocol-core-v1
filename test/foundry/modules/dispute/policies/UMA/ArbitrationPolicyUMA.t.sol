@@ -235,7 +235,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_NotDisputeModule() public {
         vm.expectRevert(Errors.ArbitrationPolicyUMA__NotDisputeModule.selector);
-        arbitrationPolicyUMA.onRaiseDispute(address(1), address(1), bytes32(0), bytes32(0), 1, bytes(""));
+        arbitrationPolicyUMA.onRaiseDispute(address(1), address(1), address(1), bytes32(0), bytes32(0), 1, bytes(""));
     }
 
     function test_ArbitrationPolicyUMA_onRaiseDispute_revert_BondAboveMax() public {
@@ -311,6 +311,43 @@ contract ArbitrationPolicyUMATest is BaseTest {
         disputeModule.raiseDispute(randomIpId, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", data);
 
         uint256 raiserBalAfter = currency.balanceOf(address(2));
+        uint256 oov3BalAfter = currency.balanceOf(address(newOOV3));
+
+        assertEq(raiserBalBefore - raiserBalAfter, bond);
+        assertEq(oov3BalAfter - oov3BalBefore, bond);
+
+        uint256 disputeId = disputeModule.disputeCounter();
+        bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+
+        assertFalse(arbitrationPolicyUMA.disputeIdToAssertionId(disputeId) == bytes32(0));
+        assertEq(arbitrationPolicyUMA.assertionIdToDisputeId(assertionId), disputeId);
+    }
+
+    function test_ArbitrationPolicyUMA_onRaiseDispute_WithBondAndCallerDifferentFromDisputeInitiator() public {
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(wip);
+        uint256 bond = disputeBond;
+
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        address caller = address(10);
+        vm.startPrank(caller);
+        vm.deal(caller, disputeBond);
+        IWIP(wip).deposit{ value: disputeBond }();
+        IERC20(wip).approve(address(arbitrationPolicyUMA), disputeBond);
+
+        uint256 raiserBalBefore = currency.balanceOf(caller);
+        uint256 oov3BalBefore = currency.balanceOf(address(newOOV3));
+
+        disputeModule.raiseDisputeOnBehalf(
+            randomIpId,
+            disputeInitiator,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            data
+        );
+
+        uint256 raiserBalAfter = currency.balanceOf(caller);
         uint256 oov3BalAfter = currency.balanceOf(address(newOOV3));
 
         assertEq(raiserBalBefore - raiserBalAfter, bond);
@@ -423,6 +460,51 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
         assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
         assertEq(disputerBalAfter - disputerBalBefore, bond);
+    }
+
+    // solhint-disable-next-line max-line-length
+    function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithoutDisputeWithBondAndCallerDifferentFromDisputeInitiator()
+        public
+    {
+        uint64 liveness = 3600 * 24 * 30;
+        IERC20 currency = IERC20(wip);
+        uint256 bond = disputeBond;
+        bytes memory data = abi.encode(liveness, currency, bond);
+
+        address caller = address(10);
+        vm.startPrank(caller);
+        vm.deal(caller, disputeBond);
+        IWIP(wip).deposit{ value: disputeBond }();
+        IERC20(wip).approve(address(arbitrationPolicyUMA), disputeBond);
+
+        uint256 disputeId = disputeModule.raiseDisputeOnBehalf(
+            randomIpId,
+            disputeInitiator,
+            disputeEvidenceHashExample,
+            "IMPROPER_REGISTRATION",
+            data
+        );
+
+        // wait for assertion to expire
+        vm.warp(block.timestamp + liveness + 1);
+
+        (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(disputeId);
+
+        uint256 disputerBalBefore = currency.balanceOf(disputeInitiator);
+        uint256 callerBalBefore = currency.balanceOf(caller);
+
+        // settle the assertion
+        bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+        IOOV3(newOOV3).settleAssertion(assertionId);
+
+        uint256 disputerBalAfter = currency.balanceOf(disputeInitiator);
+        uint256 callerBalAfter = currency.balanceOf(caller);
+        (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(disputeId);
+
+        assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
+        assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
+        assertEq(disputerBalAfter - disputerBalBefore, bond);
+        assertEq(callerBalAfter - callerBalBefore, 0);
     }
 
     function test_ArbitrationPolicyUMA_onDisputeJudgement_AssertionWithDispute() public {

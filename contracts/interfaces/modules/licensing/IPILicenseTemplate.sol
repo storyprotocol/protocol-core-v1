@@ -12,7 +12,7 @@ import { ILicenseTemplate } from "../../../interfaces/modules/licensing/ILicense
 /// @param commercialUse Indicates whether the work can be used commercially or not.
 /// @param commercialAttribution whether attribution is required when reproducing the work commercially or not.
 /// @param commercializerChecker commercializers that are allowed to commercially exploit the work. If zero address,
-/// then no restrictions is enforced.
+/// then no restrictions are enforced.
 /// @param commercializerCheckerData The data to be passed to the commercializer checker contract.
 /// @param commercialRevShare Percentage of revenue that must be shared with the licensor.
 /// @param commercialRevCeiling The maximum revenue that can be generated from the commercial use of the work.

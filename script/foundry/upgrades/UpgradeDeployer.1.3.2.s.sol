@@ -129,6 +129,9 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
      *      and remove the rest.
      */
     function deploy() public returns (UpgradeProposal[] memory) {
+        string memory buildInfoPath = string.concat("prev-build-infos/", PREV_VERSION, "-build-info.json");
+        _validate(buildInfoPath);
+
         string memory contractKey;
         address impl;
 

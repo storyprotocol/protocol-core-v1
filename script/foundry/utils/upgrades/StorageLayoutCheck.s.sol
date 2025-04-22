@@ -20,12 +20,12 @@ contract StorageLayoutChecker is Script {
 
     using strings for *;
 
-
     /// @notice Runs the storage layout check
     /// @dev For simplicity and efficiency, we check all the upgradeablecontracts in the project
     /// instead of going 1 by 1 using ffi.
-    function _validate() internal {
-        string[] memory inputs = _buildValidateCommand();
+    /// @param referenceBuildInfoDir The path to the reference build info directory
+    function _validate(string memory referenceBuildInfoDir) internal {
+        string[] memory inputs = _buildValidateCommand(referenceBuildInfoDir);
         Vm.FfiResult memory result = Utils.runAsBashCommand(inputs);
         string memory stdout = string(result.stdout);
 
@@ -42,17 +42,19 @@ contract StorageLayoutChecker is Script {
         }
     }
 
-    function _buildValidateCommand() private view returns (string[] memory) {
+    function _buildValidateCommand(string memory referenceBuildInfoDir) private view returns (string[] memory) {
         string memory outDir = "out";
 
         string[] memory inputBuilder = new string[](255);
 
         uint8 i = 0;
-        // npx @openzeppelin/upgrades-core validate <build-info-dir> --requireReference
+        // npx @openzeppelin/upgrades-core validate <build-info-dir> --reference-build-info-dirs <reference-dir>
         inputBuilder[i++] = "npx";
         inputBuilder[i++] = string.concat("@openzeppelin/upgrades-core");
         inputBuilder[i++] = "validate";
         inputBuilder[i++] = string.concat(outDir, "/build-info");
+        inputBuilder[i++] = "--reference-build-info-dirs";
+        inputBuilder[i++] = referenceBuildInfoDir;
 
         // Create a copy of inputs but with the correct length
         string[] memory inputs = new string[](i);

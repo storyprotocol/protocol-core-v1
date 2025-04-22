@@ -13,9 +13,10 @@ fs_permissions = [
     { access = 'read', path = './out' },
 ]
 ##### Uncomment if running storage layout verification
-# ffi = true
-# ast = true
-# build_info = true
+## TODO: study having this in a different profile instead of commenting/uncommenting
+ffi = true
+ast = true
+build_info = true
 extra_output = ["storageLayout"]
 evm_version = "cancun"
 

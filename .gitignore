@@ -33,3 +33,5 @@ lcov.info
 # test
 mochawesome-report
 
+# build-info
+prev-build-infos/*

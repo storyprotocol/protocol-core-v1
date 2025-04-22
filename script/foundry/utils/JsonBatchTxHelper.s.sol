@@ -16,6 +16,7 @@ contract JsonBatchTxHelper is Script {
         uint256 value;
         bytes data;
         uint8 operation;
+        string comment; // Useful for MPCVault
     }
 
     Transaction[] private transactions;
@@ -25,18 +26,20 @@ contract JsonBatchTxHelper is Script {
         chainId = (block.chainid).toString();
     }
 
-    function _writeTx(address _to, uint256 _value, bytes memory _data) internal {
+    function _writeTx(address _to, uint256 _value, bytes memory _data, string memory _comment) internal {
         transactions.push(Transaction({
             to: _to,
             value: _value,
             data: _data,
-            operation: 0
+            operation: 0,
+            comment: _comment
         }));
         console2.log("Added tx to ", _to);
         console2.log("Value: ", _value);
         console2.log("Data: ");
         console2.logBytes(_data);
         console2.log("Operation: 0");
+        console2.log("Comment: ", _comment);
     }
 
     function _writeBatchTxsOutput(string memory _action) internal {
@@ -49,8 +52,8 @@ contract JsonBatchTxHelper is Script {
             json = string(abi.encodePacked(json, '"to":"', vm.toString(transactions[i].to), '",'));
             json = string(abi.encodePacked(json, '"value":', vm.toString(transactions[i].value), ','));
             json = string(abi.encodePacked(json, '"data":"', vm.toString(transactions[i].data), '",'));
-            json = string(abi.encodePacked(json, '"operation":', vm.toString(transactions[i].operation)));
-            json = string(abi.encodePacked(json, "}"));
+            json = string(abi.encodePacked(json, '"operation":', vm.toString(transactions[i].operation), ','));
+            json = string(abi.encodePacked(json, '"comment":"', transactions[i].comment, '"}'));
         }
         json = string(abi.encodePacked(json, "]"));
 

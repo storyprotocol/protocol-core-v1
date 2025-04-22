@@ -7,6 +7,7 @@ import { Script } from "forge-std/Script.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import { AccessManaged } from "@openzeppelin/contracts/access/manager/AccessManaged.sol";
+import { Multicall } from "@openzeppelin/contracts/utils/Multicall.sol";
 
 // contracts
 import { ProtocolAdmin } from "../../../../contracts/lib/ProtocolAdmin.sol";
@@ -40,7 +41,8 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     enum Output {
         TX_EXECUTION, // One Tx per operation
         BATCH_TX_EXECUTION, // Use AccessManager to batch actions in 1 tx through (multicall)
-        BATCH_TX_JSON // Prepare raw bytes for multisig. Multisig may batch txs (e.g. Gnosis Safe JSON input in tx builder)
+        TX_JSON, // Prepare an array of txs with raw encoded bytes data to be executed by a multisig. MPCVault won't batch with this, Safe would.
+        BATCH_TX_JSON // Prepare a tx with AccessManager.multicall() raw encoded bytes data to be executed by a multisig.
     }
 
     ///////// USER INPUT /////////
@@ -84,6 +86,7 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
     }
 
     function run() public virtual {
+        string memory action;
         // Read deployment file for proxy addresses
         _readDeployment(fromVersion); // JsonDeploymentHandler.s.sol
         // Load AccessManager
@@ -92,37 +95,32 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
         // Read upgrade proposals file
         _readProposalFile(fromVersion, toVersion); // JsonDeploymentHandler.s.sol
         _beginBroadcast(); // BroadcastManager.s.sol
-        if (outputType == Output.BATCH_TX_JSON) {
+        if (outputType == Output.TX_JSON) {
             console2.log(multisig);
             deployer = multisig;
             console2.log("Generating tx json...");
         }
         // Decide actions based on mode
         if (mode == UpgradeModes.SCHEDULE) {
+            action = "schedule";
             _scheduleUpgrades();
         } else if (mode == UpgradeModes.EXECUTE) {
+            action = "execute";
             _executeUpgrades();
         } else if (mode == UpgradeModes.CANCEL) {
+            action = "cancel";
             _cancelScheduledUpgrades();
         } else {
             revert("Invalid mode");
         }
         // If output is JSON, write the batch txx to file
-        if (outputType == Output.BATCH_TX_JSON) {
-            string memory action;
-            if (mode == UpgradeModes.SCHEDULE) {
-                action = "schedule";
-            } else if (mode == UpgradeModes.EXECUTE) {
-                action = "execute";
-            } else if (mode == UpgradeModes.CANCEL) {
-                action = "cancel";
-            } else {
-                revert("Invalid mode");
-            }
+        if (outputType == Output.TX_JSON) {
             _writeBatchTxsOutput(string.concat(action, "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
         } else if (outputType == Output.BATCH_TX_EXECUTION) {
             // If output is BATCH_TX_EXECUTION, execute the batch txs
             _executeBatchTxs();
+        } else if (outputType == Output.BATCH_TX_JSON) {
+            _encodeBatchTxs(action);
         }
         // If output is TX_EXECUTION, no further action is needed
         _endBroadcast(); // BroadcastManager.s.sol
@@ -161,13 +159,12 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
             console2.log("Scheduled", nonce);
             console2.log("OperationId");
             console2.logBytes32(operationId);
-        } else if (outputType == Output.BATCH_TX_EXECUTION) {
+        } else if (outputType == Output.BATCH_TX_EXECUTION || outputType == Output.BATCH_TX_JSON) {
             console2.log("Adding tx to batch");
             multicallData.push(abi.encodeCall(AccessManager.schedule, (p.proxy, data, 0)));
             console2.logBytes(multicallData[multicallData.length - 1]);
-        } else if (outputType == Output.BATCH_TX_JSON) {
-            console2.log("------------ WARNING: NOT TESTED ------------");
-            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)));
+        } else if (outputType == Output.TX_JSON) {
+            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.schedule, (p.proxy, data, 0)), "schedule upgrade");
         } else {
             revert("Unsupported mode");
         }
@@ -199,12 +196,12 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
             console2.log("Execute upgrade tx");
             // We don't currently support reinitializer calls
             accessManager.execute(p.proxy, data);
-        } else if (outputType == Output.BATCH_TX_EXECUTION) {
+        } else if (outputType == Output.BATCH_TX_EXECUTION || outputType == Output.BATCH_TX_JSON) {
             console2.log("Adding execution tx to batch");
             multicallData.push(abi.encodeCall(AccessManager.execute, (p.proxy, data)));
             console2.logBytes(multicallData[multicallData.length - 1]);
-        } else if (outputType == Output.BATCH_TX_JSON) {
-            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)));
+        } else if (outputType == Output.TX_JSON) {
+            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)), "execute upgrade");
         } else {
             revert("Invalid output type");
         }
@@ -236,13 +233,13 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
             console2.logBytes(data);
             uint32 nonce = accessManager.cancel(deployer, p.proxy, data);
             console2.log("Cancelled", nonce);
-        } else if (outputType == Output.BATCH_TX_EXECUTION) {
+        } else if (outputType == Output.BATCH_TX_EXECUTION || outputType == Output.BATCH_TX_JSON) {
             console2.log("Adding cancel tx to batch");
             multicallData.push(abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)));
             console2.logBytes(multicallData[multicallData.length - 1]);
-        } else if (outputType == Output.BATCH_TX_JSON) {
+        } else if (outputType == Output.TX_JSON) {
             console2.log("------------ WARNING: NOT TESTED ------------");
-            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)));
+            _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)), "cancel upgrade");
         } else {
             revert("Unsupported mode");
         }
@@ -257,6 +254,14 @@ abstract contract UpgradeExecutor is Script, BroadcastManager, JsonDeploymentHan
             console2.log(i, ": ");
             console2.logBytes(results[i]);
         }
+    }
+
+    function _encodeBatchTxs(string memory action) internal {
+        bytes memory data = abi.encodeCall(Multicall.multicall, (multicallData));
+        console2.log("Encoding batch txs...");
+        _writeTx(address(accessManager), 0, data, string(abi.encodePacked("batch ", action, " ", fromVersion, " to ", toVersion)));
+        console2.log("Batch txs encoded");
+        _writeBatchTxsOutput(string.concat(action, "-", fromVersion, "-to-", toVersion));
     }
 
     function _getExecutionData(

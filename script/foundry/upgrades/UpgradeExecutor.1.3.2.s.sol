@@ -17,7 +17,7 @@ contract UpgradeExecutorExample is UpgradeExecutor {
         "v1.3.1", // From version (e.g. v1.2.3)
         "v1.3.2", // To version (e.g. v1.3.2)
         UpgradeModes.SCHEDULE, // Schedule, Cancel or Execute upgrade
-        Output.BATCH_TX_EXECUTION // Output mode
+        Output.BATCH_TX_JSON // Output mode
     ) {}
 
     /**

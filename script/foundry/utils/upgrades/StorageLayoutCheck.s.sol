@@ -23,9 +23,8 @@ contract StorageLayoutChecker is Script {
     /// @notice Runs the storage layout check
     /// @dev For simplicity and efficiency, we check all the upgradeablecontracts in the project
     /// instead of going 1 by 1 using ffi.
-    /// @param referenceBuildInfoDir The path to the reference build info directory
-    function _validate(string memory referenceBuildInfoDir) internal {
-        string[] memory inputs = _buildValidateCommand(referenceBuildInfoDir);
+    function _validate() internal {
+        string[] memory inputs = _buildValidateCommand();
         Vm.FfiResult memory result = Utils.runAsBashCommand(inputs);
         string memory stdout = string(result.stdout);
 

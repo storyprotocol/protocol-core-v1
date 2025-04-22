@@ -14,10 +14,10 @@ fs_permissions = [
 ]
 ##### Uncomment if running storage layout verification
 ## TODO: study having this in a different profile instead of commenting/uncommenting
-ffi = true
-ast = true
-build_info = true
-extra_output = ["storageLayout"]
+# ffi = true
+# ast = true
+# build_info = true
+# extra_output = ["storageLayout"]
 evm_version = "cancun"
 
 [rpc_endpoints]

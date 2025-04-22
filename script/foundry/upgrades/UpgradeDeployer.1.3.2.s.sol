@@ -129,7 +129,8 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
      *      and remove the rest.
      */
     function deploy() public returns (UpgradeProposal[] memory) {
-        _validate();
+        // Uncomment to validate storage layout
+        // _validate();
 
         string memory contractKey;
         address impl;

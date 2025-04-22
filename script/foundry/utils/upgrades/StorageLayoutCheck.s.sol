@@ -42,19 +42,21 @@ contract StorageLayoutChecker is Script {
         }
     }
 
-    function _buildValidateCommand(string memory referenceBuildInfoDir) private view returns (string[] memory) {
+    function _buildValidateCommand() private view returns (string[] memory) {
         string memory outDir = "out";
 
         string[] memory inputBuilder = new string[](255);
 
         uint8 i = 0;
-        // npx @openzeppelin/upgrades-core validate <build-info-dir> --reference-build-info-dirs <reference-dir>
+        // npx @openzeppelin/upgrades-core validate <build-info-dir> --referenceBuildInfoDirs prev-build-infos/ --exclude <glob-patterns>
         inputBuilder[i++] = "npx";
         inputBuilder[i++] = string.concat("@openzeppelin/upgrades-core");
         inputBuilder[i++] = "validate";
         inputBuilder[i++] = string.concat(outDir, "/build-info");
-        inputBuilder[i++] = "--reference-build-info-dirs";
-        inputBuilder[i++] = referenceBuildInfoDir;
+        inputBuilder[i++] = "--referenceBuildInfoDirs";
+        inputBuilder[i++] = "prev-build-infos/";
+        // inputBuilder[i++] = "--exclude";
+        // inputBuilder[i++] = "{script,test}/**/*.sol";
 
         // Create a copy of inputs but with the correct length
         string[] memory inputs = new string[](i);

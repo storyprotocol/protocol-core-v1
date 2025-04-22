@@ -20,6 +20,7 @@ contract MockAccessControllerV2 is AccessController {
         address moduleRegistry
     ) AccessController(ipAccountRegistry, moduleRegistry) {}
 
+    /// @custom:oz-upgrades-validate-as-initializer
     function initialize() public reinitializer(2) {
         _getAccessControllerV2Storage().newState = "initialized";
     }

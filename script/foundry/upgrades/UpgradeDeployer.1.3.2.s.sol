@@ -58,7 +58,7 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     uint256 internal create3SaltSeed = CREATE3_DEFAULT_SEED;
 
     string constant PREV_VERSION = "v1.3.1"; // e.g. v1.2.3
-    string constant PROPOSAL_VERSION = "v1.3.2"; // e.g. v1.3.2
+    string constant PROPOSAL_VERSION = "v1.3.2_2"; // e.g. v1.3.2
 
     address accessController;
     address licensingModule;

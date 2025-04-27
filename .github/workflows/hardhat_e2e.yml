@@ -204,7 +204,7 @@ jobs:
           source .env
 
           output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} \
-                  --broadcast --private-key ${{ secrets.STORY_DEPLOYER_PRIVATEKEY }} --priority-gas-price 1 \
+                  --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --priority-gas-price 1 \
                   --legacy --optimize)
           echo "$output"
 

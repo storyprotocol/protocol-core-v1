@@ -42,6 +42,17 @@ before(async function () {
   this.chainId = networkConfig.chainId;
   console.log("chainId: ", this.chainId);
 
+  console.log(`================= Whitelist Royalty Token =================`);
+  try {
+    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true).then((tx : any) => tx.wait());
+    console.log(`✅ whitelistRoyaltyToken successfully! `)
+  } catch (error: any) {
+    console.log(error);
+    console.error("❌ Transaction Reverted!");
+    console.error("🔴 Error Message:", error.message || "No error message");
+    console.error("📜 Error Data:", error.data || "No error data");
+  }
+
   console.log(`================= Register non-commercial PIL license terms =================`);
   await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
   this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);

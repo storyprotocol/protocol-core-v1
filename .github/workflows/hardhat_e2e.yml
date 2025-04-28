@@ -22,7 +22,7 @@ on:
         default: ''
         type: string
       oov3_address:
-        description: 'must provide when running e2e tests'
+        description: 'Optimistic Oracle V3 address'
         required: false
         default: ''
         type: string

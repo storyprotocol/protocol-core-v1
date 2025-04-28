@@ -99,11 +99,11 @@ export async function getAllowance(owner: string, spender: string, singer: ether
 
 export async function checkAndApproveSpender(owner: any, spender: any, amount: bigint) {
     console.log(`owner.address: ${owner.address}`);
-    console.log(`spender.address: ${spender.address}`);
+    console.log(`spender.address: ${spender}`);
     const currentAllowance = await getAllowance(owner.address, spender, owner);
     if (currentAllowance < amount) {
-        await mintAmount(owner.address, amount, owner);
-      //   await deposit(( amount - currentAllowance), owner);
+        // await mintAmount(owner.address, amount, owner);
+        await deposit(( amount - currentAllowance), owner);
         await approveSpender(spender, amount, owner);
     }
   };

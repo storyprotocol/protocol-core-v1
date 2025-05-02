@@ -279,6 +279,9 @@ contract LicensingModule is
         ) {
             revert Errors.LicensingModule__LicenseNotCompatibleForDerivative(childIpId);
         }
+        // If an IP has minted any license tokens, has derivative IPs or is a derivative itself, it cannot link to parents
+        // The check of whether an IP has derivative IPs or is a derivative itself is  in license registry registerDerivativeIp()
+        // The check of whether the child ip already minted license tokens is done in the line below
         if (LICENSE_NFT.getTotalTokensByLicensor(childIpId) != 0) {
             revert Errors.LicensingModule__DerivativeAlreadyHasBeenMintedLicenseTokens(childIpId);
         }

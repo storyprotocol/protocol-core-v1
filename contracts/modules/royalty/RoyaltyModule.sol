@@ -335,8 +335,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
             maxRts
         );
 
-        // transfers the royalty tokens to the royalty policies
-        // and distributes the remaining to the ipId address or group reward pool if the ipRoyaltyVault does not exist yet
+        // transfers the royalty tokens to the royalty policies and
+        // distributes the remaining to the ipId address or group reward pool if the ipRoyaltyVault does not exist yet
         _distributeRts(ipId, ipRoyaltyVault, totalRtsRequiredToLink, vaultExist);
 
         // for whitelisted policies calls onLinkToParents and calculates the global royalty stack

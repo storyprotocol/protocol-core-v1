@@ -611,8 +611,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     ) internal {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
-        // if the ipRoyaltyVault exists, then transfers the necessary royalty tokens from the ipId address to the royalty module
-        // if the ipRoyaltyVault does not exist yet, then 100% of the royalty tokens are already in the royalty module
+        // if the vault exists - transfers the necessary royalty tokens from the ipId address to royalty module
+        // if the vault does not exist - then 100% of the royalty tokens are already in the royalty module
         if (vaultExist) IERC20(ipRoyaltyVault).safeTransferFrom(ipId, address(this), totalRtsRequiredToLink);
 
         // transfers the royalty tokens to the royalty policies

@@ -173,9 +173,9 @@ contract LicenseToken is ILicenseToken, ERC721EnumerableUpgradeable, AccessManag
     {
         LicenseTokenStorage storage $ = _getLicenseTokenStorage();
 
-        // If an IP has minted any license tokens, has derivative IPs or is a derivative itself, it cannot link to parents
-        // The check of whether an IP has derivative IPs or is a derivative itself is  in license registry registerDerivativeIp()
-        // The check of whether the child ip already minted license tokens is done in the line below
+        // If an IP has minted license tokens, has derivative IPs or is a derivative itself, it cannot link to parents
+        // The check if an IP has derivatives or is a derivative itself is in license registry registerDerivativeIp()
+        // The check if the child ip already minted license tokens is done in the line below
         if ($.licensorIpTotalTokens[childIpId] != 0) {
             revert Errors.LicenseToken__ChildIPAlreadyHasBeenMintedLicenseTokens(childIpId);
         }

@@ -15,7 +15,7 @@ Story Proof-of-Creativity protocol brings programmability to IP. It transforms I
 
 A piece of Intellectual Property is represented as an [IP Asset](#ip-asset) and its associated [IP Account](#ip-account), a smart contract designed to serve as the core identity for each IP. We also have various [Modules](#modules) to add functionality to IP Assets, like creating derivatives of them, disputing IP, and automating revenue flow between them.
 
-![Story Proof-of-Creativity Architecture](./assets/story-poc-architecture.png)
+![Story Proof-of-Creativity Architecture](./assets/beta-architecture.png)
 
 ### IP Asset
 
@@ -40,7 +40,7 @@ Modules are customizable smart contracts that define and extend the functionalit
 
 We already have a few core modules:
 
-1. Licensing Module: create parent\<->child relationships between IPs, enabling derivatives of IPs that are restricted by the agreements in the license terms (must give attribution, share 10% revenue, etc)
+1. Licensing Module: create parent <-> child relationships between IPs, enabling derivatives of IPs that are restricted by the agreements in the license terms (must give attribution, share 10% revenue, etc)
 2. Royalty Module: automate revenue flow between IPs, abiding by the negotiated revenue sharing in license terms
 3. Dispute Module: facilitates the disputing and flagging of IP
 4. Grouping Module: allows for IPs to be grouped together

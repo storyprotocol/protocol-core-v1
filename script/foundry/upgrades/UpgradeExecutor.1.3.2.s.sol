@@ -14,8 +14,8 @@ import { UpgradeExecutor } from "../utils/upgrades/UpgradeExecutor.s.sol";
  */
 contract UpgradeExecutorExample is UpgradeExecutor {
     constructor() UpgradeExecutor(
-        "vx.x.x", // From version (e.g. v1.3.1)
-        "vx.x.x", // To version (e.g. v1.3.2)
+        "v1.3.1", // From version
+        "v1.3.2", // To version
         UpgradeModes.EXECUTE, // Schedule, Cancel or Execute upgrade
         Output.BATCH_TX_EXECUTION // Output mode
     ) {}

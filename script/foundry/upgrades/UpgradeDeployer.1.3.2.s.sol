@@ -57,7 +57,7 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     ICreate3Deployer internal immutable create3Deployer;
     uint256 internal create3SaltSeed = CREATE3_DEFAULT_SEED;
 
-    string constant PREV_VERSION = "v1.3.1"; // e.g. v1.3.1
+    string constant PREV_VERSION = "v1.3.1";
     string constant PROPOSAL_VERSION = "v1.3.2"; // e.g. v1.3.2
 
     address accessController;

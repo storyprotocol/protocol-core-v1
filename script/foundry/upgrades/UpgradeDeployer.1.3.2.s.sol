@@ -88,7 +88,6 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     }
 
     function run() public virtual {
-        // super.run();
         _readDeployment(PREV_VERSION); // JsonDeploymentHandler.s.sol
         // Load existing contracts
         licensingModule = _readAddress("LicensingModule");

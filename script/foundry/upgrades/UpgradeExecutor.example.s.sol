@@ -1,6 +1,6 @@
 /* solhint-disable no-console */
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.26;
 
 import { console2 } from "forge-std/console2.sol";
 import { TxGenerator } from "../utils/upgrades/TxGenerator.s.sol";

@@ -1,13 +1,13 @@
 {
     "name": "@story-protocol/protocol-core",
-    "version": "v1.1.0",
-    "description": "Story Protocol core smart contracts",
+    "version": "v1.3.2",
+    "description": "Story Proof-of-Creativity Core smart contracts",
     "main": "",
     "directories": {
         "lib": "lib",
         "test": "test"
     },
-    "author": "StoryProtocol",
+    "author": "PIP Labs",
     "license": "UNLICENSED",
     "scripts": {
         "lint": "npm run lint:js && npm run lint:sol",

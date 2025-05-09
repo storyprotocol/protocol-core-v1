@@ -152,7 +152,7 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
             adminActionDelay = 0;
         } else if (block.chainid == 1512) {
             // For devnet testing
-            upgraderExecDelay = 0;
+            upgraderExecDelay = 10 seconds;
             grantRoleDelay = 0;
             adminActionDelay = 0;
         } else {

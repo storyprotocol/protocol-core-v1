@@ -350,6 +350,9 @@ library Errors {
     /// @notice if a child IP is a derivative of a group IP, the child IP cannot have other parent IPs.
     error LicenseRegistry__GroupMustBeSoleParent(address childIpId, address groupId);
 
+    /// @notice The IP already has derivative IPs.
+    error LicenseRegistry__IpAlreadyHasDerivative(address ipId);
+
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////
@@ -791,6 +794,12 @@ library Errors {
 
     /// @notice The group pool is not whitelisted.
     error RoyaltyModule__GroupRewardPoolNotWhitelisted(address groupId, address rewardPool);
+
+    /// @notice The vault is already deployed.
+    error RoyaltyModule__VaultAlreadyDeployed();
+
+    /// @notice The IP ID is not registered.
+    error RoyaltyModule__IpIdNotRegistered();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //

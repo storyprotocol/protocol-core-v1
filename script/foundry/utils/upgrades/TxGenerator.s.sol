@@ -91,7 +91,6 @@ abstract contract TxGenerator is Script, BroadcastManager, JsonDeploymentHandler
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) revert("No data to schedule");
 
-        console2.log("------------ WARNING: NOT TESTED ------------");
         _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.schedule, (p.proxy, data, 0)));
         
         console2.log("--------------------");

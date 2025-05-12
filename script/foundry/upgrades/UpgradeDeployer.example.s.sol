@@ -42,7 +42,7 @@ import { StorageLayoutChecker } from "../utils/upgrades/StorageLayoutCheck.s.sol
  * @dev Script for deploying new implementation contracts during protocol upgrades.
  *      This deploys the upgraded implementations of core protocol contracts while maintaining
  *      existing proxy addresses. Each deployment generates upgrade proposals that can
- *      be executed via UpgradeExecutor to point the proxies to the new implementations.
+ *      be created via UpgradeTxGenerator to point the proxies to the new implementations.
  *
  *      To use run the script with the following command:
  *      forge script script/foundry/upgrades/UpgradeDeployer.example.s.sol:UpgradeDeployerExample --rpc-url=$RPC_URL --broadcast --priority-gas-price=1 --legacy --verify --verifier=blockscout --verifier-url=$VERIFIER_URL

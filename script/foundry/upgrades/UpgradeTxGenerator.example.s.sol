@@ -6,13 +6,13 @@ import { console2 } from "forge-std/console2.sol";
 import { TxGenerator } from "../utils/upgrades/TxGenerator.s.sol";
 
 /**
- * @title UpgradeExecutor
+ * @title UpgradeTxGenerator
  * @dev Script for scheduling, executing, or canceling upgrades for a set of contracts
  *
  *      To use run the script with the following command:
- *      forge script script/foundry/upgrades/UpgradeExecutor.example.s.sol:UpgradeExecutorExample --rpc-url=$RPC_URL --broadcast --priority-gas-price=1 --legacy --private-key=$PRIVATEKEY --skip-simulation
+ *      forge script script/foundry/upgrades/UpgradeTxGenerator.example.s.sol:UpgradeTxGeneratorExample --rpc-url=$RPC_URL --broadcast --priority-gas-price=1 --legacy --private-key=$PRIVATEKEY --skip-simulation
  */
-contract UpgradeExecutorExample is TxGenerator {
+contract UpgradeTxGeneratorExample is TxGenerator {
     constructor() TxGenerator(
         "vx.x.x", // From version (e.g. v1.2.3)
         "vx.x.x" // To version (e.g. v1.3.2)

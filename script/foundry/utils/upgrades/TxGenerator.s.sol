@@ -14,7 +14,6 @@ import { IIPAssetRegistry } from "../../../../contracts/interfaces/registries/II
 import { IVaultController } from "../../../../contracts/interfaces/modules/royalty/policies/IVaultController.sol";
 
 // script
-import { BroadcastManager } from "../BroadcastManager.s.sol";
 import { JsonDeploymentHandler } from "../JsonDeploymentHandler.s.sol";
 import { JsonBatchTxHelper } from "../JsonBatchTxHelper.s.sol";
 import { StringUtil } from "../StringUtil.sol";
@@ -27,7 +26,7 @@ import { StorageLayoutChecker } from "./StorageLayoutCheck.s.sol";
  * @notice Script to generate schedule, execute, or cancel txs for a set of contracts
  * @dev This script will read a deployment file and upgrade proposals file to generate schedule, execute, or cancel txs
  */
-abstract contract TxGenerator is Script, BroadcastManager, JsonDeploymentHandler, JsonBatchTxHelper {
+abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelper {
     address internal CREATE3_DEPLOYER = 0x9fBB3DF7C40Da2e5A0dE984fFE2CCB7C47cd0ABf;
 
     ICreate3Deployer internal immutable create3Deployer;
@@ -37,6 +36,8 @@ abstract contract TxGenerator is Script, BroadcastManager, JsonDeploymentHandler
     string fromVersion;
     /// @notice The version to upgrade to
     string toVersion;
+    /// @notice The deployer address
+    address public deployer;
 
     /// @dev check if the caller has the Upgrader role
     modifier onlyUpgraderRole() {
@@ -65,7 +66,9 @@ abstract contract TxGenerator is Script, BroadcastManager, JsonDeploymentHandler
         console2.log("accessManager", address(accessManager));
         // Read upgrade proposals file
         _readProposalFile(fromVersion, toVersion); // JsonDeploymentHandler.s.sol
-        _beginBroadcast(); // BroadcastManager.s.sol
+
+        uint256 deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
+        deployer = vm.addr(deployerPrivateKey);
         
         _generateScheduleTxs();
         _generateExecuteTxs();
@@ -74,8 +77,6 @@ abstract contract TxGenerator is Script, BroadcastManager, JsonDeploymentHandler
         _writeBatchTxsOutput(string.concat("schedule", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
         _writeBatchTxsOutput(string.concat("execute", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
         _writeBatchTxsOutput(string.concat("cancel", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol 
-
-        _endBroadcast(); // BroadcastManager.s.sol
     }
 
     function _generateScheduleTxs() internal virtual;

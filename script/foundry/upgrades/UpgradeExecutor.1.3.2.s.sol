@@ -18,91 +18,26 @@ contract UpgradeExecutorExample is TxGenerator {
         "v1.3.2" // To version (e.g. v1.3.2)
     ) {}
 
-    /**
-     * @dev Generates schedule upgrade txs for a set of contracts
-     * This is a template listing all upgradeable contracts. Remove any contracts you don't
-     * want to upgrade. For example, if upgrading only IPAssetRegistry and GroupingModule,
-     * keep just those two _scheduleUpgrade() calls and remove the rest.
-     */
-    function _generateScheduleTxs() internal virtual override {
-        console2.log("Scheduling upgrades  -------------");
-        _generateScheduleTx("ModuleRegistry");
-        _generateScheduleTx("IPAssetRegistry");
-        _generateScheduleTx("AccessController");
-        _generateScheduleTx("LicenseRegistry");
-        _generateScheduleTx("DisputeModule");
-        _generateScheduleTx("RoyaltyModule");
-        _generateScheduleTx("GroupNFT");
-        _generateScheduleTx("GroupingModule");
-        _generateScheduleTx("LicensingModule");
-        _generateScheduleTx("LicenseToken");
-        _generateScheduleTx("RoyaltyPolicyLAP");
-        _generateScheduleTx("RoyaltyPolicyLRP");
-        _generateScheduleTx("CoreMetadataModule");
-        _generateScheduleTx("PILicenseTemplate");
-        _generateScheduleTx("IpRoyaltyVault");
-        _generateScheduleTx("EvenSplitGroupPool");
-        _generateScheduleTx("ArbitrationPolicyUMA");
-        _generateScheduleTx("ProtocolPauseAdmin");
-        _generateScheduleTx("IPAccountImplCode");
-    }
-
-    /**
-     * @dev Generates execute upgrade txs for a set of contracts
-     * This is a template listing all upgradeable contracts. Remove any contracts you don't
-     * want to upgrade. For example, if upgrading only IPAssetRegistry and GroupingModule,
-     * keep just those two _executeUpgrade() calls and remove the rest.
-     */
-    function _generateExecuteTxs() internal virtual override {
-        console2.log("Executing upgrades  -------------");
-        _generateExecuteTx("ModuleRegistry");
-        _generateExecuteTx("IPAssetRegistry");
-        _generateExecuteTx("AccessController");
-        _generateExecuteTx("LicenseRegistry");
-        _generateExecuteTx("DisputeModule");
-        _generateExecuteTx("RoyaltyModule");
-        _generateExecuteTx("GroupNFT");
-        _generateExecuteTx("GroupingModule");
-        _generateExecuteTx("LicensingModule");
-        _generateExecuteTx("LicenseToken");
-        _generateExecuteTx("RoyaltyPolicyLAP");
-        _generateExecuteTx("RoyaltyPolicyLRP");
-        _generateExecuteTx("CoreMetadataModule");
-        _generateExecuteTx("PILicenseTemplate");
-        _generateExecuteTx("IpRoyaltyVault");
-        _generateExecuteTx("EvenSplitGroupPool");
-        _generateExecuteTx("ArbitrationPolicyUMA");
-        _generateExecuteTx("ProtocolPauseAdmin");
-        _generateExecuteTx("IPAccountImplCode");
-    }
-
-
-    /**
-     * @dev Generates cancel scheduled upgrade txs for a set of contracts
-     * This is a template listing all upgradeable contracts. Remove any contracts you don't
-     * want to cancel. For example, if canceling only IPAssetRegistry and GroupingModule,
-     * keep just those two _cancelScheduledUpgrade() calls and remove the rest.
-     */
-    function _generateCancelTxs() internal virtual override {
-        console2.log("Cancelling upgrades  -------------");
-        _generateCancelTx("ModuleRegistry");
-        _generateCancelTx("IPAssetRegistry");
-        _generateCancelTx("AccessController");
-        _generateCancelTx("LicenseRegistry");
-        _generateCancelTx("DisputeModule");
-        _generateCancelTx("RoyaltyModule");
-        _generateCancelTx("GroupNFT");
-        _generateCancelTx("GroupingModule");
-        _generateCancelTx("LicensingModule");
-        _generateCancelTx("LicenseToken");
-        _generateCancelTx("RoyaltyPolicyLAP");
-        _generateCancelTx("RoyaltyPolicyLRP");
-        _generateCancelTx("CoreMetadataModule");
-        _generateCancelTx("PILicenseTemplate");
-        _generateCancelTx("IpRoyaltyVault");
-        _generateCancelTx("EvenSplitGroupPool");
-        _generateCancelTx("ArbitrationPolicyUMA");
-        _generateCancelTx("ProtocolPauseAdmin");
-        _generateCancelTx("IPAccountImplCode");
+    function _generateActions() internal virtual override {
+        console2.log("Generating schedule, execute, and cancel txs  -------------");
+        _generateAction("ModuleRegistry");
+        _generateAction("IPAssetRegistry");
+        _generateAction("AccessController");
+        _generateAction("LicenseRegistry");
+        _generateAction("DisputeModule");
+        _generateAction("RoyaltyModule");
+        _generateAction("GroupNFT");
+        _generateAction("GroupingModule");
+        _generateAction("LicensingModule");
+        _generateAction("LicenseToken");
+        _generateAction("RoyaltyPolicyLAP");
+        _generateAction("RoyaltyPolicyLRP");
+        _generateAction("CoreMetadataModule");
+        _generateAction("PILicenseTemplate");
+        _generateAction("IpRoyaltyVault");
+        _generateAction("EvenSplitGroupPool");
+        _generateAction("ArbitrationPolicyUMA");
+        _generateAction("ProtocolPauseAdmin");
+        _generateAction("IPAccountImplCode");
     }
 }

@@ -70,16 +70,20 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         uint256 deployerPrivateKey = vm.envUint("STORY_PRIVATEKEY");
         deployer = vm.addr(deployerPrivateKey);
         
-        _generateScheduleTxs();
-        _generateExecuteTxs();
-        _generateCancelTxs();
+        _generateActions();
 
         _writeBatchTxsOutput(string.concat("schedule", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
         _writeBatchTxsOutput(string.concat("execute", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
         _writeBatchTxsOutput(string.concat("cancel", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol 
     }
 
-    function _generateScheduleTxs() internal virtual;
+    function _generateActions() internal virtual;
+
+    function _generateAction(string memory key) internal {
+        _generateScheduleTx(key);
+        _generateExecuteTx(key);
+        _generateCancelTx(key);
+    }
 
     function _generateScheduleTx(string memory key) internal {
         console2.log("--------------------");
@@ -96,8 +100,6 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         
         console2.log("--------------------");
     }
-
-    function _generateExecuteTxs() internal virtual;
 
     function _generateExecuteTx(string memory key) internal {
         UpgradedImplHelper.UpgradeProposal memory p = _readUpgradeProposal(key);
@@ -117,8 +119,6 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)));
     }
 
-    function _generateCancelTxs() internal virtual;
-
     function _generateCancelTx(string memory key) internal {
         console2.log("--------------------");
         UpgradedImplHelper.UpgradeProposal memory p = _readUpgradeProposal(key);
@@ -130,7 +130,6 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) revert("No data to schedule");
 
-        console2.log("------------ WARNING: NOT TESTED ------------");
         _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)));
 
         console2.log("--------------------");

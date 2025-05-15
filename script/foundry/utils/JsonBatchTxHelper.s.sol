@@ -42,18 +42,18 @@ contract JsonBatchTxHelper is Script {
     }
 
     function _writeBatchTxsOutput(string memory _action, string memory _type) internal {
+        uint256 txCounter;
         string memory json = "[";
         for (uint i = 0; i < transactions.length; i++) {
             if (keccak256(abi.encodePacked(transactions[i].txType)) != keccak256(abi.encodePacked(_type))) continue;
-            if (i > 0) {
-                json = string(abi.encodePacked(json, ","));
-            }
+            if (txCounter > 0) json = string(abi.encodePacked(json, ","));
             json = string(abi.encodePacked(json, "{"));
             json = string(abi.encodePacked(json, '"to":"', vm.toString(transactions[i].to), '",'));
             json = string(abi.encodePacked(json, '"value":', vm.toString(transactions[i].value), ','));
             json = string(abi.encodePacked(json, '"data":"', vm.toString(transactions[i].data), '",'));
             json = string(abi.encodePacked(json, '"operation":', vm.toString(transactions[i].operation)));
             json = string(abi.encodePacked(json, "}"));
+            txCounter++;
         }
         json = string(abi.encodePacked(json, "]"));
 

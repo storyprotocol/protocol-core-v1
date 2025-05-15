@@ -13,6 +13,7 @@ import "hardhat-contract-sizer" // npx hardhat size-contracts
 import "solidity-coverage"
 import "solidity-docgen"
 import "@nomicfoundation/hardhat-chai-matchers"
+import "./script/hardhat/utils/safePropose"
 
 require("dotenv").config()
 

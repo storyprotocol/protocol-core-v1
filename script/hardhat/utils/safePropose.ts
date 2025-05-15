@@ -9,6 +9,9 @@ require("dotenv").config()
 
 task("safe-propose", "Propose a Safe transaction")
   .addParam("chainid", "The chainId of the Safe")
+  .addParam("operation", "The operation type: schedule, execute or cancel")
+  .addParam("previousversion", "The previous version")
+  .addParam("newversion", "The next version")
   .setAction(async (taskArgs, hre) => {        
     const chainId = parseInt(taskArgs.chainid)
     if (chainId !== Number(process.env.STORY_CHAINID) && chainId !== Number(process.env.STORY_CHAINID_MAINNET)) {
@@ -32,16 +35,11 @@ task("safe-propose", "Propose a Safe transaction")
       safeAddress: SAFE_ADDRESS
     })
 
-    // Create transaction
-    const safeTransactionData: MetaTransactionData = {
-      to: '0x0000000000000000000000000000000000000000',
-      value: '1', // 1 wei
-      data: '0x',
-      operation: OperationType.Call
-    }
+    // Import the txs file
+    const safeTransactionData: MetaTransactionData[] = require(`../../../deploy-out/${taskArgs.operation}-v${taskArgs.previousversion}-to-v${taskArgs.newversion}-${chainId}.json`)
     
     const safeTransaction = await protocolKitOwner1.createTransaction({
-      transactions: [safeTransactionData]
+      transactions: safeTransactionData
     })
     
     const safeTxHash = await protocolKitOwner1.getTransactionHash(safeTransaction)

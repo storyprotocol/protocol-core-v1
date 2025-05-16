@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 env:
-  SENDER_ADDRESS: ${{ secrets.SENDER_ADDRESS }}
-  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+  SENDER_ADDRESS: ${{ secrets.SAFE_MULTISIG_PROPOSER_ADDRESS }}
+  PRIVATE_KEY: ${{ secrets.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }}
   GH_TOKEN: ${{ github.token }}
 
 jobs:
@@ -75,7 +75,7 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run Script
+      - name: Run safe propose script
         if: ${{ steps.check_pr.outputs.should_run }} == 'true'
         run: |
           npx hardhat safe-propose --chainid 1315 --operation schedule --previousversion 1.5.0 --newversion 1.5.1

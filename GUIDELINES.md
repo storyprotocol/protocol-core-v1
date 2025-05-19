@@ -4,7 +4,7 @@
 
 Code must be thoroughly tested with quality unit tests.
 
-We defer to the [Foundry Best Practices](https://book.getfoundry.sh/tutorials/best-practices) and [Moloch Testing Guide](https://github.com/MolochVentures/moloch/tree/master/test#readme) for specific recommendations, though not all of it is relevant here. Note the introduction in Moloch Testing Guide:
+We defer to the [Foundry Best Practices](https://book.getfoundry.sh/guides/best-practices) and [Moloch Testing Guide](https://github.com/MolochVentures/moloch/tree/master/test#readme) for specific recommendations, though not all of it is relevant here. Note the introduction in Moloch Testing Guide:
 
 > Tests should be written, not only to verify correctness of the target code, but to be comprehensively reviewed by other programmers. Therefore, for mission critical Solidity code, the quality of the tests are just as important (if not more so) than the code itself, and should be written with the highest standards of clarity and elegance.
 

@@ -1,4 +1,4 @@
-// Test: LicensingModule - attachLicenseTerms
+// Test: LicensingModule - attachLicenseTerms, attachDefaultLicenseTerms
 
 import "../setup";
 import { expect } from "chai";
@@ -33,5 +33,40 @@ describe("LicensingModule - attachLicenseTerms", function () {
     await attachLicenseTx.wait();
     console.log(attachLicenseTx.hash);
     expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
+  });
+});
+
+describe("LicensingModule - attachDefaultLicenseTerms", function () {
+  let signers: any;
+  let ipId: string;
+
+  this.beforeAll("Get Signers", async function () {
+    // Get the signers
+    signers = await hre.ethers.getSigners();
+
+    const tokenId = await mintNFT(signers[0]);
+    const connectedRegistry = this.ipAssetRegistry.connect(signers[0]);
+
+    ipId = await expect(
+      connectedRegistry.register(this.chainId, MockERC721, tokenId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[2].args[0]);
+    console.log("ipId:", ipId);
+  });
+
+  it("IP Asset attach the default license terms", async function () {
+    const connectedLicensingModule = this.licensingModule.connect(signers[0]);
+
+    const attachLicenseTx = await expect(
+      connectedLicensingModule.attachDefaultLicenseTerms(ipId)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    expect(attachLicenseTx.hash).to.not.be.empty.and.to.be.a("HexString");
+  });
+
+  it("IP Asset attach the default license terms again", async function () {
+    const connectedLicensingModule = this.licensingModule.connect(signers[0]);
+
+    await expect(
+      connectedLicensingModule.attachDefaultLicenseTerms(ipId)
+    ).to.be.revertedWithCustomError(this.errors, "LicenseRegistry__LicenseTermsAlreadyAttached");
   });
 });

@@ -131,7 +131,7 @@ describe("LicensingModule - registerDerivative", function () {
     console.log("Nonce: ", nonce);
     for (let i = 0; i < count; i++) {
       mint.push(
-        mintNFT(this.owner, nonce++)
+        mintNFT(this.owner, this.owner.address, nonce++)
       );
     }
     const tokenIds = await Promise.all(mint);

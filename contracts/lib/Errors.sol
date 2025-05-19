@@ -350,9 +350,6 @@ library Errors {
     /// @notice if a child IP is a derivative of a group IP, the child IP cannot have other parent IPs.
     error LicenseRegistry__GroupMustBeSoleParent(address childIpId, address groupId);
 
-    /// @notice The IP already has derivative IPs.
-    error LicenseRegistry__IpAlreadyHasDerivative(address ipId);
-
     ////////////////////////////////////////////////////////////////////////////
     //                             License Token                              //
     ////////////////////////////////////////////////////////////////////////////

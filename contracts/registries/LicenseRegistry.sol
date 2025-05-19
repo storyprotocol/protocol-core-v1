@@ -230,10 +230,6 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
 
         LicenseRegistryStorage storage $ = _getLicenseRegistryStorage();
 
-        if (_hasDerivativeIps(childIpId)) {
-            revert Errors.LicenseRegistry__IpAlreadyHasDerivative(childIpId);
-        }
-
         IP_GRAPH_ACL.startInternalAccess();
         if (_isDerivativeIp(childIpId)) {
             revert Errors.LicenseRegistry__DerivativeAlreadyRegistered(childIpId);

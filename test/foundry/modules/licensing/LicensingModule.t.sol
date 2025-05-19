@@ -3589,7 +3589,7 @@ contract LicensingModuleTest is BaseTest {
         erc20.mint(ipOwner1, 500);
         erc20.approve(address(royaltyModule), 500);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__IpAlreadyHasDerivative.selector, ipId1));
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__DerivativeIpAlreadyHasChild.selector, ipId1));
         licensingModule.registerDerivative({
             childIpId: ipId1,
             parentIpIds: parentIpIds2,

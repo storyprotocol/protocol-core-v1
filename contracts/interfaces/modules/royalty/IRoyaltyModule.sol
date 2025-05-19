@@ -119,7 +119,6 @@ interface IRoyaltyModule is IModule {
     function registerExternalRoyaltyPolicy(address externalRoyaltyPolicy) external;
 
     /// @notice Deploys a royalty vault for a given IP asset
-    /// @dev Enforced to be only callable by the protocol admin
     /// @param ipId The ID of the IP asset
     /// @return ipRoyaltyVault The address of the deployed royalty vault
     function deployVault(address ipId) external returns (address ipRoyaltyVault);

@@ -118,6 +118,11 @@ interface IRoyaltyModule is IModule {
     /// @param externalRoyaltyPolicy The address of the external royalty policy
     function registerExternalRoyaltyPolicy(address externalRoyaltyPolicy) external;
 
+    /// @notice Deploys a royalty vault for a given IP asset
+    /// @param ipId The ID of the IP asset
+    /// @return ipRoyaltyVault The address of the deployed royalty vault
+    function deployVault(address ipId) external returns (address ipRoyaltyVault);
+
     /// @notice Executes royalty related logic on license minting
     /// @dev Enforced to be only callable by LicensingModule
     /// @param ipId The ipId whose license is being minted (licensor)

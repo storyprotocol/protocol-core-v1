@@ -3544,6 +3544,65 @@ contract LicensingModuleTest is BaseTest {
         licensingModule.registerDerivative(ipId2, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
     }
 
+    function test_LicensingModule_registerDerivative_revert_IpAlreadyHasDerivative() public {
+        uint256 commRemixTermsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 500,
+                commercialRevShare: 10,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLAP)
+            })
+        );
+
+        vm.prank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), commRemixTermsId);
+
+        address[] memory parentIpIds = new address[](1);
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        parentIpIds[0] = ipId1;
+        licenseTermsIds[0] = commRemixTermsId;
+
+        vm.startPrank(ipOwner5);
+        erc20.mint(ipOwner5, 500);
+        erc20.approve(address(royaltyModule), 500);
+
+        licensingModule.registerDerivative({
+            childIpId: ipId5,
+            parentIpIds: parentIpIds,
+            licenseTermsIds: licenseTermsIds,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: "",
+            maxMintingFee: 600, // maxMintingFee = 600 > 500 = mintingFee
+            maxRts: 100e6,
+            maxRevenueShare: 0
+        });
+        vm.stopPrank();
+
+        vm.prank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), commRemixTermsId);
+        address[] memory parentIpIds2 = new address[](1);
+        uint256[] memory licenseTermsIds2 = new uint256[](1);
+        parentIpIds2[0] = ipId2;
+        licenseTermsIds2[0] = commRemixTermsId;
+
+        vm.startPrank(ipOwner1);
+        erc20.mint(ipOwner1, 500);
+        erc20.approve(address(royaltyModule), 500);
+
+        vm.expectRevert(abi.encodeWithSelector(Errors.LicenseRegistry__DerivativeIpAlreadyHasChild.selector, ipId1));
+        licensingModule.registerDerivative({
+            childIpId: ipId1,
+            parentIpIds: parentIpIds2,
+            licenseTermsIds: licenseTermsIds2,
+            licenseTemplate: address(pilTemplate),
+            royaltyContext: "",
+            maxMintingFee: 600, // maxMintingFee = 600 > 500 = mintingFee
+            maxRts: 100e6,
+            maxRevenueShare: 0
+        });
+        vm.stopPrank();
+    }
+
     function test_LicensingModule_registerDerivative_payRoyaltyMultipleLevels() public {
         vm.etch(address(0x0101), address(new MockIPGraphDiamond()).code);
         MockIPGraphDiamond(address(0x0101)).initialize(ipId1, ipId2, ipId3);

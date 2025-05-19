@@ -57,8 +57,8 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     ICreate3Deployer internal immutable create3Deployer;
     uint256 internal create3SaltSeed = CREATE3_DEFAULT_SEED;
 
-    string constant PREV_VERSION = "vx.x.x"; // e.g. v1.3.1
-    string constant PROPOSAL_VERSION = "vx.x.x"; // e.g. v1.3.2
+    string constant PREV_VERSION = "v1.3.1";
+    string constant PROPOSAL_VERSION = "v1.3.2";
 
     address accessController;
     address licensingModule;
@@ -88,7 +88,6 @@ contract UpgradeDeployerExample is JsonDeploymentHandler, BroadcastManager, Upgr
     }
 
     function run() public virtual {
-        // super.run();
         _readDeployment(PREV_VERSION); // JsonDeploymentHandler.s.sol
         // Load existing contracts
         licensingModule = _readAddress("LicensingModule");

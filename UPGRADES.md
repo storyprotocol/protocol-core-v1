@@ -147,52 +147,23 @@ Output will look something like:
 }
 ```
 
-## 4. Write contracts inheriting UpgradeExecutor
+## 4. Write contracts inheriting TxGenerator
 
-`script/foundry/utils/upgrades/UpgradeExecutor.s.sol` has the logic to read the upgrade proposal file, and act on Access Manager
-
-```solidity
-/// @notice Upgrade modes
-enum UpgradeModes {
-     SCHEDULE, // Schedule upgrades in AccessManager
-    EXECUTE, // Execute scheduled upgrades
-    CANCEL // Cancel scheduled upgrades
-}
-/// @notice End result of the script
-enum Output {
-    TX_EXECUTION, // One Tx per operation
-    BATCH_TX_EXECUTION, // Use AccessManager to batch actions in 1 tx through (multicall)
-    BATCH_TX_JSON // Prepare raw bytes for multisig. Multisig may batch txs (e.g. Gnosis Safe JSON input in tx builder)
-}
-```
+`script/foundry/utils/upgrades/TxGenerator.s.sol` has the logic to read the upgrade proposal file, and act on Access Manager
 
 Example of concrete version upgrade (depending on the mode, one of the xxxUpgrades() methods will be called)
 
 ```solidity
-contract ExecuteV1_2 is UpgradeExecutor {
+contract ExecuteV1_2 is TxGenerator {
     
-    constructor() UpgradeExecutor(
+    constructor() TxGenerator(
         "v1.1.1", // From version
         "v1.2.0", // To version
-        UpgradeModes.EXECUTE, // Schedule, Cancel or Execute upgrade
-        Output.BATCH_TX_EXECUTION // Output mode
     ) {}
 
-    function _scheduleUpgrades() internal virtual override {
-        console2.log("Scheduling upgrades  -------------");
-        _scheduleUpgrade("GroupingModule");
-        /...
-    }
-
-    function _executeUpgrades() internal virtual override {
-        console2.log("Executing upgrades  -------------");
-        _executeUpgrade("IpRoyaltyVault");
-        /...
-    }
-
-    function _cancelScheduledUpgrades() internal virtual override {
-        console2.log("Cancelling upgrades  -------------");
-        _cancelScheduledUpgrade("GroupingModule");
+    function _generateActions() internal virtual override {
+        console2.log("Generating schedule, execute, and cancel txs  -------------");
+        _generateAction("ModuleRegistry");
         /...
     }
 }

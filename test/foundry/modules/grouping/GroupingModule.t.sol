@@ -633,6 +633,99 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 50);
     }
 
+    function test_GroupingModule_claimReward_memberVaultsNotDeployed() public {
+        vm.warp(100);
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 10 * 10 ** 6,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        assertEq(royaltyModule.ipRoyaltyVaults(ipId1), address(0)); // confirm the vault is not deployed
+        vm.stopPrank();
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        assertEq(royaltyModule.ipRoyaltyVaults(ipId2), address(0)); // confirm the vault is not deployed
+        vm.stopPrank();
+        vm.startPrank(ipOwner5);
+        licensingModule.attachLicenseTerms(ipId5, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId5, address(pilTemplate), termsId, licensingConfig);
+        assertEq(royaltyModule.ipRoyaltyVaults(ipId5), address(0)); // confirm the vault is not deployed
+        vm.stopPrank();
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory ipIds = new address[](3);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        ipIds[2] = ipId5;
+        groupingModule.addIp(groupId, ipIds, 100e6);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 3);
+        assertEq(rewardPool.getTotalIps(groupId), 3);
+        vm.stopPrank();
+
+        address[] memory parentIpIds = new address[](1);
+        parentIpIds[0] = groupId;
+        uint256[] memory licenseTermsIds = new uint256[](1);
+        licenseTermsIds[0] = termsId;
+        vm.prank(ipOwner3);
+        licensingModule.registerDerivative(ipId3, parentIpIds, licenseTermsIds, address(pilTemplate), "", 0, 100e6, 0);
+
+        erc20.mint(ipOwner3, 1000);
+        vm.startPrank(ipOwner3);
+        erc20.approve(address(royaltyModule), 1000);
+        royaltyModule.payRoyaltyOnBehalf(ipId3, ipOwner3, address(erc20), 1000);
+        vm.stopPrank();
+        royaltyPolicyLRP.transferToVault(ipId3, groupId, address(erc20));
+        vm.warp(vm.getBlockTimestamp() + 7 days);
+
+        vm.expectEmit();
+        emit IGroupingModule.CollectedRoyaltiesToGroupPool(groupId, address(erc20), address(rewardPool), 100);
+        groupingModule.collectRoyalties(groupId, address(erc20));
+
+        address[] memory claimIpIds = new address[](3);
+        claimIpIds[0] = ipId1;
+        claimIpIds[1] = ipId2;
+        claimIpIds[2] = ipId5;
+
+        // claim amount = royalties collected / # member IPs in the group = 100 / 3 = 33
+        uint256[] memory claimAmounts = new uint256[](3);
+        claimAmounts[0] = 33;
+        claimAmounts[1] = 33;
+        claimAmounts[2] = 33;
+
+        vm.expectEmit();
+        emit IGroupingModule.ClaimedReward(groupId, address(erc20), claimIpIds, claimAmounts);
+        groupingModule.claimReward(groupId, address(erc20), claimIpIds);
+        assertEq(erc20.balanceOf(address(rewardPool)), 1);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 33);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId2)), 33);
+        assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId5)), 33);
+    }
+
     function test_GroupingModule_claimReward_revert_notWhitelistedPool() public {
         vm.warp(100);
         vm.prank(alice);

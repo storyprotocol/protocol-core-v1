@@ -282,6 +282,10 @@ contract GroupingModule is
         if (!ROYALTY_MODULE.isWhitelistedRoyaltyToken(token)) {
             revert Errors.GroupingModule__RoyaltyTokenNotWhitelisted(groupId, token);
         }
+        // deploy vault for each group member if not already deployed
+        for (uint256 i = 0; i < ipIds.length; i++) {
+            if (ROYALTY_MODULE.ipRoyaltyVaults(ipIds[i]) == address(0)) ROYALTY_MODULE.deployVault(ipIds[i]);
+        }
         // trigger group pool to distribute rewards to group members vault
         uint256[] memory rewards = pool.distributeRewards(groupId, token, ipIds);
         emit ClaimedReward(groupId, token, ipIds, rewards);

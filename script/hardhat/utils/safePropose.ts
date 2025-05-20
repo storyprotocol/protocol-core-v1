@@ -12,16 +12,21 @@ task("safe-propose", "Propose a Safe transaction")
   .addParam("operation", "The operation type: schedule, execute or cancel")
   .addParam("previousversion", "The previous version")
   .addParam("newversion", "The next version")
+  .addParam("safeproposeraddress", "The address of the Safe multisig proposer")
+  .addParam("safeproposerprivatekey", "The private key of the Safe multisig proposer")
+  .addParam("safemultisigaddressmainnet", "The address of the Safe in mainnet")
+  .addParam("safemultisigaddressaeneid", "The address of the Safe in aeneid")
   .setAction(async (taskArgs, hre) => {        
     const chainId = parseInt(taskArgs.chainid)
     const MAINNET_CHAIN_ID = 1514
     const TESTNET_CHAIN_ID = 1315
     if (chainId !== MAINNET_CHAIN_ID && chainId !== TESTNET_CHAIN_ID) throw new Error('Invalid chainId')
 
-    const SAFE_PROPOSER_ADDRESS = process.env.SAFE_MULTISIG_PROPOSER_ADDRESS 
-    const SAFE_PROPOSER_PRIVATE_KEY = process.env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY
+    const SAFE_PROPOSER_ADDRESS = taskArgs.safeproposeraddress
+    const SAFE_PROPOSER_PRIVATE_KEY = taskArgs.safeproposerprivatekey
     const RPC_URL = chainId === MAINNET_CHAIN_ID ? 'https://mainnet.storyrpc.io' : 'https://aeneid.storyrpc.io'
-    const SAFE_ADDRESS = chainId === MAINNET_CHAIN_ID ? process.env.SAFE_MULTISIG_MAINNET_ADDRESS : process.env.SAFE_MULTISIG_AENEID_ADDRESS
+    const SAFE_ADDRESS = chainId === MAINNET_CHAIN_ID ? taskArgs.safemultisigaddressmainnet : taskArgs.safemultisigaddressaeneid
+
     const TX_SERVICE_URL = chainId === MAINNET_CHAIN_ID ? 'https://transaction.safe.story.foundation/api' : 'https://transaction-testnet.safe.story.foundation/api'
     
     const apiKit = new SafeApiKit({

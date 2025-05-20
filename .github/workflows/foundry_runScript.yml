@@ -9,8 +9,10 @@ permissions:
   contents: read
 
 env:
-  SENDER_ADDRESS: ${{ secrets.SAFE_MULTISIG_PROPOSER_ADDRESS }}
-  PRIVATE_KEY: ${{ secrets.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }}
+  SAFE_MULTISIG_PROPOSER_ADDRESS: ${{ secrets.SAFE_MULTISIG_PROPOSER_ADDRESS }}
+  SAFE_MULTISIG_PROPOSER_PRIVATE_KEY: ${{ secrets.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }}
+  SAFE_MULTISIG_MAINNET_ADDRESS: ${{ secrets.SAFE_MULTISIG_MAINNET_ADDRESS }}
+  SAFE_MULTISIG_AENEID_ADDRESS: ${{ secrets.SAFE_MULTISIG_AENEID_ADDRESS }}
   GH_TOKEN: ${{ github.token }}
 
 jobs:
@@ -68,4 +70,4 @@ jobs:
       - name: Run safe propose script 
         if: ${{ steps.check_pr.outputs.should_run }} == 'true'
         run: |
-          npx hardhat safe-propose --chainid 1315 --operation schedule --previousversion 1.5.0 --newversion 1.5.1
+          npx hardhat safe-propose --chainid 1315 --operation schedule --previousversion 1.5.0 --newversion 1.5.1 --safeproposeraddress ${{ env.SAFE_MULTISIG_PROPOSER_ADDRESS }} --safeproposerprivatekey ${{ env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }} --safemultisigaddressmainnet ${{ env.SAFE_MULTISIG_MAINNET_ADDRESS }} --safemultisigaddressaeneid ${{ env.SAFE_MULTISIG_AENEID_ADDRESS }}

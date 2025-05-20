@@ -14,15 +14,15 @@ task("safe-propose", "Propose a Safe transaction")
   .addParam("newversion", "The next version")
   .setAction(async (taskArgs, hre) => {        
     const chainId = parseInt(taskArgs.chainid)
-    if (chainId !== Number(process.env.STORY_CHAINID) && chainId !== Number(process.env.STORY_CHAINID_MAINNET)) {
-        throw new Error('Invalid chainId')
-    }
+    const MAINNET_CHAIN_ID = 1514
+    const TESTNET_CHAIN_ID = 1315
+    if (chainId !== MAINNET_CHAIN_ID && chainId !== TESTNET_CHAIN_ID) throw new Error('Invalid chainId')
 
-    const RPC_URL = chainId === Number(process.env.STORY_CHAINID_MAINNET) ? process.env.STORY_URL_MAINNET : process.env.STORY_URL
-    const SAFE_ADDRESS = chainId === Number(process.env.STORY_CHAINID_MAINNET) ? process.env.SAFE_MULTISIG_MAINNET_ADDRESS : process.env.SAFE_MULTISIG_AENEID_ADDRESS
-    const SAFE_PROPOSER_ADDRESS = chainId === Number(process.env.STORY_CHAINID_MAINNET) ? process.env.SAFE_PROPOSER_MAINNET_ADDRESS : process.env.SAFE_PROPOSER_AENEID_ADDRESS
-    const SAFE_PROPOSER_PRIVATE_KEY = chainId === Number(process.env.STORY_CHAINID_MAINNET) ? process.env.SAFE_PROPOSER_MAINNET_PRIVATE_KEY : process.env.SAFE_PROPOSER_AENEID_PRIVATE_KEY
-    const TX_SERVICE_URL = chainId === Number(process.env.STORY_CHAINID_MAINNET) ? 'https://transaction.safe.story.foundation/api' : 'https://transaction-testnet.safe.story.foundation/api'
+    const SAFE_PROPOSER_ADDRESS = process.env.SAFE_MULTISIG_PROPOSER_ADDRESS 
+    const SAFE_PROPOSER_PRIVATE_KEY = process.env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY
+    const RPC_URL = chainId === MAINNET_CHAIN_ID ? "https://mainnet.storyrpc.io" : "https://aeneid.storyrpc.io"
+    const SAFE_ADDRESS = chainId === MAINNET_CHAIN_ID ? process.env.SAFE_MULTISIG_MAINNET_ADDRESS : process.env.SAFE_MULTISIG_AENEID_ADDRESS
+    const TX_SERVICE_URL = chainId === MAINNET_CHAIN_ID ? 'https://transaction.safe.story.foundation/api' : 'https://transaction-testnet.safe.story.foundation/api'
     
     const apiKit = new SafeApiKit({
       chainId: BigInt(chainId),

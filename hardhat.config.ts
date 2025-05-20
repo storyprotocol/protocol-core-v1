@@ -20,12 +20,13 @@ require("dotenv").config()
 // NOTE:
 // To load the correct .env, you must run this at the root folder (where hardhat.config is located)
 //
+const bytes32Zero = "0x0000000000000000000000000000000000000000000000000000000000000000"
 const MAINNET_URL = process.env.MAINNET_URL || "https://eth-mainnet"
-const MAINNET_PRIVATEKEY = process.env.MAINNET_PRIVATEKEY || "0xkey"
+const MAINNET_PRIVATEKEY = process.env.MAINNET_PRIVATEKEY || bytes32Zero
 const SEPOLIA_URL = process.env.SEPOLIA_URL || "https://eth-sepolia"
-const SEPOLIA_PRIVATEKEY = process.env.SEPOLIA_PRIVATEKEY || "0xkey"
+const SEPOLIA_PRIVATEKEY = process.env.SEPOLIA_PRIVATEKEY || bytes32Zero
 const TENDERLY_URL = process.env.TENDERLY_URL || "https://eth-tenderly"
-const TENDERLY_PRIVATEKEY = process.env.TENDERLY_PRIVATEKEY || "0xkey"
+const TENDERLY_PRIVATEKEY = process.env.TENDERLY_PRIVATEKEY || bytes32Zero
 const USE_TENDERLY = process.env.USE_TENDERLY === "true"
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
@@ -33,9 +34,9 @@ const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
 
 const STORY_URL = process.env.STORY_URL || "http://"
 const STORY_CHAINID = Number(process.env.STORY_CHAINID) || 1513
-const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || "0xkey"
-const STORY_USER1 = process.env.STORY_USER1 || "0xkey"
-const STORY_USER2 = process.env.STORY_USER2 || "0xkey"
+const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || bytes32Zero
+const STORY_USER1 = process.env.STORY_USER1 || bytes32Zero
+const STORY_USER2 = process.env.STORY_USER2 || bytes32Zero
 
 if (USE_TENDERLY) {
   tdly.setup({

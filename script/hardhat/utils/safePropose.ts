@@ -20,7 +20,7 @@ task("safe-propose", "Propose a Safe transaction")
 
     const SAFE_PROPOSER_ADDRESS = process.env.SAFE_MULTISIG_PROPOSER_ADDRESS 
     const SAFE_PROPOSER_PRIVATE_KEY = process.env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY
-    const RPC_URL = chainId === MAINNET_CHAIN_ID ? "https://mainnet.storyrpc.io" : "https://aeneid.storyrpc.io"
+    const RPC_URL = chainId === MAINNET_CHAIN_ID ? 'https://mainnet.storyrpc.io' : 'https://aeneid.storyrpc.io'
     const SAFE_ADDRESS = chainId === MAINNET_CHAIN_ID ? process.env.SAFE_MULTISIG_MAINNET_ADDRESS : process.env.SAFE_MULTISIG_AENEID_ADDRESS
     const TX_SERVICE_URL = chainId === MAINNET_CHAIN_ID ? 'https://transaction.safe.story.foundation/api' : 'https://transaction-testnet.safe.story.foundation/api'
     

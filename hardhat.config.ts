@@ -1,9 +1,7 @@
 import "@nomicfoundation/hardhat-ethers"
 import "@nomicfoundation/hardhat-foundry"
 import "@nomicfoundation/hardhat-verify"
-import "@tenderly/hardhat-tenderly"
 import { TenderlyConfig } from "@tenderly/hardhat-tenderly/dist/tenderly/types"
-import * as tdly from "@tenderly/hardhat-tenderly" // also import tdly for setup, in addition to global import above
 import "@typechain/hardhat"
 // import "@openzeppelin/hardhat-upgrades"
 import "hardhat-gas-reporter"
@@ -40,6 +38,8 @@ const STORY_USER1 = process.env.STORY_USER1 || bytes32Zero
 const STORY_USER2 = process.env.STORY_USER2 || bytes32Zero
 
 if (USE_TENDERLY) {
+  require("@tenderly/hardhat-tenderly")
+  const tdly = require("@tenderly/hardhat-tenderly")
   tdly.setup({
     automaticVerifications: true,
   })
@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  defaultNetwork: "tenderly",
+  defaultNetwork: USE_TENDERLY ? "tenderly" : "hardhat",
   networks: {
     hardhat: {
       chainId: 31337,

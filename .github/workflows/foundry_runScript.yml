@@ -65,7 +65,7 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run safe propose script
+      - name: Run safe propose script 
         if: ${{ steps.check_pr.outputs.should_run }} == 'true'
         run: |
           npx hardhat safe-propose --chainid 1315 --operation schedule --previousversion 1.5.0 --newversion 1.5.1

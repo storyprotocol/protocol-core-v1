@@ -42,16 +42,46 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-
-      - name: Extract rpc url
-        id: url
+      
+      - name: Extract chain id
+        id: chainid
         run: |
-          RPC_URL=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'rpc:\s*\K[^\s]+' || echo "")
-          if [ -z "$RPC_URL" ]; then
-            echo "No rpc url found in PR description. Please add 'rpc: <url>' to the PR description."
+          CHAIN_ID=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'chainid:\s*\K[^\s]+' || echo "")
+          if [ -z "$CHAIN_ID" ]; then
+            echo "No chain id found in PR description. Please add 'chainid: <id>' to the PR description."
             exit 1
           fi
-          echo "url=$RPC_URL" >> $GITHUB_OUTPUT
+          echo "chainid=$CHAIN_ID" >> $GITHUB_OUTPUT
+      
+      - name: Extract operation
+        id: operation
+        run: |
+          OPERATION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'operation:\s*\K[^\s]+' || echo "")
+          if [ -z "$OPERATION" ]; then
+            echo "No operation found in PR description. Please add 'operation: <operation>' to the PR description."
+            exit 1
+          fi
+          echo "operation=$OPERATION" >> $GITHUB_OUTPUT
+      
+      - name: Extract previous version
+        id: previousversion
+        run: |
+          PREVIOUS_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'previousversion:\s*\K[^\s]+' || echo "")
+          if [ -z "$PREVIOUS_VERSION" ]; then
+            echo "No previous version found in PR description. Please add 'previousversion: <version>' to the PR description."
+            exit 1
+          fi
+          echo "previousversion=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Extract new version
+        id: newversion
+        run: |
+          NEW_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'newversion:\s*\K[^\s]+' || echo "")
+          if [ -z "$NEW_VERSION" ]; then
+            echo "No new version found in PR description. Please add 'newversion: <version>' to the PR description."
+            exit 1
+          fi
+          echo "newversion=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Run Forge build
         run: |
@@ -70,4 +100,4 @@ jobs:
       - name: Run safe propose script 
         if: ${{ steps.check_pr.outputs.should_run }} == 'true'
         run: |
-          npx hardhat safe-propose --chainid 1315 --operation schedule --previousversion 1.5.0 --newversion 1.5.1 --safeproposeraddress ${{ env.SAFE_MULTISIG_PROPOSER_ADDRESS }} --safeproposerprivatekey ${{ env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }} --safemultisigaddressmainnet ${{ env.SAFE_MULTISIG_MAINNET_ADDRESS }} --safemultisigaddressaeneid ${{ env.SAFE_MULTISIG_AENEID_ADDRESS }}
+          npx hardhat safe-propose --chainid ${{ steps.chainid.outputs.chainid }} --operation ${{ steps.operation.outputs.operation }} --previousversion ${{ steps.previousversion.outputs.previousversion }} --newversion ${{ steps.newversion.outputs.newversion }} --safeproposeraddress ${{ env.SAFE_MULTISIG_PROPOSER_ADDRESS }} --safeproposerprivatekey ${{ env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }} --safemultisigaddressmainnet ${{ env.SAFE_MULTISIG_MAINNET_ADDRESS }} --safemultisigaddressaeneid ${{ env.SAFE_MULTISIG_AENEID_ADDRESS }}

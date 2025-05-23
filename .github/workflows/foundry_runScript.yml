@@ -66,9 +66,9 @@ jobs:
       - name: Extract previous version
         id: previousversion
         run: |
-          PREVIOUS_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'previousversion:\s*\K[^\s]+' || echo "")
+          PREVIOUS_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'previous version:\s*\K[^\s]+' || echo "")
           if [ -z "$PREVIOUS_VERSION" ]; then
-            echo "No previous version found in PR description. Please add 'previousversion: <version>' to the PR description."
+            echo "No previous version found in PR description. Please add 'previous version: <version>' to the PR description."
             exit 1
           fi
           echo "previousversion=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
@@ -76,9 +76,9 @@ jobs:
       - name: Extract new version
         id: newversion
         run: |
-          NEW_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'newversion:\s*\K[^\s]+' || echo "")
+          NEW_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'new version:\s*\K[^\s]+' || echo "")
           if [ -z "$NEW_VERSION" ]; then
-            echo "No new version found in PR description. Please add 'newversion: <version>' to the PR description."
+            echo "No new version found in PR description. Please add 'new version: <version>' to the PR description."
             exit 1
           fi
           echo "newversion=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -91,7 +91,7 @@ jobs:
       - name: Check PR conditions
         id: check_pr
         run: |
-          if [[ "${{ github.event.pull_request.merged }}" == "true" ]] || [[ "${{ github.event.pull_request.title }}" =~ ^upgrade-v ]]; then
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]] && [[ "${{ github.event.pull_request.title }}" =~ ^upgrade-v ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
             echo "should_run=false" >> $GITHUB_OUTPUT

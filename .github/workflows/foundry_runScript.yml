@@ -91,7 +91,7 @@ jobs:
       - name: Check PR conditions
         id: check_pr
         run: |
-          if [[ "${{ github.event.pull_request.merged }}" == "true" ]] || [[ "${{ github.event.pull_request.title }}" =~ ^upgrade-v ]]; then
+          if [[ "${{ github.event.pull_request.merged }}" == "true" ]] && [[ "${{ github.event.pull_request.title }}" == upgrade-v* ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
             echo "should_run=false" >> $GITHUB_OUTPUT

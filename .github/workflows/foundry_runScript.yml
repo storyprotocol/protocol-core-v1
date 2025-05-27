@@ -2,7 +2,7 @@ name: Foundry CI
 
 on:
   pull_request:
-    types: [closed]  # This will trigger when PRs are closed (including merges)
+    types: [closed]
 
 permissions:
   pull-requests: read

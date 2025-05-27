@@ -35,7 +35,7 @@ jobs:
       - name: Run install
         uses: borales/actions-yarn@v4
         with:
-          cmd: installd
+          cmd: install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1

@@ -357,6 +357,7 @@ contract GrantRolesToSafeTest is BaseTest {
                 readTxs[i] = transaction;
                 effectiveTxs++;
             } catch {
+                // solhint-disable-next-line
                 console2.log("No more transactions in JSON");
                 break;
             }

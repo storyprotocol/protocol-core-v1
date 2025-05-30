@@ -9,6 +9,7 @@ import { JSONTxWriter } from "../../../script/foundry/utils/JSONTxWriter.s.sol";
 
 import { stdJson } from "forge-std/StdJson.sol";
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
+// solhint-disable-next-line no-console
 import { console2 } from "forge-std/console2.sol";
 
 contract GrantRolesToSafeTest is BaseTest {
@@ -40,29 +41,29 @@ contract GrantRolesToSafeTest is BaseTest {
     address public securityCouncilSafeMultisigMainnet;
     address public governanceSafeMultisigAeneid;
     address public securityCouncilSafeMultisigAeneid;
-    
+
     function setUp() public override {
-            // Mainnet
-            delayMainnet = 5 days;
-            oldAdminMainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
-            oldUpgraderMainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
-            oldPauseAdmin1Mainnet = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
-            oldPauseAdmin2Mainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
-            oldGuardianMainnet = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
-            governanceSafeMultisigMainnet = address(1);
-            securityCouncilSafeMultisigMainnet = address(2);
+        // Mainnet
+        delayMainnet = 5 days;
+        oldAdminMainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
+        oldUpgraderMainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
+        oldPauseAdmin1Mainnet = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
+        oldPauseAdmin2Mainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
+        oldGuardianMainnet = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
+        governanceSafeMultisigMainnet = address(1);
+        securityCouncilSafeMultisigMainnet = address(2);
 
-            // Aeneid
-            delayAeneid = 10 minutes;
-            oldAdminAeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
-            oldUpgraderAeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
-            oldPauseAdmin1Aeneid = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
-            oldPauseAdmin2Aeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
-            oldGuardianAeneid = address(0);
-            governanceSafeMultisigAeneid = address(3);
-            securityCouncilSafeMultisigAeneid = address(4);
+        // Aeneid
+        delayAeneid = 10 minutes;
+        oldAdminAeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+        oldUpgraderAeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+        oldPauseAdmin1Aeneid = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
+        oldPauseAdmin2Aeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+        oldGuardianAeneid = address(0);
+        governanceSafeMultisigAeneid = address(3);
+        securityCouncilSafeMultisigAeneid = address(4);
 
-            protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
+        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
     }
 
     function test_GrantRoles_Mainnet_Success() public {
@@ -102,19 +103,31 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.warp(block.timestamp + delayMainnet + 1);
 
         (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseBefore, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
+        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls);
 
         vm.warp(block.timestamp + delayMainnet + 1);
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
-        
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
+
         assertEq(hasRoleSafeAdminBefore, false);
         assertEq(hasRoleSafeUpgradeBefore, false);
         assertEq(hasRoleSafePauseBefore, false);
@@ -123,7 +136,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafeAdminAfter, true);
         assertEq(hasRoleSafeUpgradeAfter, true);
         assertEq(hasRoleSafePauseAfter, true);
-        assertEq(hasRoleSafeGuardianAfter, true); 
+        assertEq(hasRoleSafeGuardianAfter, true);
     }
 
     function test_GrantRoles_Mainnet_Cancel() public {
@@ -162,19 +175,31 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.stopPrank();
 
         (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseBefore, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
+        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
 
         vm.startPrank(oldAdminMainnet);
         Multicall(address(protocolAccessManager)).multicall(cancelCalls);
         vm.stopPrank();
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
-        
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
+
         assertEq(hasRoleSafeAdminBefore, false);
         assertEq(hasRoleSafeUpgradeBefore, false);
         assertEq(hasRoleSafePauseBefore, false);
@@ -183,7 +208,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafeAdminAfter, false);
         assertEq(hasRoleSafeUpgradeAfter, false);
         assertEq(hasRoleSafePauseAfter, false);
-        assertEq(hasRoleSafeGuardianAfter, false); 
+        assertEq(hasRoleSafeGuardianAfter, false);
     }
 
     function test_GrantRoles_Aeneid_Success() public {
@@ -195,34 +220,44 @@ contract GrantRolesToSafeTest is BaseTest {
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
 
         // Get regular transaction JSONs
-        (
-            JSONTxWriter.Transaction[] memory regularTxs
-        ) = _readRegularTransactionFiles("grant-roles-to-safe");
+        JSONTxWriter.Transaction[] memory regularTxs = _readRegularTransactionFiles("grant-roles-to-safe");
 
         assertEq(regularTxs.length, 4);
- 
+
         // Convert scheduleTxs to bytes array for multicall
         bytes[] memory regularCalls = new bytes[](regularTxs.length);
         for (uint256 i = 0; i < regularTxs.length; i++) {
             regularCalls[i] = regularTxs[i].data;
         }
 
-        vm.startPrank(oldAdminAeneid); 
+        vm.startPrank(oldAdminAeneid);
 
         (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
         (bool hasRoleSafePauseBefore, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
 
         Multicall(address(protocolAccessManager)).multicall(regularCalls);
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigAeneid);
-        
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
         assertEq(hasRoleSafeAdminBefore, false);
         assertEq(hasRoleSafeUpgradeBefore, false);
         assertEq(hasRoleSafePauseBefore, false);
@@ -232,7 +267,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafeUpgradeAfter, true);
         assertEq(hasRoleSafePauseAfter, true);
         assertEq(hasRoleSafeGuardianAfter, true);
-    } 
+    }
 
     /**
      * @notice Execute a single transaction
@@ -252,12 +287,7 @@ contract GrantRolesToSafeTest is BaseTest {
      */
     function _readRegularTransactionFiles(
         string memory baseFilename
-    )
-        internal
-        returns (
-            JSONTxWriter.Transaction[] memory regularTxs
-        )
-    {
+    ) internal returns (JSONTxWriter.Transaction[] memory regularTxs) {
         // Create paths for all three file types
         string memory basePath = string.concat(OUTPUT_DIR, vm.toString(block.chainid), "/");
         string memory regularPath = string.concat(basePath, baseFilename, "-regular.json");

@@ -9,7 +9,7 @@ import { JSONTxWriter } from "../../../script/foundry/utils/JSONTxWriter.s.sol";
 
 import { stdJson } from "forge-std/StdJson.sol";
 import { BaseTest } from "test/foundry/utils/BaseTest.t.sol";
-// solhint-disable-next-line no-console
+// solhint-disable-next-line
 import { console2 } from "forge-std/console2.sol";
 
 contract GrantRolesToSafeTest is BaseTest {

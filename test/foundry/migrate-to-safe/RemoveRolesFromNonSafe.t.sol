@@ -156,9 +156,15 @@ contract GrantRolesToSafeTest is BaseTest {
         (bool hasRoleOldGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, oldGuardianMainnet);
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
 
         assertEq(hasRoleOldAdminBefore, true);
         assertEq(hasRoleOldUpgraderBefore, true);
@@ -267,9 +273,15 @@ contract GrantRolesToSafeTest is BaseTest {
         (bool hasRoleOldGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, oldGuardianMainnet);
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigMainnet);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigMainnet
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigMainnet);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigMainnet);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigMainnet
+        );
 
         assertEq(hasRoleOldAdminBefore, true);
         assertEq(hasRoleOldUpgraderBefore, true);
@@ -363,9 +375,15 @@ contract GrantRolesToSafeTest is BaseTest {
         (bool hasRoleOldPauseAdmin2After, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin2Aeneid);
 
         (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
         (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
-        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(GUARDIAN_ROLE_ID, securityCouncilSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
 
         assertEq(hasRoleOldAdminBefore, true);
         assertEq(hasRoleOldUpgraderBefore, true);

@@ -236,7 +236,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(executeTxs.length, 4);
         assertEq(cancelTxs.length, 4);
 
-         // Convert scheduleTxs to bytes array for multicall
+        // Convert scheduleTxs to bytes array for multicall
         bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
         for (uint256 i = 0; i < scheduleTxs.length; i++) {
             scheduleCalls[i] = scheduleTxs[i].data;
@@ -290,7 +290,7 @@ contract GrantRolesToSafeTest is BaseTest {
     }
 
     function test_GrantRoles_Aeneid_Cancel() public {
-                // Fork aeneid
+        // Fork aeneid
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
@@ -314,7 +314,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(executeTxs.length, 4);
         assertEq(cancelTxs.length, 4);
 
-         // Convert scheduleTxs to bytes array for multicall
+        // Convert scheduleTxs to bytes array for multicall
         bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
         for (uint256 i = 0; i < scheduleTxs.length; i++) {
             scheduleCalls[i] = scheduleTxs[i].data;

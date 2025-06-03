@@ -87,81 +87,47 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
         from[0] = governanceSafeMultisig;
         from[1] = governanceSafeMultisig;
         from[2] = governanceSafeMultisig;
+ 
+        bytes4 selector = protocolAccessManager.revokeRole.selector;
+
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, ADMIN_ROLE_ID, oldAdmin),
+            delay
+        );
+
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, UPGRADER_ROLE_ID, oldUpgrader),
+            delay
+        );
+
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin1),
+            delay
+        );
+
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin2),
+            delay
+        );
 
         if (block.chainid == 1514) {
-            bytes4 selector = protocolAccessManager.revokeRole.selector;
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, ADMIN_ROLE_ID, oldAdmin),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, UPGRADER_ROLE_ID, oldUpgrader),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin1),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin2),
-                delay
-            );
-
             _generateAction(
                 from,
                 address(protocolAccessManager),
                 0,
                 abi.encodeWithSelector(selector, GUARDIAN_ROLE_ID, oldGuardian),
-                delay
-            );
-        } else if (block.chainid == 1315) {
-            bytes4 selector = protocolAccessManager.revokeRole.selector;
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, ADMIN_ROLE_ID, oldAdmin),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, UPGRADER_ROLE_ID, oldUpgrader),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin1),
-                delay
-            );
-
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, PAUSE_ROLE_ID, oldPauseAdmin2),
                 delay
             );
         }

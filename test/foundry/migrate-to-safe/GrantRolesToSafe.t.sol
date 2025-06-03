@@ -216,21 +216,41 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
+        vm.startPrank(oldAdminAeneid);
+        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
         GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
 
-        // Get regular transaction JSONs
-        JSONTxWriter.Transaction[] memory regularTxs = _readRegularTransactionFiles("grant-roles-to-safe");
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs,
+            JSONTxWriter.Transaction[] memory executeTxs,
+            JSONTxWriter.Transaction[] memory cancelTxs
+        ) = _readNonRegularTransactionFiles("grant-roles-to-safe");
 
-        assertEq(regularTxs.length, 4);
+        assertEq(scheduleTxs.length, 4);
+        assertEq(executeTxs.length, 4);
+        assertEq(cancelTxs.length, 4);
 
-        // Convert scheduleTxs to bytes array for multicall
-        bytes[] memory regularCalls = new bytes[](regularTxs.length);
-        for (uint256 i = 0; i < regularTxs.length; i++) {
-            regularCalls[i] = regularTxs[i].data;
+         // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
+        for (uint256 i = 0; i < scheduleTxs.length; i++) {
+            scheduleCalls[i] = scheduleTxs[i].data;
+        }
+
+        // Convert executeTxs to bytes array for multicall
+        bytes[] memory executeCalls = new bytes[](executeTxs.length);
+        for (uint256 i = 0; i < executeTxs.length; i++) {
+            executeCalls[i] = executeTxs[i].data;
         }
 
         vm.startPrank(oldAdminAeneid);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+        vm.warp(block.timestamp + delayAeneid + 1);
 
         (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
         (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
@@ -243,7 +263,7 @@ contract GrantRolesToSafeTest is BaseTest {
             securityCouncilSafeMultisigAeneid
         );
 
-        Multicall(address(protocolAccessManager)).multicall(regularCalls);
+        Multicall(address(protocolAccessManager)).multicall(executeCalls);
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
@@ -267,6 +287,84 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafeUpgradeAfter, true);
         assertEq(hasRoleSafePauseAfter, true);
         assertEq(hasRoleSafeGuardianAfter, true);
+    }
+
+    function test_GrantRoles_Aeneid_Cancel() public {
+                // Fork aeneid
+        uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
+        vm.selectFork(forkId);
+
+        vm.startPrank(oldAdminAeneid);
+        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs,
+            JSONTxWriter.Transaction[] memory executeTxs,
+            JSONTxWriter.Transaction[] memory cancelTxs
+        ) = _readNonRegularTransactionFiles("grant-roles-to-safe");
+
+        assertEq(scheduleTxs.length, 4);
+        assertEq(executeTxs.length, 4);
+        assertEq(cancelTxs.length, 4);
+
+         // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
+        for (uint256 i = 0; i < scheduleTxs.length; i++) {
+            scheduleCalls[i] = scheduleTxs[i].data;
+        }
+
+        // Convert cancelTxs to bytes array for multicall
+        bytes[] memory cancelCalls = new bytes[](cancelTxs.length);
+        for (uint256 i = 0; i < cancelTxs.length; i++) {
+            cancelCalls[i] = cancelTxs[i].data;
+        }
+
+        vm.startPrank(oldAdminAeneid);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
+        (bool hasRoleSafePauseBefore, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
+        Multicall(address(protocolAccessManager)).multicall(cancelCalls);
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
+        (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
+        assertEq(hasRoleSafeAdminBefore, false);
+        assertEq(hasRoleSafeUpgradeBefore, false);
+        assertEq(hasRoleSafePauseBefore, false);
+        assertEq(hasRoleSafeGuardianBefore, false);
+
+        assertEq(hasRoleSafeAdminAfter, false);
+        assertEq(hasRoleSafeUpgradeAfter, false);
+        assertEq(hasRoleSafePauseAfter, false);
+        assertEq(hasRoleSafeGuardianAfter, false);
     }
 
     /**

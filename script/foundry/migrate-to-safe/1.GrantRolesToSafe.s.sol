@@ -80,72 +80,38 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
         from[1] = oldAdmin;
         from[2] = oldAdmin;
 
-        if (block.chainid == 1514) {
-            bytes4 selector = protocolAccessManager.grantRole.selector;
+        bytes4 selector = protocolAccessManager.grantRole.selector;
 
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, ADMIN_ROLE_ID, governanceSafeMultisig, delay),
-                delay
-            );
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, ADMIN_ROLE_ID, governanceSafeMultisig, delay),
+            delay
+        );
 
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, UPGRADER_ROLE_ID, governanceSafeMultisig, delay),
-                delay
-            );
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, UPGRADER_ROLE_ID, governanceSafeMultisig, delay),
+            delay
+        );
 
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, PAUSE_ROLE_ID, governanceSafeMultisig, 0),
-                delay
-            );
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, PAUSE_ROLE_ID, governanceSafeMultisig, 0),
+            delay
+        );
 
-            _generateAction(
-                from,
-                address(protocolAccessManager),
-                0,
-                abi.encodeWithSelector(selector, GUARDIAN_ROLE_ID, securityCouncilSafeMultisig, delay),
-                delay
-            );
-        } else if (block.chainid == 1315) {
-            bytes memory txData1 = abi.encodeWithSelector(
-                AccessManager.grantRole.selector,
-                ADMIN_ROLE_ID,
-                governanceSafeMultisig,
-                delay
-            );
-            _generateRegularTx(from[0], txData1);
-
-            bytes memory txData2 = abi.encodeWithSelector(
-                AccessManager.grantRole.selector,
-                UPGRADER_ROLE_ID,
-                governanceSafeMultisig,
-                delay
-            );
-            _generateRegularTx(from[0], txData2);
-
-            bytes memory txData3 = abi.encodeWithSelector(
-                AccessManager.grantRole.selector,
-                PAUSE_ROLE_ID,
-                governanceSafeMultisig,
-                0
-            );
-            _generateRegularTx(from[0], txData3);
-
-            bytes memory txData4 = abi.encodeWithSelector(
-                AccessManager.grantRole.selector,
-                GUARDIAN_ROLE_ID,
-                securityCouncilSafeMultisig,
-                delay
-            );
-            _generateRegularTx(from[0], txData4);
-        }
+        _generateAction(
+            from,
+            address(protocolAccessManager),
+            0,
+            abi.encodeWithSelector(selector, GUARDIAN_ROLE_ID, securityCouncilSafeMultisig, delay),
+            delay
+        );
     }
 }

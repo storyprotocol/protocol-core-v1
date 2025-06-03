@@ -306,35 +306,21 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
-        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
-
-        // Get regular transaction JSONs
-        JSONTxWriter.Transaction[] memory regularTxs = _readRegularTransactionFiles("grant-roles-to-safe");
-
-        assertEq(regularTxs.length, 4);
-
-        // Convert scheduleTxs to bytes array for multicall
-        bytes[] memory regularCalls = new bytes[](regularTxs.length);
-        for (uint256 i = 0; i < regularTxs.length; i++) {
-            regularCalls[i] = regularTxs[i].data;
-        }
-
         vm.startPrank(oldAdminAeneid);
-        Multicall(address(protocolAccessManager)).multicall(regularCalls);
+        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
         vm.stopPrank();
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe");
-        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
             JSONTxWriter.Transaction[] memory scheduleTxs,
             JSONTxWriter.Transaction[] memory executeTxs,
             JSONTxWriter.Transaction[] memory cancelTxs
-        ) = _readNonRegularTransactionFiles("remove-roles-from-non-safe");
+        ) = _readNonRegularTransactionFiles("grant-roles-to-safe");
 
         assertEq(scheduleTxs.length, 4);
         assertEq(executeTxs.length, 4);
@@ -352,8 +338,44 @@ contract GrantRolesToSafeTest is BaseTest {
             executeCalls[i] = executeTxs[i].data;
         }
 
-        vm.startPrank(governanceSafeMultisigAeneid);
+        vm.startPrank(oldAdminAeneid);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        Multicall(address(protocolAccessManager)).multicall(executeCalls);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe");
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs2,
+            JSONTxWriter.Transaction[] memory executeTxs2,
+            JSONTxWriter.Transaction[] memory cancelTxs2
+        ) = _readNonRegularTransactionFiles("remove-roles-from-non-safe");
+
+        assertEq(scheduleTxs2.length, 4);
+        assertEq(executeTxs2.length, 4);
+        assertEq(cancelTxs2.length, 4);
+
+        // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls2 = new bytes[](scheduleTxs2.length);
+        for (uint256 i = 0; i < scheduleTxs2.length; i++) {
+            scheduleCalls2[i] = scheduleTxs2[i].data;
+        }
+
+        // Convert executeTxs to bytes array for multicall
+        bytes[] memory executeCalls2 = new bytes[](executeTxs2.length);
+        for (uint256 i = 0; i < executeTxs2.length; i++) {
+            executeCalls2[i] = executeTxs2[i].data;
+        }
+
+        vm.startPrank(governanceSafeMultisigAeneid);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
         vm.stopPrank();
 
         vm.warp(block.timestamp + delayAeneid + 1);
@@ -364,7 +386,7 @@ contract GrantRolesToSafeTest is BaseTest {
         (bool hasRoleOldPauseAdmin2Before, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin2Aeneid);
 
         vm.startPrank(governanceSafeMultisigAeneid);
-        Multicall(address(protocolAccessManager)).multicall(executeCalls);
+        Multicall(address(protocolAccessManager)).multicall(executeCalls2);
         vm.stopPrank();
 
         vm.warp(block.timestamp + delayAeneid + 1);
@@ -394,6 +416,126 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleOldUpgraderAfter, false);
         assertEq(hasRoleOldPauseAdmin1After, false);
         assertEq(hasRoleOldPauseAdmin2After, false);
+
+        assertEq(hasRoleSafeAdminAfter, true);
+        assertEq(hasRoleSafeUpgradeAfter, true);
+        assertEq(hasRoleSafePauseAfter, true);
+        assertEq(hasRoleSafeGuardianAfter, true);
+    }
+
+    function test_RemoveRoles_Aeneid_Cancel() public {
+        // Fork aeneid
+        uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
+        vm.selectFork(forkId);
+
+        vm.startPrank(oldAdminAeneid);
+        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs,
+            JSONTxWriter.Transaction[] memory executeTxs,
+            JSONTxWriter.Transaction[] memory cancelTxs
+        ) = _readNonRegularTransactionFiles("grant-roles-to-safe");
+
+        assertEq(scheduleTxs.length, 4);
+        assertEq(executeTxs.length, 4);
+        assertEq(cancelTxs.length, 4);
+
+        // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
+        for (uint256 i = 0; i < scheduleTxs.length; i++) {
+            scheduleCalls[i] = scheduleTxs[i].data;
+        }
+
+        // Convert executeTxs to bytes array for multicall
+        bytes[] memory executeCalls = new bytes[](executeTxs.length);
+        for (uint256 i = 0; i < executeTxs.length; i++) {
+            executeCalls[i] = executeTxs[i].data;
+        }
+
+        vm.startPrank(oldAdminAeneid);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        Multicall(address(protocolAccessManager)).multicall(executeCalls);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe");
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs2,
+            JSONTxWriter.Transaction[] memory executeTxs2,
+            JSONTxWriter.Transaction[] memory cancelTxs2
+        ) = _readNonRegularTransactionFiles("remove-roles-from-non-safe");
+
+        assertEq(scheduleTxs2.length, 4);
+        assertEq(executeTxs2.length, 4);
+        assertEq(cancelTxs2.length, 4);
+
+        // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls2 = new bytes[](scheduleTxs2.length);
+        for (uint256 i = 0; i < scheduleTxs2.length; i++) {
+            scheduleCalls2[i] = scheduleTxs2[i].data;
+        }
+
+        // Convert cancelTxs to bytes array for multicall
+        bytes[] memory cancelCalls2 = new bytes[](cancelTxs2.length);
+        for (uint256 i = 0; i < cancelTxs2.length; i++) {
+            cancelCalls2[i] = cancelTxs2[i].data;
+        }
+
+        vm.startPrank(governanceSafeMultisigAeneid);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        (bool hasRoleOldAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
+        (bool hasRoleOldUpgraderBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);
+        (bool hasRoleOldPauseAdmin1Before, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin1Aeneid);
+        (bool hasRoleOldPauseAdmin2Before, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin2Aeneid);
+
+        Multicall(address(protocolAccessManager)).multicall(cancelCalls2);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + delayAeneid + 1);
+
+        (bool hasRoleOldAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
+        (bool hasRoleOldUpgraderAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);
+        (bool hasRoleOldPauseAdmin1After, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin1Aeneid);
+        (bool hasRoleOldPauseAdmin2After, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, oldPauseAdmin2Aeneid);
+
+        (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
+        (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
+        assertEq(hasRoleOldAdminBefore, true);
+        assertEq(hasRoleOldUpgraderBefore, true);
+        assertEq(hasRoleOldPauseAdmin1Before, true);
+        assertEq(hasRoleOldPauseAdmin2Before, true);
+
+        assertEq(hasRoleOldAdminAfter, true);
+        assertEq(hasRoleOldUpgraderAfter, true);
+        assertEq(hasRoleOldPauseAdmin1After, true);
+        assertEq(hasRoleOldPauseAdmin2After, true);
 
         assertEq(hasRoleSafeAdminAfter, true);
         assertEq(hasRoleSafeUpgradeAfter, true);

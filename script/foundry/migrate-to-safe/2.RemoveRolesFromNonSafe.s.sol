@@ -122,6 +122,7 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
             delay
         );
 
+        // Aeneid does not have any address with guardian role so we don't need to check for it
         if (block.chainid == 1514) {
             _generateAction(
                 from,

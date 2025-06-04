@@ -16,7 +16,7 @@ contract GrantRolesToSafeTest is BaseTest {
     // Maximum number of transactions in JSON files
     uint256 public constant MAX_TXS_PER_JSON = 1000;
 
-    string public constant OUTPUT_DIR = "./script/foundry/admin-actions/output/";
+    string public constant OUTPUT_DIR = "./script/foundry/admin-actions/output-test/";
 
     uint64 public constant ADMIN_ROLE_ID = 0;
     uint64 public constant UPGRADER_ROLE_ID = 1;
@@ -71,7 +71,7 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
         deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
 
         // Get all transaction JSONs (schedule, cancel, execute)
@@ -144,7 +144,7 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
         deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
 
         // Get all transaction JSONs (schedule, cancel, execute)
@@ -222,7 +222,7 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
 
         // Get all transaction JSONs (schedule, cancel, execute)
@@ -300,7 +300,7 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe");
+        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
 
         // Get all transaction JSONs (schedule, cancel, execute)

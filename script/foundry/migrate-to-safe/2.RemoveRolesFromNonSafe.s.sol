@@ -23,7 +23,7 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
     address governanceSafeMultisig;
     address securityCouncilSafeMultisig;
 
-    constructor(string memory _action) AccessManagerOperations(_action) {}
+    constructor(string memory _action, bool _isTest) AccessManagerOperations(_action, _isTest) {}
 
     function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig) public {
         uint256 chainId = block.chainid;

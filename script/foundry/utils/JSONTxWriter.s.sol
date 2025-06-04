@@ -22,6 +22,8 @@ contract JSONTxWriter is Script {
         REGULAR_TX // Usually calls directly to the access manager, like renounce roles
     }
 
+    bool isTest;
+
     /// @notice A struct to store the transaction details
     /// @param from The address of the sender
     /// @param to The address of the contract to call
@@ -47,9 +49,10 @@ contract JSONTxWriter is Script {
     /// @notice The action name
     string internal action;
 
-    constructor(string memory _action) {
+    constructor(string memory _action, bool _isTest) {
         action = _action;
         chainId = (block.chainid).toString();
+        isTest = _isTest;
     }
 
     /// @notice Saves a transaction to the mapping
@@ -127,9 +130,11 @@ contract JSONTxWriter is Script {
         }
         json = string(abi.encodePacked(json, "]"));
 
+        string memory outputDir = isTest ? "./script/foundry/admin-actions/output-test/" : "./script/foundry/admin-actions/output/";
+
         string memory filename = string(
             abi.encodePacked(
-                "./script/foundry/admin-actions/output/",
+                outputDir,
                 chainId,
                 "/",
                 action,

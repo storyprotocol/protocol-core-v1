@@ -18,7 +18,7 @@ abstract contract AccessManagerOperations is Script, JSONTxWriter {
 
     /// @notice constructor
     /// @param _action the action name, will be used in the name of the tx json file
-    constructor(string memory _action) JSONTxWriter(_action) {
+    constructor(string memory _action, bool isTest) JSONTxWriter(_action, isTest) {
         protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
     }
 

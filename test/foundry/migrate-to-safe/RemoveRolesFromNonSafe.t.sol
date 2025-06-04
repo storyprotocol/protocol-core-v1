@@ -72,6 +72,8 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
+        vm.warp(1748783192);
+
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
         deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
@@ -101,12 +103,12 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(oldAdminMainnet);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
         deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
@@ -137,7 +139,7 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(governanceSafeMultisigMainnet);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         (bool hasRoleOldAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminMainnet);
         (bool hasRoleOldUpgraderBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderMainnet);
@@ -147,7 +149,7 @@ contract GrantRolesToSafeTest is BaseTest {
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls2);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         (bool hasRoleOldAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminMainnet);
         (bool hasRoleOldUpgraderAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderMainnet);
@@ -189,6 +191,8 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
+        vm.warp(1748783192);
+
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
         deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
@@ -218,12 +222,12 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(oldAdminMainnet);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
         deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
@@ -254,7 +258,7 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(governanceSafeMultisigMainnet);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         (bool hasRoleOldAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminMainnet);
         (bool hasRoleOldUpgraderBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderMainnet);
@@ -264,7 +268,7 @@ contract GrantRolesToSafeTest is BaseTest {
 
         Multicall(address(protocolAccessManager)).multicall(cancelCalls2);
 
-        vm.warp(block.timestamp + delayMainnet + 1);
+        skip(delayMainnet + 1);
 
         (bool hasRoleOldAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminMainnet);
         (bool hasRoleOldUpgraderAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderMainnet);
@@ -306,11 +310,13 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
+        vm.warp(1748783192);
+
         vm.startPrank(oldAdminAeneid);
         protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
@@ -341,12 +347,12 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(oldAdminAeneid);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
         deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
@@ -378,7 +384,7 @@ contract GrantRolesToSafeTest is BaseTest {
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         (bool hasRoleOldAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
         (bool hasRoleOldUpgraderBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);
@@ -389,7 +395,7 @@ contract GrantRolesToSafeTest is BaseTest {
         Multicall(address(protocolAccessManager)).multicall(executeCalls2);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         (bool hasRoleOldAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
         (bool hasRoleOldUpgraderAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);
@@ -428,11 +434,13 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
+        vm.warp(1748783192);
+
         vm.startPrank(oldAdminAeneid);
         protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
         deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
@@ -463,12 +471,12 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(oldAdminAeneid);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         Multicall(address(protocolAccessManager)).multicall(executeCalls);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
         deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
@@ -499,7 +507,7 @@ contract GrantRolesToSafeTest is BaseTest {
         vm.startPrank(governanceSafeMultisigAeneid);
         Multicall(address(protocolAccessManager)).multicall(scheduleCalls2);
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         (bool hasRoleOldAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
         (bool hasRoleOldUpgraderBefore, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);
@@ -509,7 +517,7 @@ contract GrantRolesToSafeTest is BaseTest {
         Multicall(address(protocolAccessManager)).multicall(cancelCalls2);
         vm.stopPrank();
 
-        vm.warp(block.timestamp + delayAeneid + 1);
+        skip(delayAeneid + 1);
 
         (bool hasRoleOldAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, oldAdminAeneid);
         (bool hasRoleOldUpgraderAfter, ) = protocolAccessManager.hasRole(UPGRADER_ROLE_ID, oldUpgraderAeneid);

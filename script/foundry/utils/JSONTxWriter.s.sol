@@ -49,9 +49,15 @@ contract JSONTxWriter is Script {
     /// @notice The action name
     string internal action;
 
-    constructor(string memory _action, bool _isTest) {
-        action = _action;
+    constructor() {
         chainId = (block.chainid).toString();
+    }
+
+    function setAction(string memory _action) internal {
+        action = _action;
+    }
+
+    function setIsTest(bool _isTest) internal {
         isTest = _isTest;
     }
 

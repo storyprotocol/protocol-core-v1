@@ -23,11 +23,18 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
     address governanceSafeMultisig;
     address securityCouncilSafeMultisig;
 
-    constructor(string memory _action, bool _isTest) AccessManagerOperations(_action, _isTest) {}
+    // Mainnet
+    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://mainnet.storyrpc.io --legacy --sig "run(address,address,bool)" $GOVERNANCE_SAFE_ADDRESS_MAINNET $SECURITY_COUNCIL_SAFE_ADDRESS_MAINNET false
 
-    function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig) public {
+    // Aeneid
+    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool)" $GOVERNANCE_SAFE_ADDRESS_AENEID $SECURITY_COUNCIL_SAFE_ADDRESS_AENEID false
+
+    function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig, bool _isTest) public {
         uint256 chainId = block.chainid;
         if (chainId != 1315 && chainId != 1514) revert("Invalid chain id");
+
+        setAction("remove-roles-from-non-safe");
+        setIsTest(_isTest);
 
         if (chainId == 1514) {
             delay = 5 days;

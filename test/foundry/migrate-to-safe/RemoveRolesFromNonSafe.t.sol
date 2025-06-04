@@ -72,8 +72,8 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
-        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
+        GrantRolesToSafe deployScript = new GrantRolesToSafe();
+        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -108,8 +108,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayMainnet + 1);
 
-        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe", true);
-        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
+        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -189,8 +189,8 @@ contract GrantRolesToSafeTest is BaseTest {
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
-        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
+        GrantRolesToSafe deployScript = new GrantRolesToSafe();
+        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -225,8 +225,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayMainnet + 1);
 
-        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe", true);
-        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet);
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
+        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -312,8 +312,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
-        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+        GrantRolesToSafe deployScript = new GrantRolesToSafe();
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -348,8 +348,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe", true);
-        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -434,8 +434,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        GrantRolesToSafe deployScript = new GrantRolesToSafe("grant-roles-to-safe", true);
-        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+        GrantRolesToSafe deployScript = new GrantRolesToSafe();
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -470,8 +470,8 @@ contract GrantRolesToSafeTest is BaseTest {
 
         vm.warp(block.timestamp + delayAeneid + 1);
 
-        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe("remove-roles-from-non-safe", true);
-        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid);
+        RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (

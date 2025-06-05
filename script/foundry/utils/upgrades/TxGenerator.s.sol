@@ -72,9 +72,9 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         
         _generateActions();
 
-        _writeBatchTxsOutput(string.concat("schedule", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
-        _writeBatchTxsOutput(string.concat("execute", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol
-        _writeBatchTxsOutput(string.concat("cancel", "-", fromVersion, "-to-", toVersion)); // JsonBatchTxHelper.s.sol 
+        _writeBatchTxsOutput(string.concat("schedule", "-", fromVersion, "-to-", toVersion), "schedule"); // JsonBatchTxHelper.s.sol
+        _writeBatchTxsOutput(string.concat("execute", "-", fromVersion, "-to-", toVersion), "execute"); // JsonBatchTxHelper.s.sol
+        _writeBatchTxsOutput(string.concat("cancel", "-", fromVersion, "-to-", toVersion), "cancel"); // JsonBatchTxHelper.s.sol 
     }
 
     function _generateActions() internal virtual;
@@ -96,7 +96,7 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) revert("No data to schedule");
 
-        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.schedule, (p.proxy, data, 0)));
+        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.schedule, (p.proxy, data, 0)), "schedule");
         
         console2.log("--------------------");
     }
@@ -116,7 +116,7 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         console2.log("Execute scheduled tx");
         console2.logBytes(data);
 
-        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)));
+        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.execute, (p.proxy, data)), "execute");
     }
 
     function _generateCancelTx(string memory key) internal {
@@ -130,7 +130,7 @@ abstract contract TxGenerator is Script, JsonDeploymentHandler, JsonBatchTxHelpe
         bytes memory data = _getExecutionData(key, p);
         if (data.length == 0) revert("No data to schedule");
 
-        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)));
+        _writeTx(address(accessManager), 0, abi.encodeCall(AccessManager.cancel, (deployer, p.proxy, data)), "cancel");
 
         console2.log("--------------------");
     }

@@ -637,6 +637,37 @@ describe.only("Dispute Flow", function () {
       ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
     });
 
+    it("Should revert when raising dispute on behalf with already used evidence hash", async function () {
+      const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      // random fake user address
+      const fakeUser = hre.ethers.Wallet.createRandom().address;
+
+      console.log("First dispute");
+      // First dispute should succeed
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).not.to.be.rejected;
+
+      console.log("Second dispute");
+      // Second dispute with same evidence hash should fail
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          fakeUser, // Different dispute initiator
+          disputeEvidenceHash, // Same evidence hash
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__EvidenceHashAlreadyUsed");
+    });
+
     it("Should revert when dispute initiator is zero address", async function () {
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
       
@@ -725,37 +756,6 @@ describe.only("Dispute Flow", function () {
           invalidData
         )
       ).to.be.revertedWithCustomError(this.errors, "ArbitrationPolicyUMA__BondAboveMax");
-    });
-
-    it("Should revert when raising dispute on behalf with already used evidence hash", async function () {
-      const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
-      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
-      // random fake user address
-      const fakeUser = hre.ethers.Wallet.createRandom().address;
-
-      console.log("First dispute");
-      // First dispute should succeed
-      await expect(
-        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
-          ipId, 
-          this.user2.address, 
-          disputeEvidenceHash, 
-          IMPROPER_REGISTRATION, 
-          data
-        )
-      ).not.to.be.rejected;
-
-      console.log("Second dispute");
-      // Second dispute with same evidence hash should fail
-      await expect(
-        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
-          ipId, 
-          fakeUser, // Different dispute initiator
-          disputeEvidenceHash, // Same evidence hash
-          IMPROPER_REGISTRATION, 
-          data
-        )
-      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__EvidenceHashAlreadyUsed");
     });
 
     it("Should revert when raising dispute on behalf with zero evidence hash", async function () {

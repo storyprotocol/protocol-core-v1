@@ -616,6 +616,9 @@ describe.only("Dispute Flow", function () {
         this.disputeModule.connect(caller).resolveDispute(disputeId, "0x")
       ).to.be.revertedWithCustomError(this.errors, "DisputeModule__NotDisputeInitiator");
 
+      // sleep 10 seconds
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
       console.log("============ Resolve Dispute (should succeed) ============");
       // The actual dispute initiator should be able to resolve
       await expect(
@@ -656,6 +659,8 @@ describe.only("Dispute Flow", function () {
       ).not.to.be.rejected;
 
       console.log("Second dispute");
+      // sleep 10 seconds
+      await new Promise(resolve => setTimeout(resolve, 10000));
       // Second dispute with same evidence hash should fail
       await expect(
         this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(

@@ -102,8 +102,10 @@ export async function checkAndApproveSpender(owner: any, spender: any, amount: b
     console.log(`spender.address: ${spender}`);
     const currentAllowance = await getAllowance(owner.address, spender, owner);
     if (currentAllowance < amount) {
-        // await mintAmount(owner.address, amount, owner);
-        await deposit(( amount - currentAllowance), owner);
+        // this is for Protocol Core
+        await mintAmount(owner.address, amount, owner);
+        // this is for Protocol Periphery
+        // await deposit(( amount - currentAllowance), owner);
         await approveSpender(spender, amount, owner);
     }
   };

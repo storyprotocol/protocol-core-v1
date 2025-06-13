@@ -378,7 +378,7 @@ describe("RoyaltyModule", function () {
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
 
-  it.only("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
     const mintingFee = testTerms.defaultMintingFee;
     const payAmount = 1000;
     const commercialRevShare = testTerms.commercialRevShare / 10 ** 6 / 100;
@@ -544,7 +544,7 @@ describe("LAP royalty policy payment over diamond shape", function () {
     ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
   });
 
-  it.only("IP5 check claimable revenue", async function () {
+  it("IP5 check claimable revenue", async function () {
     console.log("============ Check IP5 claimable revenue ============");
     const ip5VaultAddress = await this.royaltyModule.ipRoyaltyVaults(ipId5);
     const ip5RoyaltyVault = await hre.ethers.getContractAt("IpRoyaltyVault", ip5VaultAddress);

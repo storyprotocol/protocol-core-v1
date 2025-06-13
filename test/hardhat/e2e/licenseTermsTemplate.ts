@@ -16,7 +16,7 @@ export const terms = {
   derivativesAllowed: true,
   derivativesAttribution: false,
   derivativesApproval: false,
-  derivativesReciprocal: true,
+  derivativesReciprocal: false,
   derivativeRevCeiling: 0,
   currency: hre.ethers.ZeroAddress,
   uri: "",

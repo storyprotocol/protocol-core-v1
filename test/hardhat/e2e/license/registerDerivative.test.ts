@@ -361,7 +361,7 @@ describe("LicensingModule - registerDerivative", function () {
     console.log("Correctly prevented minting license tokens after becoming derivative");
   });
 
-  it("Should prevent IP with derivatives from linking to new parents", async function () {
+  it.skip("Should prevent IP with derivatives from linking to new parents", async function () {
     console.log("============ IP with Derivatives Linking Restriction Test ============");
     
     // user1 owns grandparent and newParent

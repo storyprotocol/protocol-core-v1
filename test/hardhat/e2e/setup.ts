@@ -89,7 +89,7 @@ before(async function () {
   console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
 
   console.log(`================= Register commercial-remix PIL license terms =================`);
-  testTerms = { ...terms };
+  testTerms = terms;
   testTerms.royaltyPolicy = RoyaltyPolicyLRP;
   testTerms.defaultMintingFee = 80;
   testTerms.commercialUse = true;

@@ -5,11 +5,13 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
 
 import { IDisputeModule } from "../../../../interfaces/modules/dispute/IDisputeModule.sol";
 import { IRoyaltyModule } from "../../../../interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IArbitrationPolicyUMA } from "../../../../interfaces/modules/dispute/policies/UMA/IArbitrationPolicyUMA.sol";
 import { IOOV3 } from "../../../../interfaces/modules/dispute/policies/UMA/IOOV3.sol";
+import { IWIP } from "../../../../interfaces/IWIP.sol";
 import { ProtocolPausableUpgradeable } from "../../../../pause/ProtocolPausableUpgradeable.sol";
 import { BytesConversion } from "../../../../lib/BytesConversion.sol";
 import { Errors } from "../../../../lib/Errors.sol";
@@ -43,6 +45,7 @@ contract ArbitrationPolicyUMA is
     /// @param assertionIdToDisputeId The mapping of assertion id to dispute id
     /// @param counterEvidenceHashes The mapping of assertion id to counter evidence hash
     /// @param ipOwnerTimePercents The mapping of dispute id to ip owner time percent of the dispute
+    /// @param disputers The mapping of dispute id to disputer
     /// @custom:storage-location erc7201:story-protocol.ArbitrationPolicyUMA
     struct ArbitrationPolicyUMAStorage {
         uint64 minLiveness;
@@ -54,11 +57,14 @@ contract ArbitrationPolicyUMA is
         mapping(bytes32 assertionId => uint256 disputeId) assertionIdToDisputeId;
         mapping(bytes32 assertionId => bytes32 counterEvidenceHash) counterEvidenceHashes;
         mapping(uint256 disputeId => uint32 ipOwnerTimePercent) ipOwnerTimePercents;
+        mapping(uint256 disputeId => address disputer) disputers;
     }
 
     // keccak256(abi.encode(uint256(keccak256("story-protocol.ArbitrationPolicyUMA")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ArbitrationPolicyUMAStorageLocation =
         0xbd39630b628d883a3167c4982acf741cbddb24bae6947600210f8eb1db515300;
+
+    address public constant WIP = 0x1514000000000000000000000000000000000000;
 
     /// @dev Restricts the calls to the dispute module
     modifier onlyDisputeModule() {
@@ -165,7 +171,7 @@ contract ArbitrationPolicyUMA is
 
         bytes32 assertionId = oov3.assertTruth(
             _constructClaim(targetIpId, targetTag, disputeEvidenceHash, disputeId),
-            disputeInitiator, // asserter
+            address(this), // asserter
             address(this), // callbackRecipient
             address(0), // escalationManager
             liveness,
@@ -236,27 +242,53 @@ contract ArbitrationPolicyUMA is
             );
 
         $.counterEvidenceHashes[assertionId] = counterEvidenceHash;
+        $.disputers[disputeId] = msg.sender;
 
         IERC20 currencyToken = IERC20(assertion.currency);
         IOOV3 oov3 = $.oov3;
         currencyToken.safeTransferFrom(msg.sender, address(this), assertion.bond);
         currencyToken.safeIncreaseAllowance(address(oov3), assertion.bond);
 
-        oov3.disputeAssertion(assertionId, msg.sender);
+        oov3.disputeAssertion(assertionId, address(this));
 
         emit AssertionDisputed(disputeId, assertionId, counterEvidenceHash);
     }
 
-    /// @notice OOV3 callback function forwhen an assertion is resolved
+    /// @notice OOV3 callback function for when an assertion is resolved
     /// @param assertionId The resolved assertion identifier
     /// @param assertedTruthfully Indicates if the assertion was resolved as truthful or not
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external nonReentrant {
         ArbitrationPolicyUMAStorage storage $ = _getArbitrationPolicyUMAStorage();
-        if (msg.sender != address($.oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
+        IOOV3 oov3 = $.oov3;
+        if (msg.sender != address(oov3)) revert Errors.ArbitrationPolicyUMA__NotOOV3();
 
         uint256 disputeId = $.assertionIdToDisputeId[assertionId];
+        (, address disputeInitiator, , , , , , ) = DISPUTE_MODULE.disputes(disputeId);
+        IOOV3.Assertion memory assertion = oov3.getAssertion(assertionId);
 
+        // determine the amount to transfer and the recipient of the transfer
+        uint256 amountToTransfer;
+        address bondRecipient;
+        if (assertion.disputer == address(0)) {
+            // if the assertion was not disputed, the bond is transferred to the dispute initiator
+            amountToTransfer = assertion.bond;
+            bondRecipient = disputeInitiator;
+        } else {
+            uint256 oracleFee = (oov3.burnedBondPercentage() * assertion.bond) / 1e18;
+            amountToTransfer = assertion.bond * 2 - oracleFee;
+            bondRecipient = assertedTruthfully ? disputeInitiator : $.disputers[disputeId];
+        }
+
+        // set the dispute judgement in the dispute module
         DISPUTE_MODULE.setDisputeJudgement(disputeId, assertedTruthfully, "");
+
+        // transfer the amount to the recipient
+        if (address(assertion.currency) == WIP && bondRecipient.code.length == 0) {
+            IWIP(WIP).withdraw(amountToTransfer);
+            Address.sendValue(payable(bondRecipient), amountToTransfer);
+        } else {
+            IERC20(assertion.currency).safeTransfer(bondRecipient, amountToTransfer);
+        }
     }
 
     /// @notice OOV3 callback function for when an assertion is disputed
@@ -310,6 +342,8 @@ contract ArbitrationPolicyUMA is
     function assertionIdToDisputeId(bytes32 assertionId) external view returns (uint256) {
         return _getArbitrationPolicyUMAStorage().assertionIdToDisputeId[assertionId];
     }
+
+    receive() external payable {}
 
     /// @notice Constructs the claim for a given dispute
     /// @param targetIpId The ipId that is the target of the dispute

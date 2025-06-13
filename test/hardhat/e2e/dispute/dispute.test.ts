@@ -12,7 +12,7 @@ const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
 const arbitrationFee = 100;
 const data = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, arbitrationFee]);
 
-describe("Dispute Flow", function () {
+describe.only("Dispute Flow", function () {
   it("Raise dispute for an IP asset, set judgement to true", async function () {
     console.log("============ Register IP ============");
     const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
@@ -510,14 +510,8 @@ describe("Dispute Flow", function () {
   });
 
   describe("Raise Dispute On Behalf - Normal Operations", function () {
-    let ipId: string;
-
-    before(async function () {
-      console.log("============ Register IP for raiseDisputeOnBehalf tests ============");
-      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
-    });
-
     it("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
+      const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
       const disputeInitiator = this.user2.address;
       const caller = this.user1;
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
@@ -589,10 +583,16 @@ describe("Dispute Flow", function () {
     });
 
     it("Should only allow dispute initiator to resolve dispute after judgement", async function () {
+      const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
       const disputeInitiator = this.user2; // user2 is the dispute initiator
       const caller = this.user1; // user1 pays the fees
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
       
+      console.log("============ Raise Dispute On Behalf ============");
+      console.log(`ipId: ${ipId}`);
+      console.log(`caller: ${caller.address}`);
+      console.log(`disputeInitiator: ${disputeInitiator.address}`);
+
       // Raise dispute on behalf
       const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
         ipId, 
@@ -604,21 +604,26 @@ describe("Dispute Flow", function () {
       
       const receipt = await tx.wait();
       const disputeId = receipt.logs[5].args[0];
-      
+      console.log("disputeId", disputeId);
+
       // Set dispute judgement to true (dispute wins)
+      console.log("============ Set Dispute Judgement ============");
       await this.disputeModule.setDisputeJudgement(disputeId, true, "0x");
       
       // Only dispute initiator should be able to resolve (not the caller who paid)
+      console.log("============ Resolve Dispute (should revert) ============");
       await expect(
         this.disputeModule.connect(caller).resolveDispute(disputeId, "0x")
       ).to.be.revertedWithCustomError(this.errors, "DisputeModule__NotDisputeInitiator");
-      
+
+      console.log("============ Resolve Dispute (should succeed) ============");
       // The actual dispute initiator should be able to resolve
       await expect(
         this.disputeModule.connect(disputeInitiator).resolveDispute(disputeId, "0x")
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
       
       // Verify dispute is resolved
+      console.log("============ Verify Dispute Resolved ============");
       const dispute = await this.disputeModule.disputes(disputeId);
       expect(dispute.currentTag).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
     });

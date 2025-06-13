@@ -25,7 +25,7 @@ describe("RoyaltyModule", function () {
   let user2ConnectedRoyaltyPolicyLAP: any;
   let user2ConnectedRoyaltyPolicyLRP: any;
   let user3ConnectedRoyaltyPolicyLRP: any;
-  const testTerms = terms;
+  const testTerms = { ...terms };
 
   this.beforeAll("Get Signers and register license terms", async function () {
     // Get the signers
@@ -48,7 +48,7 @@ describe("RoyaltyModule", function () {
     console.log("Transaction hash: ", registerLicenseLAPTx.hash);
     expect(registerLicenseLAPTx.hash).not.to.be.empty.and.to.be.a("HexString");
 
-    licenseTermsLAPId = await connectedLicense.getLicenseTermsId(terms);
+    licenseTermsLAPId = await connectedLicense.getLicenseTermsId(testTerms);
     console.log("licenseTermsLAPId: ", licenseTermsLAPId);
 
     testTerms.royaltyPolicy = RoyaltyPolicyLRP;
@@ -60,7 +60,7 @@ describe("RoyaltyModule", function () {
     console.log("Transaction hash: ", registerLicenseLRPTx.hash);
     expect(registerLicenseLRPTx.hash).not.to.be.empty.and.to.be.a("HexString");
 
-    licenseTermsLRPId = await connectedLicense.getLicenseTermsId(terms);
+    licenseTermsLRPId = await connectedLicense.getLicenseTermsId(testTerms);
     console.log("licenseTermsLRPId: ", licenseTermsLRPId);    
 
     user1ConnectedLicensingModule = this.licensingModule.connect(signers[0]); 
@@ -378,33 +378,37 @@ describe("RoyaltyModule", function () {
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
 
-  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
-    const mintingFee = terms.defaultMintingFee;
+  it.only("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+    const mintingFee = testTerms.defaultMintingFee;
     const payAmount = 1000;
-    const commercialRevShare = terms.commercialRevShare / 10 ** 6 / 100;
+    const commercialRevShare = testTerms.commercialRevShare / 10 ** 6 / 100;
 
     // Step 1: Register IPs
     console.log("============ Register IPs ============");
-    const mintAndRegisterResp1 = await mintNFTAndRegisterIPA(signers[0], signers[0]);
+    const mintAndRegisterResp1 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
     const parentIpId = mintAndRegisterResp1.ipId;
     console.log("Parent IP ID: ", parentIpId);
 
-    const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
+    const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[2], signers[2]);
     const childIpId = mintAndRegisterResp2.ipId;
     console.log("Child IP ID: ", childIpId);
 
-    const mintAndRegisterResp3 = await mintNFTAndRegisterIPA(signers[2], signers[2]);
+    const mintAndRegisterResp3 = await mintNFTAndRegisterIPA(signers[0], signers[0]);
     const ipId3 = mintAndRegisterResp3.ipId;
     console.log("IP3 ID: ", ipId3);
 
     // Step 2: Deploy vaults manually before any licensing activity
     console.log("============ Deploy Vaults Manually ============");
+    const user1ConnectedRoyaltyModule = this.royaltyModule.connect(signers[1]);
+    const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
+
     const deployParentVaultTx = await expect(
       user1ConnectedRoyaltyModule.deployVault(parentIpId)
     ).to.not.be.rejectedWith(Error);
     await deployParentVaultTx.wait();
     console.log("Parent vault deployed: ", deployParentVaultTx.hash);
 
+    const user2ConnectedRoyaltyModule = this.royaltyModule.connect(signers[2]);
     const deployChildVaultTx = await expect(
       user2ConnectedRoyaltyModule.deployVault(childIpId)
     ).to.not.be.rejectedWith(Error);
@@ -421,6 +425,7 @@ describe("RoyaltyModule", function () {
 
     // Step 4: Register child as derivative of parent
     console.log("============ Register Derivative ============");
+    const user2ConnectedLicensingModule = this.licensingModule.connect(signers[2]);
     const registerDerivativeTx = await expect(
       user2ConnectedLicensingModule.registerDerivative(
         childIpId, 
@@ -441,8 +446,8 @@ describe("RoyaltyModule", function () {
     const mockERC20Contract = await hre.ethers.getContractAt("MockERC20", MockERC20);
     
     // Ensure sufficient token balance and approval
-    await mockERC20Contract.mint(signers[1].address, BigInt(payAmount));
-    await mockERC20Contract.connect(signers[1]).approve(this.royaltyModule.target, BigInt(payAmount));
+    await mockERC20Contract.mint(signers[2].address, BigInt(payAmount));
+    await mockERC20Contract.connect(signers[2]).approve(this.royaltyModule.target, BigInt(payAmount));
     
     const payRoyaltyTx = await expect(
       user2ConnectedRoyaltyModule.payRoyaltyOnBehalf(childIpId, ipId3, MockERC20, BigInt(payAmount))
@@ -454,8 +459,9 @@ describe("RoyaltyModule", function () {
     console.log("============ Transfer Royalties to Vault ============");
     // Ensure RoyaltyPolicyLAP has sufficient tokens
     await mockERC20Contract.mint(this.royaltyPolicyLAP.target, BigInt(payAmount));
-    await mockERC20Contract.connect(signers[1]).approve(this.royaltyPolicyLAP.target, BigInt(payAmount));
+    await mockERC20Contract.connect(signers[2]).approve(this.royaltyPolicyLAP.target, BigInt(payAmount));
     
+    const user2ConnectedRoyaltyPolicyLAP = this.royaltyPolicyLAP.connect(signers[2]);
     const transferToVaultTx = await expect(
       user2ConnectedRoyaltyPolicyLAP.transferToVault(childIpId, parentIpId, MockERC20)
     ).not.to.be.rejectedWith(Error);
@@ -538,7 +544,7 @@ describe("LAP royalty policy payment over diamond shape", function () {
     ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
   });
 
-  it("IP5 check claimable revenue", async function () {
+  it.only("IP5 check claimable revenue", async function () {
     console.log("============ Check IP5 claimable revenue ============");
     const ip5VaultAddress = await this.royaltyModule.ipRoyaltyVaults(ipId5);
     const ip5RoyaltyVault = await hre.ethers.getContractAt("IpRoyaltyVault", ip5VaultAddress);

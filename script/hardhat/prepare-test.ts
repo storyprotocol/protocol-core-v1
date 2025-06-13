@@ -7,6 +7,7 @@ async function main() {
     // because the mock contracts are in the foundry test directory
     const mockFilesPath = [
         'test/foundry/mocks/module/MockLicenseTemplate.sol',
+        'test/foundry/mocks/token/MockERC20.sol',
     ];
 
     for (const filePath of mockFilesPath) {

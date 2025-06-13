@@ -9,7 +9,8 @@ import { MockERC20, MockERC721, PILicenseTemplate, RoyaltyPolicyLAP } from "../c
 import { terms } from "../licenseTermsTemplate";
 
 const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
-const data = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, 100]);
+const arbitrationFee = 100;
+const data = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, arbitrationFee]);
 
 describe("Dispute Flow", function () {
   it("Raise dispute for an IP asset, set judgement to true", async function () {
@@ -507,6 +508,278 @@ describe("Dispute Flow", function () {
         })
     })
   });
+
+  describe("Raise Dispute On Behalf - Normal Operations", function () {
+    let ipId: string;
+
+    before(async function () {
+      console.log("============ Register IP for raiseDisputeOnBehalf tests ============");
+      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
+    });
+
+    it("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
+      const disputeInitiator = this.user2.address;
+      const caller = this.user1;
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      console.log("============ Raise Dispute On Behalf ============");
+      console.log(`ipId: ${ipId}`);
+      console.log(`caller: ${caller.address}`);
+      console.log(`disputeInitiator: ${disputeInitiator}`);
+
+      // balance of caller before raising dispute
+      const callerBalanceBefore = await this.erc20.balanceOf(caller.address);
+      console.log(`Caller balance before: ${callerBalanceBefore}`);
+
+      // balance of dispute initiator before raising dispute
+      const disputeInitiatorBalanceBefore = await this.erc20.balanceOf(disputeInitiator);
+      console.log(`Dispute initiator balance before: ${disputeInitiatorBalanceBefore}`);
+      
+      const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
+        ipId, 
+        disputeInitiator, 
+        disputeEvidenceHash, 
+        IMPROPER_REGISTRATION, 
+        data
+      );
+      
+      const receipt = await tx.wait();
+      const disputeId = receipt.logs[5].args[0];
+      
+      console.log("disputeId", disputeId);
+      
+      // Verify dispute details
+      const dispute = await this.disputeModule.disputes(disputeId);
+      expect(dispute.targetIpId).to.equal(ipId);
+      expect(dispute.disputeInitiator).to.equal(disputeInitiator); // Should be user2
+      expect(dispute.disputeTimestamp).to.be.greaterThan(0);
+      expect(dispute.arbitrationPolicy).to.equal(await this.disputeModule.baseArbitrationPolicy());
+      expect(dispute.disputeEvidenceHash).to.equal(disputeEvidenceHash);
+      expect(dispute.targetTag).to.equal(IMPROPER_REGISTRATION);
+      expect(dispute.currentTag).to.equal(encodeBytes32String("IN_DISPUTE"));
+      expect(dispute.infringerDisputeId).to.equal(0);
+      
+      // Verify event emission with separate caller and dispute initiator
+      const disputeRaisedEvent = receipt.logs.find(log => {
+        try {
+          const parsed = this.disputeModule.interface.parseLog(log);
+          return parsed?.name === "DisputeRaised";
+        } catch {
+          return false;
+        }
+      });
+      
+      expect(disputeRaisedEvent).to.not.be.undefined;
+      const parsedEvent = this.disputeModule.interface.parseLog(disputeRaisedEvent);
+      expect(parsedEvent.args.caller).to.equal(caller.address); // Caller should be user1
+      expect(parsedEvent.args.disputeInitiator).to.equal(disputeInitiator); // Initiator should be user2
+
+      // balance of caller after raising dispute  
+      const callerBalanceAfter = await this.erc20.balanceOf(caller.address);
+      console.log(`Caller balance after raising dispute: ${callerBalanceAfter}`);
+
+      // balance of dispute initiator after raising dispute
+      const disputeInitiatorBalanceAfter = await this.erc20.balanceOf(disputeInitiator);
+      console.log(`Dispute initiator balance after raising dispute: ${disputeInitiatorBalanceAfter}`);
+
+      // caller should have paid the arbitration fee
+      expect(callerBalanceBefore - callerBalanceAfter).to.equal(arbitrationFee);
+      // dispute initiator should not change
+      expect(disputeInitiatorBalanceAfter).to.equal(disputeInitiatorBalanceBefore);
+    });
+
+    it("Should only allow dispute initiator to resolve dispute after judgement", async function () {
+      const disputeInitiator = this.user2; // user2 is the dispute initiator
+      const caller = this.user1; // user1 pays the fees
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      // Raise dispute on behalf
+      const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
+        ipId, 
+        disputeInitiator.address, 
+        disputeEvidenceHash, 
+        IMPROPER_REGISTRATION, 
+        data
+      );
+      
+      const receipt = await tx.wait();
+      const disputeId = receipt.logs[5].args[0];
+      
+      // Set dispute judgement to true (dispute wins)
+      await this.disputeModule.setDisputeJudgement(disputeId, true, "0x");
+      
+      // Only dispute initiator should be able to resolve (not the caller who paid)
+      await expect(
+        this.disputeModule.connect(caller).resolveDispute(disputeId, "0x")
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__NotDisputeInitiator");
+      
+      // The actual dispute initiator should be able to resolve
+      await expect(
+        this.disputeModule.connect(disputeInitiator).resolveDispute(disputeId, "0x")
+      ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+      
+      // Verify dispute is resolved
+      const dispute = await this.disputeModule.disputes(disputeId);
+      expect(dispute.currentTag).to.equal("0x0000000000000000000000000000000000000000000000000000000000000000");
+    });
+  });
+
+  describe("Raise Dispute On Behalf - Error Cases", function () {
+    let ipId: string;
+
+    before(async function () {
+      console.log("============ Register IP for raiseDisputeOnBehalf error tests ============");
+      ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
+    });
+
+    it("Should revert when dispute initiator is zero address", async function () {
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          ethers.ZeroAddress, // Zero address as dispute initiator
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__InvalidDisputeInitiator");
+    });
+
+    it("Should revert when dispute initiator is the target IP", async function () {
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          ipId, // Target IP as dispute initiator
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__InvalidDisputeInitiator");
+    });
+
+    it("Should revert when raising dispute on behalf with non-whitelisted tag", async function () {
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          encodeBytes32String("NOT_WHITELISTED"), // Non-whitelisted tag
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__NotWhitelistedDisputeTag");
+    });
+
+    it("Should revert when raising dispute on behalf with liveness below minimum", async function () {
+      const liveness = await this.arbitrationPolicyUMA.minLiveness() - 1n;
+      const invalidData = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [liveness, MockERC20, 100]);
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          invalidData
+        )
+      ).to.be.revertedWithCustomError(this.errors, "ArbitrationPolicyUMA__LivenessBelowMin");
+    });
+
+    it("Should revert when raising dispute on behalf with liveness above maximum", async function () {
+      const liveness = await this.arbitrationPolicyUMA.maxLiveness() + 1n;
+      const invalidData = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [liveness, MockERC20, 100]);
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          invalidData
+        )
+      ).to.be.revertedWithCustomError(this.errors, "ArbitrationPolicyUMA__LivenessAboveMax");
+    });
+
+    it("Should revert when raising dispute on behalf with bonds above maximum", async function () {
+      const bonds = await this.arbitrationPolicyUMA.maxBonds(MockERC20) + 1n;
+      const invalidData = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, bonds]);
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          invalidData
+        )
+      ).to.be.revertedWithCustomError(this.errors, "ArbitrationPolicyUMA__BondAboveMax");
+    });
+
+    it("Should revert when raising dispute on behalf with already used evidence hash", async function () {
+      const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      // random fake user address
+      const fakeUser = hre.ethers.Wallet.createRandom().address;
+
+      console.log("First dispute");
+      // First dispute should succeed
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).not.to.be.rejected;
+
+      console.log("Second dispute");
+      // Second dispute with same evidence hash should fail
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          fakeUser, // Different dispute initiator
+          disputeEvidenceHash, // Same evidence hash
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__EvidenceHashAlreadyUsed");
+    });
+
+    it("Should revert when raising dispute on behalf with zero evidence hash", async function () {
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          ipId, 
+          this.user2.address, 
+          ethers.ZeroHash, // Zero evidence hash
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__ZeroDisputeEvidenceHash");
+    });
+
+    it("Should revert when raising dispute on behalf with unregistered IP", async function () {
+      const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      const unregisteredIpId = "0x1234567890123456789012345678901234567890"; // Fake IP address
+      
+      await expect(
+        this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(
+          unregisteredIpId, 
+          this.user2.address, 
+          disputeEvidenceHash, 
+          IMPROPER_REGISTRATION, 
+          data
+        )
+      ).to.be.revertedWithCustomError(this.errors, "DisputeModule__NotRegisteredIpId");
+    });
+  });
 });
 
 function generateUniqueDisputeEvidenceHash() {
@@ -540,7 +813,8 @@ function decodeRevertReason(errorData: ethers.BytesLike) {
     "error DisputeModule__DisputeAlreadyPropagated()",
     "error DisputeModule__RelatedDisputeNotResolved()",
     "error DisputeModule__ZeroArbitrationPolicyCooldown()",
-    "error DisputeModule__EvidenceHashAlreadyUsed()"
+    "error DisputeModule__EvidenceHashAlreadyUsed()",
+    "error DisputeModule__InvalidDisputeInitiator()"
   ]);
 
   try {

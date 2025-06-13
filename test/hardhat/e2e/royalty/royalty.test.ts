@@ -377,6 +377,117 @@ describe("RoyaltyModule", function () {
       this.royaltyPolicyLRP.transferToVault(ipId1, ipId1, MockERC20)
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
+
+  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+    const mintingFee = terms.defaultMintingFee;
+    const payAmount = 1000;
+    const commercialRevShare = terms.commercialRevShare / 10 ** 6 / 100;
+
+    // Step 1: Register IPs
+    console.log("============ Register IPs ============");
+    const mintAndRegisterResp1 = await mintNFTAndRegisterIPA(signers[0], signers[0]);
+    const parentIpId = mintAndRegisterResp1.ipId;
+    console.log("Parent IP ID: ", parentIpId);
+
+    const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
+    const childIpId = mintAndRegisterResp2.ipId;
+    console.log("Child IP ID: ", childIpId);
+
+    const mintAndRegisterResp3 = await mintNFTAndRegisterIPA(signers[2], signers[2]);
+    const ipId3 = mintAndRegisterResp3.ipId;
+    console.log("IP3 ID: ", ipId3);
+
+    // Step 2: Deploy vaults manually before any licensing activity
+    console.log("============ Deploy Vaults Manually ============");
+    const deployParentVaultTx = await expect(
+      user1ConnectedRoyaltyModule.deployVault(parentIpId)
+    ).to.not.be.rejectedWith(Error);
+    await deployParentVaultTx.wait();
+    console.log("Parent vault deployed: ", deployParentVaultTx.hash);
+
+    const deployChildVaultTx = await expect(
+      user2ConnectedRoyaltyModule.deployVault(childIpId)
+    ).to.not.be.rejectedWith(Error);
+    await deployChildVaultTx.wait();
+    console.log("Child vault deployed: ", deployChildVaultTx.hash);
+
+    // Step 3: Attach license terms to parent IP
+    console.log("============ Attach License Terms ============");
+    const attachLicenseTx = await expect(
+      user1ConnectedLicensingModule.attachLicenseTerms(parentIpId, PILicenseTemplate, licenseTermsLAPId)
+    ).not.to.be.rejectedWith(Error);
+    await attachLicenseTx.wait();
+    console.log("License terms attached: ", attachLicenseTx.hash);
+
+    // Step 4: Register child as derivative of parent
+    console.log("============ Register Derivative ============");
+    const registerDerivativeTx = await expect(
+      user2ConnectedLicensingModule.registerDerivative(
+        childIpId, 
+        [parentIpId], 
+        [licenseTermsLAPId], 
+        PILicenseTemplate, 
+        hre.ethers.ZeroAddress, 
+        0, 
+        mintingFee,
+        20 * 10 ** 6 // 20% royalty
+      )
+    ).not.to.be.rejectedWith(Error);
+    await registerDerivativeTx.wait();
+    console.log("Derivative registered: ", registerDerivativeTx.hash);
+
+    // Step 5: Pay royalty
+    console.log("============ Pay Royalty ============");
+    const mockERC20Contract = await hre.ethers.getContractAt("MockERC20", MockERC20);
+    
+    // Ensure sufficient token balance and approval
+    await mockERC20Contract.mint(signers[1].address, BigInt(payAmount));
+    await mockERC20Contract.connect(signers[1]).approve(this.royaltyModule.target, BigInt(payAmount));
+    
+    const payRoyaltyTx = await expect(
+      user2ConnectedRoyaltyModule.payRoyaltyOnBehalf(childIpId, ipId3, MockERC20, BigInt(payAmount))
+    ).not.to.be.rejectedWith(Error);
+    await payRoyaltyTx.wait();
+    console.log("Royalty paid: ", payRoyaltyTx.hash);
+
+    // Step 6: Transfer royalties to parent vault
+    console.log("============ Transfer Royalties to Vault ============");
+    // Ensure RoyaltyPolicyLAP has sufficient tokens
+    await mockERC20Contract.mint(this.royaltyPolicyLAP.target, BigInt(payAmount));
+    await mockERC20Contract.connect(signers[1]).approve(this.royaltyPolicyLAP.target, BigInt(payAmount));
+    
+    const transferToVaultTx = await expect(
+      user2ConnectedRoyaltyPolicyLAP.transferToVault(childIpId, parentIpId, MockERC20)
+    ).not.to.be.rejectedWith(Error);
+    await transferToVaultTx.wait();
+    console.log("Transferred to vault: ", transferToVaultTx.hash);
+
+    // Step 7: Verify claimable revenue
+    console.log("============ Verify Claimable Revenue ============");
+    const parentVaultAddress = await user1ConnectedRoyaltyModule.ipRoyaltyVaults(parentIpId);
+    const parentVaultContract = await hre.ethers.getContractAt("IpRoyaltyVault", parentVaultAddress);
+    
+    const parentClaimableRevenue = await parentVaultContract.claimableRevenue(parentIpId, MockERC20);
+    console.log("Parent claimable revenue: ", parentClaimableRevenue.toString());
+    
+    // Expected revenue: minting fee + payment amount (since parent gets 100% as root)
+    const expectedRevenue = BigInt(mintingFee + payAmount * commercialRevShare);
+    expect(parentClaimableRevenue).to.equal(expectedRevenue);
+
+    // Step 8: Claim revenue
+    console.log("============ Claim Revenue ============");
+    const claimRevenueTx = await expect(
+      parentVaultContract.claimRevenueOnBehalf(parentIpId, MockERC20)
+    ).not.to.be.rejectedWith(Error);
+    await claimRevenueTx.wait();
+    console.log("Revenue claimed: ", claimRevenueTx.hash);
+
+    // Verify revenue was claimed (should be 0 now)
+    const parentClaimableRevenueAfter = await parentVaultContract.claimableRevenue(parentIpId, MockERC20);
+    expect(parentClaimableRevenueAfter).to.equal(0);
+    
+    console.log("Complete royalty flow works correctly with pre-deployed vaults");
+  });
 });
 
 describe("LAP royalty policy payment over diamond shape", function () {

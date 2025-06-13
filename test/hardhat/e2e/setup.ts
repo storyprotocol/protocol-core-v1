@@ -30,6 +30,7 @@ before(async function () {
   this.arbitrationPolicyUMA = await hre.ethers.getContractAt("ArbitrationPolicyUMA", ArbitrationPolicyUMA);
   this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
   this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
+  this.erc20 = await hre.ethers.getContractAt("MockERC20", MockERC20);
   this.errors = await hre.ethers.getContractFactory("contracts/lib/Errors.sol:Errors");
   
   console.log(`================= Load Users =================`);
@@ -88,7 +89,7 @@ before(async function () {
   console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
 
   console.log(`================= Register commercial-remix PIL license terms =================`);
-  testTerms = terms;
+  testTerms = { ...terms };
   testTerms.royaltyPolicy = RoyaltyPolicyLRP;
   testTerms.defaultMintingFee = 80;
   testTerms.commercialUse = true;

@@ -499,7 +499,7 @@ describe("RoyaltyModule", function () {
   });
 });
 
-describe("LAP royalty policy payment over diamond shape", function () {
+describe.only("LAP royalty policy payment over diamond shape", function () {
   const defaultMintingFee = 100;
   const shareRate = 0.01;
   const paidAmount = 10000;

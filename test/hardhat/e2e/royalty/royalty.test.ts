@@ -8,7 +8,7 @@ import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "..
 import { terms } from "../licenseTermsTemplate";
 import { registerPILTerms } from "../utils/licenseHelper";
 
-describe("RoyaltyModule", function () {
+describe.only("RoyaltyModule", function () {
   let signers:any;
   let ipId1: any;
   let ipId2: any;
@@ -378,7 +378,7 @@ describe("RoyaltyModule", function () {
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
 
-  it.only("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
     const mintingFee = testTerms.defaultMintingFee;
     const payAmount = 1000;
     const commercialRevShare = testTerms.commercialRevShare / 10 ** 6 / 100;

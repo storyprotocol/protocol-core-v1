@@ -25,7 +25,7 @@ describe("RoyaltyModule", function () {
   let user2ConnectedRoyaltyPolicyLAP: any;
   let user2ConnectedRoyaltyPolicyLRP: any;
   let user3ConnectedRoyaltyPolicyLRP: any;
-  const testTerms = { ...terms };
+  const testTerms = terms ;
 
   this.beforeAll("Get Signers and register license terms", async function () {
     // Get the signers
@@ -457,6 +457,9 @@ describe("RoyaltyModule", function () {
 
     // Step 6: Transfer royalties to parent vault
     console.log("============ Transfer Royalties to Vault ============");
+    // sleep 10 seconds
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
     // Ensure RoyaltyPolicyLAP has sufficient tokens
     await mockERC20Contract.mint(this.royaltyPolicyLAP.target, BigInt(payAmount));
     await mockERC20Contract.connect(signers[2]).approve(this.royaltyPolicyLAP.target, BigInt(payAmount));

@@ -12,7 +12,7 @@ const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
 const arbitrationFee = 100;
 const data = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, arbitrationFee]);
 
-describe.only("Dispute Flow", function () {
+describe("Dispute Flow", function () {
   it("Raise dispute for an IP asset, set judgement to true", async function () {
     console.log("============ Register IP ============");
     const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);

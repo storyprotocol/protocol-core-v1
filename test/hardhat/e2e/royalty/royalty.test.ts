@@ -7,8 +7,9 @@ import { MockERC20, PILicenseTemplate, RoyaltyPolicyLAP, RoyaltyPolicyLRP } from
 import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "../utils/mintNFTAndRegisterIPA";
 import { terms } from "../licenseTermsTemplate";
 import { registerPILTerms } from "../utils/licenseHelper";
+import { only } from "node:test";
 
-describe.only("RoyaltyModule", function () {
+describe("RoyaltyModule", function () {
   let signers:any;
   let ipId1: any;
   let ipId2: any;
@@ -499,7 +500,7 @@ describe.only("RoyaltyModule", function () {
   });
 });
 
-describe.only("LAP royalty policy payment over diamond shape", function () {
+describe("LAP royalty policy payment over diamond shape", function () {
   const defaultMintingFee = 100;
   const shareRate = 0.01;
   const paidAmount = 10000;
@@ -542,9 +543,19 @@ describe.only("LAP royalty policy payment over diamond shape", function () {
 
     console.log("============ IP6 Pay royalty on behalf to IP5 ============");
     const { ipId: ipId6 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
-    await expect(
-      this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount)
-    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    try {
+      const tx = await this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount);
+      await tx.wait();
+    } catch (error) {
+      console.log("Error details:", {
+        message: error.message,
+        code: error.code,
+        data: error.data,
+        transaction: error.transaction,
+        receipt: error.receipt
+      });
+      throw error;
+    }
   });
 
   it("IP5 check claimable revenue", async function () {

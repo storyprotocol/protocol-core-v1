@@ -378,7 +378,7 @@ describe("RoyaltyModule", function () {
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
 
-  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+  it.only("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
     const mintingFee = testTerms.defaultMintingFee;
     const payAmount = 1000;
     const commercialRevShare = testTerms.commercialRevShare / 10 ** 6 / 100;

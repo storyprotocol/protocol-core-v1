@@ -75,7 +75,7 @@ describe("RoyaltyModule - deployVault", function () {
     const vaultContract = await hre.ethers.getContractAt("IpRoyaltyVault", vaultAddress);
     const vaultIpId = await vaultContract.ipId();
     expect(vaultIpId).to.equal(ipId1);
-    console.log("✓ Vault deployed successfully for IP: ", ipId1);
+    console.log("Vault deployed successfully for IP: ", ipId1);
   });
 
   it("Should revert when trying to deploy vault for unregistered IP", async function () {
@@ -88,7 +88,7 @@ describe("RoyaltyModule - deployVault", function () {
       user1ConnectedRoyaltyModule.deployVault(fakeIpId)
     ).to.be.revertedWithCustomError(this.royaltyModule, "RoyaltyModule__IpIdNotRegistered");
     
-    console.log("✓ Correctly reverted for unregistered IP");
+    console.log("Correctly reverted for unregistered IP");
   });
 
   it("Should revert when trying to deploy vault twice for same IP", async function () {
@@ -111,7 +111,7 @@ describe("RoyaltyModule - deployVault", function () {
       user2ConnectedRoyaltyModule.deployVault(ipId2)
     ).to.be.revertedWithCustomError(this.royaltyModule, "RoyaltyModule__VaultAlreadyDeployed");
     
-    console.log("✓ Correctly reverted when trying to deploy vault twice");
+    console.log("Correctly reverted when trying to deploy vault twice");
   });
 
   it("Should allow vault deployment independent of license minting", async function () {
@@ -143,7 +143,7 @@ describe("RoyaltyModule - deployVault", function () {
     const vaultAddressAfterLicense = await user1ConnectedRoyaltyModule.ipRoyaltyVaults(ipId3);
     expect(vaultAddressAfterLicense).to.equal(vaultAddress);
     
-    console.log("✓ Vault deployment works independently of licensing");
+    console.log("Vault deployment works independently of licensing");
   });
 
   it("Should emit VaultDeployed event when vault is deployed", async function () {
@@ -177,7 +177,7 @@ describe("RoyaltyModule - deployVault", function () {
     expect(event.args[0]).to.equal(ipId4);
     expect(event.args[1]).to.equal(vaultAddress);
     
-    console.log("✓ VaultDeployed event emitted correctly");
+    console.log("VaultDeployed event emitted correctly");
   });
 
   it("Should handle license minting after vault deployment - validates minting fee revenue collection", async function () {
@@ -240,7 +240,7 @@ describe("RoyaltyModule - deployVault", function () {
     const claimableRevenue = await vaultContract.claimableRevenue(licensorIpId, MockERC20);
     expect(claimableRevenue).to.be.greaterThan(0);
     
-    console.log("✓ License minting works correctly after vault deployment");
+    console.log("License minting works correctly after vault deployment");
     console.log("Claimable revenue: ", claimableRevenue.toString());
   });
 
@@ -318,7 +318,7 @@ describe("RoyaltyModule - deployVault", function () {
     expect(globalRoyaltyStack).to.be.greaterThan(0);
     console.log("Global royalty stack: ", globalRoyaltyStack.toString());
     
-    console.log("✓ Linking to parents works correctly after vault deployment");
+    console.log("Linking to parents works correctly after vault deployment");
   });
 
   it("Should revert when trying to deploy vault for group IP with non-whitelisted reward pool", async function () {
@@ -365,7 +365,7 @@ describe("RoyaltyModule - deployVault", function () {
       user1ConnectedRoyaltyModule.deployVault(groupId)
     ).to.be.revertedWithCustomError(this.royaltyModule, "RoyaltyModule__GroupRewardPoolNotWhitelisted");
     
-    console.log("✓ Correctly reverted with RoyaltyModule__GroupRewardPoolNotWhitelisted for non-whitelisted reward pool");
+    console.log("Correctly reverted with RoyaltyModule__GroupRewardPoolNotWhitelisted for non-whitelisted reward pool");
     
     // Clean up: re-whitelist the reward pool for potential future tests
     await expect(

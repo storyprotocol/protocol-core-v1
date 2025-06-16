@@ -659,8 +659,7 @@ describe("Dispute Flow", function () {
       ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
 
       console.log("Second dispute");
-      // sleep 10 seconds
-      // await new Promise(resolve => setTimeout(resolve, 10000));
+
       // Second dispute with same evidence hash should fail
       await expect(
         this.disputeModule.connect(this.user1).raiseDisputeOnBehalf(

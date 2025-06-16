@@ -361,12 +361,23 @@ describe("LicensingModule - registerDerivative", function () {
     console.log("Correctly prevented minting license tokens after becoming derivative");
   });
 
-  it.skip("Should prevent IP with derivatives from linking to new parents", async function () {
-    console.log("============ IP with Derivatives Linking Restriction Test ============");
-    
+  it("Should prevent IP with derivatives from linking to new parents", async function () {
+    const testTerms = { ...terms };
+    testTerms.derivativesReciprocal = true;
+    testTerms.currency = MockERC20;
+
+    console.log("============ Register license terms ============")
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(testTerms)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    const commRemixTermsId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    console.log("Commercial-remix licenseTermsId: ", commRemixTermsId);
+
+    console.log("============ Register IPs ============")
     // user1 owns grandparent and newParent
-    const { ipId: grandparentIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
-    const { ipId: newParentIpId } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const { ipId: grandparentIpId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user1, this.user1);
+    const { ipId: newParentIpId } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user1, this.user1);
     
     // user2 owns: parent and child
     const { ipId: parentIpId } = await mintNFTAndRegisterIPA(this.user2, this.user2);
@@ -377,25 +388,13 @@ describe("LicensingModule - registerDerivative", function () {
     console.log("Child IP ID (user2): ", childIpId);
     console.log("New Parent IP ID (user1): ", newParentIpId);
 
-    console.log("============ Attach license terms to IPs ============")
-
-    // user1 attaches license terms to grandparent
-    await expect(
-      this.licensingModule.connect(this.user1).attachLicenseTerms(grandparentIpId, PILicenseTemplate, this.commericialRemixLicenseId)
-    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
-
-    // user1 attaches license terms to newParent
-    await expect(
-      this.licensingModule.connect(this.user1).attachLicenseTerms(newParentIpId, PILicenseTemplate, this.commericialRemixLicenseId)
-    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
-
     console.log("============ Register parent as derivative of grandparent ============")
     // user2 registers parent as derivative of grandparent
     await expect(
       this.licensingModule.connect(this.user2).registerDerivative(
         parentIpId, 
         [grandparentIpId], 
-        [this.commericialRemixLicenseId], 
+        [commRemixTermsId], 
         PILicenseTemplate, 
         hre.ethers.ZeroAddress, 
         0, 
@@ -411,7 +410,7 @@ describe("LicensingModule - registerDerivative", function () {
       this.licensingModule.connect(this.user2).registerDerivative(
         childIpId, 
         [parentIpId], 
-        [this.commericialRemixLicenseId], 
+        [commRemixTermsId], 
         PILicenseTemplate, 
         hre.ethers.ZeroAddress, 
         0, 
@@ -427,12 +426,12 @@ describe("LicensingModule - registerDerivative", function () {
       this.licensingModule.connect(this.user2).registerDerivative(
         parentIpId, 
         [newParentIpId], 
-        [this.commericialRemixLicenseId], 
+        [commRemixTermsId], 
         PILicenseTemplate, 
         hre.ethers.ZeroAddress, 
         0, 
         0, 
-        50 * 10 ** 6
+        0
       )
     ).to.be.revertedWithCustomError(
       this.errors, 

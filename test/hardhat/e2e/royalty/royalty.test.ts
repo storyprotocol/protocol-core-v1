@@ -545,14 +545,12 @@ describe("LAP royalty policy payment over diamond shape", function () {
     const { ipId: ipId6 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
 
     const mockERC20Contract = await hre.ethers.getContractAt("MockERC20", MockERC20);
-
     const allowance = await mockERC20Contract.allowance(this.user1.address, this.royaltyModule.target);
     console.log(`Before test - Current allowance of user1 ${this.user1.address} to royalty module: ${allowance.toString()}`);
-    // const amountToCheck = BigInt(1 * 10 ** 18);
-    // await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
-
-    // const allowanceAfter = await mockERC20Contract.allowance(this.user1.address, this.royaltyModule.target);
-    // console.log(`After test - Current allowance of user1 ${this.user1.address} to royalty module: ${allowanceAfter.toString()}`);
+    const amountToCheck = BigInt(1 * 10 ** 18);
+    await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
+    const allowanceAfter = await mockERC20Contract.allowance(this.user1.address, this.royaltyModule.target);
+    console.log(`After test - Current allowance of user1 ${this.user1.address} to royalty module: ${allowanceAfter.toString()}`);
 
     try {
       const tx = await this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount);

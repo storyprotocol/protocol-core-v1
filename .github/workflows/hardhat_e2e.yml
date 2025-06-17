@@ -92,8 +92,10 @@ jobs:
       - name: Mock ERC20 Address
         id: mock_erc20_address
         run: |
-          # echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
-          echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
+          # this is for WIP
+          echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
+          # this is for MockERC20
+          # echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
 
     outputs:
       CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}
@@ -257,7 +259,7 @@ jobs:
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
           echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
           echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
-          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}" >> .env
+          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS || inputs.oov3_address || github.event.inputs.oov3_address }}" >> .env
 
           # add one more blank line to .env
           echo "" >> .env

@@ -3,10 +3,11 @@
 import "../setup";
 import { expect } from "chai";
 import hre from "hardhat";
-import { MockERC20, PILicenseTemplate, RoyaltyPolicyLAP, RoyaltyPolicyLRP } from "../constants";
+import { MockERC20, PILicenseTemplate, RoyaltyModule, RoyaltyPolicyLAP, RoyaltyPolicyLRP } from "../constants";
 import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "../utils/mintNFTAndRegisterIPA";
 import { terms } from "../licenseTermsTemplate";
 import { registerPILTerms } from "../utils/licenseHelper";
+import { checkAndApproveSpender } from "../utils/erc20Helper";
 
 describe("RoyaltyModule", function () {
   let signers:any;
@@ -25,7 +26,7 @@ describe("RoyaltyModule", function () {
   let user2ConnectedRoyaltyPolicyLAP: any;
   let user2ConnectedRoyaltyPolicyLRP: any;
   let user3ConnectedRoyaltyPolicyLRP: any;
-  const testTerms = terms;
+  const testTerms = terms ;
 
   this.beforeAll("Get Signers and register license terms", async function () {
     // Get the signers
@@ -48,7 +49,7 @@ describe("RoyaltyModule", function () {
     console.log("Transaction hash: ", registerLicenseLAPTx.hash);
     expect(registerLicenseLAPTx.hash).not.to.be.empty.and.to.be.a("HexString");
 
-    licenseTermsLAPId = await connectedLicense.getLicenseTermsId(terms);
+    licenseTermsLAPId = await connectedLicense.getLicenseTermsId(testTerms);
     console.log("licenseTermsLAPId: ", licenseTermsLAPId);
 
     testTerms.royaltyPolicy = RoyaltyPolicyLRP;
@@ -60,7 +61,7 @@ describe("RoyaltyModule", function () {
     console.log("Transaction hash: ", registerLicenseLRPTx.hash);
     expect(registerLicenseLRPTx.hash).not.to.be.empty.and.to.be.a("HexString");
 
-    licenseTermsLRPId = await connectedLicense.getLicenseTermsId(terms);
+    licenseTermsLRPId = await connectedLicense.getLicenseTermsId(testTerms);
     console.log("licenseTermsLRPId: ", licenseTermsLRPId);    
 
     user1ConnectedLicensingModule = this.licensingModule.connect(signers[0]); 
@@ -377,6 +378,115 @@ describe("RoyaltyModule", function () {
       this.royaltyPolicyLRP.transferToVault(ipId1, ipId1, MockERC20)
     ).to.be.revertedWithCustomError(this.errors, "RoyaltyPolicyLRP__SameIpTransfer");
   });
+
+  it("Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution", async function () {
+    const mintingFee = testTerms.defaultMintingFee;
+    const payAmount = 1000;
+    const commercialRevShare = testTerms.commercialRevShare / 10 ** 6 / 100;
+
+    // Step 1: Register IPs
+    console.log("============ Register IPs ============");
+    const mintAndRegisterResp1 = await mintNFTAndRegisterIPA(signers[1], signers[1]);
+    const parentIpId = mintAndRegisterResp1.ipId;
+    console.log("Parent IP ID: ", parentIpId);
+
+    const mintAndRegisterResp2 = await mintNFTAndRegisterIPA(signers[2], signers[2]);
+    const childIpId = mintAndRegisterResp2.ipId;
+    console.log("Child IP ID: ", childIpId);
+
+    const mintAndRegisterResp3 = await mintNFTAndRegisterIPA(signers[0], signers[0]);
+    const ipId3 = mintAndRegisterResp3.ipId;
+    console.log("IP3 ID: ", ipId3);
+
+    // Step 2: Deploy vaults manually before any licensing activity
+    console.log("============ Deploy Vaults Manually ============");
+    const user1ConnectedRoyaltyModule = this.royaltyModule.connect(signers[1]);
+    const user1ConnectedLicensingModule = this.licensingModule.connect(signers[1]);
+
+    const deployParentVaultTx = await expect(
+      user1ConnectedRoyaltyModule.deployVault(parentIpId)
+    ).to.not.be.rejectedWith(Error);
+    await deployParentVaultTx.wait();
+    console.log("Parent vault deployed: ", deployParentVaultTx.hash);
+
+    const user2ConnectedRoyaltyModule = this.royaltyModule.connect(signers[2]);
+    const deployChildVaultTx = await expect(
+      user2ConnectedRoyaltyModule.deployVault(childIpId)
+    ).to.not.be.rejectedWith(Error);
+    await deployChildVaultTx.wait();
+    console.log("Child vault deployed: ", deployChildVaultTx.hash);
+
+    // Step 3: Attach license terms to parent IP
+    console.log("============ Attach License Terms ============");
+    const attachLicenseTx = await expect(
+      user1ConnectedLicensingModule.attachLicenseTerms(parentIpId, PILicenseTemplate, licenseTermsLAPId)
+    ).not.to.be.rejectedWith(Error);
+    await attachLicenseTx.wait();
+    console.log("License terms attached: ", attachLicenseTx.hash);
+
+    // Step 4: Register child as derivative of parent
+    console.log("============ Register Derivative ============");
+    const user2ConnectedLicensingModule = this.licensingModule.connect(signers[2]);
+    const registerDerivativeTx = await expect(
+      user2ConnectedLicensingModule.registerDerivative(
+        childIpId, 
+        [parentIpId], 
+        [licenseTermsLAPId], 
+        PILicenseTemplate, 
+        hre.ethers.ZeroAddress, 
+        0, 
+        mintingFee,
+        20 * 10 ** 6 // 20% royalty
+      )
+    ).not.to.be.rejectedWith(Error);
+    await registerDerivativeTx.wait();
+    console.log("Derivative registered: ", registerDerivativeTx.hash);
+
+    // Step 5: Pay royalty
+    console.log("============ Pay Royalty ============");
+    const payRoyaltyTx = await expect(
+      user2ConnectedRoyaltyModule.payRoyaltyOnBehalf(childIpId, ipId3, MockERC20, BigInt(payAmount))
+    ).not.to.be.rejectedWith(Error);
+    await payRoyaltyTx.wait();
+    console.log("Royalty paid: ", payRoyaltyTx.hash);
+
+    // Step 6: Transfer royalties to parent vault
+    console.log("============ Transfer Royalties to Vault ============");
+    // sleep 10 seconds
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    const user2ConnectedRoyaltyPolicyLAP = this.royaltyPolicyLAP.connect(signers[2]);
+    const transferToVaultTx = await expect(
+      user2ConnectedRoyaltyPolicyLAP.transferToVault(childIpId, parentIpId, MockERC20)
+    ).not.to.be.rejectedWith(Error);
+    await transferToVaultTx.wait();
+    console.log("Transferred to vault: ", transferToVaultTx.hash);
+
+    // Step 7: Verify claimable revenue
+    console.log("============ Verify Claimable Revenue ============");
+    const parentVaultAddress = await user1ConnectedRoyaltyModule.ipRoyaltyVaults(parentIpId);
+    const parentVaultContract = await hre.ethers.getContractAt("IpRoyaltyVault", parentVaultAddress);
+    
+    const parentClaimableRevenue = await parentVaultContract.claimableRevenue(parentIpId, MockERC20);
+    console.log("Parent claimable revenue: ", parentClaimableRevenue.toString());
+    
+    // Expected revenue: minting fee + payment amount (since parent gets 100% as root)
+    const expectedRevenue = BigInt(mintingFee + payAmount * commercialRevShare);
+    expect(parentClaimableRevenue).to.equal(expectedRevenue);
+
+    // Step 8: Claim revenue
+    console.log("============ Claim Revenue ============");
+    const claimRevenueTx = await expect(
+      parentVaultContract.claimRevenueOnBehalf(parentIpId, MockERC20)
+    ).not.to.be.rejectedWith(Error);
+    await claimRevenueTx.wait();
+    console.log("Revenue claimed: ", claimRevenueTx.hash);
+
+    // Verify revenue was claimed (should be 0 now)
+    const parentClaimableRevenueAfter = await parentVaultContract.claimableRevenue(parentIpId, MockERC20);
+    expect(parentClaimableRevenueAfter).to.equal(0);
+    
+    console.log("Complete royalty flow works correctly with pre-deployed vaults");
+  });
 });
 
 describe("LAP royalty policy payment over diamond shape", function () {
@@ -422,9 +532,23 @@ describe("LAP royalty policy payment over diamond shape", function () {
 
     console.log("============ IP6 Pay royalty on behalf to IP5 ============");
     const { ipId: ipId6 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
-    await expect(
-      this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount)
-    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+
+    const amountToCheck = BigInt(1 * 10 ** 18);
+    await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
+
+    try {
+      const tx = await this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount);
+      await tx.wait();
+    } catch (error) {
+      console.log("Error details:", {
+        message: error.message,
+        code: error.code,
+        data: error.data,
+        transaction: error.transaction,
+        receipt: error.receipt
+      });
+      throw error;
+    }
   });
 
   it("IP5 check claimable revenue", async function () {

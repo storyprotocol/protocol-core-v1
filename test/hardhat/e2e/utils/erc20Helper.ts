@@ -101,11 +101,17 @@ export async function checkAndApproveSpender(owner: any, spender: any, amount: b
     console.log(`owner.address: ${owner.address}`);
     console.log(`spender.address: ${spender}`);
     const currentAllowance = await getAllowance(owner.address, spender, owner);
+
+    const balance = await getErc20Balance(owner.address);
+    console.log(`balance of owner before: ${balance}`);
     if (currentAllowance < amount) {
-        // this is for Protocol Core
-        await mintAmount(owner.address, amount, owner);
-        // this is for Protocol Periphery
-        // await deposit(( amount - currentAllowance), owner);
+        // this is for MockERC20
+        // await mintAmount(owner.address, amount, owner);
+        // this is for WIP
+        await deposit(( amount - currentAllowance), owner);
+        // check balance of owner
+        const balanceAfter = await getErc20Balance(owner.address);
+        console.log(`balance of owner after: ${balanceAfter}`);
         await approveSpender(spender, amount, owner);
     }
   };

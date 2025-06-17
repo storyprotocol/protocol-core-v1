@@ -92,8 +92,10 @@ jobs:
       - name: Mock ERC20 Address
         id: mock_erc20_address
         run: |
-          # echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
-          echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
+          # this is for WIP
+          echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
+          # this is for MockERC20
+          # echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
 
     outputs:
       CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}

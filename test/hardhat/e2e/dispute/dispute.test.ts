@@ -7,6 +7,7 @@ import { mintNFTAndRegisterIPA, mintNFTAndRegisterIPAWithLicenseTerms } from "..
 import { ethers, encodeBytes32String } from "ethers";
 import { MockERC20, MockERC721, PILicenseTemplate, RoyaltyPolicyLAP } from "../constants";
 import { terms } from "../licenseTermsTemplate";
+import { getErc20Balance } from "../utils/erc20Helper";
 
 const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
 const arbitrationFee = 100;
@@ -510,7 +511,7 @@ describe("Dispute Flow", function () {
   });
 
   describe("Raise Dispute On Behalf - Normal Operations", function () {
-    it("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
+    it.only("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
       const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
       const disputeInitiator = this.user2.address;
       const caller = this.user1;
@@ -522,11 +523,11 @@ describe("Dispute Flow", function () {
       console.log(`disputeInitiator: ${disputeInitiator}`);
 
       // balance of caller before raising dispute
-      const callerBalanceBefore = await this.erc20.balanceOf(caller.address);
+      const callerBalanceBefore = await getErc20Balance(caller.address);
       console.log(`Caller balance before: ${callerBalanceBefore}`);
 
       // balance of dispute initiator before raising dispute
-      const disputeInitiatorBalanceBefore = await this.erc20.balanceOf(disputeInitiator);
+      const disputeInitiatorBalanceBefore = await getErc20Balance(disputeInitiator);
       console.log(`Dispute initiator balance before: ${disputeInitiatorBalanceBefore}`);
       
       const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
@@ -569,11 +570,11 @@ describe("Dispute Flow", function () {
       expect(parsedEvent.args.disputeInitiator).to.equal(disputeInitiator); // Initiator should be user2
 
       // balance of caller after raising dispute  
-      const callerBalanceAfter = await this.erc20.balanceOf(caller.address);
+      const callerBalanceAfter = await getErc20Balance(caller.address);
       console.log(`Caller balance after raising dispute: ${callerBalanceAfter}`);
 
       // balance of dispute initiator after raising dispute
-      const disputeInitiatorBalanceAfter = await this.erc20.balanceOf(disputeInitiator);
+      const disputeInitiatorBalanceAfter = await getErc20Balance(disputeInitiator);
       console.log(`Dispute initiator balance after raising dispute: ${disputeInitiatorBalanceAfter}`);
 
       // caller should have paid the arbitration fee

@@ -444,12 +444,6 @@ describe("RoyaltyModule", function () {
 
     // Step 5: Pay royalty
     console.log("============ Pay Royalty ============");
-    const mockERC20Contract = await hre.ethers.getContractAt("MockERC20", MockERC20);
-    
-    // Ensure sufficient token balance and approval
-    await mockERC20Contract.mint(signers[2].address, BigInt(payAmount));
-    await mockERC20Contract.connect(signers[2]).approve(this.royaltyModule.target, BigInt(payAmount));
-    
     const payRoyaltyTx = await expect(
       user2ConnectedRoyaltyModule.payRoyaltyOnBehalf(childIpId, ipId3, MockERC20, BigInt(payAmount))
     ).not.to.be.rejectedWith(Error);
@@ -460,11 +454,6 @@ describe("RoyaltyModule", function () {
     console.log("============ Transfer Royalties to Vault ============");
     // sleep 10 seconds
     await new Promise(resolve => setTimeout(resolve, 10000));
-
-    // Ensure RoyaltyPolicyLAP has sufficient tokens
-    await mockERC20Contract.mint(this.royaltyPolicyLAP.target, BigInt(payAmount));
-    await mockERC20Contract.connect(signers[2]).approve(this.royaltyPolicyLAP.target, BigInt(payAmount));
-    
     const user2ConnectedRoyaltyPolicyLAP = this.royaltyPolicyLAP.connect(signers[2]);
     const transferToVaultTx = await expect(
       user2ConnectedRoyaltyPolicyLAP.transferToVault(childIpId, parentIpId, MockERC20)
@@ -544,13 +533,8 @@ describe("LAP royalty policy payment over diamond shape", function () {
     console.log("============ IP6 Pay royalty on behalf to IP5 ============");
     const { ipId: ipId6 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
 
-    const mockERC20Contract = await hre.ethers.getContractAt("MockERC20", MockERC20);
-    const allowance = await mockERC20Contract.allowance(this.user1.address, this.royaltyModule.target);
-    console.log(`Before test - Current allowance of user1 ${this.user1.address} to royalty module: ${allowance.toString()}`);
     const amountToCheck = BigInt(1 * 10 ** 18);
     await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
-    const allowanceAfter = await mockERC20Contract.allowance(this.user1.address, this.royaltyModule.target);
-    console.log(`After test - Current allowance of user1 ${this.user1.address} to royalty module: ${allowanceAfter.toString()}`);
 
     try {
       const tx = await this.royaltyModule.connect(this.user1).payRoyaltyOnBehalf(ipId5, ipId6, MockERC20, paidAmount);

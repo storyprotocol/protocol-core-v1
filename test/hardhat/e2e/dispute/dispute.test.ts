@@ -511,7 +511,7 @@ describe("Dispute Flow", function () {
   });
 
   describe("Raise Dispute On Behalf - Normal Operations", function () {
-    it.only("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
+    it("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
       const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
       const disputeInitiator = this.user2.address;
       const caller = this.user1;

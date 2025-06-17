@@ -211,10 +211,6 @@ describe("RoyaltyModule - deployVault", function () {
     const derivativeIpId = mintAndRegisterResp6.ipId;
     console.log("Registered derivative IP ID: ", derivativeIpId);
 
-    // Approve MockERC20 for minting fee payment
-    const user1ConnectedMockERC20 = await hre.ethers.getContractAt("MockERC20", MockERC20, signers[1]);
-    await user1ConnectedMockERC20.approve(this.royaltyModule.target, 1000);
-
     // Register derivative with license minting
     const registerDerivativeTx = await expect(
       user2ConnectedLicensingModule.registerDerivative(
@@ -278,15 +274,6 @@ describe("RoyaltyModule - deployVault", function () {
     // Get vault address before linking
     const vaultAddressBefore = await user2ConnectedRoyaltyModule.ipRoyaltyVaults(childIpId);
     expect(vaultAddressBefore).to.not.equal(hre.ethers.ZeroAddress);
-
-    // Get vault contract and approve royalty tokens transfer
-    const childVaultContract = await hre.ethers.getContractAt("IpRoyaltyVault", vaultAddressBefore);
-    const user1ConnectedChildVault = childVaultContract.connect(signers[1]);
-    await user1ConnectedChildVault.approve(this.royaltyModule.target, hre.ethers.MaxUint256);
-
-    // Approve MockERC20 for minting fee payment
-    const user2ConnectedMockERC20 = await hre.ethers.getContractAt("MockERC20", MockERC20, signers[1]);
-    await user2ConnectedMockERC20.approve(this.royaltyModule.target, 1000);
 
     // Register derivative (link to parents) after vault deployment
     const registerDerivativeTx = await expect(

@@ -11,6 +11,8 @@ solc = '0.8.26'
 fs_permissions = [
     { access = 'read-write', path = './deploy-out' },
     { access = 'read', path = './out' },
+    { access = 'read-write', path = './script/foundry/admin-actions/output' },
+    { access = 'read-write', path = './script/foundry/admin-actions/output-test' },
 ]
 ##### Uncomment if running storage layout verification
 # ffi = true

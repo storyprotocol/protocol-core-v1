@@ -442,6 +442,12 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         ipAssetRegistry.register(block.chainid, address(groupNft), 0);
     }
 
+    function test_GroupingModule_registerGroup_revert_ZeroGroupRewardPool() public {
+        vm.prank(admin);
+        vm.expectRevert(abi.encodeWithSelector(Errors.GroupingModule__ZeroGroupRewardPool.selector));
+        groupingModule.whitelistGroupRewardPool(address(0), true);
+    }
+
     function test_GroupingModule_whitelistRewardPool() public {
         vm.prank(admin);
         groupingModule.whitelistGroupRewardPool(address(rewardPool), true);
@@ -832,6 +838,65 @@ contract GroupingModuleTest is BaseTest, ERC721Holder {
         groupingModule.claimReward(groupId, address(erc20), claimIpIds);
         assertEq(erc20.balanceOf(address(rewardPool)), 50);
         assertEq(erc20.balanceOf(royaltyModule.ipRoyaltyVaults(ipId1)), 50);
+    }
+
+    function test_GroupingModule_claimReward_revert_TokenNotMatchGroupRevenueToken() public {
+        vm.warp(100);
+        vm.prank(alice);
+        address groupId = groupingModule.registerGroup(address(rewardPool));
+
+        uint256 termsId = pilTemplate.registerLicenseTerms(
+            PILFlavors.commercialRemix({
+                mintingFee: 0,
+                commercialRevShare: 10_000_000,
+                currencyToken: address(erc20),
+                royaltyPolicy: address(royaltyPolicyLRP)
+            })
+        );
+
+        Licensing.LicensingConfig memory licensingConfig = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 10 * 10 ** 6,
+            expectGroupRewardPool: address(evenSplitGroupPool)
+        });
+
+        vm.startPrank(ipOwner1);
+        licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
+        vm.stopPrank();
+        licensingModule.mintLicenseTokens(ipId1, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
+        vm.startPrank(ipOwner2);
+        licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.mintLicenseTokens(ipId2, address(pilTemplate), termsId, 1, address(this), "", 0, 0);
+        vm.stopPrank();
+
+        licensingConfig.expectGroupRewardPool = address(0);
+        vm.startPrank(alice);
+        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
+        address[] memory ipIds = new address[](2);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        groupingModule.addIp(groupId, ipIds, 100e6);
+        assertEq(ipAssetRegistry.totalMembers(groupId), 2);
+        assertEq(rewardPool.getTotalIps(groupId), 2);
+        vm.stopPrank();
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__TokenNotMatchGroupRevenueToken.selector,
+                groupId,
+                address(erc20),
+                address(0)
+            )
+        );
+        groupingModule.claimReward(groupId, address(0), ipIds);
     }
 
     function test_GroupingModule_addIp_revert_addGroupToGroup() public {

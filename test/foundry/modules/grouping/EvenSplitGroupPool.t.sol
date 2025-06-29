@@ -60,6 +60,27 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         group3 = groupingModule.registerGroup(address(rewardPool));
     }
 
+    function test_EvenSplitGroupPool_AddIp_revert_EvenSplitGroupPool__MaxGroupSizeReached() public {
+        // Add MAX_GROUP_SIZE() ips to the group, start from 6 to avoid conflict with existing ips
+        for (uint256 i = 6; i < rewardPool.MAX_GROUP_SIZE() + 6; i++) {
+            uint256 tokenId = mockNft.mintId(ipOwner1, i);
+            address ipId = ipAssetRegistry.register(block.chainid, address(mockNft), tokenId);
+            vm.prank(address(groupingModule));
+            rewardPool.addIp(group1, ipId, 0);
+        }
+
+        vm.startPrank(address(groupingModule));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.EvenSplitGroupPool__MaxGroupSizeReached.selector,
+                group1,
+                rewardPool.MAX_GROUP_SIZE() + 1,
+                rewardPool.MAX_GROUP_SIZE()
+            )
+        );
+        rewardPool.addIp(group1, ipId1, 0);
+    }
+
     function test_EvenSplitGroupPool_AddIp() public {
         vm.startPrank(address(groupingModule));
 
@@ -345,6 +366,44 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId1), 80 * 10 ** 6);
         assertEq(rewardPool.getMinimumRewardShare(group1, ipId2), 85 * 10 ** 6);
 
+        vm.stopPrank();
+    }
+
+    function test_EvenSplitGroupPool_depositReward_revert_TokenNotMatchGroupRevenueToken() public {
+        address notMatchToken = address(0x123);
+        vm.startPrank(address(groupingModule));
+
+        // set the group revenue token to erc20
+        rewardPool.depositReward(group1, address(erc20), 100);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.GroupingModule__TokenNotMatchGroupRevenueToken.selector,
+                group1,
+                address(erc20),
+                notMatchToken
+            )
+        );
+        rewardPool.depositReward(group1, notMatchToken, 100);
+        vm.stopPrank();
+    }
+
+    function test_EvenSplitGroupPool_getAvailableReward_ipNotAdded() public {
+        vm.startPrank(address(groupingModule));
+
+        rewardPool.addIp(group1, ipId1, 0);
+        rewardPool.addIp(group1, ipId2, 0);
+
+        rewardPool.depositReward(group1, address(erc20), 100);
+
+        address[] memory ipIds = new address[](3);
+        ipIds[0] = ipId1;
+        ipIds[1] = ipId2;
+        ipIds[2] = ipId3;
+        uint256[] memory rewards = rewardPool.getAvailableReward(group1, address(erc20), ipIds);
+        assertEq(rewards[0], 50);
+        assertEq(rewards[1], 50);
+        assertEq(rewards[2], 0);
         vm.stopPrank();
     }
 }

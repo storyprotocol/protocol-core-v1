@@ -44,12 +44,21 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
             oldPauseAdmin2 = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldGuardian = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
         } else if (chainId == 1315) {
+            // Aeneid real
             delay = 10 minutes;
             oldAdmin = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldUpgrader = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldPauseAdmin1 = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
             oldPauseAdmin2 = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldGuardian = address(0);
+
+            // Aeneid test - confirm .env safe multisig addresses
+            /* delay = 10 minutes;
+            oldAdmin = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+            oldUpgrader = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+            oldPauseAdmin1 = 0x3b3fFAA254d9dCEEA4D59ae1dF28c9F84D4eE901;
+            oldPauseAdmin2 = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+            oldGuardian = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e; */
         }
 
         _checkInitialConditions();

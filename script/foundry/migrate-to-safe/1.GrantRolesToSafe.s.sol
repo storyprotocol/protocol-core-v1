@@ -52,7 +52,7 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
             oldPauseAdmin2 = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldGuardian = address(0);
 
-            // Aeneid test - confirm .env safe multisig addresses
+            // Aeneid test - confirm (i) .env safe multisig addresses and (ii) access manager address
             /* delay = 10 minutes;
             oldAdmin = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldUpgrader = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;

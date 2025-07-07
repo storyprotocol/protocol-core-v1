@@ -67,7 +67,7 @@ abstract contract AccessManagerOperations is Script, JSONTxWriter {
             AccessManager.schedule.selector,
             target,
             data,
-            uint48(block.timestamp + delay)
+            uint48(0)
         );
         _saveTx(Operation.SCHEDULE, from, address(protocolAccessManager), value, _txData, string.concat(action, "-schedule"));
     }

@@ -135,7 +135,12 @@ contract TestRoyaltyPolicyLRP is BaseTest {
 
     function test_RoyaltyPolicyLRP_initialize_revert_ZeroAccessManager() public {
         address impl = address(
-            new RoyaltyPolicyLRP(address(royaltyModule), address(royaltyPolicyLAP), address(ipGraphACL), address(disputeModule))
+            new RoyaltyPolicyLRP(
+                address(royaltyModule),
+                address(royaltyPolicyLAP),
+                address(ipGraphACL),
+                address(disputeModule)
+            )
         );
         vm.expectRevert(Errors.RoyaltyPolicyLRP__ZeroAccessManager.selector);
         RoyaltyPolicyLRP(

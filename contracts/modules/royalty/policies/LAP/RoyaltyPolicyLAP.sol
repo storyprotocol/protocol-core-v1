@@ -74,7 +74,7 @@ contract RoyaltyPolicyLAP is
         ROYALTY_MODULE = IRoyaltyModule(royaltyModule);
         IP_GRAPH_ACL = IPGraphACL(ipGraphAcl);
         DISPUTE_MODULE = IDisputeModule(disputeModule);
-        
+
         _disableInitializers();
     }
 

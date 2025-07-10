@@ -24,19 +24,20 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
     address securityCouncilSafeMultisig;
 
     // Mainnet
-    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://mainnet.storyrpc.io --legacy --sig "run(address,address,bool)" $GOVERNANCE_SAFE_ADDRESS_MAINNET $SECURITY_COUNCIL_SAFE_ADDRESS_MAINNET false
+    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://mainnet.storyrpc.io --legacy --sig "run(address,address,bool,bool)" $GOVERNANCE_SAFE_ADDRESS_MAINNET $SECURITY_COUNCIL_SAFE_ADDRESS_MAINNET false false
 
     // Aeneid
-    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool)" $GOVERNANCE_SAFE_ADDRESS_AENEID $SECURITY_COUNCIL_SAFE_ADDRESS_AENEID false
+    // forge script script/foundry/migrate-to-safe/2.RemoveRolesFromNonSafe.s.sol:RemoveRolesFromNonSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" $GOVERNANCE_SAFE_ADDRESS_AENEID $SECURITY_COUNCIL_SAFE_ADDRESS_AENEID false false
 
-    function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig, bool _isTest) public {
+    function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig, bool _isUnitTest, bool _isAeneidTest) public {
         uint256 chainId = block.chainid;
         if (chainId != 1315 && chainId != 1514) revert("Invalid chain id");
 
         setAction("remove-roles-from-non-safe");
-        setIsTest(_isTest);
+        setIsTest(_isUnitTest, _isAeneidTest);
 
         if (chainId == 1514) {
+            protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
             delay = 5 days;
             oldAdmin = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldUpgrader = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
@@ -44,6 +45,7 @@ contract RemoveRolesFromNonSafe is Script, AccessManagerOperations {
             oldPauseAdmin2 = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldGuardian = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
         } else if (chainId == 1315) {
+            protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
             delay = 10 minutes;
             oldAdmin = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
             oldUpgrader = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;

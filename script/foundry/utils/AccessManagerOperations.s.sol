@@ -16,11 +16,6 @@ import { JSONTxWriter } from "./JSONTxWriter.s.sol";
 abstract contract AccessManagerOperations is Script, JSONTxWriter {
     AccessManager internal protocolAccessManager;
 
-    /// @notice constructor
-    constructor() {
-        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
-    }
-
     function run() public virtual {
         console2.log("Generating actions...");
         _generate();

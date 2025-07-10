@@ -63,19 +63,16 @@ contract GrantRolesToSafeTest is BaseTest {
         oldGuardianAeneid = address(0);
         governanceSafeMultisigAeneid = address(3);
         securityCouncilSafeMultisigAeneid = address(4);
-
-        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
     }
 
     function test_RemoveRoles_Mainnet_Success() public {
+        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork mainnet
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        vm.warp(1748783192);
-
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
-        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
+        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -111,7 +108,7 @@ contract GrantRolesToSafeTest is BaseTest {
         skip(delayMainnet + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
-        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
+        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -187,14 +184,13 @@ contract GrantRolesToSafeTest is BaseTest {
     }
 
     function test_RemoveRoles_Mainnet_Cancel() public {
+        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork mainnet
         uint256 forkId = vm.createFork("https://mainnet.storyrpc.io/");
         vm.selectFork(forkId);
 
-        vm.warp(1748783192);
-
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
-        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
+        deployScript.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -230,7 +226,7 @@ contract GrantRolesToSafeTest is BaseTest {
         skip(delayMainnet + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
-        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true);
+        deployScript2.run(governanceSafeMultisigMainnet, securityCouncilSafeMultisigMainnet, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -306,20 +302,13 @@ contract GrantRolesToSafeTest is BaseTest {
     }
 
     function test_RemoveRoles_Aeneid_Success() public {
+        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork aeneid
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
-        vm.warp(1748783192);
-
-        vm.startPrank(oldAdminAeneid);
-        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
-        vm.stopPrank();
-
-        skip(delayAeneid + 1);
-
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
-        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -355,7 +344,7 @@ contract GrantRolesToSafeTest is BaseTest {
         skip(delayAeneid + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
-        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -430,20 +419,13 @@ contract GrantRolesToSafeTest is BaseTest {
     }
 
     function test_RemoveRoles_Aeneid_Cancel() public {
+        protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork aeneid
         uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
         vm.selectFork(forkId);
 
-        vm.warp(1748783192);
-
-        vm.startPrank(oldAdminAeneid);
-        protocolAccessManager.grantRole(ADMIN_ROLE_ID, oldAdminAeneid, uint32(delayAeneid));
-        vm.stopPrank();
-
-        skip(delayAeneid + 1);
-
         GrantRolesToSafe deployScript = new GrantRolesToSafe();
-        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (
@@ -479,7 +461,7 @@ contract GrantRolesToSafeTest is BaseTest {
         skip(delayAeneid + 1);
 
         RemoveRolesFromNonSafe deployScript2 = new RemoveRolesFromNonSafe();
-        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true);
+        deployScript2.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true, false);
 
         // Get all transaction JSONs (schedule, cancel, execute)
         (

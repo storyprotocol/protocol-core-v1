@@ -22,7 +22,8 @@ contract JSONTxWriter is Script {
         REGULAR_TX // Usually calls directly to the access manager, like renounce roles
     }
 
-    bool isTest;
+    bool isUnitTest;
+    bool isAeneidTest;
 
     /// @notice A struct to store the transaction details
     /// @param from The address of the sender
@@ -57,8 +58,9 @@ contract JSONTxWriter is Script {
         action = _action;
     }
 
-    function setIsTest(bool _isTest) internal {
-        isTest = _isTest;
+    function setIsTest(bool _isUnitTest, bool _isAeneidTest) internal {
+        isUnitTest = _isUnitTest;
+        isAeneidTest = _isAeneidTest;
     }
 
     /// @notice Saves a transaction to the mapping
@@ -136,7 +138,12 @@ contract JSONTxWriter is Script {
         }
         json = string(abi.encodePacked(json, "]"));
 
-        string memory outputDir = isTest ? "./script/foundry/admin-actions/output-test/" : "./script/foundry/admin-actions/output/";
+        string memory outputDir;
+        if (!isUnitTest) {
+            outputDir = isAeneidTest ? "./script/foundry/admin-actions/output/aeneid-test/" : "./script/foundry/admin-actions/output/";
+        } else {
+            outputDir = isAeneidTest ? "./script/foundry/admin-actions/output-test/aeneid-test/" : "./script/foundry/admin-actions/output-test/";
+        }
 
         string memory filename = string(
             abi.encodePacked(

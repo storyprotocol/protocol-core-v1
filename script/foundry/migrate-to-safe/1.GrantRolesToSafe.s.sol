@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import { AccessManager } from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 
 import { AccessManagerOperations } from "../utils/AccessManagerOperations.s.sol";
-import { Script, console } from "forge-std/Script.sol";
+import { Script } from "forge-std/Script.sol";
 
 contract GrantRolesToSafe is Script, AccessManagerOperations {
     uint64 internal constant ADMIN_ROLE_ID = 0;
@@ -30,7 +30,7 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
     // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" $GOVERNANCE_SAFE_ADDRESS_AENEID $SECURITY_COUNCIL_SAFE_ADDRESS_AENEID false false
 
     // Aeneid test
-    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" 0x7313eC47e7686dBb26050eEAA1622A63D3F7bD30 0x22E7C79864ba144Cd514e1DBC078C374E6Aeccc9 false true
+    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" 0x4B089bF9340DdB02a011471Eaa7d8D81C60CB524 0xC9a862Df1872402c4eAcbb8402F9BE628B52d270 false true
 
     function run(address _governanceSafeMultisig, address _securityCouncilSafeMultisig, bool _isUnitTest, bool _isAeneidTest) public {
         uint256 chainId = block.chainid;
@@ -47,7 +47,7 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
             oldPauseAdmin1 = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
             oldPauseAdmin2 = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldGuardian = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
-        } 
+        }
         if (chainId == 1315 && !_isAeneidTest) {
             protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
             // Aeneid real
@@ -61,7 +61,7 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
         if (chainId == 1315 && _isAeneidTest) {
             protocolAccessManager = AccessManager(0x7fc3eD9B2CC14C0872ec633c6CC290b8B9B3AA5A);
             delay = 10 minutes;
-            oldAdmin = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
+            oldAdmin = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldUpgrader = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
             oldPauseAdmin1 = 0x3b3fFAA254d9dCEEA4D59ae1dF28c9F84D4eE901;
             oldPauseAdmin2 = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
@@ -73,7 +73,7 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
         governanceSafeMultisig = _governanceSafeMultisig;
         securityCouncilSafeMultisig = _securityCouncilSafeMultisig;
 
-        super.run();        
+        super.run();
     }
 
     function _checkInitialConditions(bool _isAeneidTest) internal {

@@ -63,7 +63,7 @@ contract GrantRolesToSafeTest is BaseTest {
         governanceSafeMultisigAeneid = address(3);
         securityCouncilSafeMultisigAeneid = address(4);
     }
-
+  
     function test_GrantRoles_Mainnet_Success() public {
         protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork mainnet
@@ -429,7 +429,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafePauseAfter, true);
         assertEq(hasRoleSafeGuardianAfter, true);
     }
-
+ 
     function test_GrantRoles_AeneidTestDeployment_Cancel() public {
         protocolAccessManager = AccessManager(0x7fc3eD9B2CC14C0872ec633c6CC290b8B9B3AA5A);
         // Fork aeneid
@@ -503,6 +503,89 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafeGuardianAfter, false);
     }
 
+    function test_GrantRoles_AeneidTestDeployment_Reschedule() public {
+        protocolAccessManager = AccessManager(0x7fc3eD9B2CC14C0872ec633c6CC290b8B9B3AA5A);
+        // Fork aeneid
+        uint256 forkId = vm.createFork("https://aeneid.storyrpc.io/");
+        vm.selectFork(forkId);
+
+        GrantRolesToSafe deployScript = new GrantRolesToSafe();
+        deployScript.run(governanceSafeMultisigAeneid, securityCouncilSafeMultisigAeneid, true, true);
+
+        // Get all transaction JSONs (schedule, cancel, execute)
+        (
+            JSONTxWriter.Transaction[] memory scheduleTxs,
+            JSONTxWriter.Transaction[] memory executeTxs,
+            JSONTxWriter.Transaction[] memory cancelTxs
+        ) = _readNonRegularTransactionFiles("grant-roles-to-safe", true);
+
+        assertEq(scheduleTxs.length, 4);
+        assertEq(executeTxs.length, 4);
+        assertEq(cancelTxs.length, 4);
+
+        // Convert scheduleTxs to bytes array for multicall
+        bytes[] memory scheduleCalls = new bytes[](scheduleTxs.length);
+        for (uint256 i = 0; i < scheduleTxs.length; i++) {
+            scheduleCalls[i] = scheduleTxs[i].data;
+        }
+
+        // Convert executeTxs to bytes array for multicall
+        bytes[] memory executeCalls = new bytes[](executeTxs.length);
+        for (uint256 i = 0; i < executeTxs.length; i++) {
+            executeCalls[i] = executeTxs[i].data;
+        }
+
+        // Convert cancelTxs to bytes array for multicall
+        bytes[] memory cancelCalls = new bytes[](cancelTxs.length);
+        for (uint256 i = 0; i < cancelTxs.length; i++) {
+            cancelCalls[i] = cancelTxs[i].data;
+        }
+
+        vm.startPrank(oldAdminMainnet);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+        skip(delayAeneid + 1);
+        Multicall(address(protocolAccessManager)).multicall(cancelCalls);
+        skip(delayAeneid + 1);
+        Multicall(address(protocolAccessManager)).multicall(scheduleCalls);
+        skip(delayAeneid + 1);
+
+        (bool hasRoleSafeAdminBefore, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeBefore, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
+        (bool hasRoleSafePauseBefore, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianBefore, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
+        Multicall(address(protocolAccessManager)).multicall(executeCalls);
+
+        skip(delayAeneid + 1);
+
+        (bool hasRoleSafeAdminAfter, ) = protocolAccessManager.hasRole(ADMIN_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeUpgradeAfter, ) = protocolAccessManager.hasRole(
+            UPGRADER_ROLE_ID,
+            governanceSafeMultisigAeneid
+        );
+        (bool hasRoleSafePauseAfter, ) = protocolAccessManager.hasRole(PAUSE_ROLE_ID, governanceSafeMultisigAeneid);
+        (bool hasRoleSafeGuardianAfter, ) = protocolAccessManager.hasRole(
+            GUARDIAN_ROLE_ID,
+            securityCouncilSafeMultisigAeneid
+        );
+
+        assertEq(hasRoleSafeAdminBefore, false);
+        assertEq(hasRoleSafeUpgradeBefore, false);
+        assertEq(hasRoleSafePauseBefore, false);
+        assertEq(hasRoleSafeGuardianBefore, false);
+
+        assertEq(hasRoleSafeAdminAfter, true);
+        assertEq(hasRoleSafeUpgradeAfter, true);
+        assertEq(hasRoleSafePauseAfter, true);
+        assertEq(hasRoleSafeGuardianAfter, true);
+    }
+ 
     /**
      * @notice Execute a single transaction
      * @param transaction The transaction to execute

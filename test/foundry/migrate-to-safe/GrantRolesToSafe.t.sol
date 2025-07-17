@@ -63,7 +63,7 @@ contract GrantRolesToSafeTest is BaseTest {
         governanceSafeMultisigAeneid = 0x4B089bF9340DdB02a011471Eaa7d8D81C60CB524;
         securityCouncilSafeMultisigAeneid = 0xC9a862Df1872402c4eAcbb8402F9BE628B52d270;
     }
- 
+
     function test_GrantRoles_Mainnet_Success() public {
         protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork mainnet
@@ -356,7 +356,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafePauseAfter, false);
         assertEq(hasRoleSafeGuardianAfter, false);
     }
- 
+
     function test_GrantRoles_AeneidTestDeployment_Success() public {
         protocolAccessManager = AccessManager(0x7fc3eD9B2CC14C0872ec633c6CC290b8B9B3AA5A);
         // Fork aeneid

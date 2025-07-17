@@ -50,8 +50,8 @@ contract GrantRolesToSafeTest is BaseTest {
         oldPauseAdmin1Mainnet = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
         oldPauseAdmin2Mainnet = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
         oldGuardianMainnet = 0x76430daA671BE12200Cd424Ea6bdd8129A769033;
-        governanceSafeMultisigMainnet = address(1);
-        securityCouncilSafeMultisigMainnet = address(2);
+        governanceSafeMultisigMainnet = 0xF07cA4b61022F0399C1511E7E668A57567f2138B;
+        securityCouncilSafeMultisigMainnet = 0x25D2605b2C768082A14E79713114389d0eC297D8;
 
         // Aeneid
         delayAeneid = 10 minutes;
@@ -60,10 +60,10 @@ contract GrantRolesToSafeTest is BaseTest {
         oldPauseAdmin1Aeneid = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
         oldPauseAdmin2Aeneid = 0xe83F899BD5790e1be9b6B51ffcF32b3b2b1F5a9e;
         oldGuardianAeneid = address(0);
-        governanceSafeMultisigAeneid = address(3);
-        securityCouncilSafeMultisigAeneid = address(4);
+        governanceSafeMultisigAeneid = 0x4B089bF9340DdB02a011471Eaa7d8D81C60CB524;
+        securityCouncilSafeMultisigAeneid = 0xC9a862Df1872402c4eAcbb8402F9BE628B52d270;
     }
-
+ 
     function test_GrantRoles_Mainnet_Success() public {
         protocolAccessManager = AccessManager(0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53);
         // Fork mainnet
@@ -356,7 +356,7 @@ contract GrantRolesToSafeTest is BaseTest {
         assertEq(hasRoleSafePauseAfter, false);
         assertEq(hasRoleSafeGuardianAfter, false);
     }
-
+ 
     function test_GrantRoles_AeneidTestDeployment_Success() public {
         protocolAccessManager = AccessManager(0x7fc3eD9B2CC14C0872ec633c6CC290b8B9B3AA5A);
         // Fork aeneid

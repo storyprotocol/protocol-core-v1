@@ -24,10 +24,10 @@ contract GrantRolesToSafe is Script, AccessManagerOperations {
     address securityCouncilSafeMultisig;
 
     // Mainnet
-    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://mainnet.storyrpc.io --legacy --sig "run(address,address,bool,bool)" $GOVERNANCE_SAFE_ADDRESS_MAINNET $SECURITY_COUNCIL_SAFE_ADDRESS_MAINNET false false
+    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://mainnet.storyrpc.io --legacy --sig "run(address,address,bool,bool)" 0xF07cA4b61022F0399C1511E7E668A57567f2138B 0x25D2605b2C768082A14E79713114389d0eC297D8 false false
 
     // Aeneid real
-    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" $GOVERNANCE_SAFE_ADDRESS_AENEID $SECURITY_COUNCIL_SAFE_ADDRESS_AENEID false false
+    // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" 0x4B089bF9340DdB02a011471Eaa7d8D81C60CB524 0xC9a862Df1872402c4eAcbb8402F9BE628B52d270 false false
 
     // Aeneid test
     // forge script script/foundry/migrate-to-safe/1.GrantRolesToSafe.s.sol:GrantRolesToSafe --rpc-url https://aeneid.storyrpc.io --legacy --sig "run(address,address,bool,bool)" 0x4B089bF9340DdB02a011471Eaa7d8D81C60CB524 0xC9a862Df1872402c4eAcbb8402F9BE628B52d270 false true

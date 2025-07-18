@@ -13,7 +13,7 @@ on:
         default: 'internal-devnet'
         type: choice
         options:
-          - devnet
+          - aeneid
           - mainnet
           - internal-devnet
       erc721_address:
@@ -72,7 +72,7 @@ jobs:
         id: devnet_version
         run: |
           declare -A devnet_config=(
-            ["devnet"]="1315 http://r1-d.odyssey-devnet.storyrpc.io:8545"
+            ["aeneid"]="1315 https://aeneid.storyrpc.io"
             ["mainnet"]="1514 https://public.storyrpc.io"
             ["internal-devnet"]="1512 https://rpc.devnet.storyrpc.io"
           )
@@ -84,6 +84,7 @@ jobs:
             
             echo "CHAINID=$chainid" >> $GITHUB_OUTPUT
             echo "RPCURL='$rpcurl'" >> $GITHUB_OUTPUT
+            echo "NETWORK_VERSION=$devnet_version" >> $GITHUB_OUTPUT
           else
             echo "Unknown devnet version: $devnet_version"
             exit 1
@@ -101,6 +102,7 @@ jobs:
       CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}
       RPCURL: ${{ steps.devnet_version.outputs.RPCURL }}
       MOCK_ERC20_ADDRESS: ${{ steps.mock_erc20_address.outputs.MOCK_ERC20_ADDRESS }}
+      NETWORK_VERSION: ${{ steps.devnet_version.outputs.NETWORK_VERSION }}
 
   prepare-erc721:
     name: prepare-erc721
@@ -158,7 +160,13 @@ jobs:
             erc721=$erc721_address
           else
             echo "Deploying MockERC721 contract"
-            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+            if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
+              echo "Aeneid private key: ${{ secrets.AENEID_PRIVATEKEY }}"
+              private_key=${{ secrets.AENEID_PRIVATEKEY }}
+            else
+              private_key=${{ secrets.STORY_PRIVATEKEY }}
+            fi
+            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key $private_key --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
             echo $result
             erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
             echo "Deployed to: $erc721"
@@ -205,8 +213,14 @@ jobs:
           echo "MINIMUM_BOND=0" >> .env
           source .env
 
+          if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
+            private_key=${{ secrets.AENEID_PRIVATEKEY }}
+          else
+            private_key=${{ secrets.STORY_PRIVATEKEY }} 
+          fi
+
           output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} \
-                  --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --priority-gas-price 1 \
+                  --broadcast --private-key $private_key --priority-gas-price 1 \
                   --legacy --optimize)
           echo "$output"
 
@@ -253,7 +267,11 @@ jobs:
           touch .env
           echo "MAINNET_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
           echo "SEPOLIA_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
-          echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
+            echo "STORY_PRIVATEKEY=${{ secrets.AENEID_PRIVATEKEY }}" >> .env
+          else
+            echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
+          fi
           echo "STORY_USER1=${{ secrets.STORY_USER1 }}" >> .env
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
@@ -268,7 +286,7 @@ jobs:
         run: |
           yarn prepare:test
           # run test
-          npx hardhat test test/hardhat/e2e/**/*.ts --network internal_devnet
+          npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v4

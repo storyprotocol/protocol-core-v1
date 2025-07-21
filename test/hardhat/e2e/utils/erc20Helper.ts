@@ -106,9 +106,9 @@ export async function checkAndApproveSpender(owner: any, spender: any, amount: b
     console.log(`balance of owner before: ${balance}`);
     if (currentAllowance < amount) {
         // this is for MockERC20
-        // await mintAmount(owner.address, amount, owner);
+        await mintAmount(owner.address, amount, owner);
         // this is for WIP
-        await deposit(( amount - currentAllowance), owner);
+        // await deposit(( amount - currentAllowance), owner);
         // check balance of owner
         const balanceAfter = await getErc20Balance(owner.address);
         console.log(`balance of owner after: ${balanceAfter}`);

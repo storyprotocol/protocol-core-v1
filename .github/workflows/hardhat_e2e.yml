@@ -94,9 +94,10 @@ jobs:
         id: mock_erc20_address
         run: |
           # this is for WIP
-          echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
+          # echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
           # this is for MockERC20
           # echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
+          echo "MOCK_ERC20_ADDRESS=0xa5D13B403C22E28eE1153CFc6aB5e5f740A65611" >> $GITHUB_OUTPUT
 
     outputs:
       CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}
@@ -160,13 +161,7 @@ jobs:
             erc721=$erc721_address
           else
             echo "Deploying MockERC721 contract"
-            if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
-              echo "Aeneid private key: ${{ secrets.AENEID_PRIVATEKEY }}"
-              private_key=${{ secrets.AENEID_PRIVATEKEY }}
-            else
-              private_key=${{ secrets.STORY_PRIVATEKEY }}
-            fi
-            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key $private_key --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
             echo $result
             erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
             echo "Deployed to: $erc721"
@@ -213,14 +208,8 @@ jobs:
           echo "MINIMUM_BOND=0" >> .env
           source .env
 
-          if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
-            private_key=${{ secrets.AENEID_PRIVATEKEY }}
-          else
-            private_key=${{ secrets.STORY_PRIVATEKEY }} 
-          fi
-
           output=$(forge script script/OracleSandbox.s.sol --fork-url ${{ needs.set-devnet-constants.outputs.RPCURL }} \
-                  --broadcast --private-key $private_key --priority-gas-price 1 \
+                  --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --priority-gas-price 1 \
                   --legacy --optimize)
           echo "$output"
 
@@ -267,11 +256,7 @@ jobs:
           touch .env
           echo "MAINNET_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
           echo "SEPOLIA_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
-          if [ "${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}" == "aeneid" ]; then
-            echo "STORY_PRIVATEKEY=${{ secrets.AENEID_PRIVATEKEY }}" >> .env
-          else
-            echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
-          fi
+          echo "STORY_PRIVATEKEY=${{ secrets.STORY_PRIVATEKEY }}" >> .env
           echo "STORY_USER1=${{ secrets.STORY_USER1 }}" >> .env
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env

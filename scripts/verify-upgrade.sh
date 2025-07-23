@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Verify ModuleRegistry Upgrade Script
+# Detailed ModuleRegistry Upgrade Verification Script
+# This script distinguishes between a successful proxy upgrade and a successful state initialization.
 
 set -e
 
-echo "🔍 Verifying ModuleRegistry Upgrade..."
+echo "🔬 Running Detailed ModuleRegistry Upgrade Verification..."
 
 # Color definitions
 RED='\033[0;31m'
@@ -13,150 +14,134 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# --- CONFIGURATION ---
+# The address of the new implementation contract you deployed.
+NEW_IMPL_ADDRESS="0xd68c9503d261370f1b378f4a9abb4b25003d3762"
+# The standard EIP-1967 storage slot for the implementation address.
+IMPL_SLOT="0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+
 # Check environment variables
 check_env() {
-    echo "📋 Checking environment variables..."
-    
+    echo -e "\n${BLUE}📋 Checking environment variables...${NC}"
     if [ -z "$RPC_URL" ]; then
         echo -e "${RED}Error: RPC_URL not set${NC}"
-        echo "Please set: export RPC_URL=<your_rpc_url>"
         exit 1
     fi
-    
     if [ -z "$PROXY_ADDRESS" ]; then
         echo -e "${RED}Error: PROXY_ADDRESS not set${NC}"
-        echo "Please set: export PROXY_ADDRESS=<module_registry_proxy_address>"
-        echo "Or run: ./scripts/find-proxy-address.sh"
         exit 1
     fi
-    
-    echo -e "${GREEN}✅ Environment variables check passed${NC}"
+    echo -e "${GREEN}✅ Environment variables are set.${NC}"
 }
 
-# Check version
-check_version() {
-    echo "📊 Checking contract version..."
+# 1. Verify the proxy is pointing to the new implementation address.
+# This is the most fundamental check of a successful upgrade.
+verify_implementation_address() {
+    echo -e "\n${BLUE}1. Verifying Proxy Pointer...${NC}"
+    echo "   (Checking if the proxy is pointing to the correct new implementation)"
     
-    VERSION=$(cast call $PROXY_ADDRESS "getVersion()" --rpc-url $RPC_URL 2>/dev/null || echo "Call failed")
+    # Read the raw value from the implementation storage slot
+    local stored_data=$(cast storage $PROXY_ADDRESS $IMPL_SLOT --rpc-url $RPC_URL)
     
-    if [ "$VERSION" = "V2" ]; then
-        echo -e "${GREEN}✅ Version check passed: $VERSION${NC}"
+    # Extract the address (last 40 characters / 20 bytes)
+    local current_impl_address="0x$(echo $stored_data | cut -c 27-66)"
+    
+    echo "   - Expected Implementation: $NEW_IMPL_ADDRESS"
+    echo "   - Actual Implementation:   $current_impl_address"
+    
+    if [ "$(echo "$current_impl_address" | tr '[:upper:]' '[:lower:]')" = "$(echo "$NEW_IMPL_ADDRESS" | tr '[:upper:]' '[:lower:]')" ]; then
+        echo -e "${GREEN}✅ SUCCESS: Proxy is correctly pointing to the V2 implementation.${NC}"
         return 0
     else
-        echo -e "${RED}❌ Version check failed: Expected 'V2', got '$VERSION'${NC}"
+        echo -e "${RED}❌ FAILURE: Proxy is pointing to the WRONG address.${NC}"
         return 1
     fi
 }
 
-# Test new foo function
-test_foo_function() {
-    echo "🧪 Testing new foo function..."
+# 2. Verify that new functions can be called through the proxy.
+# This proves the proxy forwarding mechanism is working correctly.
+verify_call_forwarding() {
+    echo -e "\n${BLUE}2. Verifying Call Forwarding...${NC}"
+    echo "   (Checking if new V2 functions like foo() are callable)"
+
+    # 'cast call' on a function with no return value should return "0x" on success.
+    local result=$(cast call $PROXY_ADDRESS "foo(string)" "Hello V2!" --rpc-url $RPC_URL 2>/dev/null || echo "Call failed")
     
-    # Check if function exists by calling it (should not revert)
-    RESULT=$(cast call $PROXY_ADDRESS "foo(string)" "Hello V2!" --rpc-url $RPC_URL 2>/dev/null || echo "Call failed")
-    
-    if [ "$RESULT" = "" ]; then
-        echo -e "${GREEN}✅ Foo function exists and can be called${NC}"
+    if [ "$result" = "0x" ]; then
+        echo -e "${GREEN}✅ SUCCESS: Proxy successfully forwarded the call to the new implementation.${NC}"
         return 0
     else
-        echo -e "${RED}❌ Foo function test failed: $RESULT${NC}"
+        echo -e "${RED}❌ FAILURE: Call to new function foo() failed or returned unexpected data.${NC}"
+        echo "   - Result: $result"
         return 1
     fi
 }
 
-# Test existing functionality
-test_existing_functionality() {
-    echo "🔧 Testing existing functionality..."
+# 3. Verify the state of the new implementation.
+# This checks if the new version was initialized correctly.
+verify_contract_state() {
+    echo -e "\n${BLUE}3. Verifying V2 State Initialization...${NC}"
+    echo "   (Checking if getVersion() returns the correct value 'V2')"
     
-    # Test getModule function (should not revert)
-    RESULT=$(cast call $PROXY_ADDRESS "getModule(string)" "test" --rpc-url $RPC_URL 2>/dev/null || echo "Call failed")
+    local version_hex=$(cast call $PROXY_ADDRESS "getVersion()" --rpc-url $RPC_URL 2>/dev/null || echo "Call failed")
     
-    if [ "$RESULT" = "0x0000000000000000000000000000000000000000" ]; then
-        echo -e "${GREEN}✅ Existing getModule function works${NC}"
+    # The string "V2" is encoded as hex. We can just check for the expected hex value.
+    # For simplicity, we can also decode it. Here we check the raw hex.
+    # Expected: 0x...20 (offset) ... 02 (length) 5632 (V2) 00...
+    
+    if [[ "$version_hex" == *"5632"* ]]; then # "V2" in hex is 5632
+        echo -e "${GREEN}✅ SUCCESS: V2 contract state is correctly initialized. getVersion() returned 'V2'.${NC}"
         return 0
     else
-        echo -e "${YELLOW}⚠️  getModule function returned: $RESULT${NC}"
-        return 0  # This is expected for non-existent module
-    fi
-}
-
-# Check contract code
-check_contract_code() {
-    echo "📄 Checking contract code..."
-    
-    CODE_SIZE=$(cast code "$PROXY_ADDRESS" --rpc-url $RPC_URL 2>/dev/null | wc -c)
-    
-    if [ "$CODE_SIZE" -gt 10 ]; then
-        echo -e "${GREEN}✅ Contract has code (size: $CODE_SIZE bytes)${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ Contract has no code${NC}"
+        echo -e "${RED}❌ FAILURE: V2 contract state appears uninitialized.${NC}"
+        echo "   - Expected getVersion() to return 'V2'."
+        echo "   - Actual raw hex returned: $version_hex (This likely decodes to an empty string)"
         return 1
     fi
 }
 
-# Main verification function
+# Main function
 main() {
-    echo "=================================="
-    echo "ModuleRegistry Upgrade Verification"
-    echo "=================================="
-    echo ""
+    echo "======================================================"
+    echo "      Detailed ModuleRegistry Upgrade Diagnosis"
+    echo "======================================================"
     echo "Proxy Address: $PROXY_ADDRESS"
-    echo "RPC URL: $RPC_URL"
-    echo ""
+    echo "RPC URL:       $RPC_URL"
     
     check_env
     
-    local all_tests_passed=true
+    local proxy_ok=false
+    local forwarding_ok=false
+    local state_ok=false
     
-    # Run all tests
-    if ! check_contract_code; then
-        all_tests_passed=false
-    fi
+    verify_implementation_address && proxy_ok=true
+    verify_call_forwarding && forwarding_ok=true
+    verify_contract_state && state_ok=true
     
-    if ! check_version; then
-        all_tests_passed=false
-    fi
+    echo -e "\n\n"
+    echo "======================================================"
+    echo "                     Final Diagnosis"
+    echo "======================================================"
     
-    if ! test_foo_function; then
-        all_tests_passed=false
-    fi
-    
-    if ! test_existing_functionality; then
-        all_tests_passed=false
-    fi
-    
-    echo ""
-    echo "=================================="
-    if [ "$all_tests_passed" = true ]; then
-        echo -e "${GREEN}🎉 All verification tests passed!${NC}"
-        echo -e "${GREEN}✅ ModuleRegistry upgrade successful!${NC}"
+    if [ "$proxy_ok" = true ]; then
+        echo -e "${GREEN}✅ Proxy Upgrade: SUCCESSFUL.${NC} The proxy correctly points to the new V2 implementation."
     else
-        echo -e "${RED}❌ Some verification tests failed${NC}"
-        echo -e "${YELLOW}⚠️  Please check the upgrade process${NC}"
+        echo -e "${RED}❌ Proxy Upgrade: FAILED.${NC} The proxy does NOT point to the new V2 implementation."
     fi
-    echo "=================================="
+    
+    if [ "$forwarding_ok" = true ]; then
+        echo -e "${GREEN}✅ Call Forwarding: WORKING.${NC} The proxy is able to forward calls to the new functions."
+    else
+        echo -e "${RED}❌ Call Forwarding: FAILED.${NC} The proxy is NOT forwarding calls correctly."
+    fi
+    
+    if [ "$state_ok" = true ]; then
+        echo -e "${GREEN}✅ State Initialization: SUCCESSFUL.${NC} The new version's state is correctly initialized."
+    else
+        echo -e "${RED}❌ State Initialization: FAILED.${NC} The new version was NOT initialized correctly after the upgrade."
+    fi
+    
+    echo "======================================================"
 }
 
-# Show usage
-show_usage() {
-    echo "Usage:"
-    echo "  ./scripts/verify-upgrade.sh"
-    echo ""
-    echo "Environment variables:"
-    echo "  RPC_URL - RPC endpoint URL"
-    echo "  PROXY_ADDRESS - ModuleRegistry proxy address"
-    echo ""
-    echo "Example:"
-    echo "  export RPC_URL=https://aeneid.storyrpc.io"
-    echo "  export PROXY_ADDRESS=0x..."
-    echo "  ./scripts/verify-upgrade.sh"
-}
-
-# Check if help is requested
-if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-    show_usage
-    exit 0
-fi
-
-main "$@" 
+main 

@@ -319,6 +319,16 @@ contract DisputeModuleTest is BaseTest {
         vm.stopPrank();
     }
 
+    function test_DisputeModule_raiseDispute_revert_InvalidDisputeInitiator() public {
+        vm.startPrank(ipAddr);
+        vm.expectRevert(Errors.DisputeModule__InvalidDisputeInitiator.selector);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+
+        vm.startPrank(address(0));
+        vm.expectRevert(Errors.DisputeModule__InvalidDisputeInitiator.selector);
+        disputeModule.raiseDispute(ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+    }
+
     function test_DisputeModule_raiseDispute_BlacklistedPolicy() public {
         vm.startPrank(u.admin);
         disputeModule.setBaseArbitrationPolicy(address(mockArbitrationPolicy2));
@@ -467,6 +477,14 @@ contract DisputeModuleTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(PausableUpgradeable.EnforcedPause.selector));
         disputeModule.raiseDisputeOnBehalf(ipAddr, address(2), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
         vm.stopPrank();
+    }
+
+    function test_DisputeModule_raiseDisputeOnBehalf_revert_InvalidDisputeInitiator() public {
+        vm.expectRevert(Errors.DisputeModule__InvalidDisputeInitiator.selector);
+        disputeModule.raiseDisputeOnBehalf(ipAddr, ipAddr, disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
+
+        vm.expectRevert(Errors.DisputeModule__InvalidDisputeInitiator.selector);
+        disputeModule.raiseDisputeOnBehalf(ipAddr, address(0), disputeEvidenceHashExample, "IMPROPER_REGISTRATION", "");
     }
 
     function test_DisputeModule_raiseDisputeOnBehalf_BlacklistedPolicy() public {

@@ -20,7 +20,7 @@ contract ModuleRegistry_V2 is IModuleRegistry, AccessManagedUpgradeable, UUPSUpg
     using ERC165Checker for address;
 
     /// @notice Version of the contract
-    string public version;
+    string public constant version = "V2";
 
     /// @dev Storage for the ModuleRegistry.
     /// @param modules The address of a registered module by its name.
@@ -56,11 +56,6 @@ contract ModuleRegistry_V2 is IModuleRegistry, AccessManagedUpgradeable, UUPSUpg
 
         // Register the default module types
         _getModuleRegistryStorage().allModuleTypes[MODULE_TYPE_DEFAULT] = type(IModule).interfaceId;
-    }
-
-    /// @notice initializer for V2 of this implementation contract
-    function initializeV2() public reinitializer(2) {
-        version = "V2";
     }
 
     /// @notice New function added in V2

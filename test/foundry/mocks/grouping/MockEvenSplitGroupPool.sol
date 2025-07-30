@@ -8,7 +8,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 import { IRoyaltyModule } from "contracts/interfaces/modules/royalty/IRoyaltyModule.sol";
 import { IIpRoyaltyVault } from "contracts/interfaces/modules/royalty/policies/IIpRoyaltyVault.sol";
 
-contract MockEvenSplitGroupPool is IGroupRewardPool {
+contract MockEvenSplitGroupPool {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 

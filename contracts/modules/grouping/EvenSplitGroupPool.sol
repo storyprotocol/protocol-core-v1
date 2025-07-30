@@ -36,6 +36,7 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         uint128 pendingBalance; // Pending balance to be added to accRewardPerIp
         uint128 accRewardPerIp; // Accumulated rewards per IP, times MAX_GROUP_SIZE.
         uint256 averageRewardShare; // The avg reward share per IP, only increases as new IPs join with higher min share
+        bool isAverageRewardShareStale; // Whether the average reward share is stale
     }
 
     /// @dev Storage structure for the EvenSplitGroupPool
@@ -113,7 +114,8 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
     }
 
     /// @notice Removes an IP from the group pool
-    /// @dev Only the GroupingModule can call this function
+    /// @dev Only the GroupingModule can call this function. The average reward share is marked as stale 
+    /// if it may now be bigger than the biggest expectedGroupRewardShare among the group's remaining IPs.
     /// @param groupId The group ID
     /// @param ipId The IP ID
     function removeIp(address groupId, address ipId) external onlyGroupingModule {
@@ -123,7 +125,12 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
         $.ipAddedTime[groupId][ipId] = 0;
         GroupInfo storage groupInfo = $.groupInfo[groupId];
         groupInfo.totalMembers -= 1;
-        if ($.minimumRewardShare[groupId][ipId] > 0) {
+        uint256 IpMinimumRewardShare = $.minimumRewardShare[groupId][ipId];
+        if (IpMinimumRewardShare == groupInfo.averageRewardShare) {
+            // Ensure the group average reward share will be updated if needed when the next IP will be added to the group
+            groupInfo.isAverageRewardShareStale = true;
+        }
+        if (IpMinimumRewardShare > 0) {
             $.minimumRewardShare[groupId][ipId] = 0;
         }
         $.ipRewardDebt[groupId][ipId] = 0;
@@ -198,6 +205,24 @@ contract EvenSplitGroupPool is IGroupRewardPool, ProtocolPausableUpgradeable, UU
             ROYALTY_MODULE.payRoyaltyOnBehalf(ipIds[i], groupId, token, rewards[i]);
         }
         IERC20(token).forceApprove(address(ROYALTY_MODULE), 0);
+    }
+
+    /// @notice Updates the group average reward share if the reward share of the group is stale
+    /// @param groupId The group ID
+    function updateGroupAverageRewardShare(address groupId) external onlyGroupingModule {
+        EvenSplitGroupPoolStorage storage $ = _getEvenSplitGroupPoolStorage();
+        GroupInfo storage groupInfo = $.groupInfo[groupId];
+        if (!groupInfo.isAverageRewardShareStale) return;
+        uint32 totalIps = groupInfo.totalMembers;
+        address[] memory groupMembers = GROUP_IP_ASSET_REGISTRY.getGroupMembers(groupId, 0, totalIps);
+        uint256 updatedAverageRewardShare = 0;
+        for (uint256 i = 0; i < totalIps; i++) {
+            address ipId = groupMembers[i]; 
+            uint256 IpMinimumRewardShare = $.minimumRewardShare[groupId][ipId];
+            updatedAverageRewardShare = Math.max(updatedAverageRewardShare, IpMinimumRewardShare);
+        }
+        groupInfo.averageRewardShare = updatedAverageRewardShare;
+        groupInfo.isAverageRewardShareStale = false;
     }
 
     function getTotalIps(address groupId) external view returns (uint256) {

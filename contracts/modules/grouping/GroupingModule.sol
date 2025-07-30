@@ -189,16 +189,12 @@ contract GroupingModule is
             }
             uint256 totalGroupRewardShare = pool.addIp(groupIpId, ipIds[i], lc.expectMinimumGroupRewardShare);
             if (totalGroupRewardShare > 100 * 10 ** 6) {
-                pool.updateGroupAverageRewardShare(groupIpId);
-                totalGroupRewardShare = pool.getTotalAllocatedRewardShare(groupIpId);
-                 if (totalGroupRewardShare > 100 * 10 ** 6) {
-                    revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
-                        groupIpId,
-                        totalGroupRewardShare,
-                        ipIds[i],
-                        lc.expectMinimumGroupRewardShare
+                revert Errors.GroupingModule__TotalGroupRewardShareExceeds100Percent(
+                    groupIpId,
+                    totalGroupRewardShare,
+                    ipIds[i],
+                    lc.expectMinimumGroupRewardShare
                 );
-                 }
             }
         }
         emit AddedIpToGroup(groupIpId, ipIds);

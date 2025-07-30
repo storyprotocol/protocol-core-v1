@@ -408,7 +408,7 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
         vm.stopPrank();
     }
 
-    function test_EvenSplitGroupPool_updateGroupAverageRewardShare() public {
+    function test_EvenSplitGroupPool_addIp_after_removeIp_updateGroupRewardShare() public {
         uint256 termsId = pilTemplate.registerLicenseTerms(
             PILFlavors.commercialRemix({
                 mintingFee: 0,
@@ -429,48 +429,75 @@ contract EvenSplitGroupPoolTest is BaseTest, ERC721Holder {
             expectGroupRewardPool: address(rewardPool)
         });
 
+        Licensing.LicensingConfig memory licensingConfigZeroExpectedRewardShare = Licensing.LicensingConfig({
+            isSet: true,
+            mintingFee: 0,
+            licensingHook: address(0),
+            hookData: "",
+            commercialRevShare: 10 * 10 ** 6,
+            disabled: false,
+            expectMinimumGroupRewardShare: 0,
+            expectGroupRewardPool: address(rewardPool)
+        });
+
         vm.startPrank(ipOwner1);
         licensingModule.attachLicenseTerms(ipId1, address(pilTemplate), termsId);
         licensingModule.setLicensingConfig(ipId1, address(pilTemplate), termsId, licensingConfig);
         vm.stopPrank();
 
-        licensingConfig.expectMinimumGroupRewardShare = 0;
-
         vm.startPrank(ipOwner2);
         licensingModule.attachLicenseTerms(ipId2, address(pilTemplate), termsId);
-        licensingModule.setLicensingConfig(ipId2, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.setLicensingConfig(
+            ipId2,
+            address(pilTemplate),
+            termsId,
+            licensingConfigZeroExpectedRewardShare
+        );
 
         vm.startPrank(ipOwner3);
         licensingModule.attachLicenseTerms(ipId3, address(pilTemplate), termsId);
-        licensingModule.setLicensingConfig(ipId3, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.setLicensingConfig(
+            ipId3,
+            address(pilTemplate),
+            termsId,
+            licensingConfigZeroExpectedRewardShare
+        );
         vm.stopPrank();
 
         vm.startPrank(ipOwner5);
         licensingModule.attachLicenseTerms(ipId5, address(pilTemplate), termsId);
-        licensingModule.setLicensingConfig(ipId5, address(pilTemplate), termsId, licensingConfig);
+        licensingModule.setLicensingConfig(
+            ipId5,
+            address(pilTemplate),
+            termsId,
+            licensingConfigZeroExpectedRewardShare
+        );
         vm.stopPrank();
 
         licensingConfig.expectGroupRewardPool = address(0);
-        vm.startPrank(alice);
-        address groupId = groupingModule.registerGroup(address(rewardPool));
-        licensingModule.attachLicenseTerms(groupId, address(pilTemplate), termsId);
-        licensingModule.setLicensingConfig(groupId, address(pilTemplate), termsId, licensingConfig);
-        vm.stopPrank();
+        address group1 = groupingModule.registerGroup(address(rewardPool));
+        licensingModule.attachLicenseTerms(group1, address(pilTemplate), termsId);
+        licensingModule.setLicensingConfig(group1, address(pilTemplate), termsId, licensingConfig);
 
         address[] memory ipIds = new address[](2);
         ipIds[0] = ipId1;
         ipIds[1] = ipId2;
-        vm.prank(alice);
-        groupingModule.addIp(groupId, ipIds, 100e6);
+        groupingModule.addIp(group1, ipIds, 100e6);
+
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 100 * 10 ** 6);
 
         ipIds = new address[](1);
         ipIds[0] = ipId1;
-        vm.prank(alice);
-        groupingModule.removeIp(groupId, ipIds);
+        groupingModule.removeIp(group1, ipIds);
 
-        vm.prank(address(groupingModule));        
-        rewardPool.updateGroupAverageRewardShare(groupId);
-        // Group average reward share has been updated
-        assertEq(rewardPool.getTotalAllocatedRewardShare(groupId), 0);
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 50 * 10 ** 6);
+
+        ipIds = new address[](2);
+        ipIds[0] = ipId3;
+        ipIds[1] = ipId5;
+        groupingModule.addIp(group1, ipIds, 100e6);
+
+        // Group total reward share is updated to reflect the removal of the IP with the largest expectedRewardShare
+        assertEq(rewardPool.getTotalAllocatedRewardShare(group1), 0);
     }
 }

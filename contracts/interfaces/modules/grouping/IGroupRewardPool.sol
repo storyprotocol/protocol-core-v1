@@ -46,10 +46,4 @@ interface IGroupRewardPool {
         address token,
         address[] calldata ipIds
     ) external view returns (uint256[] memory);
-
-    /// @notice Updates the group average reward share if the reward share of the group is stale
-    /// @param groupId The group ID
-    function updateGroupAverageRewardShare(address groupId) external;
-
-    function getTotalAllocatedRewardShare(address groupId) external view returns (uint256);
 }

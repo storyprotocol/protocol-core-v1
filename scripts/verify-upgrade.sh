@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # --- CONFIGURATION ---
 # The address of the new implementation contract you deployed.
-NEW_IMPL_ADDRESS="0xd68c9503d261370f1b378f4a9abb4b25003d3762"
+NEW_IMPL_ADDRESS="0xB1729131B6DA7333f1449FCbC80a985dC69b8532"
 # The standard EIP-1967 storage slot for the implementation address.
 IMPL_SLOT="0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
 

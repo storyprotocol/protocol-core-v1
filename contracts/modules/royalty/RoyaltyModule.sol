@@ -781,4 +781,62 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @dev Hook to authorize the upgrade according to UUPSUpgradeable
     /// @param newImplementation The address of the new implementation
     function _authorizeUpgrade(address newImplementation) internal override restricted {}
+
+    /// @notice Handles royalty distribution when a dispute is resolved for unattributed derivative
+    /// @param originalIpId The ID of the original IP that was copied
+    /// @param derivativeIpId The ID of the derivative work that was disputed
+    /// @param royaltyAmount The amount of royalties to distribute
+    /// @param token The token in which royalties are paid
+    function handleDisputeRoyaltyDistribution(
+        address originalIpId,
+        address derivativeIpId,
+        uint256 royaltyAmount,
+        address token
+    ) external nonReentrant {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+        
+        // Verify caller is dispute module
+        if (msg.sender != address(DISPUTE_MODULE)) revert Errors.RoyaltyModule__NotAllowedCaller();
+        
+        // Check if token is whitelisted
+        if (!$.isWhitelistedRoyaltyToken[token]) revert Errors.RoyaltyModule__NotWhitelistedRoyaltyToken();
+        
+        // Get or deploy vault for original IP
+        address originalVault = $.ipRoyaltyVaults[originalIpId];
+        if (originalVault == address(0)) {
+            address receiver = originalIpId;
+            if (IP_ASSET_REGISTRY.isRegisteredGroup(originalIpId)) {
+                receiver = IP_ASSET_REGISTRY.getGroupRewardPool(originalIpId);
+                if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver)) {
+                    revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(originalIpId, receiver);
+                }
+            }
+            originalVault = _deployIpRoyaltyVault(originalIpId, receiver);
+        }
+
+        // In case of dispute, original IP owner gets 100% of royalties
+        IERC20(token).safeTransfer(originalVault, royaltyAmount);
+
+        emit DisputeRoyaltyDistributed(
+            originalIpId,
+            derivativeIpId,
+            royaltyAmount,
+            token,
+            originalVault
+        );
+    }
+
+    /// @notice Emitted when dispute royalties are distributed
+    /// @param originalIpId The ID of the original IP
+    /// @param derivativeIpId The ID of the derivative work
+    /// @param amount The amount of royalties distributed
+    /// @param token The token in which royalties were paid
+    /// @param recipientVault The vault that received the royalties
+    event DisputeRoyaltyDistributed(
+        address indexed originalIpId,
+        address indexed derivativeIpId,
+        uint256 amount,
+        address token,
+        address recipientVault
+    );
 }

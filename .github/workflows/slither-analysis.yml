@@ -38,7 +38,7 @@ jobs:
 
     - name: Run Slither analysis
       run: |
-        slither . --json slither-report.json --sarif slither-report.sarif --check-assert
+        slither . --json slither-report.json --sarif slither-report.sarif
 
     - name: Upload Slither report
       uses: actions/upload-artifact@v4

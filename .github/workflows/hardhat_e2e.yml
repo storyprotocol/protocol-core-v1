@@ -50,7 +50,7 @@ on:
       devnet_version:
         description: 'devnet; mainnet; internal-devnet'
         required: false
-        default: 'internal-devnet'
+        default: 'aeneid'
         type: string
       erc721_address:
         description: 'ERC721 contract address'
@@ -71,7 +71,7 @@ jobs:
       - name: Print Inputs
         run: |
           echo "Inputs:"
-          echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
+          echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'aeneid' }}"
           echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
           echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || 'false' }}"
@@ -90,7 +90,7 @@ jobs:
             ["internal-devnet"]="1512 https://rpc.devnet.storyrpc.io"
           )
 
-          devnet_version="${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
+          devnet_version="${{ inputs.devnet_version || github.event.inputs.devnet_version || 'aeneid' }}"
 
           if [[ -n "${devnet_config[$devnet_version]}" ]]; then
             read -r chainid rpcurl <<< "${devnet_config[$devnet_version]}"
@@ -312,7 +312,7 @@ jobs:
           echo "Folder name: $folder_name"
 
           # Determine version_name based on devnet_version
-          env_name=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'devnet' }}
+          env_name=${{ inputs.devnet_version || github.event.inputs.devnet_version || 'aeneid' }}
           
           mkdir -p ./tmp/$folder_name/$env_name
           cp -R ./mochawesome-report/* ./tmp/$folder_name/$env_name

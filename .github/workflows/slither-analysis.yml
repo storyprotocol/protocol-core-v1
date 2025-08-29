@@ -1,0 +1,97 @@
+name: Slither Security Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  slither-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install Slither
+      run: |
+        pip install slither-analyzer
+
+    - name: Install Node.js dependencies
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+
+    - name: Install dependencies
+      run: yarn install
+
+    - name: Run Slither analysis
+      run: |
+        slither . --json slither-report.json --sarif slither-report.sarif --check-assert
+
+    - name: Upload Slither report
+      uses: actions/upload-artifact@v4
+      with:
+        name: slither-report
+        path: |
+          slither-report.json
+          slither-report.sarif
+        retention-days: 30
+
+    - name: Comment PR with Slither results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          let report = '';
+          
+          try {
+            const jsonReport = JSON.parse(fs.readFileSync('slither-report.json', 'utf8'));
+            const issues = jsonReport.results.detectors || [];
+            
+            if (issues.length === 0) {
+              report = '✅ **Slither Analysis**: No security issues found!';
+            } else {
+              report = `⚠️ **Slither Analysis**: Found ${issues.length} potential issues\n\n`;
+              report += '**Issues:**\n';
+              
+              issues.forEach(issue => {
+                const severity = issue.impact === 'High' ? '🔴' : 
+                               issue.impact === 'Medium' ? '🟡' : '🟢';
+                report += `${severity} **${issue.impact}**: ${issue.description}\n`;
+                report += `   - File: \`${issue.elements[0].source_mapping.file_name}\`\n`;
+                report += `   - Line: ${issue.elements[0].source_mapping.lines[0]}\n\n`;
+              });
+            }
+          } catch (error) {
+            report = '❌ **Slither Analysis**: Failed to parse report';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          });
+
+    - name: Fail on high severity issues
+      run: |
+        if [ -f slither-report.json ]; then
+          HIGH_ISSUES=$(jq '.results.detectors[] | select(.impact == "High") | .description' slither-report.json 2>/dev/null | wc -l)
+          if [ "$HIGH_ISSUES" -gt 0 ]; then
+            echo "❌ Found $HIGH_ISSUES high severity security issues"
+            exit 1
+          fi
+        fi

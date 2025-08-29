@@ -1,9 +1,40 @@
 {
-  "filter_paths": "lib",
+  "filter_paths": [
+    "lib",
+    "node_modules",
+    "test",
+    "script"
+  ],
   "solc_remaps": [
     "ds-test/=node_modules/ds-test/src/",
     "forge-std/=node_modules/forge-std/src/",
     "@openzeppelin/=node_modules/@openzeppelin/",
     "@openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades"
+  ],
+  "exclude": [
+    "naming-convention",
+    "external-function",
+    "unused-state",
+    "missing-zero-check",
+    "public-variable-read-in-external-context",
+    "assembly",
+    "low-level-calls",
+    "missing-inheritance",
+    "unimplemented-functions",
+    "unused-state-variable",
+    "too-many-digits",
+    "conformance-to-solidity-naming-conventions"
+  ],
+  "detectors_to_exclude": [
+    "assembly",
+    "low-level-calls",
+    "missing-inheritance",
+    "public-variable-read-in-external-context"
+  ],
+  "json": "slither-report.json",
+  "sarif": "slither-report.sarif",
+  "printers": [
+    "human-summary-compact",
+    "human-summary-markdown"
   ]
 }

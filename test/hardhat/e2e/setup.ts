@@ -6,14 +6,53 @@ import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, Licensi
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 
+// Constants
+const MIN_BALANCE_ETH = "10.0";
+const APPROVAL_AMOUNT = BigInt(1 * 10 ** 18);
+
+// Logging utilities
+const logSection = (title: string) => console.log(`\n${'='.repeat(20)} ${title} ${'='.repeat(20)}`);
+const logSuccess = (message: string) => console.log(`✅ ${message}`);
+const logInfo = (message: string) => console.log(`ℹ️  ${message}`);
+const logWarning = (message: string) => console.log(`⚠️  ${message}`);
+
+// Error handling utility
+const handleTransactionError = (error: any, context: string) => {
+  if (error.data && error.data.includes("0x068ca9d8")) {
+    console.error("❌ Transaction Reverted!");
+    console.error("💡 Known Issue: AccessManagedUnauthorized - Multi-signer account lacks required permissions");
+    console.error(`🔧 Solution: Ensure the account has proper access control permissions for ${context}`);
+  } else {
+    console.error("❌ Transaction Reverted!");
+    console.error("🔴 Error Message:", error.message || "No error message");
+    console.error("📜 Error Data:", error.data || "No error data");
+    if (error.transactionHash) {
+      console.log("🔍 Check Transaction on Explorer:", `https://devnet.storyscan.xyz/tx/${error.transactionHash}`);
+    }
+  }
+};
+
+// Balance check and transfer utility
+const ensureUserBalance = async (owner: any, user: any, userLabel: string) => {
+  const minBalance = hre.ethers.parseEther(MIN_BALANCE_ETH);
+  const userBalance = await hre.ethers.provider.getBalance(user.address);
+  
+  if (userBalance < minBalance) {
+    logInfo(`${userLabel} balance (${hre.ethers.formatEther(userBalance)} ETH) is below ${MIN_BALANCE_ETH} ETH, transferring funds...`);
+    await owner.sendTransaction({ to: user.address, value: minBalance }).then((tx: any) => tx.wait());
+    logSuccess(`Transferred ${MIN_BALANCE_ETH} ETH to ${userLabel}`);
+  } else {
+    logInfo(`${userLabel} balance (${hre.ethers.formatEther(userBalance)} ETH) is sufficient`);
+  }
+};
+
 before(async function () {
-  // Get the list of signers, the first signer is usually the default wallet
+  // Initialize contracts
+  logSection("Initializing Contracts");
   const [defaultSigner] = await hre.ethers.getSigners();
+  logInfo(`Default signer: ${defaultSigner.address}`);
 
-  // Log the default signer address to confirm it's correct
-  console.log(`Default signer address: ${defaultSigner.address}`);
-
-  // Use the default signer to get the contract instances
+  // Contract instances
   this.ipAssetRegistry = await hre.ethers.getContractAt("IPAssetRegistry", IPAssetRegistry);
   this.licenseRegistry = await hre.ethers.getContractAt("LicenseRegistry", LicenseRegistry);
   this.licenseToken = await hre.ethers.getContractAt("LicenseToken", LicenseToken);
@@ -30,122 +69,118 @@ before(async function () {
   this.arbitrationPolicyUMA = await hre.ethers.getContractAt("ArbitrationPolicyUMA", ArbitrationPolicyUMA);
   this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
   this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
-  // this.erc20 = await hre.ethers.getContractAt("MockERC20", MockERC20);
   this.errors = await hre.ethers.getContractFactory("contracts/lib/Errors.sol:Errors");
-  
-  console.log(`================= Load Users =================`);
+  logSuccess("All contracts initialized");
+
+  // Setup users and balances
+  logSection("User Setup");
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
-  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
-  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
   
-  console.log(`================= Chain ID =================`);
+  await ensureUserBalance(this.owner, this.user1, "User1");
+  await ensureUserBalance(this.owner, this.user2, "User2");
+
+  // Network configuration
+  logSection("Network Configuration");
   const networkConfig = network.config;
   this.chainId = networkConfig.chainId;
-  console.log("chainId: ", this.chainId);
+  logInfo(`Chain ID: ${this.chainId}`);
 
-  console.log(`================= Whitelist Royalty Token =================`);
+  // Royalty token whitelist
+  logSection("Royalty Token Setup");
   try {
-    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true).then((tx : any) => tx.wait());
-    console.log(`✅ whitelistRoyaltyToken successfully! `)
+    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true).then((tx: any) => tx.wait());
+    logSuccess("Royalty token whitelisted successfully");
   } catch (error: any) {
-    console.log(error);
-    console.error("❌ Transaction Reverted!");
-    console.error("🔴 Error Message:", error.message || "No error message");
-    console.error("📜 Error Data:", error.data || "No error data");
+    handleTransactionError(error, "RoyaltyModule");
   }
 
-  console.log(`================= Register non-commercial PIL license terms =================`);
-  await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
-  this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
-  console.log("Non-commercial licenseTermsId: ", this.nonCommercialLicenseId);
+  // License terms registration
+  logSection("License Terms Registration");
   
-  console.log(`================= Register commercial-use PIL license terms =================`);
-  let testTerms = terms;
-
-  testTerms.royaltyPolicy = RoyaltyPolicyLAP;
-  testTerms.defaultMintingFee = 30;
-  testTerms.commercialUse = true;
-  testTerms.currency = MockERC20;
-
-  console.log("Registering License Terms...");
-  
+  // Non-commercial license
   try {
-    const tx = await this.licenseTemplate.registerLicenseTerms(testTerms);
-    await tx.wait();
-    const receipt = await tx.wait();
-  
-    console.log("Transaction Success: ", receipt);
+    await this.licenseTemplate.registerLicenseTerms(terms).then((tx: any) => tx.wait());
+    this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
+    logSuccess(`Non-commercial license registered: ${this.nonCommercialLicenseId}`);
   } catch (error: any) {
-    console.error("❌ Transaction Reverted!");
-    console.error("🔴 Error Message:", error.message || "No error message");
-    console.error("📜 Error Data:", error.data || "No error data");
+    handleTransactionError(error, "LicenseTemplate");
+  }
+
+  // Commercial-use license
+  try {
+    const commercialTerms = {
+      ...terms,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      defaultMintingFee: 30,
+      commercialUse: true,
+      currency: MockERC20
+    };
+    
+    await this.licenseTemplate.registerLicenseTerms(commercialTerms).then((tx: any) => tx.wait());
+    this.commercialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(commercialTerms);
+    logSuccess(`Commercial-use license registered: ${this.commercialUseLicenseId}`);
+  } catch (error: any) {
+    handleTransactionError(error, "LicenseTemplate");
+  }
+
+  // Commercial-remix license
+  try {
+    const remixTerms = {
+      ...terms,
+      royaltyPolicy: RoyaltyPolicyLRP,
+      defaultMintingFee: 80,
+      commercialUse: true,
+      commercialRevShare: 100,
+      currency: MockERC20
+    };
+    
+    await this.licenseTemplate.registerLicenseTerms(remixTerms).then((tx: any) => tx.wait());
+    this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(remixTerms);
+    logSuccess(`Commercial-remix license registered: ${this.commericialRemixLicenseId}`);
+  } catch (error: any) {
+    handleTransactionError(error, "LicenseTemplate");
+  }
+
+  // ERC20 approvals
+  logSection("ERC20 Approvals");
+  const users = [this.owner, this.user1, this.user2];
+  const spenders = [RoyaltyPolicyLAP, RoyaltyPolicyLRP, RoyaltyModule];
   
-    if (error.transactionHash) {
-      console.log("🔍 Check Transaction on Explorer:", `https://devnet.storyscan.xyz/tx/${error.transactionHash}`);
+  for (const user of users) {
+    for (const spender of spenders) {
+      await checkAndApproveSpender(user, spender, APPROVAL_AMOUNT);
     }
   }
   
-  this.commercialUseLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-use licenseTermsId: ", this.commercialUseLicenseId);
+  // Additional approval for user1 to ArbitrationPolicyUMA
+  await checkAndApproveSpender(this.user1, ArbitrationPolicyUMA, APPROVAL_AMOUNT);
+  logSuccess("All ERC20 approvals completed");
 
-  console.log(`================= Register commercial-remix PIL license terms =================`);
-  testTerms = terms;
-  testTerms.royaltyPolicy = RoyaltyPolicyLRP;
-  testTerms.defaultMintingFee = 80;
-  testTerms.commercialUse = true;
-  testTerms.commercialRevShare = 100;
-  testTerms.currency = MockERC20;
-  await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
-  this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
-  console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
-
-  console.log(`================= ERC20 approve spender =================`);
-  const amountToCheck = BigInt(1 * 10 ** 18);
-  await checkAndApproveSpender(this.owner, RoyaltyPolicyLAP, amountToCheck);
-  await checkAndApproveSpender(this.owner, RoyaltyPolicyLRP, amountToCheck);
-  await checkAndApproveSpender(this.owner, RoyaltyModule, amountToCheck);
-  await checkAndApproveSpender(this.user1, RoyaltyPolicyLAP, amountToCheck);
-  await checkAndApproveSpender(this.user1, RoyaltyPolicyLRP, amountToCheck);
-  await checkAndApproveSpender(this.user1, RoyaltyModule, amountToCheck);
-  await checkAndApproveSpender(this.user1, ArbitrationPolicyUMA, amountToCheck);
-  await checkAndApproveSpender(this.user2, RoyaltyPolicyLAP, amountToCheck);
-  await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
-  await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
-
+  // UMA setup (conditional)
   if (STORY_OOV3) {
-    console.log(`================= Set UMA =================`)
-    console.log(`================= STORY_OOV3: ${STORY_OOV3} =================`)
+    logSection("UMA Configuration");
+    logInfo(`OOV3 Address: ${STORY_OOV3}`);
 
     try {
-      await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait())
-      console.log(`✅ setOOV3 successfully! `)
-      
+      await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait());
+      logSuccess("OOV3 address set successfully");
     } catch (error: any) {
-      console.log(error);
-      console.error("❌ Transaction Reverted!");
-      console.error("🔴 Error Message:", error.message || "No error message");
-      console.error("📜 Error Data:", error.data || "No error data");
+      handleTransactionError(error, "ArbitrationPolicyUMA");
     }
 
     try {
-      console.log(`ArbitrationPolicyUMA: ${ArbitrationPolicyUMA}`);
-      console.log(`this.owner.address: ${this.owner.address}`);
-      
       await this.disputeModule
         .setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address)
-        .then((tx: any) => tx.wait())
-      console.log(`✅ setArbitrationRelayer successfully! `)
+        .then((tx: any) => tx.wait());
+      logSuccess("Arbitration relayer set successfully");
       
-      await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait())
-      
-      console.log(`✅ setMaxBond successfully! `)
-
+      await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait());
+      logSuccess("Max bond set successfully");
     } catch (error: any) {
-      console.log(error);
-      console.error("❌ Transaction Reverted!");
-      console.error("🔴 Error Message:", error.message || "No error message");
-      console.error("📜 Error Data:", error.data || "No error data");
+      handleTransactionError(error, "DisputeModule and ArbitrationPolicyUMA");
     }
   }
-  
+
+  logSection("Setup Complete");
+  logSuccess("All preconditions configured successfully");
 });

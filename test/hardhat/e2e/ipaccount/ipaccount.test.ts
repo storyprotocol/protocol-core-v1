@@ -216,16 +216,15 @@ describe("IPAccount", function () {
 
   it("Non-IP Owner execute AccessController module", async function () {
     console.log("============ Register IP Account1 ============");
-    const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const { tokenId: tokenId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
     console.log("IPAccount1: ", ipAccount1);
-    const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
 
-    console.log("============ Register IP Account1 ============");
+    console.log("============ Register IP Account2 ============");
     const { tokenId: tokenId2, ipId: ipId2 } = await mintNFTAndRegisterIPA(this.user2, this.user2);
     const ipAccount2 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId2, this.user2);
-    console.log("IPAccount2: ", ipAccount1);
-    const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipAccount2, this.user2);
+    console.log("IPAccount2: ", ipAccount2);
+    const ipAccount2Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId2, this.user2);
 
     await expect(
       ipAccount2Contract.execute(

@@ -89,7 +89,6 @@ export async function getAllowance(owner: string, spender: string, singer: ether
   // getAllowance
   try {
       const tx = await contract.allowance(owner, spender);
-      console.log("Allowance", tx);
       return tx;
   } catch (error) {
       console.error("Error getAllowance:", error);
@@ -98,26 +97,29 @@ export async function getAllowance(owner: string, spender: string, singer: ether
 };
 
 export async function checkAndApproveSpender(owner: any, spender: any, amount: bigint) {
-    console.log(`owner.address: ${owner.address}`);
-    console.log(`spender.address: ${spender}`);
     const currentAllowance = await getAllowance(owner.address, spender, owner);
-
     const balance = await getErc20Balance(owner.address);
-    console.log(`balance of owner before: ${balance}`);
+    
     if (currentAllowance < amount) {
-        // this is for MockERC20
-        // await mintAmount(owner.address, amount, owner);
-        // this is for WIP
-        await deposit(( amount - currentAllowance), owner);
-        // check balance of owner
-        const balanceAfter = await getErc20Balance(owner.address);
-        console.log(`balance of owner after: ${balanceAfter}`);
+        // Allowance insufficient - detailed logging
+        console.log(`Owner ${owner.address} allowance for ${spender}: ${currentAllowance} < ${amount}`);
+        console.log(`Current balance: ${balance}`);
+        
+        const depositAmount = amount - currentAllowance;
+        console.log(`Depositing ${depositAmount} to increase balance...`);
+        
+        await deposit(depositAmount, owner);
         await approveSpender(spender, amount, owner);
+        
+        const balanceAfter = await getErc20Balance(owner.address);
+        console.log(`Approval completed - Balance: ${balance} → ${balanceAfter}`);
+    } else {
+        // Allowance sufficient - simple logging
+        console.log(`Allowance sufficient for ${spender} (${currentAllowance} >= ${amount})`);
     }
-  };
+};
 
 export async function getErc20Balance(address: string): Promise<bigint> {
-  console.log("============ Get Erc20 Balance ============");
   const contractAbi = [
     // Read-Only Functions
     "function balanceOf(address owner) view returns (uint256)",
@@ -132,7 +134,6 @@ export async function getErc20Balance(address: string): Promise<bigint> {
   ];
   const contract = await hre.ethers.getContractAt(contractAbi, MockERC20);
   const balance = await contract.balanceOf(address);
-  console.log(address, balance);
   return balance;
 };
 

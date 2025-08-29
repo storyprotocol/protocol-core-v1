@@ -1,9 +1,7 @@
 import "@nomicfoundation/hardhat-ethers"
 import "@nomicfoundation/hardhat-foundry"
 import "@nomicfoundation/hardhat-verify"
-import "@tenderly/hardhat-tenderly"
-import { TenderlyConfig } from "@tenderly/hardhat-tenderly/dist/tenderly/types"
-import * as tdly from "@tenderly/hardhat-tenderly" // also import tdly for setup, in addition to global import above
+// Tenderly imports removed - set USE_TENDERLY=false to disable
 import "@typechain/hardhat"
 // import "@openzeppelin/hardhat-upgrades"
 import "hardhat-gas-reporter"
@@ -24,9 +22,8 @@ const MAINNET_URL = process.env.MAINNET_URL || "https://eth-mainnet"
 const MAINNET_PRIVATEKEY = process.env.MAINNET_PRIVATEKEY || "0xkey"
 const SEPOLIA_URL = process.env.SEPOLIA_URL || "https://eth-sepolia"
 const SEPOLIA_PRIVATEKEY = process.env.SEPOLIA_PRIVATEKEY || "0xkey"
-const TENDERLY_URL = process.env.TENDERLY_URL || "https://eth-tenderly"
-const TENDERLY_PRIVATEKEY = process.env.TENDERLY_PRIVATEKEY || "0xkey"
-const USE_TENDERLY = process.env.USE_TENDERLY === "true"
+// Tenderly config removed - set USE_TENDERLY=false to disable
+const USE_TENDERLY = false
 
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
@@ -37,11 +34,7 @@ const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || "0xkey"
 const STORY_USER1 = process.env.STORY_USER1 || "0xkey"
 const STORY_USER2 = process.env.STORY_USER2 || "0xkey"
 
-if (USE_TENDERLY) {
-  tdly.setup({
-    automaticVerifications: true,
-  })
-}
+// Tenderly setup removed - set USE_TENDERLY=false to disable
 
 /** @type import('hardhat/config').HardhatUserConfig */
 const config: HardhatUserConfig = {
@@ -65,7 +58,7 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  defaultNetwork: "tenderly",
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
       chainId: 31337,
@@ -94,21 +87,11 @@ const config: HardhatUserConfig = {
       url: MAINNET_URL || "",
       accounts: [MAINNET_PRIVATEKEY],
     },
-    ...(USE_TENDERLY
-      ? {
-          tenderly: {
-            chainId: 11155111,
-            url: TENDERLY_URL || "",
-            accounts: [TENDERLY_PRIVATEKEY],
-          },
-        }
-      : {
-          sepolia: {
-            chainId: 11155111,
-            url: SEPOLIA_URL || "",
-            accounts: [SEPOLIA_PRIVATEKEY],
-          },
-        }),
+    sepolia: {
+      chainId: 11155111,
+      url: SEPOLIA_URL || "",
+      accounts: [SEPOLIA_PRIVATEKEY],
+    },
   },
   // @ts-ignore
   namedAccounts: {
@@ -130,15 +113,7 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: ETHERSCAN_API_KEY,
   },
-  ...(USE_TENDERLY
-    ? {
-        tenderly: {
-          project: process.env.TENDERLY_PROJECT_SLUG || "",
-          username: process.env.TENDERLY_USERNAME || "",
-          privateVerification: process.env.TENDERLY_PRIVATE_VERIFICATION === "true",
-        } as TenderlyConfig,
-      }
-    : {}),
+      // Tenderly config removed - set USE_TENDERLY=false to disable
   typechain: {
     outDir: "typechain",
     target: "ethers-v6",

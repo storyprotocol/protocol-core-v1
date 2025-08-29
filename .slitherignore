@@ -1,0 +1,18 @@
+# Ignore test files
+test/
+script/
+
+# Ignore mock contracts
+contracts/mocks/
+
+# Ignore library files that are not part of the main protocol
+lib/
+
+# Ignore upgrade scripts
+script/upgrades/
+
+# Ignore deployment scripts
+script/deployment/
+
+# Ignore specific contracts that may have false positives
+# Add specific contract paths here if needed

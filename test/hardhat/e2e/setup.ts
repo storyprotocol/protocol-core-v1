@@ -5,6 +5,7 @@ import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3 } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
+import "@nomicfoundation/hardhat-chai-matchers";
 
 // Constants
 const MIN_BALANCE_ETH = "10.0";
@@ -19,11 +20,11 @@ const logWarning = (message: string) => console.log(`⚠️  ${message}`);
 // Error handling utility
 const handleTransactionError = (error: any, context: string) => {
   if (error.data && error.data.includes("0x068ca9d8")) {
-    console.error("❌ Transaction Reverted!");
+    console.error("Transaction Reverted!");
     console.error("💡 Known Issue: AccessManagedUnauthorized - Multi-signer account lacks required permissions");
     console.error(`🔧 Solution: Ensure the account has proper access control permissions for ${context}`);
   } else {
-    console.error("❌ Transaction Reverted!");
+    console.error("Transaction Reverted!");
     console.error("🔴 Error Message:", error.message || "No error message");
     console.error("📜 Error Data:", error.data || "No error data");
     if (error.transactionHash) {

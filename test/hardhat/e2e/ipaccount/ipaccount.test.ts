@@ -191,23 +191,25 @@ describe("IPAccount", function () {
 
   it("IP Owner execute AccessController module", async function () {
     console.log("============ Register IP Account ============");
+    // 1. Create an IP account
     const { tokenId: tokenId1, ipId: ipId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
     const ipAccount1 = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId1, this.user1);
     console.log("IPAccount1: ", ipAccount1);
+    // 2. Get the IP account contract instance
     const ipAccount1Contract = await hre.ethers.getContractAt("IPAccountImpl", ipId1, this.user1);
 
     await expect(
       ipAccount1Contract.execute(
-        AccessController, 
+        AccessController,  // Call access control contract
         0,
         this.accessController.interface.encodeFunctionData(
           "setPermission",
           [
-            ipAccount1,
+            ipAccount1,    // For own IP
             ipAccount1,
             LicensingModule,
-            this.licensingModule.interface.getFunction("attachLicenseTerms").selector,
-            1
+            this.licensingModule.interface.getFunction("attachLicenseTerms").selector, // func: Function selector for attachLicenseTerms
+            1              // permission: Permission level (1 = ALLOW)
           ]
         )
       )
@@ -233,7 +235,7 @@ describe("IPAccount", function () {
         this.accessController.interface.encodeFunctionData(
           "setPermission",
           [
-            ipAccount1,
+            ipAccount1,  // Attempting to operate someone else's account
             ipAccount1,
             LicensingModule,
             this.licensingModule.interface.getFunction("attachLicenseTerms").selector,

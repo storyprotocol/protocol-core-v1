@@ -131,10 +131,10 @@ jobs:
       - name: Determine ERC721 Strategy
         id: strategy
         run: |
-          provided_address="${{ inputs.erc721_address || github.event.inputs.erc721_address || '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A' }}"
+          provided_address="${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
           
-          # Check if a custom address is provided (not the default one)
-          if [[ "$provided_address" != "0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A" ]]; then
+          # Check if any address is provided
+          if [[ -n "$provided_address" ]]; then
             echo "DEPLOY_NEEDED=false" >> $GITHUB_OUTPUT
             echo "ERC721_ADDRESS=$provided_address" >> $GITHUB_OUTPUT
             echo "Using provided ERC721 address: $provided_address"

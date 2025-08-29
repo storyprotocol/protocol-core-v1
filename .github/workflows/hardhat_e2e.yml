@@ -1,9 +1,11 @@
 name: -> HardHat E2E Test
 
-on:
-  # push:
-  #   branches:
-  #     - update-e2e-test
+# on:
+#   push:
+#     branches: [ yao/test_aug_29 ]
+#   pull_request:
+#     branches: [ yao/test_aug_29 ]
+
 
   workflow_dispatch:
     inputs:
@@ -36,6 +38,11 @@ on:
         required: false
         default: true
         type: boolean
+      test_grep:
+        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController")'
+        required: false
+        default: ''
+        type: string
 
 
   workflow_call:
@@ -47,6 +54,11 @@ on:
         type: string
       erc721_address:
         description: 'ERC721 contract address'
+        required: false
+        default: ''
+        type: string
+      test_grep:
+        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController")'
         required: false
         default: ''
         type: string
@@ -64,6 +76,7 @@ jobs:
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
           echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
           echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
+          echo "test_grep: ${{ inputs.test_grep || github.event.inputs.test_grep || '' }}"
 
   set-devnet-constants:
     runs-on: ubuntu-latest
@@ -270,8 +283,15 @@ jobs:
       - name: Run test
         run: |
           yarn prepare:test
-          # run test
-          npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
+          # run test with optional grep pattern
+          test_grep="${{ inputs.test_grep || github.event.inputs.test_grep || '' }}"
+          if [[ -n "$test_grep" ]]; then
+            echo "Running tests with grep pattern: $test_grep"
+            npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }} --grep "$test_grep"
+          else
+            echo "Running all tests"
+            npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
+          fi
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v4

@@ -12,7 +12,7 @@ on:
       devnet_version:
         description: 'devnet; mainnet; internal-devnet'
         required: true
-        default: 'internal-devnet'
+        default: 'aeneid'
         type: choice
         options:
           - aeneid
@@ -21,7 +21,7 @@ on:
       erc721_address:
         description: 'ERC721 contract address'
         required: false
-        default: ''
+        default: '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A'
         type: string
       oov3_address:
         description: 'Optimistic Oracle V3 address'
@@ -39,7 +39,7 @@ on:
         default: true
         type: boolean
       test_grep:
-        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController")'
+        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController") - leave empty to run all tests'
         required: false
         default: 'IP Owner execute AccessController module'
         type: string
@@ -55,12 +55,12 @@ on:
       erc721_address:
         description: 'ERC721 contract address'
         required: false
-        default: ''
+        default: '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A'
         type: string
       test_grep:
-        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController")'
+        description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController") - leave empty to run all tests'
         required: false
-        default: ''
+        default: 'IP Owner execute AccessController module'
         type: string
 
 jobs:

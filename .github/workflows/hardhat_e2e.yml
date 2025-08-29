@@ -1,10 +1,10 @@
 name: -> HardHat E2E Test
 
-# on:
-#   push:
-#     branches: [ yao/test_aug_29 ]
-#   pull_request:
-#     branches: [ yao/test_aug_29 ]
+on:
+  push:
+    branches: [ yao/test_aug_29 ]
+  pull_request:
+    branches: [ yao/test_aug_29 ]
 
 
   workflow_dispatch:
@@ -41,7 +41,7 @@ name: -> HardHat E2E Test
       test_grep:
         description: 'Test pattern to grep (e.g., "IP Owner execute", "AccessController")'
         required: false
-        default: ''
+        default: 'IP Owner execute AccessController module'
         type: string
 
 

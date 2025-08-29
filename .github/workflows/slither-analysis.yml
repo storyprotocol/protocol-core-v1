@@ -2,9 +2,9 @@ name: Slither Security Analysis
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, yao/test_aug_29 ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, yao/test_aug_29 ]
   workflow_dispatch:
 
 jobs:

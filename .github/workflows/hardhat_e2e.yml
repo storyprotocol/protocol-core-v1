@@ -72,11 +72,11 @@ jobs:
         run: |
           echo "Inputs:"
           echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
-          echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
+          echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
-          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
-          echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
-          echo "test_grep: ${{ inputs.test_grep || github.event.inputs.test_grep || '' }}"
+          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || 'false' }}"
+          echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || 'true' }}"
+          echo "test_grep: ${{ inputs.test_grep || github.event.inputs.test_grep || 'IP Owner execute AccessController module' }}"
 
   set-devnet-constants:
     runs-on: ubuntu-latest
@@ -284,7 +284,7 @@ jobs:
         run: |
           yarn prepare:test
           # run test with optional grep pattern
-          test_grep="${{ inputs.test_grep || github.event.inputs.test_grep || '' }}"
+          test_grep="${{ inputs.test_grep || github.event.inputs.test_grep || 'IP Owner execute AccessController module' }}"
           if [[ -n "$test_grep" ]]; then
             echo "Running tests with grep pattern: $test_grep"
             npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }} --grep "$test_grep"

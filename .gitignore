@@ -33,3 +33,11 @@ lcov.info
 # test
 mochawesome-report
 
+# Slither reports
+slither-report.json
+slither-report.sarif
+slither-report.md
+slither-report.html
+
+deploy-out/*
+.env*

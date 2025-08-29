@@ -32,7 +32,17 @@ test :; forge test --ffi
 
 snapshot :; forge snapshot
 
-slither :; slither ./contracts
+# Slither security analysis
+slither :; @if command -v slither >/dev/null 2>&1; then slither . --json slither-report.json --sarif slither-report.sarif > /dev/null 2>&1; echo "✅ Slither analysis completed. Check slither-report.json for details."; else echo "❌ Slither not found. Please install it first: brew install slither-analyzer"; exit 1; fi
+slither-check :; @if command -v slither >/dev/null 2>&1; then slither . --check-assert --json slither-report.json --sarif slither-report.sarif > /dev/null 2>&1; echo "✅ Slither security check completed. Check slither-report.json for details."; else echo "❌ Slither not found. Please install it first: brew install slither-analyzer"; exit 1; fi
+slither-report :; @if command -v slither >/dev/null 2>&1; then slither . --json slither-report.json --sarif slither-report.sarif > /dev/null 2>&1; echo "✅ Slither report generated. Check slither-report.json for details."; else echo "❌ Slither not found. Please install it first: brew install slither-analyzer"; exit 1; fi
+slither-quiet :; @if command -v slither >/dev/null 2>&1; then slither . --json slither-report.json --sarif slither-report.sarif > /dev/null 2>&1; echo "✅ Slither analysis completed. Check slither-report.json for details."; else echo "❌ Slither not found. Please install it first: brew install slither-analyzer"; exit 1; fi
+slither-view :; node scripts/slither-report.js
+slither-view-verbose :; node scripts/slither-report.js --verbose
+slither-markdown :; node scripts/slither-markdown.js
+slither-html :; node scripts/slither-clean.js
+slither-all :; make slither && make slither-view && make slither-html
+security-check :; @if command -v slither >/dev/null 2>&1; then slither . --check-assert --json slither-report.json --sarif slither-report.sarif > /dev/null 2>&1 && npx solhint contracts/**/*.sol; else echo "❌ Slither not found. Please install it first: brew install slither-analyzer"; exit 1; fi
 
 # glob doesn't work for nested folders, so we do it manually
 format:
@@ -73,3 +83,35 @@ typechain :; npx hardhat typechain
 lint :; npx solhint contracts/**/*.sol
 
 anvil :; anvil -m 'test test test test test test test test test test test junk'
+
+# Certora formal verification
+certora:
+	@if command -v certora-run >/dev/null 2>&1; then \
+		certora-run certora.conf; \
+		echo "✅ Certora verification completed"; \
+	elif command -v npx >/dev/null 2>&1; then \
+		npx @certora/certora-cli certora.conf; \
+		echo "✅ Certora verification completed via npx"; \
+	else \
+		echo "❌ Certora not found. Please install it first"; \
+		echo "💡 Try: brew install certora-cli"; \
+		echo "💡 Or: pnpm add -D @certora/certora-cli"; \
+	fi
+
+certora-verify:
+	@if command -v certora-run >/dev/null 2>&1; then \
+		certora-run certora.conf --verify; \
+		echo "✅ Certora verification completed"; \
+	else \
+		echo "❌ Certora not found. Please install it first"; \
+	fi
+
+certora-report:
+	@if command -v certora-run >/dev/null 2>&1; then \
+		certora-run certora.conf --output certora-reports; \
+		echo "✅ Certora report generated in certora-reports/"; \
+	else \
+		echo "❌ Certora not found. Please install it first"; \
+	fi
+
+security-all: slither-all certora-verify

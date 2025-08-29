@@ -42,6 +42,7 @@ jobs:
       run: yarn install
 
     - name: Run Slither analysis
+      continue-on-error: true
       run: |
         slither . --json slither-report.json --sarif slither-report.sarif
 

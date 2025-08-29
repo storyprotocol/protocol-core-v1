@@ -131,7 +131,7 @@ jobs:
       - name: Determine ERC721 Strategy
         id: strategy
         run: |
-          provided_address="${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
+          provided_address="${{ inputs.erc721_address || github.event.inputs.erc721_address || '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A' }}"
           
           # Check if any address is provided
           if [[ -n "$provided_address" ]]; then

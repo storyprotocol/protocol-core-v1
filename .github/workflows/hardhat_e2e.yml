@@ -119,9 +119,8 @@ jobs:
       NETWORK_VERSION: ${{ steps.devnet_version.outputs.NETWORK_VERSION }}
 
   prepare-erc721:
-    name: prepare-erc721
+    name: Prepare ERC721 Address
     needs: set-devnet-constants
-    if: ${{ inputs.erc721_address != '' && github.event.inputs.erc721_address != '' }}    
     runs-on: ubuntu-latest
 
     strategy:
@@ -129,60 +128,65 @@ jobs:
         node-version: [21.x]
 
     steps:
-      - name: Echo 721 address
-        id: prepare
+      - name: Determine ERC721 Strategy
+        id: strategy
         run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          echo "STORY_ERC721=$erc721_address" >> $GITHUB_ENV
-          echo "::set-output name=STORY_ERC721::$erc721_address"
+          provided_address="${{ inputs.erc721_address || github.event.inputs.erc721_address || '0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A' }}"
+          
+          # Check if a custom address is provided (not the default one)
+          if [[ "$provided_address" != "0x52D9aFFc0aCe89DA1bAf592963B7Ea7D19Bf2c3A" ]]; then
+            echo "DEPLOY_NEEDED=false" >> $GITHUB_OUTPUT
+            echo "ERC721_ADDRESS=$provided_address" >> $GITHUB_OUTPUT
+            echo "Using provided ERC721 address: $provided_address"
+          else
+            echo "DEPLOY_NEEDED=true" >> $GITHUB_OUTPUT
+            echo "Will deploy new MockERC721"
+          fi
 
-    outputs:
-      STORY_ERC721: ${{ steps.prepare.outputs.STORY_ERC721 }}
-
-  deploy-erc721:
-    name: Deploy ERC721
-    needs: set-devnet-constants
-    if: ${{ inputs.erc721_address == '' && github.event.inputs.erc721_address == '' }}    
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [21.x]
-
-    steps:
       - name: Check Out Repository Code
         uses: actions/checkout@v4
+        if: steps.strategy.outputs.DEPLOY_NEEDED == 'true'
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        if: steps.strategy.outputs.DEPLOY_NEEDED == 'true'
 
       - name: Run install
         uses: borales/actions-yarn@v4
         with:
-          cmd: install # will run `yarn install` command
+          cmd: install
+        if: steps.strategy.outputs.DEPLOY_NEEDED == 'true'
 
       - name: Install Dependencies
-        run: |
-          forge compile
+        run: forge compile
+        if: steps.strategy.outputs.DEPLOY_NEEDED == 'true'
 
-      - name: Deploy MockERC721 Contract
-        id: deploy-mock-erc721
+      - name: Deploy MockERC721
+        id: deploy
+        if: steps.strategy.outputs.DEPLOY_NEEDED == 'true'
         run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          if [[ -n "$erc721_address" ]]; then
-            echo "ERC721 address provided: $erc721_address"
-            erc721=$erc721_address
+          echo "Deploying new MockERC721..."
+          result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
+          echo $result
+          erc721_address=$(echo $result | grep deployedTo | jq -r '.deployedTo')
+          echo "Deployed new ERC721 to: $erc721_address"
+          echo "ERC721_ADDRESS=$erc721_address" >> $GITHUB_OUTPUT
+
+      - name: Set Final ERC721 Address
+        id: erc721
+        run: |
+          if [[ "${{ steps.strategy.outputs.DEPLOY_NEEDED }}" == "true" ]]; then
+            final_address="${{ steps.deploy.outputs.ERC721_ADDRESS }}"
           else
-            echo "Deploying MockERC721 contract"
-            result=$(forge create --rpc-url ${{ needs.set-devnet-constants.outputs.RPCURL }} --broadcast --private-key ${{ secrets.STORY_PRIVATEKEY }} --optimize --optimizer-runs 30000 --legacy --json test/foundry/mocks/token/MockERC721.sol:MockERC721 --constructor-args "MockERC" "MockERC" 2>&1)
-            echo $result
-            erc721=$(echo $result | grep deployedTo | jq -r '.deployedTo')
-            echo "Deployed to: $erc721"
+            final_address="${{ steps.strategy.outputs.ERC721_ADDRESS }}"
           fi
+          echo "STORY_ERC721=$final_address" >> $GITHUB_OUTPUT
+          echo "Final ERC721 address: $final_address"
 
-          echo "STORY_ERC721=$erc721" >> $GITHUB_OUTPUT
     outputs:
-      STORY_ERC721: ${{ steps.deploy-mock-erc721.outputs.STORY_ERC721 }}
+      STORY_ERC721: ${{ steps.erc721.outputs.STORY_ERC721 }}
+
+
 
   deploy-oov3-sandbox:
     name: Deploy UMA Optimistic Oracle V3
@@ -235,7 +239,7 @@ jobs:
   run-hardhat-test:
     name: Run E2E Test
     runs-on: ubuntu-latest
-    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox,  prepare-erc721 ]
+    needs: [set-devnet-constants, prepare-erc721, deploy-oov3-sandbox]
     if: always() && !failure() && !cancelled()
 
     strategy:
@@ -274,7 +278,7 @@ jobs:
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
           echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
-          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
+          echo "STORY_ERC721=${{ needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
           echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS || inputs.oov3_address || github.event.inputs.oov3_address }}" >> .env
 
           # add one more blank line to .env

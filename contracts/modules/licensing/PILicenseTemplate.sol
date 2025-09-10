@@ -490,7 +490,7 @@ contract PILicenseTemplate is
 
     /// @dev Checks if a license terms exists.
     function _exists(uint256 licenseTermsId) internal view returns (bool) {
-        return licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
+        return licenseTermsId > 0 && licenseTermsId <= _getPILicenseTemplateStorage().licenseTermsCounter;
     }
 
     ////////////////////////////////////////////////////////////////////////////

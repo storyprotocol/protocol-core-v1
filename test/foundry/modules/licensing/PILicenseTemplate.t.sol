@@ -380,6 +380,10 @@ contract PILicenseTemplateTest is BaseTest {
         assertFalse(pilTemplate.exists(999));
     }
 
+    function test_PILicenseTemplate_exists_zeroIdDoesNotExist() public {
+        assertFalse(pilTemplate.exists(0));
+    }
+
     // test verifyMintLicenseToken
     function test_PILicenseTemplate_verifyMintLicenseToken() public {
         uint256 commUseTermsId = pilTemplate.registerLicenseTerms(

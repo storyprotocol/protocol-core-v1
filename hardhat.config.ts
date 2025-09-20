@@ -31,7 +31,7 @@ const USE_TENDERLY = process.env.USE_TENDERLY === "true"
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "key"
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY || "key"
 
-const STORY_URL = process.env.STORY_URL || "http://"
+const STORY_URL = process.env.STORY_URL || "https://rpc.devnet.storyrpc.io"
 const STORY_CHAINID = Number(process.env.STORY_CHAINID) || 1513
 const STORY_PRIVATEKEY = process.env.STORY_PRIVATEKEY || "0xkey"
 const STORY_USER1 = process.env.STORY_USER1 || "0xkey"
@@ -65,7 +65,7 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  defaultNetwork: "tenderly",
+  defaultNetwork: "internal_devnet",
   networks: {
     hardhat: {
       chainId: 31337,
@@ -76,7 +76,7 @@ const config: HardhatUserConfig = {
       accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
     internal_devnet: {
-      chainId: STORY_CHAINID,
+      chainId: 1512, // 实际网络的链 ID
       url: STORY_URL,
       accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },

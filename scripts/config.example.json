@@ -1,0 +1,6 @@
+{
+  "accessManagerAddress": "0xFdece7b8a2f55ceC33b53fd28936B4B1e3153d53",
+  "multisigAddress": "0x7D01c62110fb498e6450A7857DD172dDd41EAbD3",
+  "multisigPrivateKey": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "newDelaySeconds": 0
+}

@@ -2,11 +2,21 @@
 
 import hre from "hardhat";
 import { network } from "hardhat";
-import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3 } from "./constants";
+import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3, MockERC721 } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 
 before(async function () {
+  // Check if MockERC721 is configured
+  if (!MockERC721) {
+    console.error("❌ MockERC721 address is not configured!");
+    console.error("Please set STORY_ERC721 environment variable or deploy MockERC721 contract first.");
+    console.error("You can deploy it using: npx hardhat deploy --network internal_devnet --tags mock");
+    throw new Error("MockERC721 address is not configured. Please set STORY_ERC721 environment variable.");
+  }
+  
+  console.log(`✅ MockERC721 address: ${MockERC721}`);
+
   // Get the list of signers, the first signer is usually the default wallet
   const [defaultSigner] = await hre.ethers.getSigners();
 
@@ -86,6 +96,16 @@ before(async function () {
   await this.licenseTemplate.registerLicenseTerms(testTerms).then((tx : any) => tx.wait());
   this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
   console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
+
+  console.log(`================= Whitelist MockERC20 in RoyaltyModule =================`);
+  try {
+    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true);
+    console.log(`✅ MockERC20 whitelisted in RoyaltyModule successfully!`);
+  } catch (error: any) {
+    console.error("❌ Failed to whitelist MockERC20 in RoyaltyModule!");
+    console.error("🔴 Error Message:", error.message || "No error message");
+    console.error("📜 Error Data:", error.data || "No error data");
+  }
 
   console.log(`================= ERC20 approve spender =================`);
   const amountToCheck = BigInt(1 * 10 ** 18);

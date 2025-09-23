@@ -2,7 +2,8 @@
 
 import { EvenSplitGroupPool } from "../constants";
 import "../setup"
-import { expect } from "chai"
+import { expect } from "chai";
+import { executeWithEnvironmentExpectation, getCurrentEnvironment } from "../utils/environmentHelper";
 
 describe("Grouping Module Authorization", function () {
   it("Non-admin whitelist group reward pool", async function () {
@@ -15,19 +16,43 @@ describe("Grouping Module Authorization", function () {
   });
 
   it("Admin whitelist group reward pool", async function () {
-    await expect(
-      this.groupingModule.whitelistGroupRewardPool(EvenSplitGroupPool, false)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    // Test whitelisting group reward pool with environment-aware expectations
+    // In admin environments: should succeed
+    // In non-admin environments: should fail with AccessControlUnauthorizedAccount error
+    
+    console.log("============ Testing Admin Whitelist Group Reward Pool ============");
+    
+    // Test disabling whitelist
+    await executeWithEnvironmentExpectation(
+      async () => {
+        const tx = await this.groupingModule.whitelistGroupRewardPool(EvenSplitGroupPool, false);
+        return await tx.wait();
+      },
+      "whitelistGroupRewardPool (disable)",
+      'adminOperations'
+    );
 
-    let isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(EvenSplitGroupPool);
-    expect(isWhitelisted).to.be.false;
+    // Only check state changes in admin environments where operation succeeds
+    const env = getCurrentEnvironment();
+    if (env.isAdminEnvironment) {
+      let isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(EvenSplitGroupPool);
+      expect(isWhitelisted).to.be.false;
 
-    await expect(
-      this.groupingModule.whitelistGroupRewardPool(EvenSplitGroupPool, true)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+      // Test enabling whitelist
+      await executeWithEnvironmentExpectation(
+        async () => {
+          const tx = await this.groupingModule.whitelistGroupRewardPool(EvenSplitGroupPool, true);
+          return await tx.wait();
+        },
+        "whitelistGroupRewardPool (enable)",
+        'adminOperations'
+      );
 
-    isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(EvenSplitGroupPool);
-    expect(isWhitelisted).to.be.true;
+      isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(EvenSplitGroupPool);
+      expect(isWhitelisted).to.be.true;
+    } else {
+      console.log("⚠️  Skipping state verification in non-admin environment - operations expected to fail");
+    }
   });
 
   it("Admin whitelist invalid group reward pool", async function () {

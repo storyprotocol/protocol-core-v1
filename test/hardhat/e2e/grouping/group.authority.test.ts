@@ -57,19 +57,40 @@ describe("Grouping Module Authorization", function () {
 
   it("Admin whitelist invalid group reward pool", async function () {
     const invalidGroupPool = "0xDA5b9f185ac6b5b61BF84892d94BF1826984dA5A";
-    await expect(
-      this.groupingModule.whitelistGroupRewardPool(invalidGroupPool, true)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    
+    console.log("============ Testing Admin Whitelist Invalid Group Reward Pool ============");
+    
+    // Test enabling whitelist for invalid pool
+    await executeWithEnvironmentExpectation(
+      async () => {
+        const tx = await this.groupingModule.whitelistGroupRewardPool(invalidGroupPool, true);
+        return await tx.wait();
+      },
+      "whitelistGroupRewardPool (enable invalid pool)",
+      'adminOperations'
+    );
 
-    let isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(invalidGroupPool);
-    expect(isWhitelisted).to.be.true;
+    // Only check state changes in admin environments where operation succeeds
+    const env = getCurrentEnvironment();
+    if (env.isAdminEnvironment) {
+      let isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(invalidGroupPool);
+      expect(isWhitelisted).to.be.true;
 
-    await expect(
-      this.groupingModule.whitelistGroupRewardPool(invalidGroupPool, false)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+      // Test disabling whitelist for invalid pool
+      await executeWithEnvironmentExpectation(
+        async () => {
+          const tx = await this.groupingModule.whitelistGroupRewardPool(invalidGroupPool, false);
+          return await tx.wait();
+        },
+        "whitelistGroupRewardPool (disable invalid pool)",
+        'adminOperations'
+      );
 
-    isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(invalidGroupPool);
-    expect(isWhitelisted).to.be.false;
+      isWhitelisted = await this.ipAssetRegistry.isWhitelistedGroupRewardPool(invalidGroupPool);
+      expect(isWhitelisted).to.be.false;
+    } else {
+      console.log("⚠️  Skipping state verification in non-admin environment - operations expected to fail");
+    }
   });
 });
 

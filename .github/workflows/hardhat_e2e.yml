@@ -1,9 +1,9 @@
 name: -> HardHat E2E Test
 
 on:
-  push:
-    branches:
-      - yao/test/cantina_124
+  # push:
+  #   branches:
+  #     - yao/test/cantina_124
 
   workflow_dispatch:
     inputs:
@@ -29,7 +29,7 @@ on:
       schedule:
         description: 'Schedule first before the set opertion'
         required: false
-        default: true
+        default: false
         type: boolean
       deploy_report:
         description: 'Deploy test report to GitHub Pages'

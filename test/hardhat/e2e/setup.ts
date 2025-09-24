@@ -52,6 +52,16 @@ before(async function () {
   this.chainId = networkConfig.chainId;
   console.log("chainId: ", this.chainId);
 
+  console.log(`================= Whitelist MockERC20 in RoyaltyModule =================`);
+  try {
+    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true);
+    console.log(`✅ MockERC20 whitelisted in RoyaltyModule successfully!`);
+  } catch (error: any) {
+    console.error("❌ Failed to whitelist MockERC20 in RoyaltyModule!");
+    console.error("🔴 Error Message:", error.message || "No error message");
+    console.error("📜 Error Data:", error.data || "No error data");
+  }
+  
   console.log(`================= Register non-commercial PIL license terms =================`);
   await this.licenseTemplate.registerLicenseTerms(terms).then((tx : any) => tx.wait());
   this.nonCommercialLicenseId = await this.licenseTemplate.getLicenseTermsId(terms);
@@ -97,15 +107,7 @@ before(async function () {
   this.commericialRemixLicenseId = await this.licenseTemplate.getLicenseTermsId(testTerms);
   console.log("Commercial-remix licenseTermsId: ", this.commericialRemixLicenseId);
 
-  console.log(`================= Whitelist MockERC20 in RoyaltyModule =================`);
-  try {
-    await this.royaltyModule.whitelistRoyaltyToken(MockERC20, true);
-    console.log(`✅ MockERC20 whitelisted in RoyaltyModule successfully!`);
-  } catch (error: any) {
-    console.error("❌ Failed to whitelist MockERC20 in RoyaltyModule!");
-    console.error("🔴 Error Message:", error.message || "No error message");
-    console.error("📜 Error Data:", error.data || "No error data");
-  }
+
 
   console.log(`================= ERC20 approve spender =================`);
   const amountToCheck = BigInt(1 * 10 ** 18);

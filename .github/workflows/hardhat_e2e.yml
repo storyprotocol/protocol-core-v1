@@ -1,9 +1,9 @@
 name: -> HardHat E2E Test
 
 on:
-  # push:
-  #   branches:
-  #     - update-e2e-test
+  push:
+    branches:
+      - yao/test/cantina_124
 
   workflow_dispatch:
     inputs:
@@ -17,24 +17,24 @@ on:
           - mainnet
           - internal-devnet
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x15cbB99b60F06CC70D819dD256BC7B7F6eC391B9'
         type: string
       oov3_address:
-        description: 'must provide when running e2e tests'
+        description: 'OOV3 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x21F4AbC03C1323ffc139b9Af6e261B825BFd73ca'
         type: string
-      deploy_oov3:
-        description: 'Deploy Optimistic Oracle V3'
-        required: false
-        default: false
-        type: boolean
       schedule:
         description: 'Schedule first before the set opertion'
         required: false
         default: true
+        type: boolean
+      deploy_report:
+        description: 'Deploy test report to GitHub Pages'
+        required: false
+        default: false
         type: boolean
 
 
@@ -46,9 +46,14 @@ on:
         default: 'internal-devnet'
         type: string
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x15cbB99b60F06CC70D819dD256BC7B7F6eC391B9'
+        type: string
+      oov3_address:
+        description: 'OOV3 contract address (leave empty to deploy new contract)'
+        required: false
+        default: '0x21F4AbC03C1323ffc139b9Af6e261B825BFd73ca'
         type: string
 
 jobs:
@@ -62,7 +67,6 @@ jobs:
           echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
           echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
-          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
           echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
 
   set-devnet-constants:
@@ -100,26 +104,6 @@ jobs:
       RPCURL: ${{ steps.devnet_version.outputs.RPCURL }}
       MOCK_ERC20_ADDRESS: ${{ steps.mock_erc20_address.outputs.MOCK_ERC20_ADDRESS }}
 
-  prepare-erc721:
-    name: prepare-erc721
-    needs: set-devnet-constants
-    if: ${{ inputs.erc721_address != '' && github.event.inputs.erc721_address != '' }}    
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [21.x]
-
-    steps:
-      - name: Echo 721 address
-        id: prepare
-        run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          echo "STORY_ERC721=$erc721_address" >> $GITHUB_ENV
-          echo "::set-output name=STORY_ERC721::$erc721_address"
-
-    outputs:
-      STORY_ERC721: ${{ steps.prepare.outputs.STORY_ERC721 }}
 
   deploy-erc721:
     name: Deploy ERC721
@@ -168,7 +152,7 @@ jobs:
 
   deploy-oov3-sandbox:
     name: Deploy UMA Optimistic Oracle V3
-    if: ${{ inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true }}
+    if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' }}
     needs: set-devnet-constants
     runs-on: ubuntu-latest
     
@@ -217,7 +201,7 @@ jobs:
   run-hardhat-test:
     name: Run E2E Test
     runs-on: ubuntu-latest
-    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox,  prepare-erc721 ]
+    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox]
     if: always() && !failure() && !cancelled()
 
     strategy:
@@ -256,8 +240,8 @@ jobs:
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
           echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
-          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
-          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS }}" >> .env
+          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || inputs.erc721_address || github.event.inputs.erc721_address }}" >> .env
+          echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS || inputs.oov3_address || github.event.inputs.oov3_address }}" >> .env
 
           # add one more blank line to .env
           echo "" >> .env

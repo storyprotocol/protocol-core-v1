@@ -255,6 +255,11 @@ jobs:
 
       - name: Run test
         run: |
+          # Prepare test environment: copy mock contracts from test/foundry/mocks/ to contracts/ directory
+          # and compile all contracts. This is required because Hardhat tests reference mock contracts
+          # that are located in the Foundry test directory structure.
+          yarn prepare:test
+          
           if [ -n "${{ inputs.test_pattern }}" ]; then
             echo "Running tests matching pattern: ${{ inputs.test_pattern }}"
             npx hardhat test test/hardhat/e2e/**/*${{ inputs.test_pattern }}*.ts --network internal_devnet

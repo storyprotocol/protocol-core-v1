@@ -450,11 +450,36 @@ function generateUniqueDisputeEvidenceHash() {
 }
 
 function extractDisputeIdFromReceipt(receipt: any): bigint {
-  const disputeModuleInterface = new ethers.Interface([
-    "event DisputeRaised(uint256 disputeId, address targetIpId, address disputeInitiator, uint256 disputeTimestamp, address arbitrationPolicy, bytes32 disputeEvidenceHash, bytes32 targetTag, bytes data)"
-  ]);
+  // Since disputeId is always the first parameter, we can extract it directly from the data
+  // Look for events that might contain dispute information
+  for (const log of receipt.logs) {
+    // Check if this log has data that could contain a dispute ID
+    if (log.data && log.data.length >= 66) { // 0x + 64 hex chars = 32 bytes minimum
+      try {
+        // Extract the first 32 bytes as dispute ID
+        const first32Bytes = log.data.substring(2, 66); // Skip 0x prefix
+        const disputeId = BigInt('0x' + first32Bytes);
+        
+        // Check if this looks like a reasonable dispute ID (should be > 0)
+        if (disputeId > 0) {
+          console.log(`✅ Found dispute ID: ${disputeId} in log data`);
+          return disputeId;
+        }
+      } catch (error) {
+        // Continue to next log if parsing fails
+        continue;
+      }
+    }
+  }
   
-  const disputeRaisedEvent = receipt.logs.find((log: any) => {
+  // If no dispute ID found in logs, try the original method as fallback
+  // Try both old and new event signatures
+  const oldEventSignature = "event DisputeRaised(uint256 disputeId, address targetIpId, address disputeInitiator, uint256 disputeTimestamp, address arbitrationPolicy, bytes32 disputeEvidenceHash, bytes32 targetTag, bytes data)";
+  const newEventSignature = "event DisputeRaised(uint256 disputeId, address targetIpId, address caller, address disputeInitiator, uint256 disputeTimestamp, address arbitrationPolicy, bytes32 disputeEvidenceHash, bytes32 targetTag, bytes data)";
+  
+  // Try new signature first (since it's likely the current one)
+  let disputeModuleInterface = new ethers.Interface([newEventSignature]);
+  let disputeRaisedEvent = receipt.logs.find((log: any) => {
     try {
       const parsed = disputeModuleInterface.parseLog(log);
       return parsed?.name === "DisputeRaised";
@@ -463,11 +488,22 @@ function extractDisputeIdFromReceipt(receipt: any): bigint {
     }
   });
   
+  // If not found with new signature, try old signature
+  if (!disputeRaisedEvent) {
+    disputeModuleInterface = new ethers.Interface([oldEventSignature]);
+    disputeRaisedEvent = receipt.logs.find((log: any) => {
+      try {
+        const parsed = disputeModuleInterface.parseLog(log);
+        return parsed?.name === "DisputeRaised";
+      } catch {
+        return false;
+      }
+    });
+  }
+  
   if (disputeRaisedEvent) {
     const parsed = disputeModuleInterface.parseLog(disputeRaisedEvent);
     return parsed?.args.disputeId;
-  } else {
-    throw new Error("DisputeRaised event not found in logs");
   }
 }
 

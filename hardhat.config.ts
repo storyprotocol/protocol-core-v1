@@ -76,7 +76,7 @@ const config: HardhatUserConfig = {
       accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },
     internal_devnet: {
-      chainId: 1512, // 实际网络的链 ID
+      chainId: 1512,
       url: STORY_URL,
       accounts: [STORY_PRIVATEKEY, STORY_USER1, STORY_USER2],
     },

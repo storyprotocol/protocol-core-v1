@@ -44,8 +44,10 @@ contract IPAssetRegistryHarness is Test {
     function register(uint8 index) public {
         vm.warp(10000);
         IPAccount memory ipAccount = ipAccounts[index];
+        address ipId = ipAssetRegistry.ipId(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
+        bool wasRegistered = ipAssetRegistry.isRegistered(ipId);
         ipAssetRegistry.register(ipAccount.chainId, ipAccount.tokenAddress, ipAccount.tokenId);
-        registered++;
+        if (!wasRegistered) registered++;
     }
 }
 

@@ -1,13 +1,13 @@
 {
     "name": "@story-protocol/protocol-core",
-    "version": "v1.1.0",
-    "description": "Story Protocol core smart contracts",
+    "version": "v1.3.2",
+    "description": "Story Proof-of-Creativity Core smart contracts",
     "main": "",
     "directories": {
         "lib": "lib",
         "test": "test"
     },
-    "author": "StoryProtocol",
+    "author": "PIP Labs",
     "license": "UNLICENSED",
     "scripts": {
         "lint": "npm run lint:js && npm run lint:sol",
@@ -19,7 +19,8 @@
         "solhint": "solhint '{contracts,test}/**/*.sol'",
         "test": "npx hardhat test",
         "prepare": "husky install",
-        "docgen": "hardhat docgen"
+        "docgen": "hardhat docgen",
+        "prepare:test": "ts-node script/hardhat/prepare-test.ts && npx hardhat compile"
     },
     "devDependencies": {
         "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",

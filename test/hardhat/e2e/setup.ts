@@ -40,12 +40,13 @@ before(async function () {
   this.arbitrationPolicyUMA = await hre.ethers.getContractAt("ArbitrationPolicyUMA", ArbitrationPolicyUMA);
   this.coreMetadataModule = await hre.ethers.getContractAt("CoreMetadataModule", CoreMetadataModule);
   this.CoreMetadataViewModule = await hre.ethers.getContractAt("CoreMetadataViewModule", CoreMetadataViewModule);
+  // this.erc20 = await hre.ethers.getContractAt("MockERC20", MockERC20);
   this.errors = await hre.ethers.getContractFactory("contracts/lib/Errors.sol:Errors");
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
-  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("5.0") }).then((tx: any) => tx.wait());
-  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("5.0") }).then((tx: any) => tx.wait());
+  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
+  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
   
   console.log(`================= Chain ID =================`);
   const networkConfig = network.config;

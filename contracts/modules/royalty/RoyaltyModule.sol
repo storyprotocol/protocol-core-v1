@@ -20,6 +20,7 @@ import { IIpRoyaltyVault } from "../../interfaces/modules/royalty/policies/IIpRo
 import { IDisputeModule } from "../../interfaces/modules/dispute/IDisputeModule.sol";
 import { ILicenseRegistry } from "../../interfaces/registries/ILicenseRegistry.sol";
 import { ILicensingModule } from "../../interfaces/modules/licensing/ILicensingModule.sol";
+import { IIPAssetRegistry } from "../../interfaces/registries/IIPAssetRegistry.sol";
 import { Errors } from "../../lib/Errors.sol";
 import { ROYALTY_MODULE_KEY } from "../../lib/modules/Module.sol";
 import { IPGraphACL } from "../../access/IPGraphACL.sol";
@@ -75,6 +76,8 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// IP asset while a royalty policy is blacklisted then that payment will not be accounted for that royalty policy.
     /// @param treasury The treasury address
     /// @param royaltyFeePercent The royalty fee percentage
+    /// @param totalPolicyRtsRequiredToLink The total royalty tokens required to link for a given IP asset and a given
+    /// royalty policy
     /// @custom:storage-location erc7201:story-protocol.RoyaltyModule
     // solhint-disable max-line-length
     struct RoyaltyModuleStorage {
@@ -92,6 +95,7 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         mapping(address ipId => mapping(address token => mapping(address royaltyPolicy => uint256))) totalRevenueTokensAccounted;
         address treasury;
         uint32 royaltyFeePercent;
+        mapping(address ipId => mapping(address royaltyPolicy => uint32)) totalPolicyRtsRequiredToLink;
     }
     // solhint-enable max-line-length
 
@@ -236,6 +240,27 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         emit ExternalRoyaltyPolicyRegistered(externalRoyaltyPolicy);
     }
 
+    /// @notice Deploys a royalty vault for a given IP asset
+    /// @param ipId The ID of the IP asset
+    /// @return ipRoyaltyVault The address of the deployed royalty vault
+    function deployVault(address ipId) external nonReentrant whenNotPaused returns (address ipRoyaltyVault) {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+        if ($.ipRoyaltyVaults[ipId] != address(0)) revert Errors.RoyaltyModule__VaultAlreadyDeployed();
+        if (!IIPAssetRegistry(address(IP_ASSET_REGISTRY)).isRegistered(ipId))
+            revert Errors.RoyaltyModule__IpIdNotRegistered();
+
+        address receiver = ipId;
+
+        if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+            receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
+            if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver)) {
+                revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+            }
+        }
+
+        ipRoyaltyVault = _deployIpRoyaltyVault(ipId, receiver);
+    }
+
     /// @notice Executes royalty related logic on license minting
     /// @dev Enforced to be only callable by LicensingModule
     /// @param ipId The ipId whose license is being minted (licensor)
@@ -294,37 +319,28 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     ) external nonReentrant onlyLicensingModule {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
-        // If an IP already has a vault, it means that it's either a root node which cannot link to parents
-        // or it's a derivative in which case it cannot link to parents either
-        if ($.ipRoyaltyVaults[ipId] != address(0)) revert Errors.RoyaltyModule__UnlinkableToParents();
-
         if (parentIpIds.length == 0) revert Errors.RoyaltyModule__NoParentsOnLinking();
 
         // deploy ipRoyaltyVault for the ipId given it does not exist yet
-        address ipRoyaltyVault = _deployIpRoyaltyVault(ipId, address(this));
+        bool vaultExist = $.ipRoyaltyVaults[ipId] != address(0);
+        address ipRoyaltyVault = !vaultExist ? _deployIpRoyaltyVault(ipId, address(this)) : $.ipRoyaltyVaults[ipId];
 
-        // send royalty tokens to the royalty policies
+        // calculates the total rts required to link
         // and saves the ancestors accumulated royalty policies for the child
-        _distributeRoyaltyTokensToPolicies(
+        uint32 totalRtsRequiredToLink = _getRtsRequiredToLink(
             ipId,
             parentIpIds,
             licenseRoyaltyPolicies,
             licensesPercent,
-            ipRoyaltyVault,
             maxRts
         );
 
-        // for whitelisted policies calls onLinkToParents and calculates the global royalty stack
-        uint32 globalRoyaltyStack = _calculateGlobalRoyaltyStack(
-            ipId,
-            parentIpIds,
-            licenseRoyaltyPolicies,
-            licensesPercent,
-            externalData
-        );
+        // transfers the royalty tokens to the royalty policies and
+        // distributes the remaining to the ipId address or group reward pool if the ipRoyaltyVault does not exist yet
+        _distributeRts(ipId, ipRoyaltyVault, totalRtsRequiredToLink, vaultExist);
 
-        if (globalRoyaltyStack > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
-        $.globalRoyaltyStack[ipId] = globalRoyaltyStack;
+        // for whitelisted policies calls onLinkToParents and calculates the global royalty stack
+        _calculateGlobalRoyaltyStack(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, externalData);
 
         emit LinkedToParents(ipId, parentIpIds, licenseRoyaltyPolicies, licensesPercent, externalData);
     }
@@ -500,10 +516,11 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
         address[] calldata licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
         bytes calldata externalData
-    ) internal returns (uint32 globalRoyaltyStack) {
+    ) internal {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
         // loop is limited to accumulatedRoyaltyPoliciesLimit
+        uint32 globalRoyaltyStack;
         address[] memory accRoyaltyPolicies = $.accumulatedRoyaltyPolicies[ipId].values();
         for (uint256 i = 0; i < accRoyaltyPolicies.length; i++) {
             if ($.isWhitelistedRoyaltyPolicy[accRoyaltyPolicies[i]]) {
@@ -519,6 +536,9 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
                     revert Errors.RoyaltyModule__NotWhitelistedOrRegisteredRoyaltyPolicy();
             }
         }
+
+        if (globalRoyaltyStack > MAX_PERCENT) revert Errors.RoyaltyModule__AboveMaxPercent();
+        $.globalRoyaltyStack[ipId] = globalRoyaltyStack;
     }
 
     /// @notice Distributes royalty tokens to the royalty policies of the ancestors IP assets
@@ -526,52 +546,48 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
     /// @param parentIpIds The parent IP assets
     /// @param licenseRoyaltyPolicies The royalty policies of the each parent license
     /// @param licensesPercent The license percentage of the licenses being minted
-    /// @param ipRoyaltyVault The address of the ipRoyaltyVault
     /// @param maxRts The maximum number of royalty tokens that can be distributed to the external royalty policies
+    /// @return totalRtsRequiredToLink The total royalty tokens required to link
     // solhint-disable code-complexity
-    function _distributeRoyaltyTokensToPolicies(
+    function _getRtsRequiredToLink(
         address ipId,
         address[] calldata parentIpIds,
         address[] calldata licenseRoyaltyPolicies,
         uint32[] calldata licensesPercent,
-        address ipRoyaltyVault,
         uint32 maxRts
-    ) internal {
+    ) internal returns (uint32 totalRtsRequiredToLink) {
         RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
 
-        uint32 totalRtsRequiredToLink;
         // this loop is limited to maxParents
         for (uint256 i = 0; i < parentIpIds.length; i++) {
             if (parentIpIds[i] == address(0)) revert Errors.RoyaltyModule__ZeroParentIpId();
             if (licenseRoyaltyPolicies[i] == address(0)) revert Errors.RoyaltyModule__ZeroRoyaltyPolicy();
 
-            // transfer the royalty tokens and add royalty policy to child if it's not contained in the parent
+            // sums the royalty tokens and add royalty policy to child if it's not contained in the parent
             // since if it's already contained then it will be transferred in the next loop already
             if (!$.accumulatedRoyaltyPolicies[parentIpIds[i]].contains(licenseRoyaltyPolicies[i])) {
-                _addToAccumulatedRoyaltyPolicies(ipId, licenseRoyaltyPolicies[i]);
-                totalRtsRequiredToLink += _transferRoyaltyTokensToPolicy(
+                totalRtsRequiredToLink += _addToAccumulatedRoyaltyPolicies(
+                    ipId,
                     parentIpIds[i],
                     licenseRoyaltyPolicies[i],
-                    licensesPercent[i],
-                    ipRoyaltyVault
+                    licensesPercent[i]
                 );
             }
 
-            // transfer the royalty tokens and add all the parent royalty policies to the child
+            // sums the royalty tokens and add all the parent royalty policies to the child
             // this loop is limited to accumulatedRoyaltyPoliciesLimit
             address[] memory accParentRoyaltyPolicies = $.accumulatedRoyaltyPolicies[parentIpIds[i]].values();
             for (uint256 j = 0; j < accParentRoyaltyPolicies.length; j++) {
-                // add the parent ancestor royalty policies to the child
-                _addToAccumulatedRoyaltyPolicies(ipId, accParentRoyaltyPolicies[j]);
-                // transfer the required royalty tokens to each policy
+                // sum the required royalty tokens to each policy
                 uint32 licensePercent = accParentRoyaltyPolicies[j] == licenseRoyaltyPolicies[i]
                     ? licensesPercent[i]
                     : 0;
-                totalRtsRequiredToLink += _transferRoyaltyTokensToPolicy(
+                // add the parent ancestor royalty policies to the child
+                totalRtsRequiredToLink += _addToAccumulatedRoyaltyPolicies(
+                    ipId,
                     parentIpIds[i],
                     accParentRoyaltyPolicies[j],
-                    licensePercent,
-                    ipRoyaltyVault
+                    licensePercent
                 );
             }
         }
@@ -580,44 +596,65 @@ contract RoyaltyModule is IRoyaltyModule, VaultController, ReentrancyGuardUpgrad
             revert Errors.RoyaltyModule__AboveAccumulatedRoyaltyPoliciesLimit();
 
         if (totalRtsRequiredToLink > maxRts) revert Errors.RoyaltyModule__AboveMaxRts();
+    }
 
-        // sends remaining royalty tokens to the ipId address or
+    /// @notice Distributes royalty tokens to the royalty policies of the ancestors IP assets
+    /// @param ipId The ID of the IP asset
+    /// @param ipRoyaltyVault The address of the ipRoyaltyVault
+    /// @param totalRtsRequiredToLink The total royalty tokens required to link
+    /// @param vaultExist True if the ipRoyaltyVault exists/is already deployed
+    function _distributeRts(
+        address ipId,
+        address ipRoyaltyVault,
+        uint32 totalRtsRequiredToLink,
+        bool vaultExist
+    ) internal {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+
+        // if the vault exists - transfers the necessary royalty tokens from the ipId address to royalty module
+        // if the vault does not exist - then 100% of the royalty tokens are already in the royalty module
+        if (vaultExist) IERC20(ipRoyaltyVault).safeTransferFrom(ipId, address(this), totalRtsRequiredToLink);
+
+        // transfers the royalty tokens to the royalty policies
+        address[] memory accParentRoyaltyPolicies = $.accumulatedRoyaltyPolicies[ipId].values();
+        for (uint256 i = 0; i < accParentRoyaltyPolicies.length; i++) {
+            uint32 rts = $.totalPolicyRtsRequiredToLink[ipId][accParentRoyaltyPolicies[i]];
+            if (rts > 0) IERC20(ipRoyaltyVault).safeTransfer(accParentRoyaltyPolicies[i], rts);
+        }
+
+        // if the ipRoyaltyVault does not exist yet, then sends remaining royalty tokens to the ipId address or
         // in the case the ipId is a group then send to the group reward pool
-        uint32 remainingRts = MAX_PERCENT - totalRtsRequiredToLink;
-        if (remainingRts > 0) {
-            address receiver = ipId;
-            if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
-                receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
-                if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver))
-                    revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+        if (!vaultExist) {
+            uint32 remainingRts = MAX_PERCENT - totalRtsRequiredToLink;
+            if (remainingRts > 0) {
+                address receiver = ipId;
+                if (IP_ASSET_REGISTRY.isRegisteredGroup(ipId)) {
+                    receiver = IP_ASSET_REGISTRY.getGroupRewardPool(ipId);
+                    if (!IP_ASSET_REGISTRY.isWhitelistedGroupRewardPool(receiver))
+                        revert Errors.RoyaltyModule__GroupRewardPoolNotWhitelisted(ipId, receiver);
+                }
+                IERC20(ipRoyaltyVault).safeTransfer(receiver, remainingRts);
             }
-            IERC20(ipRoyaltyVault).safeTransfer(receiver, remainingRts);
         }
     }
 
     /// @notice Adds a royalty policy to the accumulated royalty policies of an IP asset
     /// @dev Function required to avoid stack too deep error
     /// @param ipId The ID of the IP asset
-    /// @param royaltyPolicy The address of the royalty policy
-    function _addToAccumulatedRoyaltyPolicies(address ipId, address royaltyPolicy) internal {
-        _getRoyaltyModuleStorage().accumulatedRoyaltyPolicies[ipId].add(royaltyPolicy);
-    }
-
-    /// @notice Transfers the royalty tokens to the royalty policy
     /// @param parentIpId The parent IP asset
     /// @param royaltyPolicy The address of the royalty policy
     /// @param licensePercent The license percentage
-    /// @param ipRoyaltyVault The address of the ipRoyaltyVault
-    /// @return rtsRequiredToLink The required royalty tokens to link
-    function _transferRoyaltyTokensToPolicy(
+    /// @return rts The royalty tokens required to link
+    function _addToAccumulatedRoyaltyPolicies(
+        address ipId,
         address parentIpId,
         address royaltyPolicy,
-        uint32 licensePercent,
-        address ipRoyaltyVault
-    ) internal returns (uint32) {
-        uint32 rtsRequiredToLink = IRoyaltyPolicy(royaltyPolicy).getPolicyRtsRequiredToLink(parentIpId, licensePercent);
-        if (rtsRequiredToLink > 0) IERC20(ipRoyaltyVault).safeTransfer(royaltyPolicy, rtsRequiredToLink);
-        return rtsRequiredToLink;
+        uint32 licensePercent
+    ) internal returns (uint32 rts) {
+        RoyaltyModuleStorage storage $ = _getRoyaltyModuleStorage();
+        rts = IRoyaltyPolicy(royaltyPolicy).getPolicyRtsRequiredToLink(parentIpId, licensePercent);
+        $.accumulatedRoyaltyPolicies[ipId].add(royaltyPolicy);
+        $.totalPolicyRtsRequiredToLink[ipId][royaltyPolicy] += rts;
     }
 
     /// @notice Handles the payment of royalties

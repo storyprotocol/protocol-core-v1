@@ -36,7 +36,7 @@ library PILFlavors {
         return pilTemplate.getLicenseTermsId(_nonComSocialRemixingPIL());
     }
 
-    /// @notice Gets the values to create a Non Commercial Social Remix licenseTerms flavor, as described in:
+    /// @notice Gets the values to create a Commercial Use licenseTerms flavor, as described in:
     /// https://docs.story.foundation/docs/pil-flavors#flavor-2-commercial-use
     /// @param mintingFee The fee to be paid when minting a license, in the smallest unit of the token
     /// @param currencyToken The token to be used to pay the minting fee

@@ -452,7 +452,7 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
     /// @param parentIpId The address of the IP to check.
     /// @return Whether the IP has derivative IPs.
     function hasDerivativeIps(address parentIpId) external view returns (bool) {
-        return _getLicenseRegistryStorage().childIps[parentIpId].length() > 0;
+        return _hasDerivativeIps(parentIpId);
     }
 
     /// @notice Checks if license terms exist.
@@ -836,6 +836,13 @@ contract LicenseRegistry is ILicenseRegistry, AccessManagedUpgradeable, UUPSUpgr
             return false;
         }
         return ILicenseTemplate(licenseTemplate).exists(licenseTermsId);
+    }
+
+    /// @notice Checks if an IP has derivative IPs.
+    /// @param parentIpId The address of the IP to check.
+    /// @return Whether the IP has derivative IPs.
+    function _hasDerivativeIps(address parentIpId) internal view returns (bool) {
+        return _getLicenseRegistryStorage().childIps[parentIpId].length() > 0;
     }
 
     ////////////////////////////////////////////////////////////////////////////

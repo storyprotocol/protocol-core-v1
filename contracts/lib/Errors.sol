@@ -627,6 +627,9 @@ library Errors {
     /// @notice Evidence hash already used.
     error DisputeModule__EvidenceHashAlreadyUsed();
 
+    /// @notice Invalid dispute initiator.
+    error DisputeModule__InvalidDisputeInitiator();
+
     ////////////////////////////////////////////////////////////////////////////
     //                             Arbitration Policy UMA                     //
     ////////////////////////////////////////////////////////////////////////////
@@ -788,6 +791,12 @@ library Errors {
 
     /// @notice The group pool is not whitelisted.
     error RoyaltyModule__GroupRewardPoolNotWhitelisted(address groupId, address rewardPool);
+
+    /// @notice The vault is already deployed.
+    error RoyaltyModule__VaultAlreadyDeployed();
+
+    /// @notice The IP ID is not registered.
+    error RoyaltyModule__IpIdNotRegistered();
 
     ////////////////////////////////////////////////////////////////////////////
     //                            Royalty Policy LAP                          //

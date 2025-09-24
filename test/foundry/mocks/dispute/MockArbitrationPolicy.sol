@@ -37,6 +37,7 @@ contract MockArbitrationPolicy is IArbitrationPolicy {
     function onRaiseDispute(
         address caller,
         address targetIpId,
+        address disputeInitiator,
         bytes32 disputeEvidenceHash,
         bytes32 targetTag,
         uint256 disputeId,

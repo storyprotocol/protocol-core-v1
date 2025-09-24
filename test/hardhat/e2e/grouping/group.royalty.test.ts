@@ -218,3 +218,102 @@ describe("Non-Owner/Member Claim Group Royalty", function () {
     ).to.be.equal(ip2BalanceBefore + 50n);
   });
 });
+
+describe("Automatic Vault Deployment During Group Reward Claim", function () {
+  let groupId: any;
+  let commRemixTermsId: any;
+  let ipId1: any;
+  let ipId2: any
+  let derivativeIpId: any;
+  let rewardPoolBalanceBefore: any;
+
+  it("Should automatically deploy vaults during reward claim", async function () {
+    // Register group
+    console.log("============ Register Group ============");
+    commRemixTermsId = await registerPILTerms(true, 0, 10 * 10 ** 6, RoyaltyPolicyLRP);
+    const groupLicensingConfig = { ...LicensingConfig };
+    groupLicensingConfig.expectGroupRewardPool = hre.ethers.ZeroAddress;
+    groupId = await registerGroupIPA(EvenSplitGroupPool, commRemixTermsId, groupLicensingConfig);
+
+    // Register IPs
+    console.log("============ Register IPs ============");
+    ({ ipId: ipId1 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user1, this.user1));
+    await expect(
+      this.licensingModule.connect(this.user1).setLicensingConfig(ipId1, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    ({ ipId: ipId2 } = await mintNFTAndRegisterIPAWithLicenseTerms(commRemixTermsId, this.user2, this.user2));
+    await expect(
+      this.licensingModule.connect(this.user2).setLicensingConfig(ipId2, PILicenseTemplate, commRemixTermsId, LicensingConfig)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Add IPs to the group
+    console.log("============ Add IPs to group ============");
+
+    await expect(
+      this.groupingModule.connect(this.owner).addIp(groupId, [ipId1, ipId2], 20 * 10 ** 6)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    expect(
+      await this.evenSplitGroupPool.getTotalIps(groupId)
+    ).to.be.equal(2);
+
+    // Register derivative IP
+    console.log("============ Register Derivative IP ============");
+    ({ipId: derivativeIpId} = await mintNFTAndRegisterIPA());
+    await expect(
+      this.licensingModule.registerDerivative(derivativeIpId, [groupId], [commRemixTermsId], PILicenseTemplate, "0x", 0, 100e6, 0)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Pay royalty
+    console.log("============ Pay royalty ============");
+    await expect(
+      this.royaltyModule.payRoyaltyOnBehalf(derivativeIpId, ipId1, MockERC20, 1000)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Transfer to vault
+    console.log("============ Transfer to vault ============");
+    await expect(
+      this.royaltyPolicyLRP.transferToVault(derivativeIpId, groupId, MockERC20)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Collect royalties
+    console.log("============ Collect royalties ============");
+    await expect(
+      this.groupingModule.collectRoyalties(groupId, MockERC20)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    rewardPoolBalanceBefore = await getErc20Balance(EvenSplitGroupPool);
+
+    // Collect royalties
+    console.log("============ Collect royalties ============");
+    await expect(
+      this.groupingModule.collectRoyalties(groupId, MockERC20)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+    
+    // Verify vaults are not deployed initially
+    expect(await this.royaltyModule.ipRoyaltyVaults(ipId1)).to.equal(hre.ethers.ZeroAddress);
+    expect(await this.royaltyModule.ipRoyaltyVaults(ipId2)).to.equal(hre.ethers.ZeroAddress);
+
+    // Claim rewards - this should trigger automatic vault deployment
+    console.log("============ Claim rewards ============");
+    await expect(
+      this.groupingModule.claimReward(groupId, MockERC20, [ipId1, ipId2])
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    // Verify vaults are now deployed
+    const vaultIp1 = await this.royaltyModule.ipRoyaltyVaults(ipId1);
+    const vaultIp2 = await this.royaltyModule.ipRoyaltyVaults(ipId2);
+
+    expect(vaultIp1).to.not.equal(hre.ethers.ZeroAddress);
+    expect(vaultIp2).to.not.equal(hre.ethers.ZeroAddress);
+
+    // Verify rewards are distributed correctly
+    const expectedReward = 50n;
+    expect(await getErc20Balance(vaultIp1)).to.equal(expectedReward);
+    expect(await getErc20Balance(vaultIp2)).to.equal(expectedReward);
+
+    // Verify reward pool balance is updated
+    expect(await getErc20Balance(EvenSplitGroupPool)).to.equal(rewardPoolBalanceBefore - 100n);
+  });
+});

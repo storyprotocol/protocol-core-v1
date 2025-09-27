@@ -1,10 +1,14 @@
 // This file is a root hook used to setup preconditions before running the tests.
 
+// Import test skip handler to enable automatic test skipping based on environment
+import "./utils/testSkipHandler";
+
 import hre from "hardhat";
 import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3, MockERC721 } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
+import { executeWithEnvironmentExpectation, logEnvironmentInfo } from "./utils/environmentHelper";
 
 before(async function () {
   // Check if MockERC721 is configured
@@ -45,8 +49,8 @@ before(async function () {
   
   console.log(`================= Load Users =================`);
   [this.owner, this.user1, this.user2] = await hre.ethers.getSigners();
-  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
-  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("100.0") }).then((tx: any) => tx.wait());
+  await this.owner.sendTransaction({ to: this.user1.address, value: hre.ethers.parseEther("10.0") }).then((tx: any) => tx.wait());
+  await this.owner.sendTransaction({ to: this.user2.address, value: hre.ethers.parseEther("10.0") }).then((tx: any) => tx.wait());
   
   console.log(`================= Chain ID =================`);
   const networkConfig = network.config;
@@ -127,36 +131,36 @@ before(async function () {
     console.log(`================= Set UMA =================`)
     console.log(`================= STORY_OOV3: ${STORY_OOV3} =================`)
 
-    try {
-      await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3).then((tx: any) => tx.wait())
-      console.log(`✅ setOOV3 successfully! `)
-      
-    } catch (error: any) {
-      console.log(error);
-      console.error("❌ Transaction Reverted!");
-      console.error("🔴 Error Message:", error.message || "No error message");
-      console.error("📜 Error Data:", error.data || "No error data");
-    }
+    await executeWithEnvironmentExpectation(
+      async () => {
+        const tx = await this.arbitrationPolicyUMA.setOOV3(STORY_OOV3);
+        return await tx.wait();
+      },
+      "setOOV3",
+      'adminOperations'
+    );
 
-    try {
-      console.log(`ArbitrationPolicyUMA: ${ArbitrationPolicyUMA}`);
-      console.log(`this.owner.address: ${this.owner.address}`);
-      
-      await this.disputeModule
-        .setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address)
-        .then((tx: any) => tx.wait())
-      console.log(`✅ setArbitrationRelayer successfully! `)
-      
-      await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0")).then((tx: any) => tx.wait())
-      
-      console.log(`✅ setMaxBond successfully! `)
-
-    } catch (error: any) {
-      console.log(error);
-      console.error("❌ Transaction Reverted!");
-      console.error("🔴 Error Message:", error.message || "No error message");
-      console.error("📜 Error Data:", error.data || "No error data");
-    }
+    console.log(`ArbitrationPolicyUMA: ${ArbitrationPolicyUMA}`);
+    console.log(`this.owner.address: ${this.owner.address}`);
+    
+    await executeWithEnvironmentExpectation(
+      async () => {
+        const tx = await this.disputeModule.setArbitrationRelayer(ArbitrationPolicyUMA, this.owner.address);
+        return await tx.wait();
+      },
+      "setArbitrationRelayer",
+      'adminOperations'
+    );
+    
+    await executeWithEnvironmentExpectation(
+      async () => {
+        const tx = await this.arbitrationPolicyUMA.setMaxBond(MockERC20, hre.ethers.parseEther("1.0"));
+        return await tx.wait();
+      },
+      "setMaxBond",
+      'adminOperations'
+    );
   }
+  
   
 });

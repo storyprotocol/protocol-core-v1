@@ -118,6 +118,18 @@ before(async function () {
   await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
 
+  console.log(`================= Get OOV3 Contract Address =================`);
+  const oov3Contract = await this.arbitrationPolicyUMA.oov3();
+  console.log(`OOV3 Contract Address: ${oov3Contract}`);
+
+  console.log(`================= Call OOV3 getMinimumBond =================`);
+  // Get the OOV3 contract instance
+  this.oov3 = await hre.ethers.getContractAt("IOOV3", oov3Contract);
+  
+  // Call getMinimumBond method with MockERC20 token address
+  this.minimumBond = await this.oov3.getMinimumBond(MockERC20);
+  console.log(`Minimum Bond for MockERC20: ${this.minimumBond.toString()}`);
+  
   if (STORY_OOV3) {
     console.log(`================= Set UMA =================`)
     console.log(`================= STORY_OOV3: ${STORY_OOV3} =================`)
@@ -152,6 +164,4 @@ before(async function () {
       'adminOperations'
     );
   }
-  
-  
 });

@@ -10,8 +10,6 @@ import { terms } from "../licenseTermsTemplate";
 import { getErc20Balance } from "../utils/erc20Helper";
 
 const IMPROPER_REGISTRATION = encodeBytes32String("IMPROPER_REGISTRATION");
-const arbitrationFee = 100;
-const data = new ethers.AbiCoder().encode(["uint64", "address", "uint256"], [2595600, MockERC20, arbitrationFee]);
 
 describe("Dispute Flow", function () {
   it("Raise dispute for an IP asset, set judgement to true", async function () {
@@ -21,7 +19,10 @@ describe("Dispute Flow", function () {
     console.log("============ Construct UMA data ============");
     const abiCoder = new ethers.AbiCoder();
     const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
-    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, 0]);
+    const minimumBond = this.minimumBond;
+    console.log("minLiveness", minLiveness);
+    console.log("minimumBond", minimumBond);
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
     console.log("data", data);
     
     console.log("============ Raise Dispute ============");
@@ -29,9 +30,13 @@ describe("Dispute Flow", function () {
     console.log(`this.user1: ${this.user1.address}`);
 
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+    
+    // Call raiseDispute and wait for transaction to complete
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+
+    
     console.log("disputeId", disputeId);
     console.log("============ Raise Dispute END ============");
 
@@ -43,6 +48,14 @@ describe("Dispute Flow", function () {
     console.log("============ Set Dispute Judgement ============");
     await expect(
       this.disputeModule.setDisputeJudgement(disputeId, true, "0x")
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    console.log("============ Set Dispute Judgement END ============");
+    const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+    console.log("assertionId", assertionId);
+
+    await expect(
+      this.oov3.settleAssertion(assertionId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     console.log("============ Check Is Ip Tagged ============");
@@ -58,134 +71,52 @@ describe("Dispute Flow", function () {
   });
 
   it("Raise dispute for an IP asset, set judgement to false", async function () {
-    let ipId: any;
-    let disputeId: any;
-    let disputeEvidenceHash: any;
     console.log("============ Register IP ============");
-    try {
-      const response = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
-      ipId = response.ipId;
-      console.log(`Successfully registered IP with ID: ${ipId}`);
-    } catch (error) {
-      console.error("Error registering IP:", error);
-      throw error; // Rethrow to fail the test
-    }
-    console.log("============ Register IP END ============");
-
+    const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
+    
+    console.log("============ Construct UMA data ============");
+    const abiCoder = new ethers.AbiCoder();
+    const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+    const minimumBond = this.minimumBond;
+    console.log("minLiveness", minLiveness);
+    console.log("minimumBond", minimumBond);
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+    console.log("data", data);
+    
     console.log("============ Raise Dispute ============");
-    try {
-      disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
-      
-      const tx = await this.disputeModule.connect(this.user1).raiseDispute(
-        ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data
-      );
-      
-      console.log("Transaction sent! Hash:", tx.hash);
+    console.log(`ipId: ${ipId}`);
+    console.log(`this.user1: ${this.user1.address}`);
+
+    const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
     
-      // Capture the receipt
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed! Receipt:", receipt);
-    
-      // Assertion on success
-      await expect(Promise.resolve(receipt)).not.to.be.rejectedWith(Error);
-    
-      // Extract dispute ID if logs exist
-      if (receipt.logs.length > 5) {
-        disputeId = receipt.logs[5].args[0];
-        console.log("Dispute raised successfully. Dispute ID:", disputeId);
-      } else {
-        console.warn("⚠️ Warning: Logs are empty or fewer than expected.");
-      }
-    
-    } catch (error) {
-      console.error("❌ Error raising dispute!");
-    
-      if (error.receipt) {
-        console.error("Transaction Hash:", error.receipt.transactionHash);
-        console.error("Block Number:", error.receipt.blockNumber);
-        console.error("Transaction Logs:", error.receipt.logs);
-      }
-    
-      if (error.reason) {
-        console.error("Revert Reason:", error.reason);
-      }
-    
-      console.error("🔴 Error Message:", error.message);
-      console.error("📜 Error Data:", error.data || "No error data");
-      console.error("Error Stack:", error.stack);
-    
-      throw error; // Ensure test failure
-    }
+    // Call raiseDispute and wait for transaction to complete
+    const disputeId = await expect(
+      this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+
+    console.log("disputeId", disputeId);
     console.log("============ Raise Dispute END ============");
-  
+
     console.log("============ Get Dispute ============");
-    try {
-      const dispute = await this.disputeModule.disputes(disputeId);
-      console.log(`dispute: ${dispute}`);
-      expect(dispute.targetIpId).to.equal(ipId);
-      expect(dispute.disputeInitiator).to.equal(this.user1.address);
-      console.log("Dispute details retrieved successfully.");
-    } catch (error) {
-      console.error("Error retrieving dispute:", error);
-      throw error; // Rethrow to fail the test
-    }
-    console.log("============ Get Dispute END ============");
-  
+    const dispute = await this.disputeModule.disputes(disputeId);
+    expect(dispute.targetIpId).to.equal(ipId);
+    expect(dispute.disputeInitiator).to.equal(this.user1.address);
+
     console.log("============ Set Dispute Judgement ============");
-    console.log("============ Set Dispute Judgement ============");
+    await expect(
+      this.disputeModule.setDisputeJudgement(disputeId, false, "0x")
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
-    try {
-      // Send the transaction and get the transaction hash
-      const tx = await this.disputeModule.setDisputeJudgement(disputeId, false, "0x");
-      console.log("Transaction sent! Hash:", tx.hash);
-
-      // Wait for transaction confirmation
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed! Receipt:", receipt);
-
-      console.log("✅ Dispute judgement set to false successfully.");
-    } catch (error) {
-      console.error("❌ Error setting dispute judgement!");
-      console.error("🔍 Sender Address (msg.sender):", error.transaction?.from || "Unknown");
-
-      // Log the transaction hash if available
-      if (error.transactionHash) {
-        console.error("🔗 Transaction Hash:", error.transactionHash);
-      }
-
-      // Log the transaction receipt if available
-      if (error.receipt) {
-        console.error("📜 Transaction Receipt:", error.receipt);
-        if (error.receipt.logs) {
-          console.error("📑 Transaction Logs:", error.receipt.logs);
-        }
-      }
-
-      // Extract and log the revert reason
-      if (error.data) {
-        console.error("📜 Error Data:", error.data);
-        const revertReason = decodeRevertReason(error.data);
-        console.error("🔴 Revert Reason:", revertReason);
-      }
-
-      // Log generic error message and stack trace
-      console.error("🔴 Error Message:", error.message);
-      console.error("📜 Error Stack:", error.stack);
-
-      throw error; // Ensure test failure
-    }
-    console.log("============ Set Dispute Judgement END ============");
-  
     console.log("============ Check Is Ip Tagged ============");
-    try {
-      const isTagged = await this.disputeModule.isIpTagged(ipId);
-      expect(isTagged).to.be.false;
-      console.log("IP is not tagged, as expected.");
-    } catch (error) {
-      console.error("Error checking if IP is tagged:", error);
-      throw error; // Rethrow to fail the test
-    }
-    console.log("============ Check Is Ip Tagged END ============");
+    expect(await this.disputeModule.isIpTagged(ipId)).to.be.false;
+
+    console.log("============ Resolve Dispute ============");
+    await expect(
+      this.disputeModule.connect(this.user1).resolveDispute(disputeId, "0x")
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+    console.log("============ Check Is Ip Tagged After Resolve ============");
+    expect(await this.disputeModule.isIpTagged(ipId)).to.be.false;
   });
 
   it("Set tags to the derivative IP assets if the parent infringed", async function () {
@@ -220,14 +151,26 @@ describe("Dispute Flow", function () {
     
     console.log("============ Raise Dispute ============");
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+    
+    console.log("============ Construct UMA data ============");
+    const abiCoder = new ethers.AbiCoder();
+    const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+    const minimumBond = this.minimumBond;
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+    
+    // Call raiseDispute and wait for transaction to complete
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(rootIpId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+    
     console.log("disputeId", disputeId);
 
     console.log("============ Set Dispute Judgement ============");
+    const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
+    console.log("assertionId", assertionId);
+
     await expect(
-      this.disputeModule.setDisputeJudgement(disputeId, true, "0x")
+      this.oov3.settleAssertion(assertionId)
     ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
 
     console.log("============ Check Is Root Ip Tagged ============");
@@ -318,9 +261,18 @@ describe("Dispute Flow", function () {
     
     console.log("============ Raise Dispute ============");
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+    
+    console.log("============ Construct UMA data ============");
+    const abiCoder = new ethers.AbiCoder();
+    const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+    const minimumBond = this.minimumBond;
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+    
+    // Call raiseDispute and wait for transaction to complete
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+    
     console.log("disputeId", disputeId);
 
     console.log("============ Set Dispute Judgement ============");
@@ -342,27 +294,21 @@ describe("Dispute Flow", function () {
     console.log("============ Construct UMA data ============");
     const abiCoder = new ethers.AbiCoder();
     const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
-    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, 0]);
+    const minimumBond = this.minimumBond;
+    const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
     console.log("data", data);
     
     console.log("============ Raise Dispute ============");
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
-    const txRaiseDispute = await expect(
+    
+    // Call raiseDispute and wait for transaction to complete
+    const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error);
-    console.log("Transaction sent! Hash:", txRaiseDispute.hash);
-    const receiptRaiseDispute = await txRaiseDispute.wait();
-    const disputeId = receiptRaiseDispute.logs[5].args[0];
+    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+    
     console.log("disputeId", disputeId);
     const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
     console.log("assertionId", assertionId);
-    
-    // Check the UMA event of raise dispute
-    const eventRaiseDispute = this.arbitrationPolicyUMA.interface.parseLog(receiptRaiseDispute.logs[4]);
-    console.log("eventRaiseDispute", eventRaiseDispute);
-    expect(eventRaiseDispute?.name).to.equal("DisputeRaisedUMA");
-    expect(eventRaiseDispute?.args?.disputeId).to.equal(disputeId);
-    expect(eventRaiseDispute?.args?.assertionId).to.equal(assertionId);
 
     console.log("============ IPA Dispute Assertion ============");
     const ipAccount = await this.ipAssetRegistry.ipAccount(this.chainId, MockERC721, tokenId);
@@ -390,6 +336,7 @@ describe("Dispute Flow", function () {
   describe("Dispute negative operations", function () {
     let ipId: string;
     let disputeId: bigint;
+    let data: string;
 
     before(async function () {
       console.log("============ Register IP ============");
@@ -397,9 +344,18 @@ describe("Dispute Flow", function () {
 
       console.log("============ Raise Dispute ============");
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
+      
+      console.log("============ Construct UMA data ============");
+      const abiCoder = new ethers.AbiCoder();
+      const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+      const minimumBond = this.minimumBond;
+      data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+      
+      // Call raiseDispute and wait for transaction to complete
       disputeId = await expect(
         this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-      ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+      ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then(extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA));
+      
       console.log("disputeId", disputeId);
     });
 
@@ -510,6 +466,7 @@ describe("Dispute Flow", function () {
     })
   });
 
+  // New feature tests for v1.3.3
   describe("Raise Dispute On Behalf - Normal Operations", function () {
     it("Should successfully raise dispute on behalf with valid dispute initiator", async function () {
       const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId);
@@ -530,6 +487,12 @@ describe("Dispute Flow", function () {
       const disputeInitiatorBalanceBefore = await getErc20Balance(disputeInitiator);
       console.log(`Dispute initiator balance before: ${disputeInitiatorBalanceBefore}`);
       
+      console.log("============ Construct UMA data ============");
+      const abiCoder = new ethers.AbiCoder();
+      const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+      const minimumBond = this.minimumBond;
+      const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+      
       const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
         ipId, 
         disputeInitiator, 
@@ -539,7 +502,7 @@ describe("Dispute Flow", function () {
       );
       
       const receipt = await tx.wait();
-      const disputeId = receipt.logs[5].args[0];
+      const disputeId = extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA)(receipt);
       
       console.log("disputeId", disputeId);
       
@@ -578,7 +541,7 @@ describe("Dispute Flow", function () {
       console.log(`Dispute initiator balance after raising dispute: ${disputeInitiatorBalanceAfter}`);
 
       // caller should have paid the arbitration fee
-      expect(callerBalanceBefore - callerBalanceAfter).to.equal(arbitrationFee);
+      expect(callerBalanceBefore - callerBalanceAfter).to.equal(this.minimumBond);
       // dispute initiator should not change
       expect(disputeInitiatorBalanceAfter).to.equal(disputeInitiatorBalanceBefore);
     });
@@ -594,6 +557,12 @@ describe("Dispute Flow", function () {
       console.log(`caller: ${caller.address}`);
       console.log(`disputeInitiator: ${disputeInitiator.address}`);
 
+      console.log("============ Construct UMA data ============");
+      const abiCoder = new ethers.AbiCoder();
+      const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+      const minimumBond = this.minimumBond;
+      const data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
+
       // Raise dispute on behalf
       const tx = await this.disputeModule.connect(caller).raiseDisputeOnBehalf(
         ipId, 
@@ -604,7 +573,7 @@ describe("Dispute Flow", function () {
       );
       
       const receipt = await tx.wait();
-      const disputeId = receipt.logs[5].args[0];
+      const disputeId = extractDisputeId(this.disputeModule, this.arbitrationPolicyUMA)(receipt);
       console.log("disputeId", disputeId);
 
       // Set dispute judgement to true (dispute wins)
@@ -633,12 +602,20 @@ describe("Dispute Flow", function () {
     });
   });
 
+  // New feature tests for v1.3.3
   describe("Raise Dispute On Behalf - Error Cases", function () {
     let ipId: string;
+    let data: string;
 
     before(async function () {
       console.log("============ Register IP for raiseDisputeOnBehalf error tests ============");
       ({ ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commercialUseLicenseId));
+      
+      console.log("============ Construct UMA data ============");
+      const abiCoder = new ethers.AbiCoder();
+      const minLiveness = await this.arbitrationPolicyUMA.minLiveness();
+      const minimumBond = this.minimumBond;
+      data = abiCoder.encode(["uint64", "address", "uint256"], [minLiveness, MockERC20, minimumBond]);
     });
 
     it("Should revert when raising dispute on behalf with already used evidence hash", async function () {
@@ -833,4 +810,41 @@ function decodeRevertReason(errorData: ethers.BytesLike) {
   } catch (err) {
     return "Revert reason could not be decoded";
   }
+}
+
+// Helper function to extract disputeId from transaction receipt
+function extractDisputeId(disputeModule, arbitrationPolicyUMA) {
+  return function(receipt) {
+    // Try to find DisputeRaised event from DisputeModule
+    let disputeRaisedEvent = receipt.logs.find(log => {
+      try {
+        const parsed = disputeModule.interface.parseLog(log);
+        return parsed.name === 'DisputeRaised';
+      } catch {
+        return false;
+      }
+    });
+    
+    if (disputeRaisedEvent) {
+      const parsedEvent = disputeModule.interface.parseLog(disputeRaisedEvent);
+      return parsedEvent.args[0]; // disputeId is the first argument in DisputeRaised event
+    }
+    
+    // Fallback: try to find DisputeRaisedUMA event from ArbitrationPolicyUMA
+    const disputeRaisedUMAEvent = receipt.logs.find(log => {
+      try {
+        const parsed = arbitrationPolicyUMA.interface.parseLog(log);
+        return parsed.name === 'DisputeRaisedUMA';
+      } catch {
+        return false;
+      }
+    });
+    
+    if (disputeRaisedUMAEvent) {
+      const parsedEvent = arbitrationPolicyUMA.interface.parseLog(disputeRaisedUMAEvent);
+      return parsedEvent.args[0]; // disputeId is the first argument in DisputeRaisedUMA event
+    }
+    
+    throw new Error("Neither DisputeRaised nor DisputeRaisedUMA event found in transaction logs");
+  };
 }

@@ -1,0 +1,25 @@
+{
+  "networkExclusions": {
+    "aeneid": {
+      "description": "Aeneid network limitations",
+      "excludePatterns": [
+        "Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution"
+      ],
+      "excludeFiles": [
+        "deployVault.test.ts",
+        "dispute.test.ts"
+      ],
+      "excludeDescribe": [
+        "Raise Dispute On Behalf - Normal Operations",
+        "Raise Dispute On Behalf - Error Cases",
+        "Automatic Vault Deployment During Group Reward Claim"
+      ]
+    },
+    "internal-devnet": {
+      "description": "Internal devnet - all tests supported",
+      "excludePatterns": [],
+      "excludeFiles": [],
+      "excludeDescribe": []
+    }
+  }
+}

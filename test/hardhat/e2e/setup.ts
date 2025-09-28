@@ -1,14 +1,128 @@
 // This file is a root hook used to setup preconditions before running the tests.
 
-// Import test skip handler to enable automatic test skipping based on environment
-import "./utils/testSkipHandler";
-
 import hre from "hardhat";
 import { network } from "hardhat";
 import { GroupingModule, IPAssetRegistry, LicenseRegistry, LicenseToken, LicensingModule, PILicenseTemplate, RoyaltyPolicyLAP, MockERC20, RoyaltyPolicyLRP, AccessController, RoyaltyModule, EvenSplitGroupPool, IpRoyaltyVaultImpl, DisputeModule, ArbitrationPolicyUMA, CoreMetadataModule, CoreMetadataViewModule, STORY_OOV3 } from "./constants";
 import { terms } from "./licenseTermsTemplate";
 import { checkAndApproveSpender } from "./utils/erc20Helper";
 import { executeWithEnvironmentExpectation, logEnvironmentInfo } from "./utils/environmentHelper";
+
+// Auto-skip functionality based on environment variables
+function setupAutoSkip() {
+  const originalIt = global.it;
+  const originalDescribe = global.describe;
+
+  const excludedFiles = process.env.EXCLUDED_FILES ? JSON.parse(process.env.EXCLUDED_FILES) : [];
+  const excludedPatterns = process.env.EXCLUDED_TEST_PATTERNS ? JSON.parse(process.env.EXCLUDED_TEST_PATTERNS) : [];
+  const excludedDescribeBlocks = process.env.EXCLUDED_DESCRIBE_BLOCKS ? JSON.parse(process.env.EXCLUDED_DESCRIBE_BLOCKS) : [];
+
+  console.log('DEBUG: EXCLUDED_FILES:', excludedFiles);
+  console.log('DEBUG: EXCLUDED_TEST_PATTERNS:', excludedPatterns);
+  console.log('DEBUG: EXCLUDED_DESCRIBE_BLOCKS:', excludedDescribeBlocks);
+
+  // Safely determine the caller test file from the stack (works during test definition time)
+  const getCallerTestFile = (): string | undefined => {
+    try {
+      const err = new Error();
+      const stack = (err.stack || '').split('\n');
+      for (const line of stack) {
+        // Matches: at /path/file.ts:line:col OR at Function (/path/file.ts:line:col)
+        const match = line.match(/\((.*):(\d+):(\d+)\)|at (.*):(\d+):(\d+)/);
+        const filePath = match ? (match[1] || match[4]) : undefined;
+        if (!filePath) continue;
+        // Heuristic: pick the first test file in our e2e folder that isn't setup.ts
+        if (filePath.includes('/test/hardhat/e2e/') && !filePath.endsWith('setup.ts')) {
+          return filePath;
+        }
+      }
+    } catch {}
+    return undefined;
+  };
+
+  // Function to check if a file is excluded
+  const isFileExcluded = (filePath) => {
+    if (!filePath) return false;
+    return excludedFiles.some((excludedFile) => filePath.includes(excludedFile));
+  };
+
+  // Override global.it to check for excluded files and patterns
+  global.it = function(title: string, fn?: Mocha.Func | Mocha.AsyncFunc) {
+    const testFile = getCallerTestFile();
+    console.log('DEBUG: Current test file:', testFile);
+
+    if (isFileExcluded(testFile)) {
+      console.log(`⏭️  Skipping test in file: "${testFile}"`);
+      return originalIt.skip(title, fn);
+    }
+
+    const shouldSkipPattern = excludedPatterns.some((pattern: string) => title.includes(pattern));
+    if (shouldSkipPattern) {
+      console.log(`⏭️  Skipping test: "${title}" - pattern excluded for current network`);
+      return originalIt.skip(title, fn);
+    }
+    
+    return originalIt.call(this, title, fn);
+  };
+  
+  // Override global.describe to check for excluded files and describe blocks
+  global.describe = function(title: string, fn: () => void) {
+    const describeFile = getCallerTestFile();
+    console.log('DEBUG: Current describe file:', describeFile);
+
+    if (isFileExcluded(describeFile)) {
+      console.log(`⏭️  Skipping describe block in file: "${describeFile}"`);
+      return originalDescribe.skip(title, fn);
+    }
+
+    const shouldSkipDescribe = excludedDescribeBlocks.some((pattern: string) => title === pattern);
+    if (shouldSkipDescribe) {
+      console.log(`⏭️  Skipping describe block: "${title}" - excluded for current network`);
+      return originalDescribe.skip(title, fn);
+    }
+    
+    return originalDescribe.call(this, title, fn);
+  };
+
+  // Stable runtime guard using Mocha's current test context
+  beforeEach(function () {
+    const currentTest: any = (this as any).currentTest;
+    const testTitle: string | undefined = currentTest?.title;
+    const filePath: string | undefined = currentTest?.file;
+    const normalizedPatterns: string[] = excludedPatterns.map((p: any) => String(p).toLowerCase().trim());
+
+    // File-based exclusion
+    if (isFileExcluded(filePath)) {
+      console.log(`⏭️  [beforeEach] Skipping due to excluded file: "${filePath}"`);
+      return (this as any).skip();
+    }
+
+    // Title pattern exclusion
+    if (testTitle) {
+      const normTitle = testTitle.toLowerCase().trim();
+      if (normalizedPatterns.some((pattern: string) => normTitle.includes(pattern))) {
+      console.log(`⏭️  [beforeEach] Skipping due to excluded pattern in title: "${testTitle}"`);
+      return (this as any).skip();
+      }
+    }
+
+    // Suite-level exclusion by walking parents
+    let suite = currentTest?.parent;
+    while (suite) {
+      const suiteTitle: string | undefined = suite.title;
+      if (suiteTitle && (
+        excludedDescribeBlocks.some((pattern: string) => suiteTitle === pattern) ||
+        normalizedPatterns.some((pattern: string) => suiteTitle.toLowerCase().includes(pattern))
+      )) {
+        console.log(`⏭️  [beforeEach] Skipping due to excluded describe: "${suiteTitle}" (file: ${filePath})`);
+        return (this as any).skip();
+      }
+      suite = suite.parent;
+    }
+  });
+}
+
+// Initialize auto-skip functionality
+setupAutoSkip();
 
 before(async function () {
   // Get the list of signers, the first signer is usually the default wallet

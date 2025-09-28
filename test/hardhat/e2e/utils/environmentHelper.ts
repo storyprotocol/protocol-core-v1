@@ -1,12 +1,4 @@
-// Simple environment helper for handling different test environments
 import { network } from "hardhat";
-
-export interface TestSkipRule {
-  file?: string; // File path pattern to match (e.g., "deployVault.test.ts", "group.royalty.test.ts")
-  describe?: string; // Test suite description pattern to match
-  it?: string; // Test case description pattern to match
-  reason?: string; // Reason for skipping
-}
 
 export interface TestExpectedFailureRule {
   file?: string; // File path pattern to match
@@ -25,7 +17,6 @@ export interface TestEnvironment {
     adminOperations: string; // Expected error code for admin operations (access control)
     licenseTemplateOperations: string; // Expected error code for license template operations
   };
-  skipRules: TestSkipRule[]; // Rules for skipping specific tests
   expectedFailureRules: TestExpectedFailureRule[]; // Rules for expecting specific failures
 }
 
@@ -39,7 +30,6 @@ export const ENVIRONMENTS: Record<number, TestEnvironment> = {
       adminOperations: '', // No errors expected in admin environment
       licenseTemplateOperations: ''
     },
-    skipRules: [], // No tests to skip in admin environment
     expectedFailureRules: [] // No expected failures in admin environment
   },
   1315: { 
@@ -50,29 +40,6 @@ export const ENVIRONMENTS: Record<number, TestEnvironment> = {
       adminOperations: '0x068ca9d8', // AccessControlUnauthorizedAccount
       licenseTemplateOperations: '0x068ca9d8' // AccessControlUnauthorizedAccount for license template operations
     },
-    skipRules: [
-      // Skip entire deployVault test file
-      {
-        file: "deployVault.test.ts",
-        reason: "deployVault method not available in aeneid environment"
-      },
-      // Skip entire dispute test file
-      {
-        file: "dispute.test.ts",
-        reason: "dispute operations not supported due to OOV3 setup issues in aeneid environment"
-      },
-      // Skip specific test in royalty.test.ts
-      {
-        file: "royalty.test.ts",
-        it: "Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution",
-        reason: "requires deployVault functionality"
-      },
-      {
-        file: "group.royalty.test.ts",
-        it: "Should automatically deploy vaults during reward claim",
-        reason: "specifically tests automatic vault deployment"
-      }
-    ],
     expectedFailureRules: [
       // License template operations expected to fail
       {
@@ -111,7 +78,7 @@ export const ENVIRONMENTS: Record<number, TestEnvironment> = {
  */
 export function getCurrentEnvironment(): TestEnvironment {
   const chainId = network.config.chainId || 1315;
-  return ENVIRONMENTS[chainId] || { 
+  const env = ENVIRONMENTS[chainId] || { 
     name: 'unknown', 
     chainId, 
     isAdminEnvironment: false,
@@ -120,9 +87,15 @@ export function getCurrentEnvironment(): TestEnvironment {
       disputeOperations: '0x068ca9d8',
       licenseTemplateOperations: '0x068ca9d8'
     },
-    skipRules: [], // No specific skip rules for unknown environments
     expectedFailureRules: [] // No expected failure rules for unknown environments
   };
+  
+  // Debug logging to help troubleshoot environment detection
+  if (env.name === 'unknown') {
+    console.log(`⚠️  Unknown environment detected! chainId: ${chainId}, available environments:`, Object.keys(ENVIRONMENTS));
+  }
+  
+  return env;
 }
 
 /**
@@ -204,7 +177,7 @@ export async function executeWithEnvironmentExpectation(
         }
         
         // For dispute operations, also check for specific error messages
-        if (errorType === 'disputeOperations') {
+        if (errorType === 'adminOperations') {
           const errorData = error.data.toLowerCase();
           const errorMessage = error.message?.toLowerCase() || '';
           
@@ -311,68 +284,6 @@ export function shouldExpectOperationFailure(
   }
   
   return { shouldExpectFailure: false };
-}
-
-/**
- * Check if current test should be skipped based on skip rules
- */
-export function shouldSkipCurrentTest(
-  fileName?: string,
-  describeTitle?: string, 
-  itTitle?: string
-): { shouldSkip: boolean; reason?: string; level?: 'file' | 'describe' | 'it' } {
-  const env = getCurrentEnvironment();
-  
-  for (const rule of env.skipRules) {
-    let matches = true;
-    let matchLevel: 'file' | 'describe' | 'it' = 'it';
-    
-    // Check file pattern first
-    if (rule.file && fileName) {
-      if (!fileName.includes(rule.file)) {
-        matches = false;
-      }
-    }
-    
-    // If file matches, check more specific patterns
-    if (matches && rule.file && fileName && fileName.includes(rule.file)) {
-      // If only file is specified, it's a file-level skip
-      if (!rule.describe && !rule.it) {
-        matchLevel = 'file';
-      }
-      // If describe is specified, check describe pattern
-      else if (rule.describe && describeTitle) {
-        if (!describeTitle.includes(rule.describe)) {
-          matches = false;
-        } else {
-          matchLevel = 'describe';
-        }
-      }
-      // If it is specified, check it pattern (only apply to 'it' calls)
-      else if (rule.it && itTitle) {
-        if (!itTitle.includes(rule.it)) {
-          matches = false;
-        } else {
-          matchLevel = 'it';
-        }
-      }
-      // If describe or it is specified but we're not in that context, don't match
-      else if ((rule.describe && !describeTitle) || (rule.it && !itTitle)) {
-        matches = false;
-      }
-    }
-    
-    // If this rule matches, skip the test
-    if (matches && (rule.file || rule.describe || rule.it)) {
-      return {
-        shouldSkip: true,
-        reason: rule.reason || `Test skipped in ${env.name} environment`,
-        level: matchLevel
-      };
-    }
-  }
-  
-  return { shouldSkip: false };
 }
 
 /**

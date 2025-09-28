@@ -270,8 +270,8 @@ jobs:
       - name: Run test
         run: |
           yarn prepare:test
-          # run test
-          npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
+          # Use the centralized test runner script that handles network-specific exclusions
+          node scripts/run-e2e-tests.js --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v4

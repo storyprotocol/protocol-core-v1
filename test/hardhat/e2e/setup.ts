@@ -88,7 +88,6 @@ function setupAutoSkip() {
     const currentTest: any = (this as any).currentTest;
     const testTitle: string | undefined = currentTest?.title;
     const filePath: string | undefined = currentTest?.file;
-    const normalizedPatterns: string[] = excludedPatterns.map((p: any) => String(p).toLowerCase().trim());
 
     // File-based exclusion
     if (isFileExcluded(filePath)) {
@@ -97,22 +96,16 @@ function setupAutoSkip() {
     }
 
     // Title pattern exclusion
-    if (testTitle) {
-      const normTitle = testTitle.toLowerCase().trim();
-      if (normalizedPatterns.some((pattern: string) => normTitle.includes(pattern))) {
+    if (testTitle && excludedPatterns.some((pattern: string) => testTitle.includes(pattern))) {
       console.log(`⏭️  [beforeEach] Skipping due to excluded pattern in title: "${testTitle}"`);
       return (this as any).skip();
-      }
     }
 
     // Suite-level exclusion by walking parents
     let suite = currentTest?.parent;
     while (suite) {
       const suiteTitle: string | undefined = suite.title;
-      if (suiteTitle && (
-        excludedDescribeBlocks.some((pattern: string) => suiteTitle === pattern) ||
-        normalizedPatterns.some((pattern: string) => suiteTitle.toLowerCase().includes(pattern))
-      )) {
+      if (suiteTitle && excludedDescribeBlocks.some((pattern: string) => suiteTitle === pattern)) {
         console.log(`⏭️  [beforeEach] Skipping due to excluded describe: "${suiteTitle}" (file: ${filePath})`);
         return (this as any).skip();
       }
@@ -232,18 +225,6 @@ before(async function () {
   await checkAndApproveSpender(this.user2, RoyaltyPolicyLRP, amountToCheck);
   await checkAndApproveSpender(this.user2, RoyaltyModule, amountToCheck);
 
-  console.log(`================= Get OOV3 Contract Address =================`);
-  const oov3Contract = await this.arbitrationPolicyUMA.oov3();
-  console.log(`OOV3 Contract Address: ${oov3Contract}`);
-
-  console.log(`================= Call OOV3 getMinimumBond =================`);
-  // Get the OOV3 contract instance
-  this.oov3 = await hre.ethers.getContractAt("IOOV3", oov3Contract);
-  
-  // Call getMinimumBond method with MockERC20 token address
-  this.minimumBond = await this.oov3.getMinimumBond(MockERC20);
-  console.log(`Minimum Bond for MockERC20: ${this.minimumBond.toString()}`);
-  
   if (STORY_OOV3) {
     console.log(`================= Set UMA =================`)
     console.log(`================= STORY_OOV3: ${STORY_OOV3} =================`)

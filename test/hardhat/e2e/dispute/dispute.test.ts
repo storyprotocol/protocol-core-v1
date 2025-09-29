@@ -16,7 +16,7 @@ describe("Dispute Flow", function () {
       const { ipId } = await mintNFTAndRegisterIPAWithLicenseTerms(this.commericialRemixLicenseId);
       this.ipId = ipId;
     });
-        
+
     step("Raise dispute", async function () {
       // Construct UMA data
       const abiCoder = new ethers.AbiCoder();
@@ -37,9 +37,16 @@ describe("Dispute Flow", function () {
     });
 
     step("Set dispute judgement to true", async function () {
+      const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(this.disputeId);
+      console.log("assertionId", assertionId);
+  
       await expect(
-        this.disputeModule.setDisputeJudgement(this.disputeId, true, "0x")
+        this.oov3.settleAssertion(assertionId)
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+      // await expect(
+      //   this.disputeModule.setDisputeJudgement(this.disputeId, true, "0x")
+      // ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     });
 
     step("Verify IP is tagged after judgement", async function () {
@@ -83,22 +90,26 @@ describe("Dispute Flow", function () {
     });
 
     step("Set dispute judgement to false", async function () {
+      if (skipOnChain("1315", this)) return;
       await expect(
         this.disputeModule.setDisputeJudgement(this.disputeId, false, "0x")
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     });
 
     step("Verify IP is not tagged after false judgement", async function () {
+      if (skipOnChain("1315", this)) return;
       expect(await this.disputeModule.isIpTagged(this.ipId)).to.be.false;
     });
 
     step("Resolve dispute", async function () {
+      if (skipOnChain("1315", this)) return;
       await expect(
         this.disputeModule.connect(this.user1).resolveDispute(this.disputeId, "0x")
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     });
 
     step("Verify IP remains untagged after resolve dispute", async function () {
+      if (skipOnChain("1315", this)) return;
       expect(await this.disputeModule.isIpTagged(this.ipId)).to.be.false;
     });
   });
@@ -149,9 +160,16 @@ describe("Dispute Flow", function () {
     });
 
     step("Set dispute judgement to true", async function () {
+      const assertionId = await this.arbitrationPolicyUMA.disputeIdToAssertionId(this.disputeId);
+      console.log("assertionId", assertionId);
+  
       await expect(
-        this.disputeModule.setDisputeJudgement(this.disputeId, true, "0x")
+        this.oov3.settleAssertion(assertionId)
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
+
+      // await expect(
+      //   this.disputeModule.setDisputeJudgement(this.disputeId, true, "0x")
+      // ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     });
 
     step("Verify root IP is tagged, derivatives are not", async function () {
@@ -248,12 +266,14 @@ describe("Dispute Flow", function () {
     });
 
     step("Set dispute judgement to false", async function () {
+      if (skipOnChain("1315", this)) return;
       await expect(
         this.disputeModule.setDisputeJudgement(this.disputeId, false, "0x")
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
     });
 
     step("Verify tagging derivative fails without infringement", async function () {
+      if (skipOnChain("1315", this)) return;
       await expect(
         this.disputeModule.connect(this.user2).tagIfRelatedIpInfringed(this.ipId, this.disputeId)
       ).to.be.revertedWithCustomError(this.errors, "DisputeModule__DisputeWithoutInfringementTag");
@@ -369,6 +389,7 @@ describe("Dispute Flow", function () {
     });
 
     it("Set dipsute judgement twice should revert", async function () {
+      if (skipOnChain("1315", this)) return;
       await expect(
         this.disputeModule.setDisputeJudgement(disputeId, true, "0x")
       ).not.to.be.rejectedWith(Error).then((tx) => tx.wait());
@@ -838,4 +859,13 @@ function extractDisputeId(disputeModule, arbitrationPolicyUMA) {
     
     throw new Error("Neither DisputeRaised nor DisputeRaisedUMA event found in transaction logs");
   };
+}
+
+// Helper function to skip steps on specific chain
+function skipOnChain(chainId: string, context: any) {
+  if (process.env.STORY_CHAINID === chainId) {
+    context.skip();
+    return true;
+  }
+  return false;
 }

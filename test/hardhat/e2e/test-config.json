@@ -6,8 +6,7 @@
         "Should handle complete royalty flow after vault deployment - validates end-to-end payment and revenue distribution"
       ],
       "excludeFiles": [
-        "deployVault.test.ts",
-        "dispute.test.ts"
+        "deployVault.test.ts"
       ],
       "excludeDescribe": [
         "Raise Dispute On Behalf - Normal Operations",

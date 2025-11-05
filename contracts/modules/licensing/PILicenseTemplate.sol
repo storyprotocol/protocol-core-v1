@@ -291,7 +291,9 @@ contract PILicenseTemplate is
     /// @param terms The PILTerms to get the ID for.
     /// @return selectedLicenseTermsId The ID of the given license terms.
     function getLicenseTermsId(PILTerms calldata terms) external view returns (uint256 selectedLicenseTermsId) {
-        return _getPILicenseTemplateStorage().hashedLicenseTerms[keccak256(abi.encode(terms))];
+        PILTerms memory termsEscaped = terms;
+        termsEscaped.uri = LibString.escapeJSON(terms.uri);
+        return _getPILicenseTemplateStorage().hashedLicenseTerms[keccak256(abi.encode(termsEscaped))];
     }
 
     /// @notice Gets license terms of the given ID.

@@ -352,6 +352,22 @@ contract PILicenseTemplateTest is BaseTest {
         );
     }
 
+    function test_PILicenseTemplate_getLicenseTermsId_escapeURI() public {
+        PILTerms memory terms = PILFlavors.commercialUse({
+            mintingFee: 100,
+            currencyToken: address(erc20),
+            royaltyPolicy: address(royaltyPolicyLAP)
+        });
+
+        terms.uri = 'https://github.com/piplabs/pil-document/off-chain-terms/CommercialRemix.json?name="my product"';
+
+        // URI is escaped when registering license terms
+        uint256 licenseTermsId = pilTemplate.registerLicenseTerms(terms);
+
+        // Terms ID will be retrieved only if the terms URI is escaped before retrieval
+        assertEq(licenseTermsId, pilTemplate.getLicenseTermsId(terms));
+    }
+
     // get license terms struct by ID
     function test_PILicenseTemplate_getLicenseTerms() public {
         uint256 commUseTermsId = pilTemplate.registerLicenseTerms(

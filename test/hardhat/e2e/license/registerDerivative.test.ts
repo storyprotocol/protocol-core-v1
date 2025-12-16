@@ -440,4 +440,284 @@ describe("LicensingModule - registerDerivative", function () {
     
     console.log("Correctly prevented IP with derivatives from linking to new parents");
   });
+
+  it("Should revert registerDerivative with currency token mismatch", async function () {
+    console.log("============ Currency Token Mismatch Test ============");
+
+    // Deploy a second MockERC20 token for testing currency mismatch
+    const MockERC20Factory = await hre.ethers.getContractFactory("MockERC20");
+    const erc20b = await MockERC20Factory.deploy();
+    await erc20b.waitForDeployment();
+    const erc20bAddress = await erc20b.getAddress();
+    console.log("Second MockERC20 (erc20b) deployed at:", erc20bAddress);
+
+    console.log(`================= Whitelist Royalty Token =================`);
+    try {
+      await this.royaltyModule.whitelistRoyaltyToken(erc20bAddress, true).then((tx : any) => tx.wait());
+      console.log(`✅ whitelistRoyaltyToken successfully! `)
+    } catch (error: any) {
+      console.log(error);
+      console.error("❌ Transaction Reverted!");
+      console.error("🔴 Error Message:", error.message || "No error message");
+      console.error("📜 Error Data:", error.data || "No error data");
+    }
+
+    // Register license terms with first currency (MockERC20)
+    const termsErc20 = {
+      ...terms,
+      commercialUse: true,
+      commercialRevShare: 10 * 10 ** 6,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      currency: MockERC20,
+      defaultMintingFee: 0,
+      derivativesReciprocal: false,
+    };
+
+    console.log("============ Register license terms with first currency ============");
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(termsErc20)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    const termsIdErc20 = await this.licenseTemplate.getLicenseTermsId(termsErc20);
+    console.log("License terms ID with erc20:", termsIdErc20);
+
+    // Register license terms with second currency (erc20b)
+    const termsErc20b = {
+      ...terms,
+      commercialUse: true,
+      commercialRevShare: 10 * 10 ** 6,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      currency: erc20bAddress,
+      defaultMintingFee: 0,
+      derivativesReciprocal: false,
+    };
+
+    console.log("============ Register license terms with second currency ============");
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(termsErc20b)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    const termsIdErc20b = await this.licenseTemplate.getLicenseTermsId(termsErc20b);
+    console.log("License terms ID with erc20b:", termsIdErc20b);
+
+    console.log("============ Register parent IPs ============");
+    const { ipId: parentIpId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPA(this.user1, this.user11);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.user2, this.user2);
+
+    console.log("Parent IP 1:", parentIpId1);
+    console.log("Parent IP 2:", parentIpId2);
+    console.log("Child IP:", childIpId);
+
+    // Attach first license terms to parent 1
+    await expect(
+      this.licensingModule.connect(this.user1).attachLicenseTerms(parentIpId1, PILicenseTemplate, termsIdErc20)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("Attached erc20 terms to parent 1");
+
+    // Attach second license terms to parent 2
+    await expect(
+      this.licensingModule.connect(this.user1).attachLicenseTerms(parentIpId2, PILicenseTemplate, termsIdErc20b)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("Attached erc20b terms to parent 2");
+
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    // Try to register derivative with mismatched currency tokens
+    console.log("============ Attempting to register derivative with mismatched currencies ============");
+    try {
+      await this.licensingModule.connect(this.user2).registerDerivative(
+        childIpId,
+        [parentIpId1, parentIpId2],
+        [termsIdErc20, termsIdErc20b],
+        PILicenseTemplate,
+        hre.ethers.ZeroAddress,
+        0,
+        0,
+        0
+      );
+      // If we reach here, the transaction didn't revert
+      expect.fail("Expected transaction to revert with currency token mismatch");
+    } catch (error: any) {
+      console.log("❌ Transaction reverted as expected");
+      console.log("Error message:", error.message);
+      
+      // Extract the error data from the error
+      let errorData = error.data;
+      if (!errorData && error.error && error.error.data) {
+        errorData = error.error.data;
+      }
+      
+      console.log("Error data:", errorData);
+      
+      // Verify that the error data starts with 0xb57c1977
+      // LicensingModule__CurrencyTokenMismatch is a new error code, which is not included in this repo's Errors.sol
+      // TODO: will update the code to revertedWithCustomError(this.errors, "LicensingModule__CurrencyTokenMismatch")
+      expect(errorData).to.be.a("string");
+      expect(errorData.toLowerCase().startsWith("0xb57c1977")).to.be.true;
+      console.log("✅ Error data starts with 0xb57c1977 (LicensingModule__CurrencyTokenMismatch)");
+    }
+  });
+
+  it("Should revert registerDerivativeWithLicenseTokens with currency token mismatch", async function () {
+    console.log("============ Currency Token Mismatch Test (With License Tokens) ============");
+
+    // Deploy a second MockERC20 token for testing currency mismatch
+    const MockERC20Factory = await hre.ethers.getContractFactory("MockERC20");
+    const erc20b = await MockERC20Factory.deploy();
+    await erc20b.waitForDeployment();
+    const erc20bAddress = await erc20b.getAddress();
+    console.log("Second MockERC20 (erc20b) deployed at:", erc20bAddress);
+
+    console.log(`================= Whitelist Royalty Token =================`);
+    try {
+      await this.royaltyModule.whitelistRoyaltyToken(erc20bAddress, true).then((tx : any) => tx.wait());
+      console.log(`✅ whitelistRoyaltyToken successfully! `)
+    } catch (error: any) {
+      console.log(error);
+      console.error("❌ Transaction Reverted!");
+      console.error("🔴 Error Message:", error.message || "No error message");
+      console.error("📜 Error Data:", error.data || "No error data");
+    }
+
+    // Register license terms with first currency (MockERC20)
+    const termsErc20 = {
+      ...terms,
+      commercialUse: true,
+      commercialRevShare: 10 * 10 ** 6,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      currency: MockERC20,
+      defaultMintingFee: 0,
+      derivativesReciprocal: false,
+    };
+
+    console.log("============ Register license terms with first currency ============");
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(termsErc20)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    const termsIdErc20 = await this.licenseTemplate.getLicenseTermsId(termsErc20);
+    console.log("License terms ID with erc20:", termsIdErc20);
+
+    // Register license terms with second currency (erc20b)
+    const termsErc20b = {
+      ...terms,
+      commercialUse: true,
+      commercialRevShare: 10 * 10 ** 6,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      currency: erc20bAddress,
+      defaultMintingFee: 0,
+      derivativesReciprocal: false,
+    };
+
+    console.log("============ Register license terms with second currency ============");
+    await expect(
+      this.licenseTemplate.registerLicenseTerms(termsErc20b)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    const termsIdErc20b = await this.licenseTemplate.getLicenseTermsId(termsErc20b);
+    console.log("License terms ID with erc20b:", termsIdErc20b);
+
+    console.log("============ Register parent IPs ============");
+    const { ipId: parentIpId1 } = await mintNFTAndRegisterIPA(this.user1, this.user1);
+    const { ipId: parentIpId2 } = await mintNFTAndRegisterIPA(this.user2, this.user2);
+    const { ipId: childIpId } = await mintNFTAndRegisterIPA(this.owner, this.owner);
+
+    console.log("Parent IP 1:", parentIpId1);
+    console.log("Parent IP 2:", parentIpId2);
+    console.log("Child IP:", childIpId);
+
+    // Attach first license terms to parent 1
+    await expect(
+      this.licensingModule.connect(this.user1).attachLicenseTerms(parentIpId1, PILicenseTemplate, termsIdErc20)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("Attached erc20 terms to parent 1");
+
+    // Attach second license terms to parent 2
+    await expect(
+      this.licensingModule.connect(this.user2).attachLicenseTerms(parentIpId2, PILicenseTemplate, termsIdErc20b)
+    ).not.to.be.rejectedWith(Error).then((tx: any) => tx.wait());
+    console.log("Attached erc20b terms to parent 2");
+
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    // Mint license token from parent 1
+    console.log("============ Minting license token from parent 1 ============");
+    const mintTx1 = await this.licensingModule.connect(this.user1).mintLicenseTokens(
+      parentIpId1,
+      PILicenseTemplate,
+      termsIdErc20,
+      1,
+      this.owner.address,
+      "0x",
+      0,
+      0
+    );
+    const receipt1 = await mintTx1.wait();
+    // Get license token ID from event
+    const event1 = receipt1.logs.find((log: any) => {
+      try {
+        const parsed = this.licensingModule.interface.parseLog(log);
+        return parsed?.name === "LicenseTokensMinted";
+      } catch {
+        return false;
+      }
+    });
+    const lcTokenId1 = this.licensingModule.interface.parseLog(event1).args.startLicenseTokenId;
+    console.log("License token 1 ID:", lcTokenId1);
+
+    // Mint license token from parent 2
+    console.log("============ Minting license token from parent 2 ============");
+    const mintTx2 = await this.licensingModule.connect(this.user2).mintLicenseTokens(
+      parentIpId2,
+      PILicenseTemplate,
+      termsIdErc20b,
+      1,
+      this.owner.address,
+      "0x",
+      0,
+      0
+    );
+    const receipt2 = await mintTx2.wait();
+    // Get license token ID from event
+    const event2 = receipt2.logs.find((log: any) => {
+      try {
+        const parsed = this.licensingModule.interface.parseLog(log);
+        return parsed?.name === "LicenseTokensMinted";
+      } catch {
+        return false;
+      }
+    });
+    const lcTokenId2 = this.licensingModule.interface.parseLog(event2).args.startLicenseTokenId;
+    console.log("License token 2 ID:", lcTokenId2);
+
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    // Try to register derivative with license tokens that have mismatched currencies
+    console.log("============ Attempting to register derivative with mismatched currency tokens ============");
+    try {
+      await this.licensingModule.connect(this.owner).registerDerivativeWithLicenseTokens(
+        childIpId,
+        [lcTokenId1, lcTokenId2],
+        "0x",
+        100 * 10 ** 6
+      );
+      // If we reach here, the transaction didn't revert
+      expect.fail("Expected transaction to revert with currency token mismatch");
+    } catch (error: any) {
+      console.log("❌ Transaction reverted as expected");
+      console.log("Error message:", error.message);
+      
+      // Extract the error data from the error
+      let errorData = error.data;
+      if (!errorData && error.error && error.error.data) {
+        errorData = error.error.data;
+      }
+      
+      console.log("Error data:", errorData);
+      
+      // Verify that the error data starts with 0xb57c1977
+      // LicensingModule__CurrencyTokenMismatch is a new error code, which is not included in this repo's Errors.sol
+      // TODO: will update the code to revertedWithCustomError(this.errors, "LicensingModule__CurrencyTokenMismatch")
+      expect(errorData).to.be.a("string");
+      expect(errorData.toLowerCase().startsWith("0xb57c1977")).to.be.true;
+      console.log("✅ Error data starts with 0xb57c1977 (LicensingModule__CurrencyTokenMismatch)");
+    }
+  });
 });

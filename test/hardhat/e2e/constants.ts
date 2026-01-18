@@ -26,6 +26,9 @@ export const RoyaltyModule = "0xD2f60c40fEbccf6311f8B47c4f2Ec6b040400086";
 export const RoyaltyPolicyLAP = "0xBe54FB168b3c982b7AaE60dB6CF75Bd8447b390E";
 export const RoyaltyPolicyLRP = "0x9156e603C949481883B1d3355c6f1132D191fC41";
 
+// Hooks
+export const LicenseCallerWhitelistHook = "0x906B0Eb976118FFCC4B1e1747265D9409663f879";
+
 // Mock ERC721 contract address
 export const MockERC721 = process.env.STORY_ERC721 as string;
 export const STORY_OOV3 = process.env.STORY_OOV3 as string;

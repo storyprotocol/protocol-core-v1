@@ -276,6 +276,7 @@ contract DisputeModule is
         IArbitrationPolicy(dispute.arbitrationPolicy).onDisputeCancel(msg.sender, disputeId, data);
 
         $.disputes[disputeId].currentTag = bytes32(0);
+        delete $.isUsedEvidenceHash[dispute.disputeEvidenceHash];
 
         emit DisputeCancelled(disputeId, data);
     }

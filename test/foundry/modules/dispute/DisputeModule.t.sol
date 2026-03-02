@@ -1147,6 +1147,36 @@ contract DisputeModuleTest is BaseTest {
         assertEq(disputeModule.nextArbitrationUpdateTimestamps(ipAddr), 0);
     }
 
+    function test_DisputeModule_evidenceFrontRunProtection() public {
+        address attacker = makeAddr("attacker");
+        address victim = makeAddr("victim");
+        USDC.mint(attacker, 1000e6);
+        USDC.mint(victim, 1000e6);
+
+        address ipAddr;
+        bytes32 victimEvidenceHash = keccak256("victim_evidence");
+
+        mockNFT.mintId(u.alice, 99);
+        vm.prank(u.alice);
+        ipAddr = ipAssetRegistry.register(block.chainid, address(mockNFT), 99);
+        
+        // Attacker front-runs with victim's evidence hash
+        vm.startPrank(attacker);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, victimEvidenceHash, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+
+        // Attacker cancels - bond refunded - should reset evidence hash.
+        vm.prank(attacker);
+        disputeModule.cancelDispute(1, "");
+
+        // Victim tries same evidence - should work
+        vm.startPrank(victim);
+        IERC20(USDC).approve(address(mockArbitrationPolicy), ARBITRATION_PRICE);
+        disputeModule.raiseDispute(ipAddr, victimEvidenceHash, "IMPROPER_REGISTRATION", "");
+        vm.stopPrank();
+    }
+
     function test_DisputeModule_name() public {
         assertEq(IModule(address(disputeModule)).name(), "DISPUTE_MODULE");
     }

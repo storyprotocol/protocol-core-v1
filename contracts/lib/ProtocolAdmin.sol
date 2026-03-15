@@ -19,4 +19,8 @@ library ProtocolAdmin {
     /// @notice Guardian role. Grants ability to configure roles.
     uint64 public constant GUARDIAN_ROLE = 3;
     string public constant GUARDIAN_ROLE_LABEL = "GUARDIAN_ROLE";
+    /// @notice Cancellable admin role. Unlike admin role ide 0 - this role can
+    /// execute certain admin actions but those can be cancelled by guardian role.
+    uint64 public constant CANCELLABLE_ADMIN_ROLE = 4;
+    string public constant CANCELLABLE_ADMIN_ROLE_LABEL = "CANCELLABLE_ADMIN_ROLE";
 }

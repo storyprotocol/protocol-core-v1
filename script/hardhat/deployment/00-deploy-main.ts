@@ -62,7 +62,7 @@ async function deployMain() {
   )
 
   await _saveStateBeforeDeploy(provider)
-  await _deployLibaries(deployLibrary)
+  await _deployLibraries(deployLibrary)
   await _deployContracts(deployContract)
   // await _verifyAll()
   await _postDeploy()
@@ -78,7 +78,7 @@ async function _saveStateBeforeDeploy(provider: JsonRpcProvider) {
   fs.writeFileSync(checkpointPath, JSON.stringify({ checkpoint }, null, 2))
 }
 
-async function _deployLibaries(deployLibrary: any) {
+async function _deployLibraries(deployLibrary: any) {
   // do one by one to keep nonce in order
   await deployLibrary("AccessPermission")
   await deployLibrary("Errors")

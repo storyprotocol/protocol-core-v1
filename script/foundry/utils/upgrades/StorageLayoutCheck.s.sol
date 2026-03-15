@@ -22,7 +22,7 @@ contract StorageLayoutChecker is Script {
 
 
     /// @notice Runs the storage layout check
-    /// @dev For simplicity and efficiency, we check all the upgradeablecontracts in the project
+    /// @dev For simplicity and efficiency, we check all the upgradeable contracts in the project
     /// instead of going 1 by 1 using ffi.
     function _validate() internal {
         string[] memory inputs = _buildValidateCommand();

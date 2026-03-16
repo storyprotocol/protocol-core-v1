@@ -31,7 +31,10 @@ describe("Dispute Flow", function () {
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then(async (tx) => {
+      const receipt = await tx.wait();
+      return extractDisputeIdFromReceipt(receipt);
+    });
     console.log("disputeId", disputeId);
     console.log("============ Raise Dispute END ============");
 
@@ -89,12 +92,15 @@ describe("Dispute Flow", function () {
       // Assertion on success
       await expect(Promise.resolve(receipt)).not.to.be.rejectedWith(Error);
     
-      // Extract dispute ID if logs exist
-      if (receipt.logs.length > 5) {
-        disputeId = receipt.logs[5].args[0];
+      // Extract dispute ID from DisputeRaised event
+      try {
+        disputeId = extractDisputeIdFromReceipt(receipt);
         console.log("Dispute raised successfully. Dispute ID:", disputeId);
-      } else {
-        console.warn("⚠️ Warning: Logs are empty or fewer than expected.");
+      } catch (error) {
+        console.warn("⚠️ Warning: DisputeRaised event not found in logs.");
+        console.log(`Actual logs length: ${receipt.logs.length}`);
+        console.log("Available logs:", receipt.logs.map((log, index) => ({ index, topics: log.topics, data: log.data })));
+        throw error;
       }
     
     } catch (error) {
@@ -222,7 +228,10 @@ describe("Dispute Flow", function () {
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(rootIpId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then(async (tx) => {
+      const receipt = await tx.wait();
+      return extractDisputeIdFromReceipt(receipt);
+    });
     console.log("disputeId", disputeId);
 
     console.log("============ Set Dispute Judgement ============");
@@ -320,7 +329,10 @@ describe("Dispute Flow", function () {
     const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
     const disputeId = await expect(
       this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-    ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+    ).not.to.be.rejectedWith(Error).then(async (tx) => {
+      const receipt = await tx.wait();
+      return extractDisputeIdFromReceipt(receipt);
+    });
     console.log("disputeId", disputeId);
 
     console.log("============ Set Dispute Judgement ============");
@@ -399,7 +411,10 @@ describe("Dispute Flow", function () {
       const disputeEvidenceHash = generateUniqueDisputeEvidenceHash();
       disputeId = await expect(
         this.disputeModule.connect(this.user1).raiseDispute(ipId, disputeEvidenceHash, IMPROPER_REGISTRATION, data)
-      ).not.to.be.rejectedWith(Error).then((tx) => tx.wait()).then((receipt) => receipt.logs[5].args[0]);
+      ).not.to.be.rejectedWith(Error).then(async (tx) => {
+      const receipt = await tx.wait();
+      return extractDisputeIdFromReceipt(receipt);
+    });
       console.log("disputeId", disputeId);
     });
 
@@ -794,13 +809,51 @@ describe("Dispute Flow", function () {
 
 function generateUniqueDisputeEvidenceHash() {
   console.error("⚠️ The evidence hash shall be unique...");
-  const uniqueHash = hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`unique-${Date.now()}`));
+  const uniqueHash = ethers.keccak256(ethers.toUtf8Bytes(`unique-${Date.now()}`));
   console.log(`🆕 Generated unique dispute evidence hash: ${uniqueHash}`);
   return uniqueHash;
 }
 
+function extractDisputeIdFromReceipt(receipt: any): bigint {
+  // Try both old and new event signatures
+  const oldEventSignature = "event DisputeRaised(uint256 disputeId, address targetIpId, address disputeInitiator, uint256 disputeTimestamp, address arbitrationPolicy, bytes32 disputeEvidenceHash, bytes32 targetTag, bytes data)";
+  const newEventSignature = "event DisputeRaised(uint256 disputeId, address targetIpId, address caller, address disputeInitiator, uint256 disputeTimestamp, address arbitrationPolicy, bytes32 disputeEvidenceHash, bytes32 targetTag, bytes data)";
+  
+  // Try new signature first (since it's likely the current one)
+  let disputeModuleInterface = new ethers.Interface([newEventSignature]);
+  let disputeRaisedEvent = receipt.logs.find((log: any) => {
+    try {
+      const parsed = disputeModuleInterface.parseLog(log);
+      return parsed?.name === "DisputeRaised";
+    } catch {
+      return false;
+    }
+  });
+  
+  // If not found with new signature, try old signature
+  if (!disputeRaisedEvent) {
+    disputeModuleInterface = new ethers.Interface([oldEventSignature]);
+    disputeRaisedEvent = receipt.logs.find((log: any) => {
+      try {
+        const parsed = disputeModuleInterface.parseLog(log);
+        return parsed?.name === "DisputeRaised";
+      } catch {
+        return false;
+      }
+    });
+  }
+  
+  if (disputeRaisedEvent) {
+    const parsed = disputeModuleInterface.parseLog(disputeRaisedEvent);
+    return parsed?.args.disputeId;
+  }
+  
+  // If still not found, throw error with helpful message
+  throw new Error("DisputeRaised event not found in logs. Please check if the event signature has changed again.");
+}
+
 function decodeRevertReason(errorData: ethers.BytesLike) {
-  const iface = new hre.ethers.Interface([
+  const iface = new ethers.Interface([
     "error DisputeModule__ZeroAccessManager()",
     "error DisputeModule__ZeroLicenseRegistry()",
     "error DisputeModule__ZeroIPAssetRegistry()",

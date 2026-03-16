@@ -12,6 +12,7 @@ broadcast
 
 # Dotenv file
 .env
+.env*
 
 .idea/
 node_modules/

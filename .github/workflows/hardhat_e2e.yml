@@ -3,7 +3,7 @@ name: -> HardHat E2E Test
 on:
   # push:
   #   branches:
-  #     - update-e2e-test
+  #     - yao/test/cantina_124
 
   workflow_dispatch:
     inputs:
@@ -13,29 +13,34 @@ on:
         default: 'internal-devnet'
         type: choice
         options:
-          - devnet
+          - aeneid
           - mainnet
           - internal-devnet
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x15cbB99b60F06CC70D819dD256BC7B7F6eC391B9'
         type: string
       oov3_address:
-        description: 'Optimistic Oracle V3 address'
+        description: 'OOV3 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x21F4AbC03C1323ffc139b9Af6e261B825BFd73ca'
         type: string
-      deploy_oov3:
-        description: 'Deploy Optimistic Oracle V3'
-        required: false
-        default: false
-        type: boolean
       schedule:
         description: 'Schedule first before the set opertion'
         required: false
-        default: true
+        default: false
         type: boolean
+      deploy_report:
+        description: 'Deploy test report to GitHub Pages'
+        required: false
+        default: false
+        type: boolean
+      test_pattern:
+        description: 'Test pattern to run (e.g., dispute, licensing, royalty, or leave empty for all tests)'
+        required: false
+        default: ''
+        type: string
 
 
   workflow_call:
@@ -46,9 +51,14 @@ on:
         default: 'internal-devnet'
         type: string
       erc721_address:
-        description: 'ERC721 contract address'
+        description: 'ERC721 contract address (leave empty to deploy new contract)'
         required: false
-        default: ''
+        default: '0x15cbB99b60F06CC70D819dD256BC7B7F6eC391B9'
+        type: string
+      oov3_address:
+        description: 'OOV3 contract address (leave empty to deploy new contract)'
+        required: false
+        default: '0x21F4AbC03C1323ffc139b9Af6e261B825BFd73ca'
         type: string
 
 jobs:
@@ -62,7 +72,6 @@ jobs:
           echo "devnet_version: ${{ inputs.devnet_version || github.event.inputs.devnet_version || 'internal-devnet' }}"
           echo "erc721_address: ${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}"
           echo "oov3_address: ${{ inputs.oov3_address || github.event.inputs.oov3_address || '' }}"
-          echo "deploy_oov3: ${{ inputs.deploy_oov3 || github.event.inputs.deploy_oov3 || '' }}"
           echo "schedule: ${{ inputs.schedule || github.event.inputs.schedule || '' }}"
 
   set-devnet-constants:
@@ -72,7 +81,7 @@ jobs:
         id: devnet_version
         run: |
           declare -A devnet_config=(
-            ["devnet"]="1315 http://r1-d.odyssey-devnet.storyrpc.io:8545"
+            ["aeneid"]="1315 https://aeneid.storyrpc.io"
             ["mainnet"]="1514 https://public.storyrpc.io"
             ["internal-devnet"]="1512 https://rpc.devnet.storyrpc.io"
           )
@@ -84,6 +93,7 @@ jobs:
             
             echo "CHAINID=$chainid" >> $GITHUB_OUTPUT
             echo "RPCURL='$rpcurl'" >> $GITHUB_OUTPUT
+            echo "NETWORK_VERSION=$devnet_version" >> $GITHUB_OUTPUT
           else
             echo "Unknown devnet version: $devnet_version"
             exit 1
@@ -96,32 +106,14 @@ jobs:
           echo "MOCK_ERC20_ADDRESS=0x1514000000000000000000000000000000000000" >> $GITHUB_OUTPUT
           # this is for MockERC20
           # echo "MOCK_ERC20_ADDRESS=0x688abA77b2daA886c0aF029961Dc5fd219cEc3f6" >> $GITHUB_OUTPUT
+          # echo "MOCK_ERC20_ADDRESS=0xa5D13B403C22E28eE1153CFc6aB5e5f740A65611" >> $GITHUB_OUTPUT
 
     outputs:
       CHAINID: ${{ steps.devnet_version.outputs.CHAINID }}
       RPCURL: ${{ steps.devnet_version.outputs.RPCURL }}
       MOCK_ERC20_ADDRESS: ${{ steps.mock_erc20_address.outputs.MOCK_ERC20_ADDRESS }}
+      NETWORK_VERSION: ${{ steps.devnet_version.outputs.NETWORK_VERSION }}
 
-  prepare-erc721:
-    name: prepare-erc721
-    needs: set-devnet-constants
-    if: ${{ inputs.erc721_address != '' && github.event.inputs.erc721_address != '' }}    
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [21.x]
-
-    steps:
-      - name: Echo 721 address
-        id: prepare
-        run: |
-          erc721_address=${{ inputs.erc721_address || github.event.inputs.erc721_address || '' }}
-          echo "STORY_ERC721=$erc721_address" >> $GITHUB_ENV
-          echo "::set-output name=STORY_ERC721::$erc721_address"
-
-    outputs:
-      STORY_ERC721: ${{ steps.prepare.outputs.STORY_ERC721 }}
 
   deploy-erc721:
     name: Deploy ERC721
@@ -170,7 +162,7 @@ jobs:
 
   deploy-oov3-sandbox:
     name: Deploy UMA Optimistic Oracle V3
-    if: ${{ inputs.deploy_oov3 == true || github.event.inputs.deploy_oov3 == true }}
+    if: ${{ inputs.oov3_address == '' && github.event.inputs.oov3_address == '' }}
     needs: set-devnet-constants
     runs-on: ubuntu-latest
     
@@ -219,7 +211,7 @@ jobs:
   run-hardhat-test:
     name: Run E2E Test
     runs-on: ubuntu-latest
-    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox,  prepare-erc721 ]
+    needs: [set-devnet-constants, deploy-erc721, deploy-oov3-sandbox]
     if: always() && !failure() && !cancelled()
 
     strategy:
@@ -258,7 +250,7 @@ jobs:
           echo "STORY_USER2=${{ secrets.STORY_USER2 }}" >> .env    
           echo "STORY_URL=${{ needs.set-devnet-constants.outputs.RPCURL }}" >> .env
           echo "STORY_CHAINID=${{ needs.set-devnet-constants.outputs.CHAINID }}" >> .env
-          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || needs.prepare-erc721.outputs.STORY_ERC721 }}" >> .env
+          echo "STORY_ERC721=${{ needs.deploy-erc721.outputs.STORY_ERC721 || inputs.erc721_address || github.event.inputs.erc721_address }}" >> .env
           echo "STORY_OOV3=${{ needs.deploy-oov3-sandbox.outputs.OOV3_ADDRESS || inputs.oov3_address || github.event.inputs.oov3_address }}" >> .env
 
           # add one more blank line to .env
@@ -266,9 +258,18 @@ jobs:
 
       - name: Run test
         run: |
+          # Prepare test environment: copy mock contracts from test/foundry/mocks/ to contracts/ directory
+          # and compile all contracts. This is required because Hardhat tests reference mock contracts
+          # that are located in the Foundry test directory structure.
           yarn prepare:test
-          # run test
-          npx hardhat test test/hardhat/e2e/**/*.ts --network internal_devnet
+          
+          if [ -n "${{ inputs.test_pattern }}" ]; then
+            echo "Running tests matching pattern: ${{ inputs.test_pattern }}"
+            npx hardhat test test/hardhat/e2e/**/*${{ inputs.test_pattern }}*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
+          else
+            echo "Running all tests"
+            npx hardhat test test/hardhat/e2e/**/*.ts --network ${{ needs.set-devnet-constants.outputs.NETWORK_VERSION }}
+          fi
 
       - name: Upload Test Report
         uses: actions/upload-artifact@v4

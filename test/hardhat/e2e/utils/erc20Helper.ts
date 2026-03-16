@@ -98,21 +98,18 @@ export async function getAllowance(owner: string, spender: string, singer: ether
 };
 
 export async function checkAndApproveSpender(owner: any, spender: any, amount: bigint) {
-    console.log(`owner.address: ${owner.address}`);
-    console.log(`spender.address: ${spender}`);
+    console.log(`[checkAndApproveSpender] Owner: ${owner.address}, Spender: ${spender}, Amount: ${amount}`);
     const currentAllowance = await getAllowance(owner.address, spender, owner);
-
-    const balance = await getErc20Balance(owner.address);
-    console.log(`balance of owner before: ${balance}`);
+    console.log(`[checkAndApproveSpender] Current allowance: ${currentAllowance}`);
+    
     if (currentAllowance < amount) {
-        // this is for MockERC20
-        // await mintAmount(owner.address, amount, owner);
-        // this is for WIP
-        await deposit(( amount - currentAllowance), owner);
-        // check balance of owner
-        const balanceAfter = await getErc20Balance(owner.address);
-        console.log(`balance of owner after: ${balanceAfter}`);
+        const depositAmount = amount - currentAllowance;
+        console.log(`[checkAndApproveSpender] Insufficient allowance, depositing: ${depositAmount}`);
+        await deposit(depositAmount, owner);
         await approveSpender(spender, amount, owner);
+        console.log(`[checkAndApproveSpender] Approval completed`);
+    } else {
+        console.log(`[checkAndApproveSpender] Sufficient allowance, no action needed`);
     }
   };
 

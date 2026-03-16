@@ -1,0 +1,93 @@
+name: Foundry CI
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  pull-requests: read
+  contents: read
+
+env:
+  SAFE_MULTISIG_PROPOSER_ADDRESS: ${{ secrets.SAFE_MULTISIG_PROPOSER_ADDRESS }}
+  SAFE_MULTISIG_PROPOSER_PRIVATE_KEY: ${{ secrets.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }}
+  SAFE_MULTISIG_MAINNET_ADDRESS: ${{ secrets.SAFE_MULTISIG_MAINNET_ADDRESS }}
+  SAFE_MULTISIG_AENEID_ADDRESS: ${{ secrets.SAFE_MULTISIG_AENEID_ADDRESS }}
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+
+  Timestamp:
+    uses: storyprotocol/gha-workflows/.github/workflows/reusable-timestamp.yml@main
+
+  foundry-test:
+    strategy:
+      fail-fast: true
+    name: Run script
+    runs-on: ubuntu-latest
+    needs: [Timestamp]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Run install
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # runs `yarn install` command
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      
+      - name: Extract chain id
+        id: chainid
+        run: |
+          CHAIN_ID=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'chainid:\s*\K[^\s]+' || echo "")
+          if [ -z "$CHAIN_ID" ]; then
+            echo "No chain id found in PR description. Please add 'chainid: <id>' to the PR description."
+            exit 1
+          fi
+          echo "chainid=$CHAIN_ID" >> $GITHUB_OUTPUT
+      
+      - name: Extract operation
+        id: operation
+        run: |
+          OPERATION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'operation:\s*\K[^\s]+' || echo "")
+          if [ -z "$OPERATION" ]; then
+            echo "No operation found in PR description. Please add 'operation: <operation>' to the PR description."
+            exit 1
+          fi
+          echo "operation=$OPERATION" >> $GITHUB_OUTPUT
+      
+      - name: Extract previous version
+        id: previousversion
+        run: |
+          PREVIOUS_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'previous version:\s*\K[^\s]+' || echo "")
+          if [ -z "$PREVIOUS_VERSION" ]; then
+            echo "No previous version found in PR description. Please add 'previous version: <version>' to the PR description."
+            exit 1
+          fi
+          echo "previousversion=$PREVIOUS_VERSION" >> $GITHUB_OUTPUT
+      
+      - name: Extract new version
+        id: newversion
+        run: |
+          NEW_VERSION=$(gh pr view ${{ github.event.pull_request.number }} --json body -q '.body' | grep -oP 'new version:\s*\K[^\s]+' || echo "")
+          if [ -z "$NEW_VERSION" ]; then
+            echo "No new version found in PR description. Please add 'new version: <version>' to the PR description."
+            exit 1
+          fi
+          echo "newversion=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Run Forge build
+        run: |
+          forge build --sizes
+        id: build
+
+      - name: Run safe propose script 
+        if: ${{ github.event.pull_request.merged && startsWith(github.event.pull_request.title, 'upgrade-v') }}
+        run: |
+          npx hardhat safe-propose --chainid ${{ steps.chainid.outputs.chainid }} --operation ${{ steps.operation.outputs.operation }} --previousversion ${{ steps.previousversion.outputs.previousversion }} --newversion ${{ steps.newversion.outputs.newversion }} --safeproposeraddress ${{ env.SAFE_MULTISIG_PROPOSER_ADDRESS }} --safeproposerprivatekey ${{ env.SAFE_MULTISIG_PROPOSER_PRIVATE_KEY }} --safemultisigaddressmainnet ${{ env.SAFE_MULTISIG_MAINNET_ADDRESS }} --safemultisigaddressaeneid ${{ env.SAFE_MULTISIG_AENEID_ADDRESS }}

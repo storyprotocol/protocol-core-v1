@@ -16,6 +16,7 @@ contract JsonBatchTxHelper is Script {
         uint256 value;
         bytes data;
         uint8 operation;
+        string txType; // schedule, execute, cancel
     }
 
     Transaction[] private transactions;
@@ -25,12 +26,13 @@ contract JsonBatchTxHelper is Script {
         chainId = (block.chainid).toString();
     }
 
-    function _writeTx(address _to, uint256 _value, bytes memory _data) internal {
+    function _writeTx(address _to, uint256 _value, bytes memory _data, string memory _type) internal {
         transactions.push(Transaction({
             to: _to,
             value: _value,
             data: _data,
-            operation: 0
+            operation: 0,
+            txType: _type
         }));
         console2.log("Added tx to ", _to);
         console2.log("Value: ", _value);
@@ -39,18 +41,19 @@ contract JsonBatchTxHelper is Script {
         console2.log("Operation: 0");
     }
 
-    function _writeBatchTxsOutput(string memory _action) internal {
+    function _writeBatchTxsOutput(string memory _action, string memory _type) internal {
+        uint256 txCounter;
         string memory json = "[";
         for (uint i = 0; i < transactions.length; i++) {
-            if (i > 0) {
-                json = string(abi.encodePacked(json, ","));
-            }
+            if (keccak256(abi.encodePacked(transactions[i].txType)) != keccak256(abi.encodePacked(_type))) continue;
+            if (txCounter > 0) json = string(abi.encodePacked(json, ","));
             json = string(abi.encodePacked(json, "{"));
             json = string(abi.encodePacked(json, '"to":"', vm.toString(transactions[i].to), '",'));
             json = string(abi.encodePacked(json, '"value":', vm.toString(transactions[i].value), ','));
             json = string(abi.encodePacked(json, '"data":"', vm.toString(transactions[i].data), '",'));
             json = string(abi.encodePacked(json, '"operation":', vm.toString(transactions[i].operation)));
             json = string(abi.encodePacked(json, "}"));
+            txCounter++;
         }
         json = string(abi.encodePacked(json, "]"));
 

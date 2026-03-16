@@ -51,7 +51,7 @@ contract ArbitrationPolicyUMATest is BaseTest {
         wip = 0x1514000000000000000000000000000000000000; // WIP address
         disputeModule = DisputeModule(0x9b7A9c70AFF961C799110954fc06F3093aeb94C5);
         royaltyModule = RoyaltyModule(0xD2f60c40fEbccf6311f8B47c4f2Ec6b040400086);
-        arbitrationPolicyUMA = ArbitrationPolicyUMA(0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936);
+        arbitrationPolicyUMA = ArbitrationPolicyUMA(payable(0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936));
         protocolAdmin = 0x623Cb5A594dAD5cc1Ea1bDb0b084bf8F1fE4B2e4;
         protocolPauseAdmin = 0xdd661f55128A80437A0c0BDA6E13F214A3B2EB24;
         address upgrader = 0x4C30baDa479D0e13300b31b1696A5E570848bbEe;
@@ -447,13 +447,13 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputerBalBefore = currency.balanceOf(disputeInitiator);
+        uint256 disputerBalBefore = address(disputeInitiator).balance;
 
         // settle the assertion
         bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
         IOOV3(newOOV3).settleAssertion(assertionId);
 
-        uint256 disputerBalAfter = currency.balanceOf(disputeInitiator);
+        uint256 disputerBalAfter = address(disputeInitiator).balance;
 
         (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(disputeId);
 
@@ -490,15 +490,15 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputerBalBefore = currency.balanceOf(disputeInitiator);
-        uint256 callerBalBefore = currency.balanceOf(caller);
+        uint256 disputerBalBefore = address(disputeInitiator).balance;
+        uint256 callerBalBefore = address(caller).balance;
 
         // settle the assertion
         bytes32 assertionId = arbitrationPolicyUMA.disputeIdToAssertionId(disputeId);
         IOOV3(newOOV3).settleAssertion(assertionId);
 
-        uint256 disputerBalAfter = currency.balanceOf(disputeInitiator);
-        uint256 callerBalAfter = currency.balanceOf(caller);
+        uint256 disputerBalAfter = address(disputeInitiator).balance;
+        uint256 callerBalAfter = address(caller).balance;
         (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(disputeId);
 
         assertEq(currentTagBefore, bytes32("IN_DISPUTE"));
@@ -796,15 +796,15 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputeInitiatorBalBefore = currency.balanceOf(disputeInitiator);
-        uint256 defenderIpIdOwnerBalBefore = currency.balanceOf(randomIpId);
+        uint256 disputeInitiatorBalBefore = address(disputeInitiator).balance;
+        uint256 defenderIpIdOwnerBalBefore = address(randomIpId).balance;
 
         oov3.settleAssertion(assertionId);
 
         (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputeInitiatorBalAfter = currency.balanceOf(disputeInitiator);
-        uint256 defenderIpIdOwnerBalAfter = currency.balanceOf(randomIpId);
+        uint256 disputeInitiatorBalAfter = address(disputeInitiator).balance;
+        uint256 defenderIpIdOwnerBalAfter = address(randomIpId).balance;
 
         uint256 oracleFee = (oov3.burnedBondPercentage() * assertion.bond) / 1e18;
         uint256 bondRecipientAmount = assertion.bond * 2 - oracleFee;
@@ -813,6 +813,8 @@ contract ArbitrationPolicyUMATest is BaseTest {
         assertEq(currentTagAfter, bytes32("IMPROPER_REGISTRATION"));
         assertEq(disputeInitiatorBalAfter - disputeInitiatorBalBefore, bondRecipientAmount);
         assertEq(defenderIpIdOwnerBalAfter - defenderIpIdOwnerBalBefore, 0);
+        assertEq(address(arbitrationPolicyUMA).balance, 0);
+        assertEq(IERC20(wip).balanceOf(address(arbitrationPolicyUMA)), 0);
     }
 
     function test_ArbitrationPolicyUMA_disputeAssertion_WithBondAndIpNotTagged() public {
@@ -861,15 +863,15 @@ contract ArbitrationPolicyUMATest is BaseTest {
 
         (, , , , , , bytes32 currentTagBefore, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputeInitiatorBalBefore = currency.balanceOf(disputeInitiator);
-        uint256 defenderIpIdOwnerBalBefore = currency.balanceOf(randomIpId);
+        uint256 disputeInitiatorBalBefore = address(disputeInitiator).balance;
+        uint256 defenderIpIdOwnerBalBefore = address(randomIpId).balance;
 
         oov3.settleAssertion(assertionId);
 
         (, , , , , , bytes32 currentTagAfter, ) = disputeModule.disputes(disputeId);
 
-        uint256 disputeInitiatorBalAfter = currency.balanceOf(disputeInitiator);
-        uint256 defenderIpIdOwnerBalAfter = currency.balanceOf(randomIpId);
+        uint256 disputeInitiatorBalAfter = address(disputeInitiator).balance;
+        uint256 defenderIpIdOwnerBalAfter = address(randomIpId).balance;
 
         uint256 oracleFee = (oov3.burnedBondPercentage() * assertion.bond) / 1e18;
         uint256 bondRecipientAmount = assertion.bond * 2 - oracleFee;

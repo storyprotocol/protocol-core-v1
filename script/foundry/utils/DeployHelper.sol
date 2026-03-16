@@ -582,14 +582,14 @@ contract DeployHelper is Script, BroadcastManager, JsonDeploymentHandler, Storag
 
         _predeploy("ArbitrationPolicyUMA");
         impl = address(new ArbitrationPolicyUMA(address(disputeModule), address(royaltyModule)));
-        arbitrationPolicyUMA = ArbitrationPolicyUMA(
+        arbitrationPolicyUMA = ArbitrationPolicyUMA(payable(
             TestProxyHelper.deployUUPSProxy(
                 create3Deployer,
                 _getSalt(type(ArbitrationPolicyUMA).name),
                 impl,
                 abi.encodeCall(ArbitrationPolicyUMA.initialize, address(protocolAccessManager))
             )
-        );
+        ));
         require(
             _getDeployedAddress(type(ArbitrationPolicyUMA).name) == address(arbitrationPolicyUMA),
             "Deploy: Arbitration Policy Address Mismatch"

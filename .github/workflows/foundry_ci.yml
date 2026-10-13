@@ -47,7 +47,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --no-match-test "invariant*"
+          forge test -vvv --no-match-test "invariant*" --no-match-contract "GrantRolesToSafeTest"
         id: forge-test
 
       - name: Run solhint

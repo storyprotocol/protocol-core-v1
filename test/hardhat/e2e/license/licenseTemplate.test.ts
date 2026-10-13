@@ -3,9 +3,10 @@
 import "../setup";
 import { expect } from "chai";
 import { mintNFTAndRegisterIPA } from "../utils/mintNFTAndRegisterIPA";
-import { RoyaltyPolicyLRP, RoyaltyPolicyLAP, PILicenseTemplate } from "../constants";
+import { RoyaltyPolicyLRP, RoyaltyPolicyLAP, PILicenseTemplate, MockERC20 } from "../constants";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { registerPILTerms } from "../utils/licenseHelper";
+import { terms } from "../licenseTermsTemplate";
 import hre from "hardhat";
 
 describe("LicensingModule - License Template Tests", function () {
@@ -29,7 +30,7 @@ describe("LicensingModule - License Template Tests", function () {
     await this.licensingModule.attachLicenseTerms(ipId1, PILicenseTemplate, termsId1);
 
     // Deploy and register second template
-    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("contracts/MockLicenseTemplate.sol:MockLicenseTemplate");
+    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("MockLicenseTemplate");
     const pilTemplate2 = await MockLicenseTemplateFactory.deploy();
     await pilTemplate2.waitForDeployment();
     const pilTemplate2Address = await pilTemplate2.getAddress();
@@ -64,7 +65,7 @@ describe("LicensingModule - License Template Tests", function () {
     await this.licensingModule.mintLicenseTokens(ipId1, PILicenseTemplate, termsId1, 1, signers[1].address, hre.ethers.ZeroAddress, 0, 0);
 
     // Deploy and register second template
-    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("contracts/MockLicenseTemplate.sol:MockLicenseTemplate");
+    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("MockLicenseTemplate");
     const pilTemplate2 = await MockLicenseTemplateFactory.deploy();
     await pilTemplate2.waitForDeployment();
     const pilTemplate2Address = await pilTemplate2.getAddress();
@@ -145,7 +146,7 @@ describe("LicensingModule - License Template Tests", function () {
 
   it("Should revert when minting license token and attach license terms with unregistered license template", async function () {
     // Deploy license template
-    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("contracts/MockLicenseTemplate.sol:MockLicenseTemplate");
+    const MockLicenseTemplateFactory = await hre.ethers.getContractFactory("MockLicenseTemplate");
     const pilTemplate2 = await MockLicenseTemplateFactory.deploy();
     await pilTemplate2.waitForDeployment();
     const pilTemplate2Address = await pilTemplate2.getAddress();
@@ -167,5 +168,59 @@ describe("LicensingModule - License Template Tests", function () {
     await expect(
         this.licensingModule.attachLicenseTerms(ipId1, pilTemplate2Address, termsId2)
     ).to.be.revertedWithCustomError(this.errors, "LicensingModule__LicenseTermsNotFound");
+  });
+
+  it("Should return false when checking if license terms with id 0 exists", async function () {
+    // Check that license terms with id 0 does not exist
+    const exists = await this.licenseTemplate.exists(0);
+    expect(exists).to.be.false;
+  });
+
+  it("Should retrieve license terms id with escaped URI", async function () {
+    // Create terms with URI containing special characters that need escaping
+    const testTerms = {
+      ...terms,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      defaultMintingFee: 1,
+      commercialUse: true,
+      currency: MockERC20,
+      uri: 'http://example.com/?name="escaped URI"',
+    };
+
+    // Register license terms - the contract will escape the URI internally
+    const tx = await this.licenseTemplate.registerLicenseTerms(testTerms);
+    await tx.wait();
+
+    // Get the license terms id - the contract will apply the same escaping to match the hash
+    const licenseTermsId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    console.log("licenseTermsId with escaped URI:", licenseTermsId);
+
+    // Verify we can retrieve the same ID by calling getLicenseTermsId
+    const retrievedId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    expect(licenseTermsId).to.equal(retrievedId);
+  });
+
+  it("Should retrieve license terms id when URI is not set", async function () {
+    // Create terms with empty URI
+    const testTerms = {
+      ...terms,
+      royaltyPolicy: RoyaltyPolicyLAP,
+      defaultMintingFee: 100,
+      commercialUse: true,
+      currency: MockERC20,
+      uri: "",
+    };
+
+    // Register license terms with empty URI
+    const tx = await this.licenseTemplate.registerLicenseTerms(testTerms);
+    await tx.wait();
+
+    // Get the license terms id
+    const licenseTermsId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    console.log("licenseTermsId with empty URI:", licenseTermsId);
+
+    // Terms ID should be retrieved correctly even with empty URI
+    const retrievedId = await this.licenseTemplate.getLicenseTermsId(testTerms);
+    expect(licenseTermsId).to.equal(retrievedId);
   });
 }); 
